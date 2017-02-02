@@ -36,7 +36,7 @@ If you get an error that there are missing modules, run
 ```
 $ npm install
 ```
-This should install all necessary modules into the `hablaapi/node_modules` directory.  *NEVER* add the `node_modules` folder to your git repo; this will break the service on other platforms (e.g., *PRODUCTION*).
+This should install all necessary modules into the `hablaapi/node_modules` directory.  **NEVER** add the `node_modules` folder to your git repo; this will break the service on other platforms (e.g., **PRODUCTION**).
 
 
 ##Habla Git Workflow
