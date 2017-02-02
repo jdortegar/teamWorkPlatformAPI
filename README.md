@@ -7,26 +7,26 @@ There are no standard structures for API layout in NodeJS/Express, but there are
 ###root directory
 This is the directory for the api.  It contains the README.md (this file), `package.json`, which is the configuration file for NodeJS and is used by `npm install` to install necessary packages required by the application.  It also contains the `src` directory, where all application source code lives.
 
-###   src directory
-   The `src` directory contains all source code, including the `index.js` file at the root level, which is the container for the NodeJS application.  This file uses `require` statements to pull-in all of the other code distributed among the following subdirectories:
+###/src directory
+The `src` directory contains all source code, including the `index.js` file at the root level, which is the container for the NodeJS application.  This file uses `require` statements to pull-in all of the other code distributed among the following subdirectories:
 
-###      config
-      Pretty much just what it sounds like - this directory contains all environment / system configuration logic
+###/config
+Pretty much just what it sounds like - this directory contains all environment / system configuration logic
 
-###      routes
-      This folder contains all service routes (URIs) for the API.  Each .js file in this directory `requires` the necessary controller in the `../controllers` directory.
+###/routes
+This folder contains all service routes (URIs) for the API.  Each .js file in this directory `requires` the necessary controller in the `../controllers` directory.
 
-###      controllers
-      This directory contains all logic to support a particular service route, invoked from the `../routes` path.
+###/controllers
+This directory contains all logic to support a particular service route, invoked from the `../routes` path.
 
-###      helpers
-      This directory contains all common utility functions to support the API
+###/helpers
+This directory contains all common utility functions to support the API
 
-###      models
-      This directory contains the functions to interact with the database / datastore for an entity; usually invoked via controllers.
+###/models
+This directory contains the functions to interact with the database / datastore for an entity; usually invoked via controllers.
 
-###      policies
-      This is where service policy-related functions (e.g., role-based access logic) is stored
+###/policies
+This is where service policy-related functions (e.g., role-based access logic) is stored
 
 To run the service, set your working directory to `hablaapi` and run
 ```
