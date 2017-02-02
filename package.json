@@ -1,0 +1,29 @@
+{
+  "name": "symphony-api",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "bluebird": "^3.4.6",
+    "body-parser": "^1.15.2",
+    "cors": "^2.8.1",
+    "debug": "^2.2.0",
+    "eslint": "^3.14.1",
+    "express": "^4.14.0",
+    "express-jwt": "^5.1.0",
+    "express-validation": "^1.0.1",
+    "http-status": "^0.2.3",
+    "joi": "^9.1.0",
+    "jsonwebtoken": "^7.1.9",
+    "lodash": "^4.16.3",
+    "moment": "^2.15.1",
+    "mongodb": "^2.2.10",
+    "morgan": "^1.7.0",
+    "nodemailer": "^2.6.4",
+    "nodemailer-ses-transport": "^1.4.0"
+  },
+  "scripts": {
+    "start": "node src",
+    "lint": "eslint src",
+    "dev": "eslint src && DEBUG=* node src"
+  }
+}
