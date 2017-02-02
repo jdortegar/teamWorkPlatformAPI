@@ -10,22 +10,22 @@ This is the directory for the api.  It contains the README.md (this file), `pack
 ###./src directory
 The `src` directory contains all source code, including the `index.js` file at the root level, which is the container for the NodeJS application.  This file uses `require` statements to pull-in all of the other code distributed among the following subdirectories:
 
-###./config
+###./src/config
 Pretty much just what it sounds like - this directory contains all environment / system configuration logic
 
-###./routes
+###./src/routes
 This folder contains all service routes (URIs) for the API.  Each .js file in this directory `requires` the necessary controller in the `../controllers` directory.
 
-###./controllers
+###./src/controllers
 This directory contains all logic to support a particular service route, invoked from the `../routes` path.
 
-###./helpers
+###./src/helpers
 This directory contains all common utility functions to support the API
 
-###./models
+###./src/models
 This directory contains the functions to interact with the database / datastore for an entity; usually invoked via controllers.
 
-###./policies
+###./src/policies
 This is where service policy-related functions (e.g., role-based access logic) is stored
 
 To run the service, set your working directory to `hablaapi` and run
