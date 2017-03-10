@@ -12,6 +12,7 @@
 var express = require('express');
 var router = express.Router();
 var authRoutes = require('./auth');
+var userRoutes = require('./user');
 
 var containsRole = require('../policies').containsRole;
 var containsAnyRole = require('../policies').containsAnyRole;
@@ -29,5 +30,6 @@ router.get('/test', function(req, res) {
 var isHablaUser = containsRole(roles.hablaUser);
 
 router.use('/auth/userAuth', authRoutes);
+router.use('/users', userRoutes);
 
 module.exports = router;

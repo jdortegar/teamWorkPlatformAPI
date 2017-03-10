@@ -1,12 +1,16 @@
 var dev = require('./development');
 
 module.exports = {
-  db: process.env.DB_HOST || dev.db,
+  nodePort: process.env.NODE_PORT || dev.nodePort,
+  tablePrefix: process.env.TBL_PREFIX || dev.tablePrefix,
+  cacheServer: process.env.CACHE_SERVER || dev.cacheServer,
+  cachePort: process.env.CACHE_PORT || dev.cachePort,
   jwtSecret: process.env.JWT_SECRET || dev.jwtSecret,
-  port: process.env.PORT || dev.port,
-  clientUrl: process.env.CLIENT_URL || dev.clientUrl,
   aws: {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID || dev.aws.accessKeyId,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || dev.aws.secretAccessKey
-  }
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || dev.aws.secretAccessKey,
+    awsRegion: process.env.AWS_REGION || dev.aws.awsRegion,
+  },
+  dynamoDbEndpoint: process.env.DYNAMODB_ENDPOINT || dev.dynamoDbEndpoint
 };
+
