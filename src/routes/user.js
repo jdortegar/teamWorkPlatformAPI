@@ -11,6 +11,13 @@ router.route('/')
   .post(validate(paramValidation.createUser), users.create)
   .delete(users.del);
 
+router.route('/registerUser')
+  .post(validate(paramValidation.registerUser), users.createReservation);
+
+router.route('/validateEmail/:rid')
+  .post(users.validateEmail)
+  .get(users.validateEmail);;
+
 router.route('/:userId')
   .put(users.update);
 

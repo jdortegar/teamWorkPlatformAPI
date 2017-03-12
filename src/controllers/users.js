@@ -21,6 +21,67 @@ var uuid = require('node-uuid');
 var Promise = require('bluebird');
 
 
+function createReservation(req, res, next) {
+  var db = req.app.locals.db;
+  var email = req.body.email || '';
+
+  // Add new reservation to cache
+
+  console.log('createReservation: user ' + email);
+  var rid = uuid.v4(); // get a uid to represent the reservation
+  console.log('createReservation: new rid: ' + rid);
+  req.app.locals.redis.set(rid, email, 'EX', 1800, function(err, reply) {
+    if (err) {
+      console.log('createReservation: hset status - redis error');
+    }
+    else {
+      console.log('createReservation: created reservation for email: ' + email);
+      mailer.sendActivationLink(email, rid).then(function() {
+
+        var response = {
+          status: 'SUCCESS',
+          uuid: rid
+        };
+
+        res.status(httpStatus.OK).json(response);
+
+      });
+    }
+  });
+
+
+
+};
+
+function validateEmail(req, res, next) {
+  var db = req.app.locals.db;
+  var rid = req.params.rid || req.body.reservationId || '';
+
+  // Find reservation in cache
+  var email = "";
+  console.log('find Reservation: id = ' + rid);
+  req.app.locals.redis.get(rid, function(err, reply) {
+    if (err) {
+      console.log('validateEmail: get status - redis error');
+    }
+    else {
+      console.log('validateEmail: found reservation for email: ' + reply);
+      var response = {
+        status: 'SUCCESS',
+        email: reply
+      };
+
+      res.setHeader('Location', 'http://localhost:8080/signup');
+      //res.json(response);
+      res.status(httpStatus.SEE_OTHER).json(response);
+    }
+  });
+
+
+
+
+};
+
 function create(req, res, next) {
   var db = req.app.locals.db;
   var email = req.body.email || '';
@@ -62,9 +123,6 @@ function create(req, res, next) {
           res.json(response);
           res.status(httpStatus.FORBIDDEN).json();
         });
-
-
-
 
       }
       else {
@@ -212,7 +270,7 @@ function del(req, res, next) {
         console.log("Deleting item...");
         docClient.delete(params, function(err, data) {
             if (err) {
-                console.error("Unable to add item. Error JSON:", JSON.stringify(err, null, 2));
+                console.error("Unable to delete item. Error JSON:", JSON.stringify(err, null, 2));
             } else {
                 console.log("Deleted item:", JSON.stringify(data, null, 2));
             }
@@ -390,6 +448,8 @@ function generateToken() {
 
 module.exports = {
   create: create,
+  createReservation: createReservation,
+  validateEmail: validateEmail,
   update: update,
   del: del,
   resetPassword: resetPassword,

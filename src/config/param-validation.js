@@ -6,7 +6,13 @@ var validationSchemas = {
     body: {
       email: Joi.string().email().required()
     }
+  },
+  registerUser: {
+    body: {
+      email: Joi.string().email().required()
+    }
   }
+
 };
 
 module.exports = validationSchemas;
