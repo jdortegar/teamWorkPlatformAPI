@@ -18,6 +18,8 @@ var User = require('../models/user');
 var config = require('../config/env');
 var jwt = require('jsonwebtoken');
 var uuid = require('node-uuid');
+var Promise = require('bluebird');
+
 
 function create(req, res, next) {
   var db = req.app.locals.db;
@@ -88,6 +90,29 @@ function create(req, res, next) {
             //});
 
           }
+        });
+
+        var docClient = new req.app.locals.AWS.DynamoDB.DocumentClient();
+        var usersTable = config.tablePrefix + "users"
+
+        var params = {
+            TableName: usersTable,
+            Item:{
+                "partitionId": -1,
+                "userGuid": uid,
+                "userInfo":{
+                    "emailAddress": email
+                }
+            }
+        };
+
+        console.log("Adding a new item...");
+        docClient.put(params, function(err, data) {
+            if (err) {
+                console.error("Unable to add item. Error JSON:", JSON.stringify(err, null, 2));
+            } else {
+                console.log("Added item:", JSON.stringify(data, null, 2));
+            }
         });
 
         mailer.sendActivationLink(email, uid).then(function() {
@@ -163,12 +188,35 @@ function create(req, res, next) {
 function del(req, res, next) {
   var db = req.app.locals.db;
   var email = req.body.email || '';
-
-// first, use email addr to see if it's already in redis
+  var uid = req.body.uid || '';
+  // first, use email addr to see if it's already in redis
 
   req.app.locals.redis.del(email, function(err, reply) {
     if (err) {
       console.log('user-delete: redis error');
+    }
+    else {
+
+        var docClient = new req.app.locals.AWS.DynamoDB.DocumentClient();
+        var usersTable = config.tablePrefix + "users"
+
+        var params = {
+            TableName: usersTable,
+            Key:{
+                "partitionId": -1,
+                "userGuid": uid
+                
+            }
+        };
+
+        console.log("Deleting item...");
+        docClient.delete(params, function(err, data) {
+            if (err) {
+                console.error("Unable to add item. Error JSON:", JSON.stringify(err, null, 2));
+            } else {
+                console.log("Deleted item:", JSON.stringify(data, null, 2));
+            }
+        });
     }
   });
 
@@ -244,6 +292,7 @@ function update(req, res, next) {
 
 function resetPassword(req, res, next) {
 
+  var email = req.body.email || '';
 /*
   var db = req.app.locals.db;
   db.collection('users').findOne({
@@ -255,16 +304,10 @@ function resetPassword(req, res, next) {
         userId: user._id,
         token: token
       }).then(function() {
-        mailer.sendResetPassword(req.body.email, token);
-      }).catch(function(e) {
-        next(e);
-      });
-    }
-    res.status(httpStatus.OK).json();
-  }).catch(function(e) {
-    next(e);
-  });
-*/
+*/        
+  mailer.sendResetPassword(email, "test");
+
+  res.status(httpStatus.OK).json();
 
 }
 

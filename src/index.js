@@ -47,6 +47,7 @@ redisclient.on("error", function (err) {
     console.log("Redis Client Error " + err);
 });
 
+app.locals.AWS = AWS;
 app.locals.db = dynamodb;
 app.locals.redis = redisclient;
 
