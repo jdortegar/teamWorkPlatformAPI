@@ -6,6 +6,7 @@ module.exports = {
   cacheServer: process.env.CACHE_SERVER || dev.cacheServer,
   cachePort: process.env.CACHE_PORT || dev.cachePort,
   jwtSecret: process.env.JWT_SECRET || dev.jwtSecret,
+  apiEndpoint: process.env.API_ENDPOINT || dev.apiEndpoint,
   aws: {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID || dev.aws.accessKeyId,
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || dev.aws.secretAccessKey,

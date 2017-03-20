@@ -64,7 +64,7 @@ function validateEmail(req, res, next) {
     if (err) {
       console.log('validateEmail: get status - redis error');
     }
-    else {
+    else if (reply) {
       console.log('validateEmail: found reservation for email: ' + reply);
       var response = {
         status: 'SUCCESS',
@@ -74,6 +74,12 @@ function validateEmail(req, res, next) {
       res.setHeader('Location', 'http://localhost:8080/signup');
       //res.json(response);
       res.status(httpStatus.SEE_OTHER).json(response);
+    }
+    else {
+      var response = {
+        status: 'ERR_RESERVATION_NOT_FOUND'
+      };      
+      res.status(httpStatus.NOT_FOUND).json(response);
     }
   });
 

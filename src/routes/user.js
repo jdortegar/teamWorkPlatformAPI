@@ -16,8 +16,8 @@ router.route('/registerUser')
 
 router.route('/validateEmail/:rid')
   .post(users.validateEmail)
-  .get(users.validateEmail);;
-
+  .get(users.validateEmail);
+  
 router.route('/:userId')
   .put(users.update);
 
