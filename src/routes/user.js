@@ -1,11 +1,10 @@
-var express = require('express');
-var validate = require('express-validation');
-var paramValidation = require('../config/param-validation');
-var users = require('../controllers/users');
-var containsRole = require('../policies').containsRole;
-var roles = require('../policies').roles;
+import express from 'express';
+import validate from 'express-validation';
+import paramValidation from '../config/param-validation';
+import * as users from '../controllers/users';
+import { containsRole,roles } from '../policies';
 
-var router = express.Router();
+const router = express.Router();
 
 router.route('/')
   .post(validate(paramValidation.createUser), users.create)
@@ -17,7 +16,7 @@ router.route('/registerUser')
 router.route('/validateEmail/:rid')
   .post(users.validateEmail)
   .get(users.validateEmail);
-  
+
 router.route('/:userId')
   .put(users.update);
 
@@ -28,4 +27,5 @@ router.route('/passwordreset')
 router.route('/passwordupdate')
   .post(users.updatePassword);
 
-module.exports = router;
+export default router;
+

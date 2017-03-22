@@ -9,18 +9,18 @@
 //
 //---------------------------------------------------------------------
 
-var APIError = require('../helpers/APIError');
-var bodyParser = require('body-parser');
-var config = require('./env');
-var cors = require('cors');
-var express = require('express');
-var expressValidation = require('express-validation');
-var jwt = require('express-jwt');
-var httpStatus = require('http-status');
-var morgan = require('morgan');
-var routes = require('../routes');
+import bodyParser from 'body-parser';
+import APIError from '../helpers/APIError';
+import config from './env';
+import cors from 'cors';
+import express from 'express';
+import expressValidation from 'express-validation';
+import jwt from 'express-jwt';
+import httpStatus from 'http-status';
+import morgan from 'morgan';
+import routes from '../routes';
 
-var app = express();
+const app = express();
 
 // parse body params and attach them to req.body
 app.use(bodyParser.json({limit: '100mb'}));
@@ -41,30 +41,31 @@ app.use(jwt({
 app.use('/', routes);
 
 // if error is not an instanceOf APIError, convert it.
-app.use(function(err, req, res, next) {
+app.use((err, req, res, next) => {
   if (err instanceof expressValidation.ValidationError) {
-    var unifiedErrorMessage = err.errors.map(function(error) {
+    const unifiedErrorMessage = err.errors.map((error) => {
       return error.messages.join('. ');
     }).join(' and ');
-    var error = new APIError(unifiedErrorMessage, err.status, true);
+    const error = new APIError(unifiedErrorMessage, err.status, true);
     return next(error);
   } else if (!(err instanceof APIError)) {
-    var apiError = new APIError(err.message, err.status, err.isPublic);
+    const apiError = new APIError(err.message, err.status, err.isPublic);
     return next(apiError);
   }
   return next(err);
 });
 
 // catch 404 and forward to error handler
-app.use(function(req, res, next) {
-  var err = new APIError('API not found', httpStatus.NOT_FOUND);
+app.use((req, res, next) => {
+  const err = new APIError('API not found', httpStatus.NOT_FOUND);
   return next(err);
 });
 
-app.use(function(err, req, res, next) { // eslint-disable-line no-unused-vars
+app.use((err, req, res, next) => { // eslint-disable-line no-unused-vars
   res.status(err.status).json({
     message: err.message
   });
 });
 
-module.exports = app;
+export default app;
+

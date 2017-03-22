@@ -9,13 +9,15 @@
 //
 //---------------------------------------------------------------------
 
+//TODO: deprecated?  if so, remove this?
+
 var config = require('./config/env');
 var debug = require('debug')('index');
 var MongoClient = require('mongodb').MongoClient;
 
 var app = require('./config/express');
 
-MongoClient.connect(config.db, function(err, db) {
+MongoClient.connect(config.db, (err, db) => {
   if (err) throw err;
   app.locals.db = db;
   app.listen(config.port, function() {

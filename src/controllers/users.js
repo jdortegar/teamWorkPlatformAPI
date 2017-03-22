@@ -9,36 +9,34 @@
 //
 //---------------------------------------------------------------------
 
-
-var APIError = require('../helpers/APIError');
-var httpStatus = require('http-status');
-var crypto = require('crypto');
-var mailer = require('../helpers/mailer');
-var User = require('../models/user');
-var config = require('../config/env');
-var jwt = require('jsonwebtoken');
-var uuid = require('node-uuid');
-var Promise = require('bluebird');
+import APIError from '../helpers/APIError';
+import httpStatus from 'http-status';
+import crypto from 'crypto';
+import mailer from '../helpers/mailer';
+import User from '../models/user';
+import config from '../config/env';
+import jwt from 'jsonwebtoken';
+import uuid from 'uuid';
 
 
-function createReservation(req, res, next) {
-  var db = req.app.locals.db;
-  var email = req.body.email || '';
+export function createReservation(req, res, next) {
+  const db = req.app.locals.db;
+  const email = req.body.email || '';
 
   // Add new reservation to cache
 
-  console.log('createReservation: user ' + email);
-  var rid = uuid.v4(); // get a uid to represent the reservation
-  console.log('createReservation: new rid: ' + rid);
-  req.app.locals.redis.set(rid, email, 'EX', 1800, function(err, reply) {
+  console.log(`createReservation: user ${email}`);
+  const rid = uuid.v4(); // get a uid to represent the reservation
+  console.log(`createReservation: new rid: ${rid}`);
+  req.app.locals.redis.set(rid, email, 'EX', 1800, (err, reply) => {
     if (err) {
       console.log('createReservation: hset status - redis error');
     }
     else {
-      console.log('createReservation: created reservation for email: ' + email);
-      mailer.sendActivationLink(email, rid).then(function() {
+      console.log(`createReservation: created reservation for email: ${email}`);
+      mailer.sendActivationLink(email, rid).then(() => {
 
-        var response = {
+        const response = {
           status: 'SUCCESS',
           uuid: rid
         };
@@ -48,25 +46,22 @@ function createReservation(req, res, next) {
       });
     }
   });
-
-
-
 };
 
-function validateEmail(req, res, next) {
-  var db = req.app.locals.db;
-  var rid = req.params.rid || req.body.reservationId || '';
+export function validateEmail(req, res, next) {
+  const db = req.app.locals.db;
+  const rid = req.params.rid || req.body.reservationId || '';
 
   // Find reservation in cache
-  var email = "";
-  console.log('find Reservation: id = ' + rid);
-  req.app.locals.redis.get(rid, function(err, reply) {
+  const email = "";
+  console.log(`find Reservation: id = ${rid}`);
+  req.app.locals.redis.get(rid, (err, reply) => {
     if (err) {
       console.log('validateEmail: get status - redis error');
     }
     else if (reply) {
-      console.log('validateEmail: found reservation for email: ' + reply);
-      var response = {
+      console.log(`validateEmail: found reservation for email: ${reply}`);
+      const response = {
         status: 'SUCCESS',
         email: reply
       };
@@ -82,19 +77,15 @@ function validateEmail(req, res, next) {
       res.status(httpStatus.NOT_FOUND).json(response);
     }
   });
-
-
-
-
 };
 
-function create(req, res, next) {
-  var db = req.app.locals.db;
-  var email = req.body.email || '';
+export function create(req, res, next) {
+  const db = req.app.locals.db;
+  const email = req.body.email || '';
 
 // first, use email addr to see if it's already in redis
 
-  req.app.locals.redis.hget(email, "uid", function(err, reply) {
+  req.app.locals.redis.hget(email, 'uid', (err, reply) => {
       
       if (err) {
         console.log('users-create: redis error');
@@ -103,14 +94,14 @@ function create(req, res, next) {
 
         //if key is found in cache, reply with user already registered
 
-        console.log('users-create: user ' + email + ' found in cache');
-        console.log('uid: ' + reply);
+        console.log(`users-create: user ${email} found in cache`);
+        console.log(`uid: ${reply}`);
 
-        var _uid = reply;
+        const _uid = reply;
 
-        var userStatus = 0;
+        let userStatus = 0;
 
-        req.app.locals.redis.hget(email, "status", function(err, reply) {
+        req.app.locals.redis.hget(email, 'status', (err, reply) => {
           if (err) {
             console.log('users-create: get status - redis error');
           }
@@ -118,9 +109,9 @@ function create(req, res, next) {
             userStatus = reply;
             //console.log('reply: ' + reply);
           }
-          console.log('status: ' + userStatus);
+          console.log(`status: ${userStatus}`);
 
-          var response = {
+          const response = {
             status: 'ERR_USER_ALREADY_REGISTERED',
             uid: _uid,
             userStatus: userStatus
@@ -134,32 +125,32 @@ function create(req, res, next) {
       else {
         // otherwise, add user to cache and to user table
 
-        console.log('users-create: user ' + email + ' not in cache');
-        var uid = uuid.v4();
-        console.log('users-create: new uuid: ' + uid);
-        req.app.locals.redis.hmset(email, 'uid', uid, 'status', 1, function(err, reply) {
+        console.log(`users-create: user ${email} not in cache`);
+        const uid = uuid.v4();
+        console.log(`users-create: new uuid: ${uid}`);
+        req.app.locals.redis.hmset(email, 'uid', uid, 'status', 1, (err, reply) => {
           if (err) {
             console.log('users-create: hmset status - redis error');
           }
           else {
-            console.log('users-create: created redis hash for email: ' + email);
+            console.log(`users-create: created redis hash for email: ${email}`);
           }
         });
 
-        req.app.locals.redis.hmget(email, 'uid', 'status', function(err, reply) {
+        req.app.locals.redis.hmget(email, 'uid', 'status', (err, reply) => {
           if (reply) {
 
-            //reply.forEach(function(r, i) {
+            //reply.forEach((r, i) => {
             //  console.log('users-create: user rec from cache: ' + r);
             //});
 
           }
         });
 
-        var docClient = new req.app.locals.AWS.DynamoDB.DocumentClient();
-        var usersTable = config.tablePrefix + "users"
+        const docClient = new req.app.locals.AWS.DynamoDB.DocumentClient();
+        const usersTable = `${config.tablePrefix}users`;
 
-        var params = {
+        const params = {
             TableName: usersTable,
             Item:{
                 "partitionId": -1,
@@ -170,18 +161,18 @@ function create(req, res, next) {
             }
         };
 
-        console.log("Adding a new item...");
-        docClient.put(params, function(err, data) {
+        console.log('Adding a new item...');
+        docClient.put(params, (err, data) => {
             if (err) {
-                console.error("Unable to add item. Error JSON:", JSON.stringify(err, null, 2));
+                console.error('Unable to add item. Error JSON:', JSON.stringify(err, null, 2));
             } else {
-                console.log("Added item:", JSON.stringify(data, null, 2));
+                console.log('Added item:', JSON.stringify(data, null, 2));
             }
         });
 
-        mailer.sendActivationLink(email, uid).then(function() {
+        mailer.sendActivationLink(email, uid).then(() => {
 
-          var response = {
+          const response = {
             status: 'SUCCESS',
             uuid: uid
           };
@@ -201,13 +192,13 @@ function create(req, res, next) {
 /*
   userCollection.findOne({
     userID: username.toLowerCase()
-  }).then(function(user) {
+  }).then((user) => {
     if (!user) {
       userCollection.findOne({
         emailAddress: email.toLowerCase()
-      }).then(function(user) {
+      }).then((user) => {
         if (!user) {
-          var newUser = {
+          const newUser = {
             userID: username,
             emailAddress: email,
             createTimestamp: new Date(),
@@ -218,53 +209,53 @@ function create(req, res, next) {
             userType: userType,
             defaultPage: defaultPage
           };
-          userCollection.insert(newUser).then(function(savedUser) {
-            var token = generateToken();
+          userCollection.insert(newUser).then((savedUser) => {
+            const token = generateToken();
             db.collection('passwordtoken').insertOne({
               userId: savedUser.ops[0]._id,
               token: token
-            }).then(function() {
-              mailer.sendActivationLink(req.body.email, token).then(function() {
+            }).then(() => {
+              mailer.sendActivationLink(req.body.email, token).then(() => {
                 res.status(httpStatus.OK).json();
               });
             });
-          }).catch(function(e) {
+          }).catch((e) => {
             next(e);
           });
         } else {
-          var err = new APIError('Email is already used', httpStatus.UNPROCESSABLE_ENTITY);
+          const err = new APIError('Email is already used', httpStatus.UNPROCESSABLE_ENTITY);
           return next(err);
         }
-      }).catch(function(e) {
+      }).catch((e) => {
         next(e);
       });
     } else {
-      var err = new APIError('Username is already used', httpStatus.UNPROCESSABLE_ENTITY);
+      const err = new APIError('Username is already used', httpStatus.UNPROCESSABLE_ENTITY);
       return next(err);
     }
-  }).catch(function(e) {
+  }).catch((e) => {
     next(e);
   });
 */
 }
 
 
-function del(req, res, next) {
-  var db = req.app.locals.db;
-  var email = req.body.email || '';
-  var uid = req.body.uid || '';
+export function del(req, res, next) {
+  const db = req.app.locals.db;
+  const email = req.body.email || '';
+  const uid = req.body.uid || '';
   // first, use email addr to see if it's already in redis
 
-  req.app.locals.redis.del(email, function(err, reply) {
+  req.app.locals.redis.del(email, (err, reply) => {
     if (err) {
       console.log('user-delete: redis error');
     }
     else {
 
-        var docClient = new req.app.locals.AWS.DynamoDB.DocumentClient();
-        var usersTable = config.tablePrefix + "users"
+        const docClient = new req.app.locals.AWS.DynamoDB.DocumentClient();
+        const usersTable = `${config.tablePrefix}users`;
 
-        var params = {
+        const params = {
             TableName: usersTable,
             Key:{
                 "partitionId": -1,
@@ -273,18 +264,18 @@ function del(req, res, next) {
             }
         };
 
-        console.log("Deleting item...");
-        docClient.delete(params, function(err, data) {
+        console.log('Deleting item...');
+        docClient.delete(params, (err, data) => {
             if (err) {
-                console.error("Unable to delete item. Error JSON:", JSON.stringify(err, null, 2));
+                console.error('Unable to delete item. Error JSON:', JSON.stringify(err, null, 2));
             } else {
-                console.log("Deleted item:", JSON.stringify(data, null, 2));
+                console.log('Deleted item:', JSON.stringify(data, null, 2));
             }
         });
     }
   });
 
-  var response = {
+  const response = {
     status: 'SUCCESS'
   };
   res.json(response);
@@ -293,12 +284,12 @@ function del(req, res, next) {
 }
 
 
-function update(req, res, next) {
-  var currentUser = req.user;
-  var email = req.body.email;
-  var password = req.body.password;
-  var salt = User.generateSalt();
-  var toUpdate;
+export function update(req, res, next) {
+  const currentUser = req.user;
+  const email = req.body.email;
+  const password = req.body.password;
+  const salt = User.generateSalt();
+  let toUpdate;
 
 /*
   if (password) {
@@ -309,7 +300,7 @@ function update(req, res, next) {
   } else {
     toUpdate = {}
   }
-  var handleResponse = function(user) {
+  const handleResponse = (user) => {
     if (user) {
       res.json({
         status: 'SUCCESS',
@@ -317,7 +308,7 @@ function update(req, res, next) {
         user: User.getPublicData(user.value)
       });
     } else {
-      var err = new APIError('User not found', httpStatus.NOT_FOUND);
+      const err = new APIError('User not found', httpStatus.NOT_FOUND);
       return next(err);
     }
   };
@@ -325,27 +316,27 @@ function update(req, res, next) {
   if (email !== currentUser.email) {
     usersCollection.findOne({
       emailAddress: email.toLowerCase()
-    }).then(function(exist) {
+    }).then((exist) => {
       if (!exist) {
         toUpdate.emailAddress = email;
         usersCollection.findOneAndUpdate(filter, {
           $set: toUpdate
         }, {
           returnOriginal: false
-        }).then(handleResponse).catch(function(e) {
+        }).then(handleResponse).catch((e) => {
           next(e);
         });
       } else {
         const err = new APIError('Email is already used', httpStatus.UNPROCESSABLE_ENTITY);
         return next(err);
       }
-    }).catch(function (e) { return next(e); });
+    }).catch((e) => { return next(e); });
   } else if (password) {
     usersCollection.findOneAndUpdate(filter, {
       $set: toUpdate
     }, {
       returnOriginal: false
-    }).then(handleResponse).catch(function(e) {
+    }).then(handleResponse).catch((e) => {
       next(e);
     });
   } else {
@@ -354,20 +345,20 @@ function update(req, res, next) {
 */
 }
 
-function resetPassword(req, res, next) {
+export function resetPassword(req, res, next) {
 
-  var email = req.body.email || '';
+  const email = req.body.email || '';
 /*
-  var db = req.app.locals.db;
+  const db = req.app.locals.db;
   db.collection('users').findOne({
     emailAddress: req.body.email
-  }).then(function(user) {
+  }).then((user) => {
     if (user) {
-      var token = generateToken();
+      const token = generateToken();
       db.collection('passwordtoken').insertOne({
         userId: user._id,
         token: token
-      }).then(function() {
+      }).then(() => {
 */        
   mailer.sendResetPassword(email, "test");
 
@@ -375,14 +366,14 @@ function resetPassword(req, res, next) {
 
 }
 
-function updatePassword(req, res, next) {
+export function updatePassword(req, res, next) {
 /*
-  var db = req.app.locals.db;
-  var newPassword = req.body.newPassword;
-  var salt = User.generateSalt();
+  const db = req.app.locals.db;
+  const newPassword = req.body.newPassword;
+  const salt = User.generateSalt();
   db.collection('passwordtoken').findOne({
     token: req.body.token
-  }).then(function(token) {
+  }).then((token) => {
     if (token) {
       db.collection('users').findOneAndUpdate({
         _id: token.userId
@@ -393,7 +384,7 @@ function updatePassword(req, res, next) {
         }
       }, {
         returnOriginal: false
-      }).then(function(user) {
+      }).then((user) => {
         if (user) {
           res.json({
             status: 'SUCCESS',
@@ -401,28 +392,28 @@ function updatePassword(req, res, next) {
             user: User.getPublicData(user.value)
           });
         } else {
-          var err = new APIError('User not found', httpStatus.NOT_FOUND);
+          const err = new APIError('User not found', httpStatus.NOT_FOUND);
           return next(err);
         }
-      }).catch(function(e) {
+      }).catch((e) => {
         next(e);
       });
     } else {
-      var err = new APIError('Invalid token', httpStatus.NOT_FOUND);
+      const err = new APIError('Invalid token', httpStatus.NOT_FOUND);
       return next(err);
     }
   });
 */
 }
 
-function updateAgreement(req, res, next) {
-  var agreement = req.body.agreement || false;
+export function updateAgreement(req, res, next) {
+  const agreement = req.body.agreement || false;
 
 /*
-  var filter = {
+  const filter = {
     _id: new ObjectID(req.params.userId)
   };
-  var params = {
+  const params = {
     $set: {
       agreement: req.body.agreement
     }
@@ -434,31 +425,21 @@ function updateAgreement(req, res, next) {
       }
     };
   }
-  req.app.locals.db.collection('users').findOneAndUpdate(filter, params).then(function(user) {
+  req.app.locals.db.collection('users').findOneAndUpdate(filter, params).then((user) => {
     res.json({
       status: 'SUCCESS',
       token: jwt.sign(User.getAuthData(user.value), config.jwtSecret),
       user: User.getPublicData(user.value)
     });
-  }).catch(function(err) {
+  }).catch((err) => {
     next(err);
   });
 */
 }
 
 function generateToken() {
-  var d = (new Date()).valueOf().toString();
-  var ran = Math.random().toString();
+  const d = (new Date()).valueOf().toString();
+  const ran = Math.random().toString();
   return crypto.createHash('sha1').update(d + ran).digest('hex');
 }
 
-module.exports = {
-  create: create,
-  createReservation: createReservation,
-  validateEmail: validateEmail,
-  update: update,
-  del: del,
-  resetPassword: resetPassword,
-  updatePassword: updatePassword,
-  updateAgreement: updateAgreement
-};

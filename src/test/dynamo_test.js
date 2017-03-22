@@ -1,5 +1,5 @@
 var AWS = require("aws-sdk");
-var uuid = require("node-uuid");
+var uuid = require("uuid");
 
 AWS.config.update({
   region: "us-west-2",

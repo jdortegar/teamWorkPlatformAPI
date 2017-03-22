@@ -1,6 +1,6 @@
-var dev = require('./development');
+import * as dev from './development';
 
-module.exports = {
+const config = {
   nodePort: process.env.NODE_PORT || dev.nodePort,
   tablePrefix: process.env.TBL_PREFIX || dev.tablePrefix,
   cacheServer: process.env.CACHE_SERVER || dev.cacheServer,
@@ -10,8 +10,9 @@ module.exports = {
   aws: {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID || dev.aws.accessKeyId,
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || dev.aws.secretAccessKey,
-    awsRegion: process.env.AWS_REGION || dev.aws.awsRegion,
+    awsRegion: process.env.AWS_REGION || dev.aws.awsRegion
   },
   dynamoDbEndpoint: process.env.DYNAMODB_ENDPOINT || dev.dynamoDbEndpoint
 };
+export default config;
 

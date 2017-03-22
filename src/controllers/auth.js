@@ -9,18 +9,18 @@
 //
 //---------------------------------------------------------------------
 
-var APIError = require('../helpers/APIError');
-var config = require('../config/env');
-var jwt = require('jsonwebtoken');
-var httpStatus = require('http-status');
-var User = require('../models/user');
+import APIError from '../helpers/APIError';
+import config from '../config/env';
+import jwt from 'jsonwebtoken';
+import httpStatus from 'http-status';
+import User from '../models/user';
 
-function login(req, res, next) {
-  var username = req.body.username || '';
-  var password = req.body.password || '';
+export function login(req, res, next) {
+  const username = req.body.username || '';
+  const password = req.body.password || '';
   req.app.locals.db.collection('users').findOne({
     userID: username
-  }).then(function(user) {
+  }).then((user) => {
     if (user && User.passwordMatch(user, password)) {
       res.json({
         status: 'SUCCESS',
@@ -28,14 +28,11 @@ function login(req, res, next) {
         user: User.getPublicData(user)
       });
     } else {
-      var err = new APIError('Invalid credentials', httpStatus.UNAUTHORIZED);
+      const err = new APIError('Invalid credentials', httpStatus.UNAUTHORIZED);
       return next(err);
     }
-  }).catch(function(e) {
+  }).catch((e) => {
     next(e);
   });
 }
 
-module.exports = {
-  login: login
-};

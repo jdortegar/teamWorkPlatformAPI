@@ -30,7 +30,7 @@ This is where service policy-related functions (e.g., role-based access logic) i
 
 To run the service, set your working directory to `hablaapi` and run
 ```
-$ node /src
+$ npm start
 ```
 If you get an error that there are missing modules, run
 ```
@@ -163,3 +163,47 @@ Total 1 (delta 0), reused 0 (delta 0)
 To https://github.com/Habla-Inc/hablaapi.git
    818be50..0409625  development -> development
 ```
+
+
+
+## Dependencies
+
+* [Node.js](https://nodejs.org/) version >6.x
+
+* [DynamoDB](http://docs.aws.amazon.com/amazondynamodb/latest/gettingstartedguide/GettingStarted.Download.html)
+
+* [Redis](https://redis.io/download) version >=3.2
+
+
+## Install
+
+    npm install
+
+
+## Commands
+
+* `npm run start` - starts the development server with hot reloading enabled
+
+* `npm run test` - start the test runner
+
+* `npm run watch:test` - start the test runner with watch mode
+
+* `npm run build` - build for production into `dist` directory.
+
+* `npm run start:prod` - run for production (assumes built)
+
+Refer to the scripts section of `package.json` for a complete and more accurate listing of available commands.
+
+
+## Usage
+Navigate to [http://localhost:3000/](http://localhost:3000/) for the UI.
+NOTE: No UI for this!!! This serves REST endpoints...!!!
+
+
+## Commit
+
+lint and test tasks are run, and need to be passed, before checkin.
+Although not preferable, you can bypass the commit hook to checkin your code.
+Since tests are run in CI, you must at least pass the tests.
+Either that, or don't write tests...
+

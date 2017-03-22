@@ -9,10 +9,11 @@
 //
 //---------------------------------------------------------------------
 
-var httpStatus = require('http-status');
-var util = require('util');
+import httpStatus from 'http-status';
+import util from 'util';
 
-function APIError(message, status) {
+// TODO: convert to "class APIError extends Error..."
+export default function APIError(message, status) {
   Error.call(this, message);
 
   this.name = this.constructor.name;
@@ -22,4 +23,3 @@ function APIError(message, status) {
 }
 util.inherits(APIError, Error);
 
-module.exports = APIError;
