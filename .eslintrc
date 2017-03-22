@@ -1,11 +1,9 @@
 {
   "extends": [
-    "airbnb",
-    "plugin:ava/recommended"
+    "airbnb"
   ],
   "parser": "babel-eslint",
   "plugins": [
-    "ava"
   ],
   "env": {
     "browser": true,

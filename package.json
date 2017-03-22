@@ -24,13 +24,14 @@
   "scripts": {
     "start": "nodemon src/index.js --exec babel-node",
     "debug": "nodemon src/index.js --exec babel-node --debug",
+    "lint": "eslint src",
     "test": "echo \"Error: no test specified\" && exit 1",
     "watch:test": "npm run test -- --watch",
-    "doc": "node_modules/.bin/esdoc",
+    "doc": "esdoc",
     "build": "cross-env NODE_ENV=production babel -s true src -d dist",
     "start:prod": "cross-env NODE_ENV=production node dist",
-    "monitor": "node_modules/.bin/nodejs-dashboard -- node -r nodejs-dashboard dist",
-    "clean": "shx rm -rf dist coverage",
+    "monitor": "nodejs-dashboard -- node -r nodejs-dashboard dist",
+    "clean": "node_modules/.bin/shx rm -rf dist coverage doc",
     "pristine": "npm run clean && shx rm -rf node_modules"
   },
   "babel": {
@@ -52,6 +53,7 @@
   },
   "devDependencies": {
     "babel-cli": "^6.24.0",
+    "babel-eslint": "^7.2.0",
     "babel-istanbul": "^0.12.2",
     "babel-node-debug": "^2.0.0",
     "babel-plugin-add-module-exports": "^0.2.1",
