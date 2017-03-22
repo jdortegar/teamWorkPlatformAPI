@@ -19,6 +19,11 @@ import jwt from 'jsonwebtoken';
 import uuid from 'uuid';
 
 
+/**
+* Create a reservation for a user.
+* A user is not created here.
+* A reservation is ...
+*/
 export function createReservation(req, res, next) {
   const db = req.app.locals.db;
   const email = req.body.email || '';

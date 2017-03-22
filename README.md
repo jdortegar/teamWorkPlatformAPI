@@ -207,3 +207,15 @@ Although not preferable, you can bypass the commit hook to checkin your code.
 Since tests are run in CI, you must at least pass the tests.
 Either that, or don't write tests...
 
+
+## Documentation
+
+To generate html from inline documentation:
+
+    npm run doc
+    open doc/index.html
+
+Generic documentation is generated, and includes your added [esdoc](https://esdoc.org)-style comments.
+Don't go crazy, but try to document things that you think might be unclear to someone looking at your code.
+I'm sure you don't want to have to explain it over and over again verbally.
+
