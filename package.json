@@ -22,7 +22,7 @@
     "test"
   ],
   "scripts": {
-    "start": "nodemon src/index.js --exec babel-node",
+    "start": "nodemon $NODE_DEBUG_OPTION src/index.js --exec babel-node",
     "debug": "nodemon src/index.js --exec babel-node --debug",
     "lint": "eslint src",
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -55,6 +55,7 @@
     "babel-cli": "^6.24.0",
     "babel-eslint": "^7.2.0",
     "babel-istanbul": "^0.12.2",
+    "babel-jest": "^19.0.0",
     "babel-node-debug": "^2.0.0",
     "babel-plugin-add-module-exports": "^0.2.1",
     "babel-preset-babili": "0.0.12",
@@ -71,6 +72,7 @@
     "eslint-plugin-import": "^2.2.0",
     "eslint-plugin-jsx-a11y": "^4.0.0",
     "eslint-plugin-react": "^6.10.2",
+    "jest": "^19.0.2",
     "nodejs-dashboard": "^0.4.0",
     "nodemon": "^1.11.0",
     "pre-commit": "^1.2.2",

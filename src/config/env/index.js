@@ -12,7 +12,9 @@ const config = {
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || dev.aws.secretAccessKey,
     awsRegion: process.env.AWS_REGION || dev.aws.awsRegion
   },
-  dynamoDbEndpoint: process.env.DYNAMODB_ENDPOINT || dev.dynamoDbEndpoint
+  dynamoDbEndpoint: process.env.DYNAMODB_ENDPOINT || dev.dynamoDbEndpoint,
+
+  webappBaseUri: dev.webappBaseUri
 };
 export default config;
 

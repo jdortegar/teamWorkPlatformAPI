@@ -1,16 +1,18 @@
 import nodemailer from 'nodemailer';
 import config from '../config/env';
+import AWS from 'aws-sdk';
 
 const transport = nodemailer.createTransport({
-  transport: 'ses',
-  accessKeyId: config.aws.accessKeyId,
-  secretAccessKey: config.aws.secretAccessKey, 
-  region: config.aws.awsRegion
+  SES: new AWS.SES({
+    transport: 'ses',
+    accessKeyId: config.aws.accessKeyId,
+    secretAccessKey: config.aws.secretAccessKey,
+    region: config.aws.awsRegion
+  })
 });
 
-
 export function sendResetPassword(email, token) {
-  return transport.sendMailAsync({
+  return transport.sendMail({
     from: 'habla-mailer-dev@habla.ai',
     to: email,
     subject: 'Reset Your Habla Password',
@@ -20,7 +22,7 @@ export function sendResetPassword(email, token) {
 
 export function sendActivationLink(email, rid) {
   console.log('rid: ' + rid);
-  return transport.sendMailAsync({
+  return transport.sendMail({
     from: 'habla-mailer-dev@habla.ai',
     to: email,
     subject: 'Your Habla.ai Account',

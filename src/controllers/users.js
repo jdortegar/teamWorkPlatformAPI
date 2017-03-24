@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------
 // controllers/users.js
-// 
+//
 // controller for users object
 //---------------------------------------------------------------------
 //  Date         Initials    Description
@@ -12,7 +12,7 @@
 import APIError from '../helpers/APIError';
 import httpStatus from 'http-status';
 import crypto from 'crypto';
-import mailer from '../helpers/mailer';
+import * as mailer from '../helpers/mailer';
 import User from '../models/user';
 import config from '../config/env';
 import jwt from 'jsonwebtoken';
@@ -71,14 +71,14 @@ export function validateEmail(req, res, next) {
         email: reply
       };
 
-      res.setHeader('Location', 'http://localhost:8080/signup');
+      res.setHeader('Location', `${config.webappBaseUri}/signup`);
       //res.json(response);
       res.status(httpStatus.SEE_OTHER).json(response);
     }
     else {
       var response = {
         status: 'ERR_RESERVATION_NOT_FOUND'
-      };      
+      };
       res.status(httpStatus.NOT_FOUND).json(response);
     }
   });
@@ -91,7 +91,7 @@ export function create(req, res, next) {
 // first, use email addr to see if it's already in redis
 
   req.app.locals.redis.hget(email, 'uid', (err, reply) => {
-      
+
       if (err) {
         console.log('users-create: redis error');
       }
@@ -265,7 +265,7 @@ export function del(req, res, next) {
             Key:{
                 "partitionId": -1,
                 "userGuid": uid
-                
+
             }
         };
 
@@ -364,7 +364,7 @@ export function resetPassword(req, res, next) {
         userId: user._id,
         token: token
       }).then(() => {
-*/        
+*/
   mailer.sendResetPassword(email, "test");
 
   res.status(httpStatus.OK).json();
