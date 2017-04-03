@@ -9,12 +9,13 @@
 //
 //---------------------------------------------------------------------
 
-var auth = require('../controllers/auth');
-var express = require('express');
+import * as auth from '../controllers/auth';
+import express from 'express';
 
-var router = express.Router();
+const router = express.Router();
 
 router.route('/')
   .post(auth.login);
 
-module.exports = router;
+export default router;
+

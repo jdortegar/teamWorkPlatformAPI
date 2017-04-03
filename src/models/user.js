@@ -9,13 +9,13 @@
 //
 //---------------------------------------------------------------------
 
-var crypto = require('crypto');
+import crypto from 'crypto';
 
-function hashPassword(pass) {
+export function hashPassword(pass) {
   return crypto.createHash('sha256').update(pass).digest('hex');
 }
 
-function getPublicData(user) {
+export function getPublicData(user) {
   return {
     id: user._id,
     username: user.userID,
@@ -27,7 +27,7 @@ function getPublicData(user) {
   };
 }
 
-function getAuthData(user) {
+export function getAuthData(user) {
   return {
     _id: user._id,
     username: user.userName,
@@ -37,23 +37,15 @@ function getAuthData(user) {
   };
 }
 
-function generateSalt() {
+export function generateSalt() {
   return crypto.randomBytes(16).toString('hex');
 }
 
-function encryptPassword(pass, salt) {
+export function encryptPassword(pass, salt) {
   return crypto.createHmac('sha1', salt).update(pass).digest('hex');
 }
 
-function passwordMatch(user, pass) {
+export function passwordMatch(user, pass) {
   return user.hashedPassword === encryptPassword(pass, user.salt);
 }
 
-module.exports = {
-  hashPassword: hashPassword,
-  getPublicData: getPublicData,
-  getAuthData: getAuthData,
-  encryptPassword: encryptPassword,
-  passwordMatch: passwordMatch,
-  generateSalt: generateSalt
-};

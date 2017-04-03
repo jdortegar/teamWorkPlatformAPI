@@ -1,18 +1,18 @@
-var nodemailer = require('nodemailer');
-var config = require('../config/env');
-var Promise = require('bluebird');
+import nodemailer from 'nodemailer';
+import config from '../config/env';
+import AWS from 'aws-sdk';
 
-var transport = nodemailer.createTransport({
-  transport: 'ses',
-  accessKeyId: config.aws.accessKeyId,
-  secretAccessKey: config.aws.secretAccessKey, 
-  region: config.aws.awsRegion
+const transport = nodemailer.createTransport({
+  SES: new AWS.SES({
+    transport: 'ses',
+    accessKeyId: config.aws.accessKeyId,
+    secretAccessKey: config.aws.secretAccessKey,
+    region: config.aws.awsRegion
+  })
 });
 
-Promise.promisifyAll(transport);
-
-function sendResetPassword(email, token) {
-  return transport.sendMailAsync({
+export function sendResetPassword(email, token) {
+  return transport.sendMail({
     from: 'habla-mailer-dev@habla.ai',
     to: email,
     subject: 'Reset Your Habla Password',
@@ -20,17 +20,17 @@ function sendResetPassword(email, token) {
   });
 }
 
-function sendActivationLink(email, rid) {
+export function sendActivationLink(email, rid) {
   console.log('rid: ' + rid);
-  return transport.sendMailAsync({
+  //const html  = `<h1><img src="https://static.wixstatic.com/media/ac0e25_95ce977831a9430989f049b46928fda6~mv2.jpg/v1/fill/w_247,h_244,al_c,q_80,usm_0.66_1.00_0.01/ac0e25_95ce977831a9430989f049b46928fda6~mv2.jpg" height="100" width="100" align="middle"></h1><br>Thank you for registering for Habla.  Please click on this <a href="${config.apiEndpoint}/users/validateEmail/${rid}">link</a> to activate your account.`;
+   //const html  = `<h1><img src="https://static.wixstatic.com/media/ac0e25_95ce977831a9430989f049b46928fda6~mv2.jpg/v1/fill/w_247,h_244,al_c,q_80,usm_0.66_1.00_0.01/ac0e25_95ce977831a9430989f049b46928fda6~mv2.jpg" height="100" width="100" align="middle"></h1><br>Thank you for registering for Habla.  Please click on this <a href="hablaai://link/register/${rid}">link</a> to activate your account.`;
+   const html  = `<h1><img src="https://static.wixstatic.com/media/ac0e25_95ce977831a9430989f049b46928fda6~mv2.jpg/v1/fill/w_247,h_244,al_c,q_80,usm_0.66_1.00_0.01/ac0e25_95ce977831a9430989f049b46928fda6~mv2.jpg" height="100" width="100" align="middle"></h1><br>Thank you for registering for Habla.  Please click on this <a href="http://localhost:8080/signup/${rid}">link</a> to activate your account.`;
+  return transport.sendMail({
     from: 'habla-mailer-dev@habla.ai',
     to: email,
     subject: 'Your Habla.ai Account',
-    html: '<h1><img src="https://static.wixstatic.com/media/ac0e25_95ce977831a9430989f049b46928fda6~mv2.jpg/v1/fill/w_247,h_244,al_c,q_80,usm_0.66_1.00_0.01/ac0e25_95ce977831a9430989f049b46928fda6~mv2.jpg" height="100" width="100" align="middle"></h1><br>Thank you for registering for Habla.  Please click on this <a href="' + config.apiEndpoint + '/users/validateEmail/' + rid + '">link</a> to activate your account.'
+    html
+
   });
 }
 
-module.exports = {
-  sendResetPassword: sendResetPassword,
-  sendActivationLink: sendActivationLink
-};

@@ -9,35 +9,35 @@
 //
 //---------------------------------------------------------------------
 
-var APIError = require('../helpers/APIError');
-var httpStatus = require('http-status');
+import APIError from '../helpers/APIError';
+import httpStatus from 'http-status';
 
-var roles = {
+export const roles = {
   globalAdmin: 'globalAdmin',
   hablaUser: 'hablaUser',
   subscriberAdmin: 'subscriberAdmin',
   subscriberUser: 'subscriberUser'
 };
 
-function containsRole(role) {
-  return function(req, res, next) {
-    var found = req.user.roles.find(function(elem) {
+export function containsRole(role) {
+  return (req, res, next) => {
+    const found = req.user.roles.find((elem) => {
       return elem.role == role;
     });
     if (found) {
       return next();
     }
-    var err = new APIError('Forbidden', httpStatus.FORBIDDEN);
+    const err = new APIError('Forbidden', httpStatus.FORBIDDEN);
     return next(err);
   }
 }
 
-function containsAnyRole(roles) {
-  return function(req, res, next) {
-    var found = false;
+export function containsAnyRole(roles) {
+  return (req, res, next) => {
+    let found = false;
 
-    roles.forEach(function (role) {
-      found = found || req.user.roles.find(function(elem) {
+    roles.forEach((role) => {
+      found = found || req.user.roles.find((elem) => {
         return elem.role == role;
       });
     });
@@ -45,13 +45,8 @@ function containsAnyRole(roles) {
     if (found) {
       return next();
     }
-    var err = new APIError('Forbidden', httpStatus.FORBIDDEN);
+    const err = new APIError('Forbidden', httpStatus.FORBIDDEN);
     return next(err);
   }
 }
 
-module.exports = {
-  roles: roles,
-  containsRole: containsRole,
-  containsAnyRole: containsAnyRole
-};

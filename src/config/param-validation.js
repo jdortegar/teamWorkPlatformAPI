@@ -1,7 +1,7 @@
-var Joi = require('joi');
+import Joi from 'joi';
 
 
-var validationSchemas = {
+const validationSchemas = {
   createUser: {
     body: {
       email: Joi.string().email().required()
@@ -12,7 +12,7 @@ var validationSchemas = {
       email: Joi.string().email().required()
     }
   }
-
 };
 
-module.exports = validationSchemas;
+export default validationSchemas;
+

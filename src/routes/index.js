@@ -9,27 +9,26 @@
 //
 //---------------------------------------------------------------------
 
-var express = require('express');
-var router = express.Router();
-var authRoutes = require('./auth');
-var userRoutes = require('./user');
+import express from 'express';
+import authRoutes from './auth';
+import userRoutes from './user';
+import { containsAnyRole, containsRole, roles } from '../policies';
 
-var containsRole = require('../policies').containsRole;
-var containsAnyRole = require('../policies').containsAnyRole;
-var roles = require('../policies').roles;
+const router = express.Router();
 
 
 /** GET /test - Check service health */
 router.get('/test', function(req, res) {
-  var response = {
+  const response = {
     status: 'SUCCESS'
   };
   res.json(response);
 });
 
-var isHablaUser = containsRole(roles.hablaUser);
+const isHablaUser = containsRole(roles.hablaUser);
 
 router.use('/auth/userAuth', authRoutes);
 router.use('/users', userRoutes);
 
-module.exports = router;
+export default router;
+ 
