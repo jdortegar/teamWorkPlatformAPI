@@ -17,7 +17,9 @@ import User from '../models/user';
 import config from '../config/env';
 import jwt from 'jsonwebtoken';
 import uuid from 'uuid';
+import Bcrypt from '../helpers/Bcrypt';
 
+const bcrypt = new Bcrypt(11);
 
 /**
 * Create a reservation for a user.
@@ -53,7 +55,18 @@ export function createReservation(req, res, next) {
   });
 };
 
+/**
+ * Endpoint:   /user/validateEmail/:rid
+ *
+ * Method:     GET
+ * Return 401: "Not Found"; body = { status: 'ERR_RESERVATION_NOT_FOUND' }
+ *
+ * @param req
+ * @param res
+ * @param next
+ */
 export function validateEmail(req, res, next) {
+   console.log(`AD: params=${JSON.stringify(req.params)}, headers=${JSON.stringify(req.headers)}`)
   const db = req.app.locals.db;
   const rid = req.params.rid || req.body.reservationId || '';
 
@@ -71,9 +84,11 @@ export function validateEmail(req, res, next) {
         email: reply
       };
 
-      res.setHeader('Location', `${config.webappBaseUri}/signup`);
-      //res.json(response);
-      res.status(httpStatus.SEE_OTHER).json(response);
+      if (req.accepts('json')) {
+         res.status(httpStatus.OK).json(response);
+      } else {
+         res.status(httpStatus.BAD_REQUEST).end();
+      }
     }
     else {
       var response = {
@@ -84,6 +99,17 @@ export function validateEmail(req, res, next) {
   });
 };
 
+/**
+ * Endpoint:   /user/
+ *
+ * Method:     POST
+ * Body:       { firstName, lastName, displayName, email, password, country, timeZone }
+ * Return 403: "Forbidden"; body = ...
+ *
+ * @param req
+ * @param res
+ * @param next
+ */
 export function create(req, res, next) {
   const db = req.app.locals.db;
   const email = req.body.email || '';
@@ -155,13 +181,22 @@ export function create(req, res, next) {
         const docClient = new req.app.locals.AWS.DynamoDB.DocumentClient();
         const usersTable = `${config.tablePrefix}users`;
 
+        // { firstName, lastName, displayName, email, password, country, timeZone }
+         const { firstName, lastName, displayName, password, country, timeZone } = req.body;
+         const hashedPassword = bcrypt.hash(password);
         const params = {
             TableName: usersTable,
             Item:{
                 "partitionId": -1,
                 "userGuid": uid,
                 "userInfo":{
-                    "emailAddress": email
+                   "emailAddress": email,
+                   firstName,
+                   lastName,
+                   displayName,
+                   password: hashedPassword,
+                   country,
+                   timeZone
                 }
             }
         };
