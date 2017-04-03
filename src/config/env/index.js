@@ -14,7 +14,7 @@ const config = {
   },
   dynamoDbEndpoint: process.env.DYNAMODB_ENDPOINT || dev.dynamoDbEndpoint,
 
-  webappBaseUri: dev.webappBaseUri
+  webappBaseUri: process.env.WEBAPP_BASE_URI || dev.webappBaseUri
 };
 export default config;
 
