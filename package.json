@@ -28,11 +28,11 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "watch:test": "npm run test -- --watch",
     "doc": "esdoc",
-    "md": "shx cat doc/api/md-pre.html > doc/api/users.html && marked -i doc/api/users.md >> doc/api/users.html && shx cat doc/api/md-post.html >> doc/api/users.html",
+    "md": "shx mkdir -p doc/api && shx cat doc.template/api/md-pre.html > doc/api/users.html && marked -i doc.template/api/users.md >> doc/api/users.html && shx cat doc.template/api/md-post.html >> doc/api/users.html",
     "build": "cross-env NODE_ENV=production babel -s true src -d dist",
     "start:prod": "cross-env NODE_ENV=production node dist",
     "monitor": "nodejs-dashboard -- node -r nodejs-dashboard dist",
-    "clean": "shx rm -rf dist coverage doc/gen",
+    "clean": "shx rm -rf dist coverage doc",
     "pristine": "npm run clean && shx rm -rf node_modules"
   },
   "babel": {
