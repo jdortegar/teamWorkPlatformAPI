@@ -88,6 +88,7 @@
     "bluebird": "^3.5.0",
     "body-parser": "^1.17.1",
     "cors": "^2.8.1",
+    "cross-env": "^3.2.4",
     "express": "^4.15.2",
     "express-jwt": "^5.1.0",
     "express-validation": "^1.0.2",
