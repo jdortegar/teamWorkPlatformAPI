@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------
 // models/user.js
-// 
+//
 // model for user object
 //---------------------------------------------------------------------
 //  Date         Initials    Description
@@ -9,10 +9,19 @@
 //
 //---------------------------------------------------------------------
 
+import Bcrypt from '../helpers/Bcrypt';
 import crypto from 'crypto';
 
-export function hashPassword(pass) {
-  return crypto.createHash('sha256').update(pass).digest('hex');
+const bcrypt = new Bcrypt(11);
+
+export function hashPassword(password) {
+  //return crypto.createHash('sha256').update(password).digest('hex');
+   return bcrypt.hash(password);
+}
+
+export function passwordMatch(user, password) {
+   return bcrypt.compare(password, user.password);
+   // return user.hashedPassword === encryptPassword(pass, user.salt);
 }
 
 export function getPublicData(user) {
@@ -37,15 +46,11 @@ export function getAuthData(user) {
   };
 }
 
-export function generateSalt() {
-  return crypto.randomBytes(16).toString('hex');
-}
+// export function generateSalt() {
+//    return crypto.randomBytes(16).toString('hex');
+// }
 
-export function encryptPassword(pass, salt) {
-  return crypto.createHmac('sha1', salt).update(pass).digest('hex');
-}
-
-export function passwordMatch(user, pass) {
-  return user.hashedPassword === encryptPassword(pass, user.salt);
-}
+// export function encryptPassword(pass, salt) {
+//    return crypto.createHmac('sha1', salt).update(pass).digest('hex');
+// }
 

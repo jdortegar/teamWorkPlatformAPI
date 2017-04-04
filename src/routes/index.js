@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------
 // routes/index.js
-// 
+//
 // default route handler for hablaapi service
 //---------------------------------------------------------------------
 //  Date         Initials    Description
@@ -27,8 +27,8 @@ router.get('/test', function(req, res) {
 
 const isHablaUser = containsRole(roles.hablaUser);
 
-router.use('/auth/userAuth', authRoutes);
+router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
 
 export default router;
- 
+

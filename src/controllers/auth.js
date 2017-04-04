@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------
 // controllers/auth.js
-// 
+//
 // controller for auth service
 //---------------------------------------------------------------------
 //  Date         Initials    Description
@@ -10,29 +10,51 @@
 //---------------------------------------------------------------------
 
 import APIError from '../helpers/APIError';
-import config from '../config/env';
 import jwt from 'jsonwebtoken';
 import httpStatus from 'http-status';
-import User from '../models/user';
+import config from '../config/env';
+import { getAuthData, getPublicData, passwordMatch } from '../models/user';
 
 export function login(req, res, next) {
-  const username = req.body.username || '';
-  const password = req.body.password || '';
-  req.app.locals.db.collection('users').findOne({
-    userID: username
-  }).then((user) => {
-    if (user && User.passwordMatch(user, password)) {
-      res.json({
-        status: 'SUCCESS',
-        token: jwt.sign(User.getAuthData(user), config.jwtSecret),
-        user: User.getPublicData(user)
+   const username = req.body.username || '';
+   const password = req.body.password || '';
+
+   // Retrieve UUID from cache.
+   req.app.locals.redis.hmgetAsync(username, 'uid', 'status')
+      .then((res) => { // id=res[0], status=res[1]
+         const userGuid = res[0];
+         const status = res[1];
+         if ((userGuid !== null) && (status === '1')) {
+            // Retrieve user from DB.
+            const docClient = new req.app.locals.AWS.DynamoDB.DocumentClient();
+            const usersTable = `${config.tablePrefix}users`;
+            const params = {
+               TableName: usersTable,
+               Key: {
+                  partitionId: -1,
+                  userGuid
+               }
+            };
+            return docClient.get(params).promise();
+         }
+         return undefined;
+      })
+      .then((dbData) => {
+         if (dbData) {
+            const user = dbData.Item.userInfo;
+            if (passwordMatch(user, password)) {
+               res.status(httpStatus.OK).json({
+                  status: 'SUCCESS',
+                  token: jwt.sign(getAuthData(user), config.jwtSecret),
+                  user: getPublicData(user)
+               });
+               return;
+            }
+         }
+         next(new APIError('Invalid credentials', httpStatus.UNAUTHORIZED));
+      })
+      .catch((err) => {
+         next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
       });
-    } else {
-      const err = new APIError('Invalid credentials', httpStatus.UNAUTHORIZED);
-      return next(err);
-    }
-  }).catch((e) => {
-    next(e);
-  });
 }
 

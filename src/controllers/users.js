@@ -12,14 +12,11 @@
 import APIError from '../helpers/APIError';
 import httpStatus from 'http-status';
 import crypto from 'crypto';
-import * as mailer from '../helpers/mailer';
-import User from '../models/user';
-import config from '../config/env';
 import jwt from 'jsonwebtoken';
 import uuid from 'uuid';
-import Bcrypt from '../helpers/Bcrypt';
-
-const bcrypt = new Bcrypt(11);
+import config from '../config/env';
+import * as mailer from '../helpers/mailer';
+import User, { hashPassword } from '../models/user';
 
 /**
 * Create a reservation for a user.
@@ -66,7 +63,6 @@ export function createReservation(req, res, next) {
  * @param next
  */
 export function validateEmail(req, res, next) {
-   console.log(`AD: params=${JSON.stringify(req.params)}, headers=${JSON.stringify(req.headers)}`)
   const db = req.app.locals.db;
   const rid = req.params.rid || req.body.reservationId || '';
 
@@ -117,7 +113,6 @@ export function create(req, res, next) {
 // first, use email addr to see if it's already in redis
 
   req.app.locals.redis.hget(email, 'uid', (err, reply) => {
-
       if (err) {
         console.log('users-create: redis error');
       }
@@ -155,7 +150,6 @@ export function create(req, res, next) {
       }
       else {
         // otherwise, add user to cache and to user table
-
         console.log(`users-create: user ${email} not in cache`);
         const uid = uuid.v4();
         console.log(`users-create: new uuid: ${uid}`);
@@ -183,7 +177,6 @@ export function create(req, res, next) {
 
         // { firstName, lastName, displayName, email, password, country, timeZone }
          const { firstName, lastName, displayName, password, country, timeZone } = req.body;
-         const hashedPassword = bcrypt.hash(password);
         const params = {
             TableName: usersTable,
             Item:{
@@ -194,7 +187,7 @@ export function create(req, res, next) {
                    firstName,
                    lastName,
                    displayName,
-                   password: hashedPassword,
+                   password: hashPassword(password),
                    country,
                    timeZone
                 }
