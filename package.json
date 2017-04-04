@@ -1,7 +1,7 @@
 {
-  "name": "symphony-api",
-  "description": "The Habla API",
-  "version": "1.0.0",
+  "name": "habla-fe-api",
+  "description": "The Habla Front-end API",
+  "version": "0.1.4",
   "private": true,
   "main": "dist/index.js",
   "repository": {
