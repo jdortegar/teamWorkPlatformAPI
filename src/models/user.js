@@ -25,15 +25,29 @@ export function passwordMatch(user, password) {
 }
 
 export function getPublicData(user) {
-  return {
-    id: user._id,
-    username: user.userID,
-    email: user.emailAddress,
-    name: user.displayName || user.userID,
-    roleMemberships: user.roleMemberships,
-    defaultPage: user.defaultPage,
-    userType: user.userType || 'hablaUser'
-  };
+   const { emailAddress, firstName, lastName, displayName, country, timeZone, icon } = user;
+   return {
+      username: emailAddress,
+      email: emailAddress,
+      firstName,
+      lastName,
+      displayName,
+      country,
+      timeZone,
+      icon,
+      roleMemberships: user.roleMemberships,
+      defaultPage: user.defaultPage,
+      userType: user.userType || 'hablaUser'
+   };
+   // return {
+   //    id: user._id,
+   //    username: user.userID,
+   //    email: user.emailAddress,
+   //    name: user.displayName || user.userID,
+   //    roleMemberships: user.roleMemberships,
+   //    defaultPage: user.defaultPage,
+   //    userType: user.userType || 'hablaUser'
+   // };
 }
 
 export function getAuthData(user) {

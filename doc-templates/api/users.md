@@ -2,7 +2,14 @@
 
 TODO: description here.
 
-**Version** 0.1.5
+> **Additional Possible Responses for all endpoints**
+>
+> Code | Description | Headers | Body | Example
+> ---- | ----------- | ------- | ---- | -------
+> | 503  | SERVICE_UNAVAILABLE<br />A server error has occurred, typically Redis, DynamoDB, or other remote service availability. | N/A | { message: '${error}' } | N/A
+> | 500  | INTERNAL\_SERVER\_ERROR<br />A server error has occurred, typically unforseen or unaccounted for.<br />Most likely a logic error 'cause we're not perfect. | N/A | { message: '${error}' } | N/A
+
+**Version** 0.1.6
 
 ## Paths
 
@@ -16,7 +23,8 @@ TODO: description here.
 >
 > **Description**
 >
-> If a user submits a registration for a valid email address (formatted correctly), the service responds with a 200-OK status and a payload.  The payload includes a uuid field, which contains the reservation-id for the user.  The reservation-id is used by the validateEmail endpoint to mitigate hacking risks, and locates the associated email address in the Redis cache.  This registration is stored in cache for a defined time-to-live (TTL).  If the user does not respond to the email and complete registration prior to expiration of the registration, they must register again.<br/>
+> If a user submits a registration for a valid email address (formatted correctly), the service responds with a 200-OK status and a payload.  The payload includes a uuid field, which contains the reservation-id for the user.  The reservation-id is used by the validateEmail endpoint to mitigate hacking risks, and locates the associated email address in the Redis cache.  This registration is stored in cache for a defined time-to-live (TTL).  If the user does not respond to the email and complete registration prior to expiration of the registration, they must register again.
+> <br />
 > A reservation is a uniquely generated key used in the process of securely registering a new user.
 > It is used in initial communication through email, web, and mobile clients.
 > There can be multiple reservations for a user/email concurrently existing, as actual registered user uniqueness is enforced later in the process when the user is actually created in the system.
@@ -40,15 +48,14 @@ TODO: description here.
 >
 > Name | Description | Required | Type | Example
 > ---- | ----------- | -------- | ---- | -------
-> email | The email address to register.<br/>Should be validated client-side prior to invocation to ensure that a properly formatted email address has been provided by the calling application. | true | string | `email=anthony.daga%40habla.ai`
+> email | The email address to register.<br />Should be validated client-side prior to invocation to ensure that a properly formatted email address has been provided by the calling application. | true | string | `email=anthony.daga%40habla.ai`
 >
 > **Responses**
 >
 > Code | Description | Headers | Body | Example
 > ---- | ----------- | ------- | ---- | -------
 > 200 | OK</br>The uuid is the Reservation ID (rid) | N/A | `{ status: 'SUCCESS', uuid }` | `{ status: 'SUCCESS', uuid: '9dec8947-0381-4809-a053-b56777f782f4' }`
-> | 400  | BAD_REQUEST<br/>Invalid email address. | N/A | N/A | N/A
-> | 503  | SERVICE_UNAVAILABLE<br/>A server error has occurred, typically Redis availability in this case. | N/A | N/A | N/A
+> | 400  | BAD_REQUEST<br />Invalid email address. | N/A | N/A | N/A
 >
 > **Security**
 >
@@ -91,7 +98,7 @@ TODO: description here.
 >
 > | Code | Description | Headers | Body | Example |
 > |------|-------------|---------|------|---------|
-> | 200  | OK<br/>Content-Type = 'application/json' | N/A | `{ status: 'SUCCESS', email }` | `{ status: 'SUCCESS', email: 'anthony.daga@habla.ai' }` |
+> | 200  | OK<br />Content-Type = 'application/json' | N/A | `{ status: 'SUCCESS', email }` | `{ status: 'SUCCESS', email: 'anthony.daga@habla.ai' }` |
 > | 404  | NOT_FOUND | N/A | N/A | N/A |
 >
 > **Security**
@@ -137,6 +144,7 @@ TODO: inconsistent.  Should be /users/createUser?
 > password | Cleartext password | true | string | password: 'hello-World123'
 > country | Country | true | string | country: 'Canada'
 > timeZone | Time Zone | true | string | timeZone: 'America/Los_Angeles'
+> icon | The user's avatar, base64 of image | false | string | N/A
 > *Example*
 ```
 {
@@ -146,7 +154,8 @@ TODO: inconsistent.  Should be /users/createUser?
    email: 'anthony.daga@habla.ai',
    password: 'hello-World123',
    country: 'Canada',
-   timeZone: 'America/Los_Angeles'
+   timeZone: 'America/Los_Angeles',
+   icon: null
 }
 ```
 >
@@ -155,7 +164,7 @@ TODO: inconsistent.  Should be /users/createUser?
 > Code | Description | Headers | Body | Example
 > ---- | ----------- | ------- | ---- | -------
 > 200 | OK | N/A | N/A | N/A
-> 403 | FORBIDDEN<br/>The user (specifically email) is already registered. | N/A | N/A | N/A
+> 403 | FORBIDDEN<br />The user (specifically email) is already registered. | N/A | N/A | N/A
 >
 > **Security**
 >

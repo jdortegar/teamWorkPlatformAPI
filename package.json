@@ -27,13 +27,16 @@
     "lint": "eslint src",
     "test": "echo \"Error: no test specified\" && exit 1",
     "watch:test": "npm run test -- --watch",
-    "doc": "esdoc",
-    "md": "shx mkdir -p doc/api && shx cat doc.template/api/md-pre.html > doc/api/users.html && marked -i doc.template/api/users.md >> doc/api/users.html && shx cat doc.template/api/md-post.html >> doc/api/users.html",
+    "doc": "esdoc && npm run md",
     "build": "cross-env NODE_ENV=production babel -s true src -d dist",
     "start:prod": "cross-env NODE_ENV=production node dist",
     "monitor": "nodejs-dashboard -- node -r nodejs-dashboard dist",
     "clean": "shx rm -rf dist coverage doc",
-    "pristine": "npm run clean && shx rm -rf node_modules"
+    "pristine": "npm run clean && shx rm -rf node_modules",
+
+    "md": "npm run md:users && npm run md:auth",
+    "md:users": "shx mkdir -p doc/api && shx cat doc-templates/api/md-pre.html > doc/api/users.html && marked -i doc-templates/api/users.md >> doc/api/users.html && shx cat doc-templates/api/md-post.html >> doc/api/users.html",
+    "md:auth": "shx mkdir -p doc/api && shx cat doc-templates/api/md-pre.html > doc/api/auth.html && marked -i doc-templates/api/auth.md >> doc/api/auth.html && shx cat doc-templates/api/md-post.html >> doc/api/auth.html"
   },
   "babel": {
     "presets": [

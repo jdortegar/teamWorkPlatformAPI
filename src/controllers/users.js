@@ -95,6 +95,65 @@ export function validateEmail(req, res, next) {
   });
 };
 
+function addUserToCache(req, email, uid, status) {
+   return new Promise((resolve, reject) => {
+      console.log(`users-create: user ${email} not in cache`);
+      console.log(`users-create: new uuid: ${uid}`);
+      req.app.locals.redis.hmsetAsync(email, 'uid', uid, 'status', status)
+         .then((addUserToCacheResponse) => {
+            console.log(`users-create: created redis hash for email: ${email}`);
+            resolve(addUserToCacheResponse);
+         })
+         .catch((err) => {
+            console.log('users-create: hmset status - redis error');
+            reject(err);
+         });
+   });
+}
+
+function addUserToDb(req, partitionId, uid, requestBody) {
+   const docClient = new req.app.locals.AWS.DynamoDB.DocumentClient();
+   const usersTable = `${config.tablePrefix}users`;
+
+   let { email, firstName, lastName, displayName, password, country, timeZone, icon } = requestBody;
+   icon = (icon) ? icon : null;
+   const params = {
+      TableName: usersTable,
+      Item:{
+         partitionId,
+         userGuid: uid,
+         userInfo: {
+            emailAddress: email,
+            firstName,
+            lastName,
+            displayName,
+            password: hashPassword(password),
+            country,
+            timeZone,
+            icon
+            //,iconType
+         }
+      }
+   };
+   // userInfo: {
+   //    emailAddress: email,
+   //       firstName,
+   //       lastName,
+   //       displayName,
+   //       country,
+   //       timeZone,
+   //       icon,
+   //       iconType,
+   //       address1,
+   //       address2,
+   //       zip_postalcode,
+   //       city_province
+   // }
+
+   console.log('Adding a new item...');
+   return docClient.put(params).promise();
+}
+
 /**
  * Endpoint:   /user/
  *
@@ -107,171 +166,66 @@ export function validateEmail(req, res, next) {
  * @param next
  */
 export function create(req, res, next) {
-  const db = req.app.locals.db;
-  const email = req.body.email || '';
+   const db = req.app.locals.db;
+   const email = req.body.email || '';
 
-// first, use email addr to see if it's already in redis
+   let uid;
 
-  req.app.locals.redis.hget(email, 'uid', (err, reply) => {
-      if (err) {
-        console.log('users-create: redis error');
-      }
-      else if (reply) {
+   // First, use email addr to see if it's already in redis.
+   req.app.locals.redis.hgetAsync(email, 'uid')
+      .then((retrievedUid) => {
+         uid = retrievedUid;
 
-        //if key is found in cache, reply with user already registered
+         // If key is found in cache, reply with user already registered.
+         console.log(`users-create: user ${email} found in cache`);
+         console.log(`uid: ${uid}`);
 
-        console.log(`users-create: user ${email} found in cache`);
-        console.log(`uid: ${reply}`);
+         return req.app.locals.redis.hgetAsync(email, 'status');
+      })
+      .then((userStatus) => {
+         console.log(`status: ${userStatus}`);
+         if (userStatus) {
+            const response = {
+               status: 'ERR_USER_ALREADY_REGISTERED',
+               uid: uid,
+               userStatus: userStatus
+            };
 
-        const _uid = reply;
-
-        let userStatus = 0;
-
-        req.app.locals.redis.hget(email, 'status', (err, reply) => {
-          if (err) {
-            console.log('users-create: get status - redis error');
-          }
-          else if (reply) {
-            userStatus = reply;
-            //console.log('reply: ' + reply);
-          }
-          console.log(`status: ${userStatus}`);
-
-          const response = {
-            status: 'ERR_USER_ALREADY_REGISTERED',
-            uid: _uid,
-            userStatus: userStatus
-          };
-
-          res.json(response);
-          res.status(httpStatus.FORBIDDEN).json();
-        });
-
-      }
-      else {
-        // otherwise, add user to cache and to user table
-        console.log(`users-create: user ${email} not in cache`);
-        const uid = uuid.v4();
-        console.log(`users-create: new uuid: ${uid}`);
-        req.app.locals.redis.hmset(email, 'uid', uid, 'status', 1, (err, reply) => {
-          if (err) {
-            console.log('users-create: hmset status - redis error');
-          }
-          else {
-            console.log(`users-create: created redis hash for email: ${email}`);
-          }
-        });
-
-        req.app.locals.redis.hmget(email, 'uid', 'status', (err, reply) => {
-          if (reply) {
-
-            //reply.forEach((r, i) => {
-            //  console.log('users-create: user rec from cache: ' + r);
-            //});
-
-          }
-        });
-
-        const docClient = new req.app.locals.AWS.DynamoDB.DocumentClient();
-        const usersTable = `${config.tablePrefix}users`;
-
-        // { firstName, lastName, displayName, email, password, country, timeZone }
-         const { firstName, lastName, displayName, password, country, timeZone } = req.body;
-        const params = {
-            TableName: usersTable,
-            Item:{
-                "partitionId": -1,
-                "userGuid": uid,
-                "userInfo":{
-                   "emailAddress": email,
-                   firstName,
-                   lastName,
-                   displayName,
-                   password: hashPassword(password),
-                   country,
-                   timeZone
-                }
-            }
-        };
-
-        console.log('Adding a new item...');
-        docClient.put(params, (err, data) => {
-            if (err) {
-                console.error('Unable to add item. Error JSON:', JSON.stringify(err, null, 2));
-            } else {
-                console.log('Added item:', JSON.stringify(data, null, 2));
-            }
-        });
-
-        mailer.sendActivationLink(email, uid).then(() => {
-
-          const response = {
-            status: 'SUCCESS',
-            uuid: uid
-          };
-          res.json(response);
-          res.status(httpStatus.OK).json();
-
-        });
-
-      }
-
-  });
-
-// if not, then get a uuid and add email / uuid to cache
-
-// then add registration request to user table
-
-/*
-  userCollection.findOne({
-    userID: username.toLowerCase()
-  }).then((user) => {
-    if (!user) {
-      userCollection.findOne({
-        emailAddress: email.toLowerCase()
-      }).then((user) => {
-        if (!user) {
-          const newUser = {
-            userID: username,
-            emailAddress: email,
-            createTimestamp: new Date(),
-            siteGuid: req.body.siteGuid,
-            roleMemberships: [{
-              role: userRole
-            }],
-            userType: userType,
-            defaultPage: defaultPage
-          };
-          userCollection.insert(newUser).then((savedUser) => {
-            const token = generateToken();
-            db.collection('passwordtoken').insertOne({
-              userId: savedUser.ops[0]._id,
-              token: token
-            }).then(() => {
-              mailer.sendActivationLink(req.body.email, token).then(() => {
-                res.status(httpStatus.OK).json();
-              });
-            });
-          }).catch((e) => {
-            next(e);
-          });
-        } else {
-          const err = new APIError('Email is already used', httpStatus.UNPROCESSABLE_ENTITY);
-          return next(err);
-        }
-      }).catch((e) => {
-        next(e);
+            res.json(response);
+            res.status(httpStatus.FORBIDDEN).json();
+            return undefined;
+         }
+         else {
+            uid = uuid.v4();
+            let status = 1;
+            // Otherwise, add user to cache add user table.
+            return Promise.all([
+               addUserToCache(req, email, uid, status),
+               addUserToDb(req, -1, uid, req.body)
+            ]);
+            // TODO: Do we need to send them a second email?
+            // mailer.sendActivationLink(email, uid).then(() => {
+            //
+            //   const response = {
+            //     status: 'SUCCESS',
+            //     uuid: uid
+            //   };
+            //   res.json(response);
+            //   res.status(httpStatus.OK).json();
+            //
+            // });
+         }
+      })
+      .then((cacheAndDbStatuses) => {
+         if (cacheAndDbStatuses) {
+            res.status(httpStatus.OK).end();
+         }
+      })
+      .catch((err) => {
+         console.error(err);
+         return next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE));
       });
-    } else {
-      const err = new APIError('Username is already used', httpStatus.UNPROCESSABLE_ENTITY);
-      return next(err);
-    }
-  }).catch((e) => {
-    next(e);
-  });
-*/
 }
-
 
 export function del(req, res, next) {
   const db = req.app.locals.db;
