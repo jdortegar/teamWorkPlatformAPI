@@ -24,7 +24,9 @@ documentation:
      content: |
          TODO: Users overall description here...
 
+
 /auth:
+
    /login:
       post:
          description: |
@@ -51,10 +53,12 @@ documentation:
                      description: The password to authenticate.
                      type: string
                      required: true
-                     example: HelloWorld
+                     example: HelloWorld#123
          responses:
             200:
-               description: OK<br />The token is the JWT used in authenticated API calls requiring security.
+               description: |
+                  OK<br />
+                  The token is the JWT used in authenticated API calls requiring security.
                body:
                   properties:
                      status:
@@ -111,4 +115,148 @@ documentation:
                        }
                      }
             401:
-               description: UNAUTHORIZED<br />No reason is given for privacy purposes, but could be an unknown username or bad password.
+               description: |
+                  UNAUTHORIZED<br />
+                  No reason is given for privacy purposes, but could be an unknown username or bad password.
+
+
+/users:
+   post:
+      description: |
+         Create a user in Habla.
+         <br /><br />
+         TODO: inconsistent.  Should be /users/createUser
+      body:
+            properties:
+               firstName:
+                  type: string
+                  required: true
+                  example: Anthony
+               lastName:
+                  type: string
+                  required: true
+                  example: Daga
+               displayName:
+                  type: string
+                  required: true
+                  example: Dude
+               email:
+                  type: string
+                  required: true
+                  example: anthony.daga@habla.ai
+               password:
+                  type: string
+                  required: true
+                  description: Clear text password.
+                  example: HelloWorld#123
+               country:
+                  description: |
+                     [ISO 3166-2](https://en.wikipedia.org/wiki/ISO_3166-2) representation.
+                  type: string
+                  required: true
+                  example: US
+               timeZone:
+                  type: string
+                  required: true
+                  example: America/Los_Angeles
+               icon:
+                  description: The user's avatar, base64 of image.
+                  type: string | nil
+                  required: false
+            example:
+               {
+                  "firstName": "Anthony",
+                  "lastName": "Daga",
+                  "displayName": "Dude",
+                  "email": "anthony.daga@habla.ai",
+                  "password": "HelloWorld#123",
+                  "country": "Canada",
+                  "timeZone": "America/Los_Angeles",
+                  "icon": null
+               }
+      responses:
+         200:
+            description: OK
+         400:
+            description: |
+               FORBIDDEN<br />
+               The user (specifically email) is already registered.
+
+   /registerUser:
+      post:
+         description: |
+            If a user submits a registration for a valid email address (formatted correctly), the service responds with a 200-OK status and a payload.  The payload includes a uuid field, which contains the reservation-id for the user.  The reservation-id is used by the validateEmail endpoint to mitigate hacking risks, and locates the associated email address in the Redis cache.  This registration is stored in cache for a defined time-to-live (TTL).  If the user does not respond to the email and complete registration prior to expiration of the registration, they must register again.
+            <br /><br />
+            A reservation is a uniquely generated key used in the process of securely registering a new user.
+            It is used in initial communication through email, web, and mobile clients.
+            There can be multiple reservations for a user/email concurrently existing, as actual registered user uniqueness is enforced later in the process when the user is actually created in the system.
+            The default expiration of a reservation is 30 minutes, after which it is cleared from cache and no longer valid.
+         body:
+            application/x-www-form-urlencoded:
+               properties:
+                  email:
+                     description: |
+                        The email address to register.
+                        Should be validated client-side prior to invocation to ensure that a properly formatted email address has been provided by the calling application.
+                     type: string
+                     required: true
+                     example: anthony.daga%40habla.ai
+         responses:
+            200:
+               description: |
+                  OK<br />
+                  The uuid is the Reservation ID (rid).
+               body:
+                  properties:
+                     status:
+                        type: string
+                        required: true
+                        example: SUCCESS
+                     uuid:
+                        type: string
+                        required: true
+                        example: 9dec8947-0381-4809-a053-b56777f782f4
+                  example: |
+                     {
+                       "status": "SUCCESS",
+                       "uuid": "9dec8947-0381-4809-a053-b56777f782f4"
+                     }
+            400:
+               description: |
+                  BAD_REQUEST<br />
+                  No reason is given for privacy purposes, but could be an unknown username or bad password.
+
+   /validateEmail:
+      /{rid}:
+         description: Reservation ID (rid).
+         get:
+            description: |
+               Retrieve the email address associated with a Reservation ID (`rid`).
+               <br /><br />
+               The reservation should have been previously created from the `POST /users/registerUser` endpoint, and is valid until expired.
+               Use this method to obtain the email address associated with a rid, typically for display purposes.
+            responses:
+               200:
+                  description: |
+                     OK<br />
+                     The uuid is the Reservation ID (rid).
+                  body:
+                     properties:
+                        status:
+                           type: string
+                           required: true
+                           example: SUCCESS
+                        email:
+                           type: string
+                           required: true
+                           example: anthony.daga%40habla.ai
+                     example: |
+                        {
+                          "status": "SUCCESS",
+                          "email": "anthony.daga%40habla.ai"
+                        }
+               404:
+                  description: |
+                     NOT_FOUND<br />
+                     The Reservation ID either does not exist or is no longer valid (i.e. expired).
+
