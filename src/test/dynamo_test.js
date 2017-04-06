@@ -13,16 +13,16 @@ var tablePrefix = 'DEV_';
 /*
 var params = {
     TableName : tablePrefix + "users",
-    KeySchema: [       
+    KeySchema: [
         { AttributeName: "partitionId", KeyType: "HASH"},  //Partition key
         { AttributeName: "userId", KeyType: "RANGE" }  //Sort key
     ],
-    AttributeDefinitions: [       
+    AttributeDefinitions: [
         { AttributeName: "partitionId", AttributeType: "N" },
         { AttributeName: "userId", AttributeType: "S" }
     ],
-    ProvisionedThroughput: {       
-        ReadCapacityUnits: 10, 
+    ProvisionedThroughput: {
+        ReadCapacityUnits: 10,
         WriteCapacityUnits: 10
     }
 };

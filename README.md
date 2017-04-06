@@ -1,31 +1,31 @@
 # hablaapi
-#Habla Application Services
+# Habla Application Services
 
-##Habla API Structure
+## Habla API Structure
 There are no standard structures for API layout in NodeJS/Express, but there are some best practices to implementing APIs.  The best practice for Habla API structure dictates a modular appraoch to the API design.
 
-###root directory
+### root directory
 This is the directory for the api.  It contains the README.md (this file), `package.json`, which is the configuration file for NodeJS and is used by `npm install` to install necessary packages required by the application.  It also contains the `src` directory, where all application source code lives.
 
-###./src directory
+### ./src directory
 The `src` directory contains all source code, including the `index.js` file at the root level, which is the container for the NodeJS application.  This file uses `require` statements to pull-in all of the other code distributed among the following subdirectories:
 
-###./src/config
+### ./src/config
 Pretty much just what it sounds like - this directory contains all environment / system configuration logic
 
 ###./src/routes
 This folder contains all service routes (URIs) for the API.  Each .js file in this directory `requires` the necessary controller in the `../controllers` directory.
 
-###./src/controllers
+### ./src/controllers
 This directory contains all logic to support a particular service route, invoked from the `../routes` path.
 
-###./src/helpers
+### ./src/helpers
 This directory contains all common utility functions to support the API
 
-###./src/models
+### ./src/models
 This directory contains the functions to interact with the database / datastore for an entity; usually invoked via controllers.
 
-###./src/policies
+### ./src/policies
 This is where service policy-related functions (e.g., role-based access logic) is stored
 
 To run the service, set your working directory to `hablaapi` and run
@@ -197,7 +197,8 @@ Refer to the scripts section of `package.json` for a complete and more accurate 
 
 ## Usage
 Navigate to [http://localhost:3000/](http://localhost:3000/) for the UI.
-NOTE: No UI for this!!! This serves REST endpoints...!!!
+
+NOTE: No UI for this!!! This serves REST endpoints...!!!  ONLY!!! Go to the webapp for that.
 
 
 ## Commit
@@ -213,9 +214,11 @@ Either that, or don't write tests...
 To generate html from inline documentation:
 
     npm run doc
-    open doc/index.html
+    open doc/code/index.html
+    open doc/api/users.html
+    open doc/api/auth.html
 
 Generic documentation is generated, and includes your added [esdoc](https://esdoc.org)-style comments.
 Don't go crazy, but try to document things that you think might be unclear to someone looking at your code.
 I'm sure you don't want to have to explain it over and over again verbally.
-
+API documentation is also generated.

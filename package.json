@@ -27,13 +27,17 @@
     "lint": "eslint src",
     "test": "echo \"Error: no test specified\" && exit 1",
     "watch:test": "npm run test -- --watch",
-    "doc": "esdoc",
-    "md": "shx mkdir -p doc/api && shx cat doc.template/api/md-pre.html > doc/api/users.html && marked -i doc.template/api/users.md >> doc/api/users.html && shx cat doc.template/api/md-post.html >> doc/api/users.html",
+    "doc": "esdoc && npm run raml && npm run md",
     "build": "cross-env NODE_ENV=production babel -s true src -d dist",
     "start:prod": "cross-env NODE_ENV=production node dist",
     "monitor": "nodejs-dashboard -- node -r nodejs-dashboard dist",
     "clean": "shx rm -rf dist coverage doc",
-    "pristine": "npm run clean && shx rm -rf node_modules"
+    "pristine": "npm run clean && shx rm -rf node_modules",
+
+    "raml": "shx mkdir -p doc && raml2html doc-templates/api.raml > doc/api.html",
+    "md": "npm run md:users && npm run md:auth",
+    "md:users": "shx mkdir -p doc/api && shx cat doc-templates/api/md-pre.html > doc/api/users.html && marked -i doc-templates/api/users.md >> doc/api/users.html && shx cat doc-templates/api/md-post.html >> doc/api/users.html",
+    "md:auth": "shx mkdir -p doc/api && shx cat doc-templates/api/md-pre.html > doc/api/auth.html && marked -i doc-templates/api/auth.md >> doc/api/auth.html && shx cat doc-templates/api/md-post.html >> doc/api/auth.html"
   },
   "babel": {
     "presets": [
@@ -79,6 +83,7 @@
     "nodejs-dashboard": "^0.4.0",
     "nodemon": "^1.11.0",
     "pre-commit": "^1.2.2",
+    "raml2html": "^6.1.0",
     "shx": "^0.2.2",
     "sinon": "^2.0.0"
   },
