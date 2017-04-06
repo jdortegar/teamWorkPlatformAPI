@@ -1,0 +1,114 @@
+#%RAML 1.0
+---
+title: Habla API
+version: v0.1.6
+baseUri: https://api.habla.ai
+mediaType:  application/json
+
+documentation:
+   - title: Overview
+     content: |
+         TODO: Overall description here...
+         <br /><br />
+         **Additional Possible Responses for All Endpoints**
+         <br />
+         503 SERVICE_UNAVAILABLE
+         <br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A server error has occurred, typically Redis, DynamoDB, or other remote service availability.
+         <br />
+         500 INTERNAL_SERVER_ERROR
+         <br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A server error has occurred, typically unforseen or unaccounted for.  Most likely a logic error.
+   - title: Auth
+     content: |
+         TODO: Auth overall description here...
+   - title: Users
+     content: |
+         TODO: Users overall description here...
+
+/auth:
+   /login:
+      post:
+         description: |
+            Login to Habla API, receiving a JWT token for use in authenticated requests.
+            <br /><br />
+            Returns a valid [JWT token](http://jwt.io), along with public user details if successful (200-OK).
+            This token must be stored for future API requests.
+            <br /><br />
+            A token will expire after a customer-specified session timeout (1 hour by default).
+            A logout function may be implemented client-side that destroys the token in the client framework; however, the token will remain active until its expiry time has been exceeded.
+            For this reason, it is recommended that the token be stored in a secure cookie on web clients or some secure storage mechanism for other applications.
+            <br /><br />
+            For security reasons, separate messages will not be provided for user not found versus authentication failure.
+            This is to prevent information leakage to malicious users.
+         body:
+            application/x-www-form-urlencoded:
+               properties:
+                  username:
+                     description: The user name to authenticate.
+                     type: string
+                     required: true
+                     example: anthony.daga%40habla.ai
+                  pasword:
+                     description: The password to authenticate.
+                     type: string
+                     required: true
+                     example: HelloWorld
+         responses:
+            200:
+               description: OK<br />The token is the JWT used in authenticated API calls requiring security.
+               body:
+                  properties:
+                     status:
+                        type: string
+                        required: true
+                     token:
+                        type: string
+                        required: true
+                     user:
+                        type: object
+                        properties:
+                           username:
+                              type: string
+                              required: true
+                           email:
+                              type: string
+                              required: true
+                           firstName:
+                              type: string
+                              required: true
+                           lastName:
+                              type: string
+                              required: true
+                           displayName:
+                              type: string
+                              required: true
+                           country:
+                              type: string
+                              required: true
+                           timeZone:
+                              type: string
+                              required: true
+                           icon:
+                              description: Base64 representation.
+                              type: string | nil
+                              required: false
+                           userType:
+                              type: string
+                              required: true
+                  example: |
+                     {
+                       "status": "SUCCESS",
+                       "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFudGhvbnlAaGFibGEuaW8iLCJpYXQiOjE0OTE0MjgzMTN9.pWU5yv5JvNMe6Tm1o7oKlI6cHmcmJZP5m20n-UXJzc0",
+                       "user": {
+                         "username": "anthony@habla.io",
+                         "email": "anthony@habla.io",
+                         "firstName": "Anthony",
+                         "lastName": "Daga",
+                         "displayName": "Anthony Dude Daga",
+                         "country": "Canada",
+                         "timeZone": "America/Los_Angeles",
+                         "icon": null,
+                         "userType": "hablaUser"
+                       }
+                     }
+            401:
+               description: UNAUTHORIZED<br />No reason is given for privacy purposes, but could be an unknown username or bad password.

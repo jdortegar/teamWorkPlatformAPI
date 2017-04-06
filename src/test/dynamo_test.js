@@ -12,16 +12,16 @@ var tablePrefix = 'DEV_';
 
 var params = {
     TableName : tablePrefix + "users",
-    KeySchema: [       
+    KeySchema: [
         { AttributeName: "partitionId", KeyType: "HASH"},  //Partition key
-        { AttributeName: "userGuid", KeyType: "RANGE" }  //Sort key
+        { AttributeName: "userId", KeyType: "RANGE" }  //Sort key
     ],
-    AttributeDefinitions: [       
+    AttributeDefinitions: [
         { AttributeName: "partitionId", AttributeType: "N" },
-        { AttributeName: "userGuid", AttributeType: "S" }
+        { AttributeName: "userId", AttributeType: "S" }
     ],
-    ProvisionedThroughput: {       
-        ReadCapacityUnits: 10, 
+    ProvisionedThroughput: {
+        ReadCapacityUnits: 10,
         WriteCapacityUnits: 10
     }
 };
@@ -43,7 +43,7 @@ var params = {
     TableName: "users",
     Item:{
         "partitionId": -1,
-        "userGuid": "ea794510-cea6-4132-ae22-a7ae1d32abb1",
+        "userId": "ea794510-cea6-4132-ae22-a7ae1d32abb1",
         "userInfo":{
             "emailAddress": "robert.abbott@habla.ai",
             "displayName": "Rob Abbott"

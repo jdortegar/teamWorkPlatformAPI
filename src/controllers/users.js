@@ -121,7 +121,7 @@ function addUserToDb(req, partitionId, uid, requestBody) {
       TableName: usersTable,
       Item:{
          partitionId,
-         userGuid: uid,
+         userId: uid,
          userInfo: {
             emailAddress: email,
             firstName,
@@ -245,8 +245,8 @@ export function del(req, res, next) {
         const params = {
             TableName: usersTable,
             Key:{
-                "partitionId": -1,
-                "userGuid": uid
+               partitionId: -1,
+               userId: uid
 
             }
         };

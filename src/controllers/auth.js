@@ -22,9 +22,9 @@ export function login(req, res, next) {
    // Retrieve UUID from cache.
    req.app.locals.redis.hmgetAsync(username, 'uid', 'status')
       .then((res) => { // id=res[0], status=res[1]
-         const userGuid = res[0];
+         const userId = res[0];
          const status = res[1];
-         if ((userGuid !== null) && (status === '1')) {
+         if ((userId !== null) && (status === '1')) {
             // Retrieve user from DB.
             const docClient = new req.app.locals.AWS.DynamoDB.DocumentClient();
             const usersTable = `${config.tablePrefix}users`;
@@ -32,7 +32,7 @@ export function login(req, res, next) {
                TableName: usersTable,
                Key: {
                   partitionId: -1,
-                  userGuid
+                  userId
                }
             };
             return docClient.get(params).promise();
