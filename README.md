@@ -1,6 +1,6 @@
 # hablaapi
 # Habla Application Services
- 
+  
 ## Habla API Structure
 There are no standard structures for API layout in NodeJS/Express, but there are some best practices to implementing APIs.  The best practice for Habla API structure dictates a modular appraoch to the API design.
 
