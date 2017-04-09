@@ -1,9 +1,9 @@
-import { getSubscriberUsers, getTeamMembersBySubscriberUserIds, getTeamRoomMembersByTeamMemberIds, getTeamRoomsByIds } from './util';
+import { getSubscriberUsersByUserIds, getTeamMembersBySubscriberUserIds, getTeamRoomMembersByTeamMemberIds, getTeamRoomsByIds } from './util';
 
 class TeamRoomService {
    getUserTeamRooms(req, userId) {
       return new Promise((resolve, reject) => {
-         getSubscriberUsers(req, userId)
+         getSubscriberUsersByUserIds(req, [userId])
             .then((subscriberUsers) => {
                const subscriberUserIds = subscriberUsers.map((subscriberUser) => subscriberUser.subscriberUserId);
                return getTeamMembersBySubscriberUserIds(req, subscriberUserIds);

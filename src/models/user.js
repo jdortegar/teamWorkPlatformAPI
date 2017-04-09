@@ -10,12 +10,12 @@
 //---------------------------------------------------------------------
 
 import Bcrypt from '../helpers/Bcrypt';
-import crypto from 'crypto';
+// import crypto from 'crypto';
 
 const bcrypt = new Bcrypt(11);
 
 export function hashPassword(password) {
-  //return crypto.createHash('sha256').update(password).digest('hex');
+   // return crypto.createHash('sha256').update(password).digest('hex');
    return bcrypt.hash(password);
 }
 
@@ -39,25 +39,16 @@ export function getPublicData(user) {
       defaultPage: user.defaultPage,
       userType: user.userType || 'hablaUser'
    };
-   // return {
-   //    id: user._id,
-   //    username: user.userID,
-   //    email: user.emailAddress,
-   //    name: user.displayName || user.userID,
-   //    roleMemberships: user.roleMemberships,
-   //    defaultPage: user.defaultPage,
-   //    userType: user.userType || 'hablaUser'
-   // };
 }
 
 export function getAuthData(user, id) {
-  return {
-    _id: (id) ? id : undefined,
-    username: user.userName,
-    email: user.emailAddress,
-    roles: user.roleMemberships,
-    siteGuid: user.siteGuid
-  };
+   return {
+      _id: id,
+      username: user.userName,
+      email: user.emailAddress,
+      roles: user.roleMemberships,
+      siteGuid: user.siteGuid
+   };
 }
 
 // export function generateSalt() {

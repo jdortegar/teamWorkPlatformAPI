@@ -61,13 +61,13 @@ var userSubscriberOrgs = [
    { Item: { subscriberUserInfo: { userId: 'ea794510-cea6-4132-ae22-a7ae1d32abb2', subscriberOrgId: 'ea794510-cea6-4132-ae22-a7ae1d324400' }, subscriberUserId: 'ea794510-cea6-4132-ae22-a7ae1d320010', partitionId: -1 }, TableName: tablePrefix + 'subscriberUsers' },
    { Item: { subscriberUserInfo: { userId: 'ea794510-cea6-4132-ae22-a7ae1d32abb5', subscriberOrgId: 'ea794510-cea6-4132-ae22-a7ae1d324400' }, subscriberUserId: 'ea794510-cea6-4132-ae22-a7ae1d320011', partitionId: -1 }, TableName: tablePrefix + 'subscriberUsers' }
 ];
-addDocuments(subscriberOrgs);
+addDocuments(userSubscriberOrgs);
 
 
 // Add teams to subscriberOrg 'Acme'.
 var teams = [
-   { Item: { teamInfo: { name: 'A Team', purpose: 'Do something', subscriberOrgId: 'ea794510-cea6-4132-ae22-a7ae1d324400', publish: true, active: true }, teamId: 'ea794510-cea6-4132-ae22-a7ae1d321111', partitionId: -1 }, TableName: tablePrefix + 'teams' },
-   { Item: { teamInfo: { name: 'B Team', purpose: 'Do something else', subscriberOrgId: 'ea794510-cea6-4132-ae22-a7ae1d324400', publish: false, active: true }, teamId: 'ea794510-cea6-4132-ae22-a7ae1d321112', partitionId: -1 }, TableName: tablePrefix + 'teams' }
+   { Item: { teamInfo: { name: 'A Team', subscriberOrgId: 'ea794510-cea6-4132-ae22-a7ae1d324400' }, teamId: 'ea794510-cea6-4132-ae22-a7ae1d321111', partitionId: -1 }, TableName: tablePrefix + 'teams' },
+   { Item: { teamInfo: { name: 'B Team', subscriberOrgId: 'ea794510-cea6-4132-ae22-a7ae1d324400' }, teamId: 'ea794510-cea6-4132-ae22-a7ae1d321112', partitionId: -1 }, TableName: tablePrefix + 'teams' }
 ];
 addDocuments(teams);
 
