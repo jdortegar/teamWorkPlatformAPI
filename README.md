@@ -1,6 +1,6 @@
 # hablaapi
 # Habla Application Services
-
+     
 ## Habla API Structure
 There are no standard structures for API layout in NodeJS/Express, but there are some best practices to implementing APIs.  The best practice for Habla API structure dictates a modular appraoch to the API design.
 
@@ -222,3 +222,31 @@ Generic documentation is generated, and includes your added [esdoc](https://esdo
 Don't go crazy, but try to document things that you think might be unclear to someone looking at your code.
 I'm sure you don't want to have to explain it over and over again verbally.
 API documentation is also generated.
+
+Additional documentation can be referenced in [Confluence](https://hablaai.atlassian.net/wiki/display/PD/Habla+API+Server).
+
+
+## Deployment
+
+### CI Build
+
+    npm install
+    npm build
+
+Distribution assets to push:  TODO: probably archive it too.
+
+### Target
+
+#### Environment Variables
+
+    WEBAPP_BASE_URI points to the webapp (ex. https://habla.ai)
+
+Please refer to src/config/env/index.js for a more complete and up-to-latest listing of environment variables available.
+
+#### Runtime
+
+    npm run start:prod
+    
+That's one way.
+TODO: Another way is ...
+
