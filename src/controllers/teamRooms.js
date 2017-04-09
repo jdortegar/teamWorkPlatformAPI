@@ -1,13 +1,13 @@
 import httpStatus from 'http-status';
 import APIError from '../helpers/APIError';
-import teamSvc from '../services/teamService';
+import teamRoomSvc from '../services/teamRoomService';
 
-export function getTeams(req, res, next) {
+export function getTeamRooms(req, res, next) {
    const userId = req.user._id;
 
-   teamSvc.getUserTeams(req, userId)
-      .then((teams) => {
-         res.status(httpStatus.OK).json({ teams: teams });
+   teamRoomSvc.getUserTeamRooms(req, userId)
+      .then((teamRooms) => {
+         res.status(httpStatus.OK).json({ teamRooms: teamRooms });
       })
       .catch((err) => {
          console.error(err);

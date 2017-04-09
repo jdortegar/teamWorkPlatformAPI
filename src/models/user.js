@@ -50,9 +50,9 @@ export function getPublicData(user) {
    // };
 }
 
-export function getAuthData(user) {
+export function getAuthData(user, id) {
   return {
-    _id: user._id,
+    _id: (id) ? id : undefined,
     username: user.userName,
     email: user.emailAddress,
     roles: user.roleMemberships,

@@ -1,5 +1,3 @@
-import uuid from 'uuid';
-import config from '../config/env';
 import { getSubscriberUsers, getTeamMembersBySubscriberUserIds, getTeamsByIds } from './util';
 
 class TeamService {
