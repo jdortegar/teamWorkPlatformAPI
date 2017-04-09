@@ -95,17 +95,15 @@ export function getTeamMembersBySubscriberUserIds(req, subscriberUserIds = undef
 
    const tableName = `${config.tablePrefix}teamMembers`;
 
-   let filterExpression = '';
    const queryObject = {};
-   if (subscriberUserIds) {
-      let index = 0;
-      subscriberUserIds.forEach((value) => {
-         index++;
-         const queryKey = `:titlevalue${index}`;
-         queryObject[queryKey.toString()] = value;
-      });
-      filterExpression += `teamMemberInfo.subscriberUserId IN (${Object.keys(queryObject).toString()})`;
-   }
+   let filterExpression = '';
+   let index = 0;
+   subscriberUserIds.forEach((value) => {
+      index++;
+      const queryKey = `:suid${index}`;
+      queryObject[queryKey.toString()] = value;
+   });
+   filterExpression += `teamMemberInfo.subscriberUserId IN (${Object.keys(queryObject).toString()})`;
    const params = {
       TableName: tableName,
       FilterExpression: filterExpression,
@@ -131,6 +129,62 @@ export function getTeamsByIds(req, teamIds) {
 
    const requestItemKeys = teamIds.map((teamId) => {
       return { partitionId: { N: '-1' }, teamId: { S: teamId} };
+   });
+   const params =  { RequestItems: {} };
+   params.RequestItems[tableName] = { Keys: requestItemKeys };
+
+   return new Promise((resolve, reject) => {
+      dynamoDb.batchGetItem(params).promise()
+         .then((data) => {
+            const returnTeams = removeIntermediateDataTypeFromArray(data.Responses[tableName]);
+            resolve(returnTeams);
+         })
+         .catch((err) => {
+            reject(err);
+         });
+   });
+}
+
+export function getTeamRoomMembersByTeamMemberIds(req, teamMemberIds = undefined) {
+   if (teamMemberIds === undefined) {
+      return Promise.reject('teamMemberIds needs to be specified.');
+   }
+
+   const tableName = `${config.tablePrefix}teamRoomMembers`;
+
+   const queryObject = {};
+   let filterExpression = '';
+   let index = 0;
+   teamMemberIds.forEach((value) => {
+      index++;
+      const queryKey = `:tmid${index}`;
+      queryObject[queryKey.toString()] = value;
+   });
+   filterExpression += `teamRoomMemberInfo.teamMemberId IN (${Object.keys(queryObject).toString()})`;
+   const params = {
+      TableName: tableName,
+      FilterExpression: filterExpression,
+      ExpressionAttributeValues: queryObject,
+      Limit: 50
+   };
+
+   return new Promise((resolve, reject) => {
+      docClient().scan(params).promise()
+         .then((data) => resolve(data.Items))
+         .catch((err) => reject(err));
+   });
+}
+
+export function getTeamRoomsByIds(req, teamRoomIds) {
+   if (teamRoomIds === undefined) {
+      return Promise.reject('teamRoomIds needs to be specified.');
+   }
+
+   const dynamoDb = req.app.locals.db;
+   const tableName = `${config.tablePrefix}teamRooms`;
+
+   const requestItemKeys = teamRoomIds.map((teamRoomId) => {
+      return { partitionId: { N: '-1' }, teamRoomId: { S: teamRoomId} };
    });
    const params =  { RequestItems: {} };
    params.RequestItems[tableName] = { Keys: requestItemKeys };

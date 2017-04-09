@@ -45,7 +45,7 @@ export function login(req, res, next) {
             if (passwordMatch(user, password)) {
                res.status(httpStatus.OK).json({
                   status: 'SUCCESS',
-                  token: jwt.sign(getAuthData(user), config.jwtSecret),
+                  token: jwt.sign(getAuthData(user, dbData.Item.userId), config.jwtSecret),
                   user: getPublicData(user)
                });
                return;

@@ -101,19 +101,19 @@ documentation:
                               required: true
                   example: |
                      {
-                       "status": "SUCCESS",
-                       "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFudGhvbnlAaGFibGEuaW8iLCJpYXQiOjE0OTE0MjgzMTN9.pWU5yv5JvNMe6Tm1o7oKlI6cHmcmJZP5m20n-UXJzc0",
-                       "user": {
-                         "username": "anthony@habla.io",
-                         "email": "anthony@habla.io",
-                         "firstName": "Anthony",
-                         "lastName": "Daga",
-                         "displayName": "Anthony Dude Daga",
-                         "country": "US",
-                         "timeZone": "America/Los_Angeles",
-                         "icon": null,
-                         "userType": "hablaUser"
-                       }
+                        "status": "SUCCESS",
+                        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFudGhvbnlAaGFibGEuaW8iLCJpYXQiOjE0OTE0MjgzMTN9.pWU5yv5JvNMe6Tm1o7oKlI6cHmcmJZP5m20n-UXJzc0",
+                        "user": {
+                           "username": "anthony@habla.io",
+                           "email": "anthony@habla.io",
+                           "firstName": "Anthony",
+                           "lastName": "Daga",
+                           "displayName": "Anthony Dude Daga",
+                           "country": "US",
+                           "timeZone": "America/Los_Angeles",
+                           "icon": null,
+                           "userType": "hablaUser"
+                        }
                      }
             401:
                description: |
@@ -122,6 +122,7 @@ documentation:
 
 
 /users:
+
    /createUser:
       post:
          description: |
@@ -129,53 +130,53 @@ documentation:
             <br /><br />
             TODO: Was /users.
          body:
-               properties:
-                  firstName:
-                     type: string
-                     required: true
-                     example: Anthony
-                  lastName:
-                     type: string
-                     required: true
-                     example: Daga
-                  displayName:
-                     type: string
-                     required: true
-                     example: Dude
-                  email:
-                     type: string
-                     required: true
-                     example: anthony.daga@habla.ai
-                  password:
-                     type: string
-                     required: true
-                     description: Clear text password.
-                     example: HelloWorld#123
-                  country:
-                     description: |
-                        [ISO 3166-2](https://en.wikipedia.org/wiki/ISO_3166-2) representation.
-                     type: string
-                     required: true
-                     example: US
-                  timeZone:
-                     type: string
-                     required: true
-                     example: America/Los_Angeles
-                  icon:
-                     description: The user's avatar, base64 of image.
-                     type: string | nil
-                     required: false
-                     default: nil
-               example:
-                  {
-                     "firstName": "Anthony",
-                     "lastName": "Daga",
-                     "displayName": "Dude",
-                     "email": "anthony.daga@habla.ai",
-                     "password": "HelloWorld#123",
-                     "country": "US",
-                     "timeZone": "America/Los_Angeles",
-                     "icon": null
+            properties:
+               firstName:
+                  type: string
+                  required: true
+                  example: Anthony
+               lastName:
+                  type: string
+                  required: true
+                  example: Daga
+               displayName:
+                  type: string
+                  required: true
+                  example: Dude
+               email:
+                  type: string
+                  required: true
+                  example: anthony.daga@habla.ai
+               password:
+                  type: string
+                  required: true
+                  description: Clear text password.
+                  example: HelloWorld#123
+               country:
+                  description: |
+                     [ISO 3166-2](https://en.wikipedia.org/wiki/ISO_3166-2) representation.
+                  type: string
+                  required: true
+                  example: US
+               timeZone:
+                  type: string
+                  required: true
+                  example: America/Los_Angeles
+               icon:
+                  description: The user's avatar, base64 of image.
+                  type: string | nil
+                  required: false
+                  default: nil
+            example:
+               {
+                  "firstName": "Anthony",
+                  "lastName": "Daga",
+                  "displayName": "Dude",
+                  "email": "anthony.daga@habla.ai",
+                  "password": "HelloWorld#123",
+                  "country": "US",
+                  "timeZone": "America/Los_Angeles",
+                  "icon": null
                   }
          responses:
             201:
@@ -270,321 +271,375 @@ documentation:
 
 
 /teams:
+
   /getTeams:
-      get:
-         description: |
-            Retrieve the teams that the authenticated user is privy to.
-         responses:
-            200:
-               description: |
-                  OK
-               body:
-                  properties:
-                     teams:
-                        type: array
-                        required: true
-                        items:
-                           properties:
-                              name:
-                                 type: string
-                                 required: true
-                              purpose:
-                                 type: string | nil
-                                 required: false
-                                 default: nil
-                              teamId:
-                                 description: The team to attach this room to.
-                                 type: string
-                                 required: true
-                              publish:
-                                 type: boolean
-                                 required: true
-                              active:
-                                 type: boolean
-                                 required: true
-                  example: |
-                     {
-                        "teams": [
-                           {
-                              "name": "Posse",
-                              "purpose": "Place to hang.",
-                              "teamId": "9dec8947-0381-4809-a053-b56777f782f4",
-                              "publish": false,
-                              "active": true
-                           },
-                           {
-                              "name": "Friends",
-                              "purpose": "My buddies.",
-                              "teamId": "9dec8947-0381-4809-a053-b56777f782f5",
-                              "publish": true,
-                              "active": true
-                           }
-                        ]
-                     }
+     get:
+        description: |
+           Retrieve the teams that the authenticated user is privy to.
+        responses:
+           200:
+              description: |
+                 OK
+              body:
+                 properties:
+                    teams:
+                       type: array
+                       required: true
+                       items:
+                          properties:
+                             name:
+                                type: string
+                                required: true
+                             purpose:
+                                type: string | nil
+                                required: false
+                                default: nil
+                             teamId:
+                                description: The team to attach this room to.
+                                type: string
+                                required: true
+                             publish:
+                                type: boolean
+                                required: true
+                             active:
+                                type: boolean
+                                required: true
+                 example: |
+                    {
+                       "teams": [
+                          {
+                             "name": "Posse",
+                             "purpose": "Place to hang.",
+                             "teamId": "9dec8947-0381-4809-a053-b56777f782f4",
+                             "publish": false,
+                             "active": true
+                          },
+                          {
+                             "name": "Friends",
+                             "purpose": "My buddies.",
+                             "teamId": "9dec8947-0381-4809-a053-b56777f782f5",
+                             "publish": true,
+                             "active": true
+                          }
+                       ]
+                    }
 
 
 /teamRooms:
-   /createTeamRoom:
-      post:
-         description: |
-            Create a team room in Habla.
-         body:
-            properties:
-               name:
-                  type: string
-                  required: true
-               purpose:
-                  type: string | nil
-                  required: false
-                  default: nil
-               teamId:
-                  description: The team to attach this room to.
-                  type: string
-                  required: true
-               publish:
-                  type: boolean
-                  required: true
-               active:
-                  type: boolean
-                  required: true
-            example:
-               {
-                  "name": "Posse",
-                  "purpose": "Place to hang.",
-                  "teamId": "9dec8947-0381-4809-a053-b56777f782f4",
-                  "publish": false,
-                  "active": true
-               }
-         responses:
-            201:
-               description: CREATED
-               body:
-                  properties:
-                     teamRoomId:
-                        type: string
-                        required: true
-                        example: 9dec8947-0381-4809-a053-b56777f782f4
-                  example: |
-                     {
-                       "teamRoomId": "9dec8947-0381-4809-a053-b56777f782f4"
-                     }
-            409:
-               description: |
-                  CONFLICT<br />
-                  A team room by the requested name already exists under the team.
-               body:
-                  properties:
-                     status:
-                        type: string
-                        required: true
-                        example: EXISTS
-                  example: |
-                     {
-                       "status": "EXISTS"
-                     }
 
-   /getMembers:
-      /{teamRoomId}:
-         uriParameters:
-            teamRoomId:
-               description: Team room ID.
-         get:
-            description: |
-               Retrieve the members (i.e. users) of a team room given the team room ID.
-            responses:
-               200:
-                  description: |
-                     OK
-                  body:
-                     properties:
-                        members:
-                           type: array
-                           required: true
-                           items:
-                              properties:
-                                 userId:
-                                    type: string
-                                    required: true
-                                 firstName:
-                                    type: string
-                                    required: true
-                                 lastName:
-                                    type: string
-                                    required: true
-                                 displayName:
-                                    type: string
-                                    required: true
-                                 icon:
-                                    description: Base64 representation.
-                                    type: string | nil
-                                    required: false
-                                    default: nil
-                                 userType:
-                                    type: string
-                                    required: true
-                     example: |
-                        {
-                           "members": [
-                              {
-                                 "userId": "9dec8947-0381-4809-a053-b56777f782f4",
-                                  "firstName": "Anthony",
-                                  "lastName": "Daga",
-                                  "displayName": "Anthony Dude Daga",
-                                  "icon": null,
-                                  "userType": "hablaUser"
-                              },
-                              {
-                                 "userId": "9dec8947-0381-4809-a053-b56777f782f5",
-                                  "firstName": "Jill",
-                                  "lastName": "Goodacre",
-                                  "displayName": "Jill Goodacre",
-                                  "icon": null,
-                                  "userType": "hablaUser"
-                              }
-                           ]
-                        }
-               404:
-                  description: |
-                     NOT_FOUND<br />
-                     The team room with the given `teamRoomId` doesn't exist.
-               403:
-                  description: |
-                     FORBIDDEN<br />
-                     The user doesn't have permissions to view this team room.
+  /getTeamRooms:
+     get:
+        description: |
+           Retrieve the team rooms that the authenticated user is privy to.
+        responses:
+           200:
+              description: |
+                 OK
+              body:
+                 properties:
+                    teamRooms:
+                       type: array
+                       required: true
+                       items:
+                          properties:
+                             name:
+                                type: string
+                                required: true
+                             purpose:
+                                type: string | nil
+                                required: false
+                                default: nil
+                             teamId:
+                                description: The team to attach this room to.
+                                type: string
+                                required: true
+                             publish:
+                                type: boolean
+                                required: true
+                             active:
+                                type: boolean
+                                required: true
+                 example: |
+                    {
+                       "teamRooms": [
+                          {
+                             "name": "Posse",
+                             "purpose": "Place to hang.",
+                             "teamId": "9dec8947-0381-4809-a053-b56777f782f4",
+                             "publish": false,
+                             "active": true
+                          },
+                          {
+                             "name": "Friends",
+                             "purpose": "My buddies.",
+                             "teamId": "9dec8947-0381-4809-a053-b56777f782f5",
+                             "publish": true,
+                             "active": true
+                          }
+                       ]
+                    }
+
+  /createTeamRoom:
+     post:
+        description: |
+           Create a team room in Habla.
+        body:
+           properties:
+              name:
+                 type: string
+                 required: true
+              purpose:
+                 type: string | nil
+                 required: false
+                 default: nil
+              teamId:
+                 description: The team to attach this room to.
+                 type: string
+                 required: true
+              publish:
+                 type: boolean
+                 required: true
+              active:
+                 type: boolean
+                 required: true
+           example:
+              {
+                 "name": "Posse",
+                 "purpose": "Place to hang.",
+                 "teamId": "9dec8947-0381-4809-a053-b56777f782f4",
+                 "publish": false,
+                 "active": true
+              }
+        responses:
+           201:
+              description: CREATED
+              body:
+                 properties:
+                    teamRoomId:
+                       type: string
+                       required: true
+                       example: 9dec8947-0381-4809-a053-b56777f782f4
+                 example: |
+                    {
+                      "teamRoomId": "9dec8947-0381-4809-a053-b56777f782f4"
+                    }
+           409:
+              description: |
+                 CONFLICT<br />
+                 A team room by the requested name already exists under the team.
+              body:
+                 properties:
+                    status:
+                       type: string
+                       required: true
+                       example: EXISTS
+                 example: |
+                    {
+                       "status": "EXISTS"
+                    }
+
+  /getMembers:
+     /{teamRoomId}:
+        uriParameters:
+           teamRoomId:
+              description: Team room ID.
+        get:
+           description: |
+              Retrieve the members (i.e. users) of a team room given the team room ID.
+           responses:
+              200:
+                 description: |
+                    OK
+                 body:
+                    properties:
+                       members:
+                          type: array
+                          required: true
+                          items:
+                             properties:
+                                userId:
+                                   type: string
+                                   required: true
+                                firstName:
+                                   type: string
+                                   required: true
+                                lastName:
+                                   type: string
+                                   required: true
+                                displayName:
+                                   type: string
+                                   required: true
+                                icon:
+                                   description: Base64 representation.
+                                   type: string | nil
+                                   required: false
+                                   default: nil
+                                userType:
+                                   type: string
+                                   required: true
+                    example: |
+                       {
+                          "members": [
+                             {
+                                "userId": "9dec8947-0381-4809-a053-b56777f782f4",
+                                "firstName": "Anthony",
+                                "lastName": "Daga",
+                                "displayName": "Anthony Dude Daga",
+                                "icon": null,
+                                "userType": "hablaUser"
+                             },
+                             {
+                                "userId": "9dec8947-0381-4809-a053-b56777f782f5",
+                                "firstName": "Jill",
+                                "lastName": "Goodacre",
+                                "displayName": "Jill Goodacre",
+                                "icon": null,
+                                "userType": "hablaUser"
+                             }
+                          ]
+                       }
+              404:
+                 description: |
+                    NOT_FOUND<br />
+                    The team room with the given `teamRoomId` doesn't exist.
+              403:
+                 description: |
+                    FORBIDDEN<br />
+                    The user doesn't have permissions to view this team room.
 
 /conversations:
-   /startConversationWithUsers:
-      post:
-         description: |
-            Begin a conversation with the specified users.
-            The requesting user is automatically included in the conversation.
-         body:
-            properties:
-               users:
-                  type: array
-                  required: true
-                  items:
-                     properties:
-                        userId:
-                           type: string
-                           required: true
-            example: |
-               {
-                  "users": [
-                     {
-                        "userId": "9dec8947-0381-4809-a053-b56777f782f4"
-                     },
-                     {
-                        "userId": "9dec8947-0381-4809-a053-b56777f782f5"
-                     }
-                  ]
-               }
-         responses:
-            201:
-               description: CREATED
-               body:
-                  properties:
-                     conversationId:
-                        type: string
-                        required: true
-                     transcriptExists:
-                        description: |
-                           True if a conversation already exists for the specified group of users.
-                           Refer to GET /conversations/getTranscript to retrieve the transcript.
-                        type: boolean
-                        required: true
-                  example: |
-                     {
+  /startConversationWithUsers:
+     post:
+        description: |
+           Begin a conversation with the specified users.
+           The requesting user is automatically included in the conversation.
+        body:
+           properties:
+              users:
+                 type: array
+                 required: true
+                 items:
+                    properties:
+                       userId:
+                          type: string
+                          required: true
+           example: |
+              {
+                 "users": [
+                    {
+                       "userId": "9dec8947-0381-4809-a053-b56777f782f4"
+                    },
+                    {
+                       "userId": "9dec8947-0381-4809-a053-b56777f782f5"
+                    }
+                 ]
+              }
+        responses:
+           201:
+              description: CREATED
+              body:
+                 properties:
+                    conversationId:
+                       type: string
+                       required: true
+                    transcriptExists:
+                       description: |
+                          True if a conversation already exists for the specified group of users.
+                          Refer to GET /conversations/getTranscript to retrieve the transcript.
+                       type: boolean
+                       required: true
+                 example: |
+                    {
                        "conversationId": "9dec8947-0381-4809-a053-b56777f782f4",
                        "transcriptExists": false
-                     }
-            400:
-               description: |
-                  BAD_REQUEST<br />
-                  One or more of the specified users does not exist.
-               body:
-                  properties:
-                     users:
-                        type: array
-                        required: true
-                        items:
-                           properties:
-                              userId:
-                                 type: string
-                                 required: true
-                  example: |
-                     {
-                        "users": [
-                           {
-                              "userId": "9dec8947-0381-4809-a053-b56777f782f4"
-                           },
-                           {
-                              "userId": "9dec8947-0381-4809-a053-b56777f782f5"
-                           }
-                        ]
-                     }
+                    }
+           400:
+              description: |
+                 BAD_REQUEST<br />
+                 One or more of the specified users does not exist.
+              body:
+                 properties:
+                    users:
+                       type: array
+                       required: true
+                       items:
+                          properties:
+                             userId:
+                                type: string
+                                required: true
+                 example: |
+                    {
+                       "users": [
+                          {
+                             "userId": "9dec8947-0381-4809-a053-b56777f782f4"
+                          },
+                          {
+                             "userId": "9dec8947-0381-4809-a053-b56777f782f5"
+                          }
+                       ]
+                    }
 
-   /getTranscript:
-      /{conversationId}:
-         uriParameters:
-            conversationId:
-               description: Conversation ID.
-         get:
-            description: |
-               Retrieve the transcript for the specified conversation.
-               The transcript messages are returned in `created` descending order.
-            responses:
-               200:
-                  description: |
-                     OK
-                  body:
-                     properties:
-                        messages:
-                           type: array
-                           required: true
-                           items:
-                              properties:
-                                 created:
-                                    description: The format is in [RFC339](https://xml2rfc.tools.ietf.org/public/rfc/html/rfc3339.html#anchor14), which is a profile of [ISO 8601].
-                                    type: datetime
-                                    required: true
-                                 createdBy:
-                                    description: |
-                                       `userId`
-                                    type: string
-                                    required: true
-                                 # TODO: only in DB.
-                                 #createdByDisplayName:
-                                 #   type: string
-                                 #   required: true
-                                 messageType:
-                                    enum: [ text ]
-                                    required: true
-                                 text:
-                                    type: string
-                                    required: true
-                     example: |
-                        {
-                           "messages": [
-                              {
-                                 "created": "2017-04-12T23:20:50.52Z",
-                                 "createdBy": "9dec8947-0381-4809-a053-b56777f782f4",
-                                 "messageType": "text",
-                                 "text": "Alright."
-                              },
-                              {
-                                 "created": "2017-04-12T23:20:39.13Z",
-                                 "createdBy": "9dec8947-0381-4809-a053-b56777f782f5",
-                                 "messageType": "text",
-                                 "text": "How's it going?"
-                              }
-                           ]
-                        }
-               404:
-                  description: |
-                     NOT_FOUND<br />
-                     The conversation with the given `conversationId` doesn't exist.
-               403:
-                  description: |
-                     FORBIDDEN<br />
-                     The user doesn't have permissions to view this conversation.
+  /getTranscript:
+     /{conversationId}:
+        uriParameters:
+           conversationId:
+              description: Conversation ID.
+        get:
+           description: |
+              Retrieve the transcript for the specified conversation.
+              The transcript messages are returned in `created` descending order.
+           responses:
+              200:
+                 description: |
+                    OK
+                 body:
+                    properties:
+                       messages:
+                          type: array
+                          required: true
+                          items:
+                             properties:
+                                created:
+                                   description: The format is in [RFC339](https://xml2rfc.tools.ietf.org/public/rfc/html/rfc3339.html#anchor14), which is a profile of [ISO 8601].
+                                   type: datetime
+                                   required: true
+                                createdBy:
+                                   description: |
+                                      `userId`
+                                   type: string
+                                   required: true
+                                # TODO: only in DB.
+                                #createdByDisplayName:
+                                #   type: string
+                                #   required: true
+                                messageType:
+                                   enum: [ text ]
+                                   required: true
+                                text:
+                                   type: string
+                                   required: true
+                    example: |
+                       {
+                          "messages": [
+                             {
+                                "created": "2017-04-12T23:20:50.52Z",
+                                "createdBy": "9dec8947-0381-4809-a053-b56777f782f4",
+                                "messageType": "text",
+                                "text": "Alright."
+                             },
+                             {
+                                "created": "2017-04-12T23:20:39.13Z",
+                                "createdBy": "9dec8947-0381-4809-a053-b56777f782f5",
+                                "messageType": "text",
+                                "text": "How's it going?"
+                             }
+                          ]
+                       }
+              404:
+                 description: |
+                    NOT_FOUND<br />
+                    The conversation with the given `conversationId` doesn't exist.
+              403:
+                 description: |
+                    FORBIDDEN<br />
+                    The user doesn't have permissions to view this conversation.
