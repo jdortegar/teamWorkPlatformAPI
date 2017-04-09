@@ -169,6 +169,32 @@ export function getTeamMembersBySubscriberUserIds(req, subscriberUserIds) {
    });
 }
 
+export function getTeamMembersByIds(req, teamMemberIds) {
+   if (teamMemberIds === undefined) {
+      return Promise.reject('teamMemberIds needs to be specified.');
+   }
+
+   const dynamoDb = req.app.locals.db;
+   const tableName = `${config.tablePrefix}teamMembers`;
+
+   const requestItemKeys = teamMemberIds.map((teamMemberId) => {
+      return { partitionId: { N: '-1' }, teamMemberId: { S: teamMemberId } };
+   });
+   const params = { RequestItems: {} };
+   params.RequestItems[tableName] = { Keys: requestItemKeys };
+
+   return new Promise((resolve, reject) => {
+      dynamoDb.batchGetItem(params).promise()
+         .then((data) => {
+            const returnTeams = removeIntermediateDataTypeFromArray(data.Responses[tableName]);
+            resolve(returnTeams);
+         })
+         .catch((err) => {
+            reject(err);
+         });
+   });
+}
+
 export function getTeamMembersByTeamId(req, teamId) {
    if (teamId === undefined) {
       return Promise.reject('teamId needs to be specified.');
@@ -219,7 +245,31 @@ export function getTeamsByIds(req, teamIds) {
    });
 }
 
-export function getTeamRoomMembersByTeamMemberIds(req, teamMemberIds = undefined) {
+export function getTeamRoomMembersByTeamRoomId(req, teamRoomId) {
+   if (teamRoomId === undefined) {
+      return Promise.reject('teamRoomId needs to be specified.');
+   }
+
+   const tableName = `${config.tablePrefix}teamRoomMembers`;
+
+   const filterExpression = 'teamRoomMemberInfo.teamRoomId = :teamRoomId';
+   const params = {
+      TableName: tableName,
+      FilterExpression: filterExpression,
+      ExpressionAttributeValues: {
+         ':teamRoomId': teamRoomId
+      },
+      Limit: 50
+   };
+
+   return new Promise((resolve, reject) => {
+      docClient().scan(params).promise()
+         .then(data => resolve(data.Items))
+         .catch(err => reject(err));
+   });
+}
+
+export function getTeamRoomMembersByTeamMemberIds(req, teamMemberIds) {
    if (teamMemberIds === undefined) {
       return Promise.reject('teamMemberIds needs to be specified.');
    }

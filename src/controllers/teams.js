@@ -32,5 +32,5 @@ export function getTeamMembers(req, res, next) {
          } else {
             next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
          }
-      })
+      });
 }
