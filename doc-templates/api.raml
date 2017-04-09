@@ -324,6 +324,75 @@ documentation:
                        ]
                     }
 
+  /getMembers:
+     /{teamId}:
+        uriParameters:
+           teamId:
+              description: Team ID.
+        get:
+           description: |
+              Retrieve the members (i.e. users) of a team given the team ID.
+           responses:
+              200:
+                 description: |
+                    OK
+                 body:
+                    properties:
+                       teamMembers:
+                          type: array
+                          required: true
+                          items:
+                             properties:
+                                userId:
+                                   type: string
+                                   required: true
+                                firstName:
+                                   type: string
+                                   required: true
+                                lastName:
+                                   type: string
+                                   required: true
+                                displayName:
+                                   type: string
+                                   required: true
+                                icon:
+                                   description: Base64 representation.
+                                   type: string | nil
+                                   required: false
+                                   default: nil
+                                userType:
+                                   type: string
+                                   required: true
+                    example: |
+                       {
+                          "teamMembers": [
+                             {
+                                "userId": "9dec8947-0381-4809-a053-b56777f782f4",
+                                "firstName": "Anthony",
+                                "lastName": "Daga",
+                                "displayName": "Anthony Dude Daga",
+                                "icon": null,
+                                "userType": "hablaUser"
+                             },
+                             {
+                                "userId": "9dec8947-0381-4809-a053-b56777f782f5",
+                                "firstName": "Jill",
+                                "lastName": "Goodacre",
+                                "displayName": "Jill Goodacre",
+                                "icon": null,
+                                "userType": "hablaUser"
+                             }
+                          ]
+                       }
+              404:
+                 description: |
+                    NOT_FOUND<br />
+                    The team with the given `teamId` doesn't exist.
+              403:
+                 description: |
+                    FORBIDDEN<br />
+                    The user doesn't have permissions to view this team.
+
 
 /teamRooms:
 
@@ -452,7 +521,7 @@ documentation:
                     OK
                  body:
                     properties:
-                       members:
+                       teamRoomMembers:
                           type: array
                           required: true
                           items:
@@ -479,7 +548,7 @@ documentation:
                                    required: true
                     example: |
                        {
-                          "members": [
+                          "teamRoomMembers": [
                              {
                                 "userId": "9dec8947-0381-4809-a053-b56777f782f4",
                                 "firstName": "Anthony",
