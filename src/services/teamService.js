@@ -1,6 +1,6 @@
 import uuid from 'uuid';
 import config from '../config/env';
-import { getSubscriberUsers, getTeamMembers, getTeamsByIds } from './util';
+import { getSubscriberUsers, getTeamMembersBySubscriberUserIds, getTeamsByIds } from './util';
 
 class TeamService {
    getUserTeams(req, userId) {
@@ -8,7 +8,7 @@ class TeamService {
          getSubscriberUsers(req, userId)
             .then((subscriberUsers) => {
                const subscriberUserIds = subscriberUsers.map((subscriberUser) => subscriberUser.subscriberUserId);
-               return getTeamMembers(req, subscriberUserIds);
+               return getTeamMembersBySubscriberUserIds(req, subscriberUserIds);
             })
             .then((teamMembers) => {
                const teamIds = teamMembers.map((teamMember) => {

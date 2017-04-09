@@ -11,5 +11,5 @@ export const aws = {
 };
 export const dynamoDbEndpoint = 'http://localhost:8000';
 
-export const webappBaseUri = 'http://hablawebapp.ngrok.io';
+export const webappBaseUri = 'http://localhost:8080';
 
