@@ -1,6 +1,6 @@
 //import bootstrap from '../../src/bootstrap';
 import AWS from 'aws-sdk';
-import { getTeamsByIds, getTeamMembers, getSubscriberUsers } from '../../src/services/util';
+import { getTeamsByIds, getTeamMembersBySubscriberUserIds, getSubscriberUsers } from '../../src/services/util';
 import config from '../../src/config/env';
 import teamSvc from '../../src/services/teamService';
 
@@ -20,7 +20,7 @@ test.skip('Get subscriberUsers of a specified user.', async () => {
 
 test.skip('Get teamMembers of a specified subscriberUser.', async () => {
    setup();
-   const teamMembers = await getTeamMembers({}, [ 'ea794510-cea6-4132-ae22-a7ae1d32abb4', 'ea794510-cea6-4132-ae22-a7ae1d32abb7'], undefined);
+   const teamMembers = await getTeamMembersBySubscriberUserIds({}, [ 'ea794510-cea6-4132-ae22-a7ae1d32abb4', 'ea794510-cea6-4132-ae22-a7ae1d32abb7']);
  	console.log(`AD: teamMembers=${JSON.stringify(teamMembers)}`);
 });
 
@@ -39,7 +39,7 @@ test.skip('Get teams by userId.', async () => {
          console.log(`AD: subscriberUsers=${JSON.stringify(subscriberUsers)}`);
          const subscriberUserIds = subscriberUsers.map((subscriberUser) => subscriberUser.subscriberUserId);
          console.log(`AD: subscriberUserIds=${JSON.stringify(subscriberUserIds)}`);
-         return getTeamMembers(req, subscriberUserIds);
+         return getTeamMembersBySubscriberUserIds(req, subscriberUserIds);
       })
       .then((teamMembers) => {
          console.log(`AD: teamMembers=${JSON.stringify(teamMembers)}`);

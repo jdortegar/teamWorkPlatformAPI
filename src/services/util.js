@@ -88,9 +88,9 @@ export function getSubscriberUsers(req, userId = undefined, subscriberOrgId = un
    });
 }
 
-export function getTeamMembers(req, subscriberUserIds = undefined, teamIds = undefined) {
-   if ((subscriberUserIds === undefined) && (teamIds === undefined)) {
-      return Promise.reject('At least one of subscriberUserIds, teamIds needs to be specified.');
+export function getTeamMembersBySubscriberUserIds(req, subscriberUserIds = undefined) {
+   if (subscriberUserIds === undefined) {
+      return Promise.reject('subscriberUserIds needs to be specified.');
    }
 
    const tableName = `${config.tablePrefix}teamMembers`;
@@ -98,7 +98,7 @@ export function getTeamMembers(req, subscriberUserIds = undefined, teamIds = und
    let filterExpression = '';
    const queryObject = {};
    if (subscriberUserIds) {
-      var index = 0;
+      let index = 0;
       subscriberUserIds.forEach((value) => {
          index++;
          const queryKey = `:titlevalue${index}`;
@@ -106,12 +106,6 @@ export function getTeamMembers(req, subscriberUserIds = undefined, teamIds = und
       });
       filterExpression += `teamMemberInfo.subscriberUserId IN (${Object.keys(queryObject).toString()})`;
    }
-   // if (teamIds) {
-   //    if (filterEpression) {
-   //       filterExpresion += ' and ';
-   //    }
-   //    filterExpression += 'teamMemberInfo.teamId in (:teamIds)';
-   // }
    const params = {
       TableName: tableName,
       FilterExpression: filterExpression,
