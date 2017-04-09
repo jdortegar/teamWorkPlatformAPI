@@ -75,8 +75,8 @@ function gracefulShutdown() {
     redisclient.quit();
     process.exit()
   });
-  
-   // if after 
+
+   // if after
    setTimeout(() => {
        console.error("Could not close connections in time, forcefully shutting down");
        redisclient.end(true);
@@ -86,11 +86,11 @@ function gracefulShutdown() {
 
 function registerGracefulShutdown() {
 	return new Promise((resolve, reject) => {
-    // listen for TERM signal .e.g. kill 
-    process.on ('SIGTERM', gracefulShutdown);
+    // listen for TERM signal .e.g. kill
+    process.on('SIGTERM', gracefulShutdown);
 
     // listen for INT signal e.g. Ctrl-C
-    process.on ('SIGINT', gracefulShutdown); 
+    process.on('SIGINT', gracefulShutdown);
 
     // console.log('                             registered graceful shutdown ');
     resolve();

@@ -6,7 +6,7 @@ import { containsRole,roles } from '../policies';
 
 const router = express.Router();
 
-router.route('/')
+router.route('/createUser')
   .post(validate(paramValidation.createUser), users.create)
   .delete(users.del);
 

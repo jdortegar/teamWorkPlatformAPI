@@ -12,6 +12,7 @@
 import express from 'express';
 import authRoutes from './auth';
 import userRoutes from './user';
+import teamsRoutes from './teams';
 import { containsAnyRole, containsRole, roles } from '../policies';
 
 const router = express.Router();
@@ -29,6 +30,7 @@ const isHablaUser = containsRole(roles.hablaUser);
 
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
+router.use('/teams', teamsRoutes);
 
 export default router;
 

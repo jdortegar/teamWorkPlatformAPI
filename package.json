@@ -25,7 +25,7 @@
     "start": "nodemon $NODE_DEBUG_OPTION src/index.js --exec babel-node",
     "debug": "nodemon src/index.js --exec babel-node --debug",
     "lint": "eslint src",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest",
     "watch:test": "npm run test -- --watch",
     "doc": "esdoc && npm run raml && npm run md",
     "build": "cross-env NODE_ENV=production babel -s true src -d dist",
