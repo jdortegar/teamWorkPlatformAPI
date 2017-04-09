@@ -1,5 +1,6 @@
 import AWS from 'aws-sdk';
-import { tablePrefix } from '../config/env';
+//import tablePrefix as config from '../config/env';
+import config from '../config/env';
 
 let _docClient;
 
@@ -61,7 +62,7 @@ export function getSubscriberUsers(req, userId = undefined, subscriberOrgId = un
       return Promise.reject('At least one of userId, subscriberOrgId needs to be specified.');
    }
 
-   const tableName = 'DEV_subscriberUsers'; // TODO:
+   const tableName = `${config.tablePrefix}subscriberUsers`;
 
    let filterExpression = (userId) ? 'subscriberUserInfo.userId = :userId' : undefined;
    if (subscriberOrgId) {
@@ -92,7 +93,7 @@ export function getTeamMembers(req, subscriberUserIds = undefined, teamIds = und
       return Promise.reject('At least one of subscriberUserIds, teamIds needs to be specified.');
    }
 
-   const tableName = 'DEV_teamMembers'; // TODO:
+   const tableName = `${config.tablePrefix}teamMembers`;
 
    let filterExpression = '';
    const queryObject = {};
@@ -132,7 +133,7 @@ export function getTeamsByIds(req, teamIds) {
    }
 
    const dynamoDb = req.app.locals.db;
-   const tableName = 'DEV_teams'; // TODO:
+   const tableName = `${config.tablePrefix}teams`;
 
    const requestItemKeys = teamIds.map((teamId) => {
       return { partitionId: { N: '-1' }, teamId: { S: teamId} };

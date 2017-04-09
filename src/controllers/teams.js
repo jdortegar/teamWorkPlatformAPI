@@ -11,6 +11,6 @@ export function getTeams(req, res, next) {
       })
       .catch((err) => {
          console.error(err);
-         return next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE));
+         return next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
       });
 }
