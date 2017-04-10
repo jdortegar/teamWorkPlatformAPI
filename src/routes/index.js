@@ -14,6 +14,7 @@ import authRoutes from './auth';
 import userRoutes from './user';
 import teamsRoutes from './teams';
 import teamRoomsRoutes from './teamRooms';
+import conversationsRoutes from './conversations';
 import { containsAnyRole, containsRole, roles } from '../policies';
 
 const router = express.Router();
@@ -33,6 +34,7 @@ router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
 router.use('/teams', teamsRoutes);
 router.use('/teamRooms', teamRoomsRoutes);
+router.use('/conversations', conversationsRoutes);
 
 export default router;
 

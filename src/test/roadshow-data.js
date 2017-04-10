@@ -16,8 +16,9 @@ function addDocument(params) {
    docClient.put(params, function(err, data) {
       if (err) {
          console.error('Unable to add item. Error JSON:', JSON.stringify(err, null, 2));
+         console.error('Failed to add: ', JSON.stringify(params));
       } else {
-         //console.log('Added item:', JSON.stringify(data, null, 2));
+         // console.log('Added item:', JSON.stringify(data, null, 2));
       }
    });
 };
@@ -98,15 +99,23 @@ addDocuments(teamRoomMembers);
 
 // Add conversations to teamRoom 'Posse'.
 var conversations = [
-   { Item: { conversationInfo: { userIds: ['ea794510-cea6-4132-ae22-a7ae1d32abb2', 'ea794510-cea6-4132-ae22-a7ae1d32abb5'], teamRoomId: 'ea794510-cea6-4132-ae22-a7ae1d325000' }, conversationId: 'ea794510-cea6-4132-ae22-a7ae1d327100', partitionId: -1 }, TableName: tablePrefix + 'conversations' },
+   { Item: { conversationInfo: { teamRoomId: 'ea794510-cea6-4132-ae22-a7ae1d325000', created: '2016-03-21T17:42:34Z' }, conversationId: 'ea794510-cea6-4132-ae22-a7ae1d327100', partitionId: -1 }, TableName: tablePrefix + 'conversations' },
 ];
 addDocuments(conversations);
 
 
+// Add conversation participants.
+var conversationParticipants = [
+   { Item: { conversationParticipantInfo: { userId: 'ea794510-cea6-4132-ae22-a7ae1d32abb2', conversationId: 'ea794510-cea6-4132-ae22-a7ae1d327100' }, conversationParticipantId: 'ea794510-cea6-4132-ae22-a7ae1d398400', partitionId: -1 }, TableName: tablePrefix + 'conversationParticipants' },
+   { Item: { conversationParticipantInfo: { userId: 'ea794510-cea6-4132-ae22-a7ae1d32abb5', conversationId: 'ea794510-cea6-4132-ae22-a7ae1d327100' }, conversationParticipantId: 'ea794510-cea6-4132-ae22-a7ae1d398401', partitionId: -1 }, TableName: tablePrefix + 'conversationParticipants' }
+]
+addDocuments(conversationParticipants);
+
+
 // Add messages to conversation of 'ea794510-cea6-4132-ae22-a7ae1d32abb2' and 'ea794510-cea6-4132-ae22-a7ae1d32abb5'.
 var messages = [
-   { Item: { conversationInfo: { created: '2016-03-21T17:42:34Z', createdBy: 'ea794510-cea6-4132-ae22-a7ae1d32abb2', text: 'How\'s it going?', messageType: 'text' }, messageId: 'ea794510-cea6-4132-ae22-a7ae1d120100', partitionId: -1 }, TableName: tablePrefix + 'messages' },
-   { Item: { conversationInfo: { created: '2016-03-21T17:42:45Z', createdBy: 'ea794510-cea6-4132-ae22-a7ae1d32abb5', text: 'Alright', messageType: 'text' }, messageId: 'ea794510-cea6-4132-ae22-a7ae1d120101', partitionId: -1 }, TableName: tablePrefix + 'messages' },
-   { Item: { conversationInfo: { created: '2016-03-21T17:42:56Z', createdBy: 'ea794510-cea6-4132-ae22-a7ae1d32abb2', text: 'Me too.', messageType: 'text' }, messageId: 'ea794510-cea6-4132-ae22-a7ae1d120102', partitionId: -1 }, TableName: tablePrefix + 'messages' },
+   { Item: { messageInfo: { created: '2016-03-21T17:42:34Z', createdBy: 'ea794510-cea6-4132-ae22-a7ae1d32abb2', text: 'How\'s it going?', messageType: 'text', conversationId: 'ea794510-cea6-4132-ae22-a7ae1d327100' }, messageId: 'ea794510-cea6-4132-ae22-a7ae1d120100', partitionId: -1 }, TableName: tablePrefix + 'messages' },
+   { Item: { messageInfo: { created: '2016-03-21T17:42:45Z', createdBy: 'ea794510-cea6-4132-ae22-a7ae1d32abb5', text: 'Alright', messageType: 'text', conversationId: 'ea794510-cea6-4132-ae22-a7ae1d327100' }, messageId: 'ea794510-cea6-4132-ae22-a7ae1d120101', partitionId: -1 }, TableName: tablePrefix + 'messages' },
+   { Item: { messageInfo: { created: '2016-03-21T17:42:56Z', createdBy: 'ea794510-cea6-4132-ae22-a7ae1d32abb2', text: 'Me too.', messageType: 'text', conversationId: 'ea794510-cea6-4132-ae22-a7ae1d327100' }, messageId: 'ea794510-cea6-4132-ae22-a7ae1d120102', partitionId: -1 }, TableName: tablePrefix + 'messages' },
 ];
 addDocuments(messages);

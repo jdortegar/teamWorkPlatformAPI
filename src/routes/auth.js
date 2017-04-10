@@ -10,11 +10,13 @@
 //---------------------------------------------------------------------
 
 import express from 'express';
+import validate from 'express-validation';
+import paramValidation from '../config/param-validation';
 import * as auth from '../controllers/auth';
 
 const router = express.Router();
 
 router.route('/login')
-   .post(auth.login);
+   .post(validate(paramValidation.login), auth.login);
 
 export default router;

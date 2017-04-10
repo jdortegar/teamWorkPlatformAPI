@@ -9,14 +9,13 @@
 //
 //---------------------------------------------------------------------
 
-import APIError from '../helpers/APIError';
-import httpStatus from 'http-status';
 import crypto from 'crypto';
-import jwt from 'jsonwebtoken';
+import httpStatus from 'http-status';
 import uuid from 'uuid';
 import config from '../config/env';
+import APIError from '../helpers/APIError';
 import * as mailer from '../helpers/mailer';
-import User, { hashPassword } from '../models/user';
+import User from '../models/user';
 import userService from '../services/userService';
 
 /**
@@ -25,32 +24,30 @@ import userService from '../services/userService';
 * A reservation is ...
 */
 export function createReservation(req, res, next) {
-  const db = req.app.locals.db;
-  const email = req.body.email || '';
+   const db = req.app.locals.db;
+   const email = req.body.email || '';
 
-  // Add new reservation to cache
+   // Add new reservation to cache
 
-  console.log(`createReservation: user ${email}`);
-  const rid = uuid.v4(); // get a uid to represent the reservation
-  console.log(`createReservation: new rid: ${rid}`);
-  req.app.locals.redis.set(rid, email, 'EX', 1800, (err, reply) => {
-    if (err) {
-      console.log('createReservation: hset status - redis error');
-    }
-    else {
-      console.log(`createReservation: created reservation for email: ${email}`);
-      mailer.sendActivationLink(email, rid).then(() => {
+   console.log(`createReservation: user ${email}`);
+   const rid = uuid.v4(); // get a uid to represent the reservation
+   console.log(`createReservation: new rid: ${rid}`);
+   req.app.locals.redis.set(rid, email, 'EX', 1800, (err, reply) => {
+      if (err) {
+         console.log('createReservation: hset status - redis error');
+      }
+      else {
+         console.log(`createReservation: created reservation for email: ${email}`);
+         mailer.sendActivationLink(email, rid).then(() => {
 
-        const response = {
-          status: 'SUCCESS',
-          uuid: rid
-        };
-
-        res.status(httpStatus.CREATED).json(response);
-
-      });
-    }
-  });
+            const response = {
+               status: 'SUCCESS',
+               uuid: rid
+            };
+            res.status(httpStatus.CREATED).json(response);
+         });
+      }
+   });
 };
 
 /**
@@ -64,46 +61,47 @@ export function createReservation(req, res, next) {
  * @param next
  */
 export function validateEmail(req, res, next) {
-  const db = req.app.locals.db;
-  const rid = req.params.rid || req.body.reservationId || '';
+   const rid = req.params.rid || req.body.reservationId || '';
 
-  // Find reservation in cache
-  const email = "";
-  console.log(`find Reservation: id = ${rid}`);
-  req.app.locals.redis.get(rid, (err, reply) => {
-    if (err) {
-      console.log('validateEmail: get status - redis error');
-    }
-    else if (reply) {
-      console.log(`validateEmail: found reservation for email: ${reply}`);
-      const response = {
-        status: 'SUCCESS',
-        email: reply
-      };
-
-      if (req.accepts('json')) {
-         res.status(httpStatus.OK).json(response);
-      } else {
-         res.status(httpStatus.BAD_REQUEST).end();
+   // Find reservation in cache
+   console.log(`find Reservation: id = ${rid}`);
+   req.app.locals.redis.get(rid, (err, reply) => {
+      if (err) {
+         console.log('validateEmail: get status - redis error');
       }
-    }
-    else {
-      var response = {
-        status: 'ERR_RESERVATION_NOT_FOUND'
-      };
-      res.status(httpStatus.NOT_FOUND).json(response);
-    }
-  });
+      else if (reply) {
+         console.log(`validateEmail: found reservation for email: ${reply}`);
+         const response = {
+            status: 'SUCCESS',
+            email: reply
+         };
+
+         if (req.accepts('json')) {
+            res.status(httpStatus.OK).json(response);
+         } else {
+            res.status(httpStatus.BAD_REQUEST).end();
+         }
+      }
+      else {
+         const response = {
+            status: 'ERR_RESERVATION_NOT_FOUND'
+         };
+         res.status(httpStatus.NOT_FOUND).json(response);
+      }
+   });
 };
 
+/**
+ * TODO: This should also create subscriberOrg and subscriberUser.
+ *
+ * @param req
+ * @param res
+ * @param next
+ */
 export function create(req, res, next) {
    userService.addUser(req, req.body)
       .then((status) => {
-         if (status.body) {
-
-         } else {
-            res.status(status.httpStatus).end();
-         }
+         res.status(status.httpStatus).end();
       })
       .catch((err) => {
          console.error(err);

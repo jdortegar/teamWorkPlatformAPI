@@ -6,7 +6,8 @@ import {
    getTeamRoomMembersByTeamMemberIds,
    getTeamRoomMembersByTeamRoomId,
    getTeamRoomsByIds,
-   getUsersByIds } from './util';
+   getUsersByIds
+} from './util';
 import { NoPermissionsError } from './teamService';
 
 export class TeamRoomNotExistError extends Error {
