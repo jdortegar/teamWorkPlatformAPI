@@ -33,6 +33,7 @@ export function publicTeams(dbTeams) {
    });
 }
 
+
 export function publicTeamRoom(dbTeamRoom) {
    const teamRoomId = dbTeamRoom.teamRoomId;
    const { name, purpose, publish, active } = dbTeamRoom.teamRoomInfo;
@@ -48,5 +49,40 @@ export function publicTeamRoom(dbTeamRoom) {
 export function publicTeamRooms(dbTeamRooms) {
    return dbTeamRooms.map((dbTeamRoom) => {
       return publicTeamRoom(dbTeamRoom);
+   });
+}
+
+
+export function publicConversation(dbConversation) {
+   const conversationId = dbConversation.conversationId;
+   const { userIds } = dbConversation.conversationInfo;
+   return {
+      conversationId,
+      participants: userIds
+   };
+}
+
+export function publicConversations(dbConversations) {
+   return dbConversations.map((dbConversation) => {
+      return publicConversation(dbConversation);
+   });
+}
+
+
+export function publicMessage(dbMessage) {
+   const messageId = dbMessage.messageId;
+   const { created, createdBy, messageType, text } = dbMessage.messageInfo;
+   return {
+      messageId,
+      created,
+      createdBy,
+      messageType,
+      text
+   };
+}
+
+export function publicMessages(dbMessages) {
+   return dbMessages.map((dbMessage) => {
+      return publicMessage(dbMessage);
    });
 }

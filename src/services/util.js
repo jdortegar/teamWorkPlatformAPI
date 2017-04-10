@@ -210,3 +210,30 @@ export function getTeamRoomsByIds(req, teamRoomIds) {
    const tableName = `${config.tablePrefix}teamRooms`;
    return batchGetItemBySortKey(req, tableName, 'teamRoomId', teamRoomIds);
 }
+
+export function getConversationsByIds(req, conversationIds) {
+   if (conversationIds === undefined) {
+      return Promise.reject('conversationIds needs to be specified.');
+   }
+
+   const tableName = `${config.tablePrefix}conversations`;
+   return batchGetItemBySortKey(req, tableName, 'conversationId', conversationIds);
+}
+
+export function getMessagesByConversationId(req, conversationId) {
+   if (conversationId === undefined) {
+      return Promise.reject('conversationId needs to be specified.');
+   }
+
+   const tableName = `${config.tablePrefix}messages`;
+   return filteredScan(req, tableName, 'messageInfo.conversationId', [conversationId]);
+}
+
+export function getConversationParticipantsByUserId(req, userId) {
+   if (userId === undefined) {
+      return Promise.reject('userId needs to be specified.');
+   }
+
+   const tableName = `${config.tablePrefix}conversationParticipants`;
+   return filteredScan(req, tableName, 'conversationParticipantInfo.userId', [userId]);
+}

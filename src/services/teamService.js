@@ -1,4 +1,11 @@
-import { getSubscriberUsersByIds, getSubscriberUsersByUserIds, getTeamMembersBySubscriberUserIds, getTeamMembersByTeamId, getTeamsByIds, getUsersByIds } from './util';
+import {
+   getSubscriberUsersByIds,
+   getSubscriberUsersByUserIds,
+   getTeamMembersBySubscriberUserIds,
+   getTeamMembersByTeamId,
+   getTeamsByIds,
+   getUsersByIds
+} from './util';
 
 export class TeamNotExistError extends Error {
    constructor(...args) {

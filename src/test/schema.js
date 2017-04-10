@@ -151,6 +151,22 @@ var conversationsParams = {
    }
 };
 
+var conversationParticipantsParams = {
+   TableName : tablePrefix + 'conversationParticipants',
+   KeySchema: [
+      { AttributeName: 'partitionId', KeyType: 'HASH'},  //Partition key
+      { AttributeName: 'conversationParticipantId', KeyType: 'RANGE' }  //Sort key
+   ],
+   AttributeDefinitions: [
+      { AttributeName: 'partitionId', AttributeType: 'N' },
+      { AttributeName: 'conversationParticipantId', AttributeType: 'S' }
+   ],
+   ProvisionedThroughput: {
+      ReadCapacityUnits: 10,
+      WriteCapacityUnits: 10
+   }
+};
+
 var messagesParams = {
    TableName : tablePrefix + 'messages',
    KeySchema: [
@@ -177,5 +193,6 @@ createTable(teamMembersParams);
 createTable(teamRoomsParams);
 createTable(teamRoomMembersParams);
 createTable(conversationsParams);
+createTable(conversationParticipantsParams);
 createTable(messagesParams);
 
