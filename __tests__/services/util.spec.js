@@ -1,6 +1,6 @@
 //import bootstrap from '../../src/bootstrap';
 import AWS from 'aws-sdk';
-import { getTeamsByIds, getTeamMembersBySubscriberUserIds, getSubscriberUsers } from '../../src/services/util';
+import { getTeamsByIds, getTeamMembersBySubscriberUserIds, getSubscriberUsersByUserIds } from '../../src/services/util';
 import config from '../../src/config/env';
 import teamSvc from '../../src/services/teamService';
 
@@ -14,7 +14,7 @@ function setup() {
 
 test.skip('Get subscriberUsers of a specified user.', async () => {
    setup();
-   const subscriberUsers = await getSubscriberUsers({}, 'ea794510-cea6-4132-ae22-a7ae1d32abb5', undefined);
+   const subscriberUsers = await getSubscriberUsersByUserIds({}, ['ea794510-cea6-4132-ae22-a7ae1d32abb5'], undefined);
  	console.log(`AD: subscriberUsers=${subscriberUsers}`);
 });
 
@@ -34,7 +34,7 @@ test.skip('Get teams by userId.', async () => {
    setup();
 
    const req = { app: { locals: { db: new AWS.DynamoDB() } } };
-   const teams = await getSubscriberUsers(req, 'ea794510-cea6-4132-ae22-a7ae1d32abb5')
+   const teams = await getSubscriberUsersByUserIds(req, ['ea794510-cea6-4132-ae22-a7ae1d32abb5'])
       .then((subscriberUsers) => {
          console.log(`AD: subscriberUsers=${JSON.stringify(subscriberUsers)}`);
          const subscriberUserIds = subscriberUsers.map((subscriberUser) => subscriberUser.subscriberUserId);

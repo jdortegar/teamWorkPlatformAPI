@@ -287,39 +287,22 @@ documentation:
                        required: true
                        items:
                           properties:
+                             teamId:
+                                type: string
+                                required: true
                              name:
                                 type: string
-                                required: true
-                             purpose:
-                                type: string | nil
-                                required: false
-                                default: nil
-                             teamId:
-                                description: The team to attach this room to.
-                                type: string
-                                required: true
-                             publish:
-                                type: boolean
-                                required: true
-                             active:
-                                type: boolean
                                 required: true
                  example: |
                     {
                        "teams": [
                           {
-                             "name": "Posse",
-                             "purpose": "Place to hang.",
                              "teamId": "9dec8947-0381-4809-a053-b56777f782f4",
-                             "publish": false,
-                             "active": true
+                             "name": "Posse"
                           },
                           {
-                             "name": "Friends",
-                             "purpose": "My buddies.",
                              "teamId": "9dec8947-0381-4809-a053-b56777f782f5",
-                             "publish": true,
-                             "active": true
+                             "name": "Friends"
                           }
                        ]
                     }
@@ -411,6 +394,9 @@ documentation:
                        required: true
                        items:
                           properties:
+                             teamRoomId:
+                                type: string
+                                required: true
                              name:
                                 type: string
                                 required: true
@@ -418,10 +404,6 @@ documentation:
                                 type: string | nil
                                 required: false
                                 default: nil
-                             teamId:
-                                description: The team to attach this room to.
-                                type: string
-                                required: true
                              publish:
                                 type: boolean
                                 required: true
@@ -432,16 +414,16 @@ documentation:
                     {
                        "teamRooms": [
                           {
+                             "teamRoomId": "9dec8947-0381-4809-a053-b56777f782f4",
                              "name": "Posse",
                              "purpose": "Place to hang.",
-                             "teamId": "9dec8947-0381-4809-a053-b56777f782f4",
                              "publish": false,
                              "active": true
                           },
                           {
+                             "teamRoomId": "9dec8947-0381-4809-a053-b56777f782f5",
                              "name": "Friends",
                              "purpose": "My buddies.",
-                             "teamId": "9dec8947-0381-4809-a053-b56777f782f5",
                              "publish": true,
                              "active": true
                           }

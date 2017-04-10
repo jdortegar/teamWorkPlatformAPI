@@ -6,4 +6,7 @@ const router = express.Router();
 router.route('/getTeamRooms')
   .get(teamRooms.getTeamRooms);
 
+router.route('/getMembers/:teamRoomId')
+   .get(teamRooms.getTeamRoomMembers);
+
 export default router;

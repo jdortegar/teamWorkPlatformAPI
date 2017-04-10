@@ -6,4 +6,7 @@ const router = express.Router();
 router.route('/getTeams')
   .get(teams.getTeams);
 
+router.route('/getMembers/:teamId')
+   .get(teams.getTeamMembers);
+
 export default router;
