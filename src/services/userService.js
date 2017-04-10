@@ -23,8 +23,9 @@ function addUserToDb(req, partitionId, uid, requestBody) {
    const docClient = new req.app.locals.AWS.DynamoDB.DocumentClient();
    const usersTable = `${config.tablePrefix}users`;
 
-   let { email, firstName, lastName, displayName, password, country, timeZone, icon } = requestBody;
-   icon = (icon) ? icon : null;
+   const { email, firstName, lastName, displayName, password, country, timeZone } = requestBody;
+   let { icon } = requestBody;
+   icon = icon || null;
    const params = {
       TableName: usersTable,
       Item:{
@@ -39,7 +40,7 @@ function addUserToDb(req, partitionId, uid, requestBody) {
             country,
             timeZone,
             icon
-            //,iconType
+            // ,iconType
          }
       }
    };
@@ -84,10 +85,10 @@ class UserService {
             })
             .then((userStatus) => {
                console.log(`status: ${userStatus}`);
-               if (userStatus) {
-                  uid = uuid.v4();
-                  let status = 1;
+               if ((userStatus === undefined) || (userStatus == null)) {
                   // Otherwise, add user to cache add user table.
+                  uid = uuid.v4();
+                  const status = 1;
                   return Promise.all([
                      addUserToCache(req, email, uid, status),
                      addUserToDb(req, -1, uid, req.body)
@@ -111,11 +112,8 @@ class UserService {
             .then((cacheAndDbStatuses) => {
                if (cacheAndDbStatuses) {
                   resolve({ httpStatus: httpStatus.CREATED });
-
-                  // TODO:
-                  res.status(httpStatus.CREATED).end();
                } else {
-                  // TODO: Should add userId in return.
+                  // TODO: Should add userId in return?.
                   resolve({ httpStatus: httpStatus.FORBIDDEN });
 
                   // resolve({
@@ -126,10 +124,6 @@ class UserService {
                   //       userStatus: userStatus
                   //    }
                   // });
-
-                  // TODO:
-                  // res.json(response);
-                  // res.status(httpStatus.FORBIDDEN).json();
                }
             })
             .catch((err) => {
