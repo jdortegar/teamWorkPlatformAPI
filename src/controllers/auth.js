@@ -9,10 +9,10 @@
 //
 //---------------------------------------------------------------------
 
-import APIError from '../helpers/APIError';
-import jwt from 'jsonwebtoken';
 import httpStatus from 'http-status';
+import jwt from 'jsonwebtoken';
 import config from '../config/env';
+import APIError from '../helpers/APIError';
 import { getAuthData, getPublicData, passwordMatch } from '../models/user';
 
 export function login(req, res, next) {
@@ -58,3 +58,6 @@ export function login(req, res, next) {
       });
 }
 
+export function logout(req, res, next) {
+   // TODO:
+}

@@ -21,14 +21,14 @@ function addUserToCache(req, email, uid, status) {
 
 function addUserToDb(req, partitionId, uid, requestBody) {
    const docClient = new req.app.locals.AWS.DynamoDB.DocumentClient();
-   const usersTable = `${config.tablePrefix}users`;
+   const tableName = `${config.tablePrefix}users`;
 
    const { email, firstName, lastName, displayName, password, country, timeZone } = requestBody;
    let { icon } = requestBody;
    icon = icon || null;
    const params = {
-      TableName: usersTable,
-      Item:{
+      TableName: tableName,
+      Item: {
          partitionId,
          userId: uid,
          userInfo: {
@@ -64,6 +64,43 @@ function addUserToDb(req, partitionId, uid, requestBody) {
    return docClient.put(params).promise();
 }
 
+function addSubscriberOrgToDb(req, partitionId, uid, name) {
+   const docClient = new req.app.locals.AWS.DynamoDB.DocumentClient();
+   const tableName = `${config.tablePrefix}subscriberOrgs`;
+
+   const params = {
+      TableName: tableName,
+      Item: {
+         partitionId,
+         subscriberOrgId: uid,
+         subscriberOrgInfo: {
+            name
+         }
+      }
+   };
+
+   return docClient.put(params).promise();
+}
+
+function addSubscriberUserToDb(req, partitionId, uid, userId, subscriberOrgId) {
+   const docClient = new req.app.locals.AWS.DynamoDB.DocumentClient();
+   const tableName = `${config.tablePrefix}subscriberUsers`;
+
+   const params = {
+      TableName: tableName,
+      Item: {
+         partitionId,
+         subscriberUserId: uid,
+         subscriberUserInfo: {
+            userId,
+            subscriberOrgId
+         }
+      }
+   };
+
+   return docClient.put(params).promise();
+}
+
 
 class UserService {
    addUser(req, userInfo) {
@@ -89,9 +126,15 @@ class UserService {
                   // Otherwise, add user to cache add user table.
                   uid = uuid.v4();
                   const status = 1;
+                  const subscriberOrgId = uuid.v4();
+                  const subscriberOrgName = req.body.displayName;
+                  const subscriberUserId = uuid.v4();
+
                   return Promise.all([
                      addUserToCache(req, email, uid, status),
-                     addUserToDb(req, -1, uid, req.body)
+                     addUserToDb(req, -1, uid, req.body),
+                     addSubscriberOrgToDb(req, -1, subscriberOrgId, subscriberOrgName),
+                     addSubscriberUserToDb(req, -1, subscriberUserId, uid, subscriberOrgId)
                   ]);
                   // TODO: Do we need to send them a second email?
                   // mailer.sendActivationLink(email, uid).then(() => {
@@ -113,7 +156,6 @@ class UserService {
                if (cacheAndDbStatuses) {
                   resolve({ httpStatus: httpStatus.CREATED });
                } else {
-                  // TODO: Should add userId in return?.
                   resolve({ httpStatus: httpStatus.FORBIDDEN });
 
                   // resolve({

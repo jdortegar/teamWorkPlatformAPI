@@ -7,28 +7,28 @@ import app from './config/express';
 let redisclient;
 
 function startupInfo() {
-  console.log('Habla API Startup');
-  console.log('---------------------------------------------------------');
-  console.log(`AWS Region       : ${config.aws.awsRegion}`);
-  console.log(`DynamoDB Endpoint: ${config.dynamoDbEndpoint}`);
-  console.log(`Table Prefix     : ${config.tablePrefix}`);
-  console.log(`Redis Server     : ${config.cacheServer}`);
-  console.log(`Redis Port       : ${config.cachePort}`);
-  console.log(`NodeJS Port      : ${config.nodePort}`);
-  console.log();
+   console.log('Habla API Startup');
+   console.log('---------------------------------------------------------');
+   console.log(`AWS Region       : ${config.aws.awsRegion}`);
+   console.log(`DynamoDB Endpoint: ${config.dynamoDbEndpoint}`);
+   console.log(`Table Prefix     : ${config.tablePrefix}`);
+   console.log(`Redis Server     : ${config.cacheServer}`);
+   console.log(`Redis Port       : ${config.cachePort}`);
+   console.log(`NodeJS Port      : ${config.nodePort}`);
+   console.log();
 }
 
 function setupDynamoDb() {
 	return new Promise((resolve, reject) => {
-  	AWS.config.update({
-   	 region: config.aws.awsRegion,
-   	 endpoint: config.dynamoDbEndpoint
-  	});
-  	const dynamodb = new AWS.DynamoDB();
-  	app.locals.AWS = AWS;
-  	app.locals.db = dynamodb;
+      AWS.config.update({
+         region: config.aws.awsRegion,
+         endpoint: config.dynamoDbEndpoint
+      });
+      const dynamodb = new AWS.DynamoDB();
+      app.locals.AWS = AWS;
+      app.locals.db = dynamodb;
 
-    console.log('Connected to DynamoDB.');
+      console.log('Connected to DynamoDB.');
     resolve();
   });
 }
