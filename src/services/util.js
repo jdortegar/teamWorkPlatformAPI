@@ -10,6 +10,7 @@ function docClient() {
    return _docClient;
 }
 
+
 function removeIntermediateDataType(obj) {
    if (typeof obj !== 'object') {
       return obj;
@@ -56,16 +57,13 @@ function removeIntermediateDataTypeFromArray(arr) {
 }
 
 
-export function getUsersByIds(req, userIds) {
-   if (userIds === undefined) {
-      return Promise.reject('userIds needs to be specified.');
-   }
-
+function batchGetItemBySortKey(req, tableName, sortKeyName, sortKeys) {
    const dynamoDb = req.app.locals.db;
-   const tableName = `${config.tablePrefix}users`;
 
-   const requestItemKeys = userIds.map((userId) => {
-      return { partitionId: { N: '-1' }, userId: { S: userId } };
+   const requestItemKeys = sortKeys.map((sortKey) => {
+      const requestItemKey = { partitionId: { N: '-1' } };
+      requestItemKey[sortKeyName] = { S: sortKey };
+      return requestItemKey;
    });
    const params = { RequestItems: {} };
    params.RequestItems[tableName] = { Keys: requestItemKeys };
@@ -73,8 +71,8 @@ export function getUsersByIds(req, userIds) {
    return new Promise((resolve, reject) => {
       dynamoDb.batchGetItem(params).promise()
          .then((data) => {
-            const returnUsers = removeIntermediateDataTypeFromArray(data.Responses[tableName]);
-            resolve(returnUsers);
+            const items = removeIntermediateDataTypeFromArray(data.Responses[tableName]);
+            resolve(items);
          })
          .catch((err) => {
             reject(err);
@@ -82,78 +80,16 @@ export function getUsersByIds(req, userIds) {
    });
 }
 
-export function getSubscriberUsersByUserIds(req, userIds) {
-   if (userIds === undefined) {
-      return Promise.reject('userIds needs to be specified.');
-   }
-
-   const tableName = `${config.tablePrefix}subscriberUsers`;
-
+function filteredScan(req, tableName, attributeName, values) {
    const queryObject = {};
    let filterExpression = '';
    let index = 0;
-   userIds.forEach((value) => {
+   values.forEach((value) => {
       index += 1;
-      const queryKey = `:uid${index}`;
+      const queryKey = `:v1${index}`;
       queryObject[queryKey.toString()] = value;
    });
-   filterExpression += `subscriberUserInfo.userId IN (${Object.keys(queryObject).toString()})`;
-   const params = {
-      TableName: tableName,
-      FilterExpression: filterExpression,
-      ExpressionAttributeValues: queryObject,
-      Limit: 50
-   };
-
-   return new Promise((resolve, reject) => {
-      docClient().scan(params).promise()
-         .then(data => resolve(data.Items))
-         .catch(err => reject(err));
-   });
-}
-
-export function getSubscriberUsersByIds(req, subscriberUserIds) {
-   if (subscriberUserIds === undefined) {
-      return Promise.reject('subscriberUserIds needs to be specified.');
-   }
-
-   const dynamoDb = req.app.locals.db;
-   const tableName = `${config.tablePrefix}subscriberUsers`;
-
-   const requestItemKeys = subscriberUserIds.map((subscriberUserId) => {
-      return { partitionId: { N: '-1' }, subscriberUserId: { S: subscriberUserId } };
-   });
-   const params = { RequestItems: {} };
-   params.RequestItems[tableName] = { Keys: requestItemKeys };
-
-   return new Promise((resolve, reject) => {
-      dynamoDb.batchGetItem(params).promise()
-         .then((data) => {
-            const returnTeams = removeIntermediateDataTypeFromArray(data.Responses[tableName]);
-            resolve(returnTeams);
-         })
-         .catch((err) => {
-            reject(err);
-         });
-   });
-}
-
-export function getTeamMembersBySubscriberUserIds(req, subscriberUserIds) {
-   if (subscriberUserIds === undefined) {
-      return Promise.reject('subscriberUserIds needs to be specified.');
-   }
-
-   const tableName = `${config.tablePrefix}teamMembers`;
-
-   const queryObject = {};
-   let filterExpression = '';
-   let index = 0;
-   subscriberUserIds.forEach((value) => {
-      index += 1;
-      const queryKey = `:suid${index}`;
-      queryObject[queryKey.toString()] = value;
-   });
-   filterExpression += `teamMemberInfo.subscriberUserId IN (${Object.keys(queryObject).toString()})`;
+   filterExpression += `${attributeName} IN (${Object.keys(queryObject).toString()})`;
    const params = {
       TableName: tableName,
       FilterExpression: filterExpression,
@@ -169,30 +105,50 @@ export function getTeamMembersBySubscriberUserIds(req, subscriberUserIds) {
    });
 }
 
+
+export function getUsersByIds(req, userIds) {
+   if (userIds === undefined) {
+      return Promise.reject('userIds needs to be specified.');
+   }
+
+   const tableName = `${config.tablePrefix}users`;
+   return batchGetItemBySortKey(req, tableName, 'userId', userIds);
+}
+
+export function getSubscriberUsersByUserIds(req, userIds) {
+   if (userIds === undefined) {
+      return Promise.reject('userIds needs to be specified.');
+   }
+
+   const tableName = `${config.tablePrefix}subscriberUsers`;
+   return filteredScan(req, tableName, 'subscriberUserInfo.userId', userIds);
+}
+
+export function getSubscriberUsersByIds(req, subscriberUserIds) {
+   if (subscriberUserIds === undefined) {
+      return Promise.reject('subscriberUserIds needs to be specified.');
+   }
+
+   const tableName = `${config.tablePrefix}subscriberUsers`;
+   return batchGetItemBySortKey(req, tableName, 'subscriberUserId', subscriberUserIds);
+}
+
+export function getTeamMembersBySubscriberUserIds(req, subscriberUserIds) {
+   if (subscriberUserIds === undefined) {
+      return Promise.reject('subscriberUserIds needs to be specified.');
+   }
+
+   const tableName = `${config.tablePrefix}teamMembers`;
+   return filteredScan(req, tableName, 'teamMemberInfo.subscriberUserId', subscriberUserIds);
+}
+
 export function getTeamMembersByIds(req, teamMemberIds) {
    if (teamMemberIds === undefined) {
       return Promise.reject('teamMemberIds needs to be specified.');
    }
 
-   const dynamoDb = req.app.locals.db;
    const tableName = `${config.tablePrefix}teamMembers`;
-
-   const requestItemKeys = teamMemberIds.map((teamMemberId) => {
-      return { partitionId: { N: '-1' }, teamMemberId: { S: teamMemberId } };
-   });
-   const params = { RequestItems: {} };
-   params.RequestItems[tableName] = { Keys: requestItemKeys };
-
-   return new Promise((resolve, reject) => {
-      dynamoDb.batchGetItem(params).promise()
-         .then((data) => {
-            const returnTeams = removeIntermediateDataTypeFromArray(data.Responses[tableName]);
-            resolve(returnTeams);
-         })
-         .catch((err) => {
-            reject(err);
-         });
-   });
+   return batchGetItemBySortKey(req, tableName, 'teamMemberId', teamMemberIds);
 }
 
 export function getTeamMembersByTeamId(req, teamId) {
@@ -224,25 +180,8 @@ export function getTeamsByIds(req, teamIds) {
       return Promise.reject('teamIds needs to be specified.');
    }
 
-   const dynamoDb = req.app.locals.db;
    const tableName = `${config.tablePrefix}teams`;
-
-   const requestItemKeys = teamIds.map((teamId) => {
-      return { partitionId: { N: '-1' }, teamId: { S: teamId } };
-   });
-   const params = { RequestItems: {} };
-   params.RequestItems[tableName] = { Keys: requestItemKeys };
-
-   return new Promise((resolve, reject) => {
-      dynamoDb.batchGetItem(params).promise()
-         .then((data) => {
-            const returnTeams = removeIntermediateDataTypeFromArray(data.Responses[tableName]);
-            resolve(returnTeams);
-         })
-         .catch((err) => {
-            reject(err);
-         });
-   });
+   return batchGetItemBySortKey(req, tableName, 'teamId', teamIds);
 }
 
 export function getTeamRoomMembersByTeamRoomId(req, teamRoomId) {
@@ -251,22 +190,7 @@ export function getTeamRoomMembersByTeamRoomId(req, teamRoomId) {
    }
 
    const tableName = `${config.tablePrefix}teamRoomMembers`;
-
-   const filterExpression = 'teamRoomMemberInfo.teamRoomId = :teamRoomId';
-   const params = {
-      TableName: tableName,
-      FilterExpression: filterExpression,
-      ExpressionAttributeValues: {
-         ':teamRoomId': teamRoomId
-      },
-      Limit: 50
-   };
-
-   return new Promise((resolve, reject) => {
-      docClient().scan(params).promise()
-         .then(data => resolve(data.Items))
-         .catch(err => reject(err));
-   });
+   return filteredScan(req, tableName, 'teamRoomMemberInfo.teamRoomId', [teamRoomId]);
 }
 
 export function getTeamRoomMembersByTeamMemberIds(req, teamMemberIds) {
@@ -275,28 +199,7 @@ export function getTeamRoomMembersByTeamMemberIds(req, teamMemberIds) {
    }
 
    const tableName = `${config.tablePrefix}teamRoomMembers`;
-
-   const queryObject = {};
-   let filterExpression = '';
-   let index = 0;
-   teamMemberIds.forEach((value) => {
-      index += 1;
-      const queryKey = `:tmid${index}`;
-      queryObject[queryKey.toString()] = value;
-   });
-   filterExpression += `teamRoomMemberInfo.teamMemberId IN (${Object.keys(queryObject).toString()})`;
-   const params = {
-      TableName: tableName,
-      FilterExpression: filterExpression,
-      ExpressionAttributeValues: queryObject,
-      Limit: 50
-   };
-
-   return new Promise((resolve, reject) => {
-      docClient().scan(params).promise()
-         .then(data => resolve(data.Items))
-         .catch(err => reject(err));
-   });
+   return filteredScan(req, tableName, 'teamRoomMemberInfo.teamMemberId', teamMemberIds);
 }
 
 export function getTeamRoomsByIds(req, teamRoomIds) {
@@ -304,23 +207,6 @@ export function getTeamRoomsByIds(req, teamRoomIds) {
       return Promise.reject('teamRoomIds needs to be specified.');
    }
 
-   const dynamoDb = req.app.locals.db;
    const tableName = `${config.tablePrefix}teamRooms`;
-
-   const requestItemKeys = teamRoomIds.map((teamRoomId) => {
-      return { partitionId: { N: '-1' }, teamRoomId: { S: teamRoomId } };
-   });
-   const params = { RequestItems: {} };
-   params.RequestItems[tableName] = { Keys: requestItemKeys };
-
-   return new Promise((resolve, reject) => {
-      dynamoDb.batchGetItem(params).promise()
-         .then((data) => {
-            const returnTeams = removeIntermediateDataTypeFromArray(data.Responses[tableName]);
-            resolve(returnTeams);
-         })
-         .catch((err) => {
-            reject(err);
-         });
-   });
+   return batchGetItemBySortKey(req, tableName, 'teamRoomId', teamRoomIds);
 }
