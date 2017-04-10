@@ -14,7 +14,7 @@ router.route('/registerUser')
   .post(validate(paramValidation.registerUser), users.createReservation);
 
 router.route('/validateEmail/:rid')
-  .post(users.validateEmail)
+  // .post(users.validateEmail)
   .get(users.validateEmail);
 
 router.route('/:userId')
