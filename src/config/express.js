@@ -36,7 +36,7 @@ app.use(cors());
 app.use(jwt({
    secret: config.jwtSecret
 }).unless({
-   path: [/^\/test/, /^\/auth\/login/, /^\/users/, /^\/users\/passwordreset/,/^\/users\/registerUser/, /^\/users\/validateEmail/, /^.*\/passwordupdate/]
+   path: [/^\/test/, /^\/auth\/login/, /^\/users\/createUser/, /^\/users\/passwordreset/,/^\/users\/registerUser/, /^\/users\/validateEmail/, /^.*\/passwordupdate/]
 }));
 
 // mount all routes on / path
