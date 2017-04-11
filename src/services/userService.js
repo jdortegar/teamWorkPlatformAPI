@@ -2,6 +2,7 @@ import httpStatus from 'http-status';
 import uuid from 'uuid';
 import config from '../config/env';
 import { hashPassword } from '../models/user';
+// import { mailer } from '../helpers/mailer';
 
 function addUserToCache(req, email, uid, status) {
    return new Promise((resolve, reject) => {
@@ -107,24 +108,12 @@ class UserService {
       return new Promise((resolve, reject) => {
          const { email } = userInfo;
 
-         let uid;
-
          // First, use email addr to see if it's already in redis.
-         req.app.locals.redis.hgetAsync(email, 'uid')
-            .then((retrievedUid) => {
-               uid = retrievedUid;
-
-               // If key is found in cache, reply with user already registered.
-               console.log(`users-create: user ${email} found in cache`);
-               console.log(`uid: ${uid}`);
-
-               return req.app.locals.redis.hgetAsync(email, 'status');
-            })
-            .then((userStatus) => {
-               console.log(`status: ${userStatus}`);
-               if ((userStatus === undefined) || (userStatus == null)) {
+         req.app.locals.redis.hgetallAsync(email)
+            .then((cachedEmail) => {
+               if (cachedEmail === null) {
                   // Otherwise, add user to cache add user table.
-                  uid = uuid.v4();
+                  const uid = uuid.v4();
                   const status = 1;
                   const subscriberOrgId = uuid.v4();
                   const subscriberOrgName = req.body.displayName;
@@ -136,6 +125,11 @@ class UserService {
                      addSubscriberOrgToDb(req, -1, subscriberOrgId, subscriberOrgName),
                      addSubscriberUserToDb(req, -1, subscriberUserId, uid, subscriberOrgId)
                   ]);
+               }
+               return undefined;
+            })
+            .then((cacheAndDbStatuses) => {
+               if (cacheAndDbStatuses) {
                   // TODO: Do we need to send them a second email?
                   // mailer.sendActivationLink(email, uid).then(() => {
                   //
@@ -146,26 +140,13 @@ class UserService {
                   //   res.json(response);
                   //   res.status(httpStatus.OK).json();
                   //
-                  // });
-               }
-               else {
-                  return undefined;
-               }
-            })
-            .then((cacheAndDbStatuses) => {
-               if (cacheAndDbStatuses) {
+                  // }); // Needs to be a promise.
+
                   resolve({ httpStatus: httpStatus.CREATED });
                } else {
+                  // Key is found in cache, user already registered.
+                  console.log(`users-create: user ${email} found in cache`);
                   resolve({ httpStatus: httpStatus.FORBIDDEN });
-
-                  // resolve({
-                  //    httpStatus: httpStatus.FORBIDDEN,
-                  //    body: {
-                  //       status: 'ERR_USER_ALREADY_REGISTERED',
-                  //       uid: uid,
-                  //       userStatus: userStatus
-                  //    }
-                  // });
                }
             })
             .catch((err) => {
