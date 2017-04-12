@@ -15,12 +15,28 @@ export class ConversationNotExistError extends Error {
 
 class ConversationService {
 
-   getConversations(req, userId) {
+   /**
+    * Retrieve all conversations that the specified user is privy to.
+    * If the optional 'teamRoomId' is specified, the results are narrowed down to conversations of the team room.
+    *
+    * @param req
+    * @param userId
+    * @param teamId
+    * @returns {Promise}
+    */
+   getConversations(req, userId, teamRoomId = undefined) {
       return new Promise((resolve, reject) => {
          getConversationParticipantsByUserId(req, userId)
             .then((conversationParticipants) => {
                const conversationIds = conversationParticipants.map(conversationParticipant => conversationParticipant.conversationParticipantInfo.conversationId);
                return getConversationsByIds(req, conversationIds);
+            })
+            .then((conversations) => {
+               if (teamRoomId) {
+                  const conversationsOfTeamRoom = conversations.filter(conversation => (conversation.conversationInfo.teamRoomId === teamRoomId));
+                  return conversationsOfTeamRoom;
+               }
+               return conversations;
             })
             .then(conversations => resolve(conversations))
             .catch(err => reject(err));

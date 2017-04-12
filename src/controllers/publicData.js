@@ -20,9 +20,10 @@ export function publicUsers(dbUsers) {
 
 export function publicTeam(dbTeam) {
    const teamId = dbTeam.teamId;
-   const { name } = dbTeam.teamInfo;
+   const { name, subscriberOrgId } = dbTeam.teamInfo;
    return {
       teamId,
+      subscriberOrgId,
       name
    };
 }
@@ -36,9 +37,10 @@ export function publicTeams(dbTeams) {
 
 export function publicTeamRoom(dbTeamRoom) {
    const teamRoomId = dbTeamRoom.teamRoomId;
-   const { name, purpose, publish, active } = dbTeamRoom.teamRoomInfo;
+   const { teamId, name, purpose, publish, active } = dbTeamRoom.teamRoomInfo;
    return {
       teamRoomId,
+      teamId,
       name,
       purpose,
       publish,
@@ -55,10 +57,10 @@ export function publicTeamRooms(dbTeamRooms) {
 
 export function publicConversation(dbConversation) {
    const conversationId = dbConversation.conversationId;
-   const { userIds } = dbConversation.conversationInfo;
+   const { teamRoomId } = dbConversation.conversationInfo;
    return {
       conversationId,
-      participants: userIds
+      teamRoomId
    };
 }
 
@@ -71,13 +73,14 @@ export function publicConversations(dbConversations) {
 
 export function publicMessage(dbMessage) {
    const messageId = dbMessage.messageId;
-   const { created, createdBy, messageType, text } = dbMessage.messageInfo;
+   const { created, createdBy, messageType, text, replyTo } = dbMessage.messageInfo;
    return {
       messageId,
       created,
       createdBy,
       messageType,
-      text
+      text,
+      replyTo
    };
 }
 
