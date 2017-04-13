@@ -7,8 +7,9 @@ import { publicConversations, publicMessages } from './publicData';
 
 export function getConversations(req, res, next) {
    const userId = req.user._id;
+   const { teamRoomId } = req.query;
 
-   conversationsSvc.getConversations(req, userId)
+   conversationsSvc.getConversations(req, userId, teamRoomId)
       .then((conversations) => {
          res.status(httpStatus.OK).json({ conversations: publicConversations(conversations) });
       })

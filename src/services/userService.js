@@ -102,6 +102,85 @@ function addSubscriberUserToDb(req, partitionId, uid, userId, subscriberOrgId) {
    return docClient.put(params).promise();
 }
 
+function addTeamToDb(req, partitionId, uid, subscriberOrgId, name) {
+   const docClient = new req.app.locals.AWS.DynamoDB.DocumentClient();
+   const tableName = `${config.tablePrefix}teams`;
+
+   const params = {
+      TableName: tableName,
+      Item: {
+         partitionId,
+         teamId: uid,
+         teamInfo: {
+            subscriberOrgId,
+            name
+         }
+      }
+   };
+
+   return docClient.put(params).promise();
+}
+
+function addTeamMemberToDb(req, partitionId, uid, subscriberUserId, teamId) {
+   const docClient = new req.app.locals.AWS.DynamoDB.DocumentClient();
+   const tableName = `${config.tablePrefix}teamMembers`;
+
+   const params = {
+      TableName: tableName,
+      Item: {
+         partitionId,
+         teamMemberId: uid,
+         teamMemberInfo: {
+            subscriberUserId,
+            teamId
+         }
+      }
+   };
+
+   return docClient.put(params).promise();
+}
+
+function addTeamRoomToDb(req, partitionId, uid, teamId, name, purpose, publish, active) {
+   const docClient = new req.app.locals.AWS.DynamoDB.DocumentClient();
+   const tableName = `${config.tablePrefix}teamRooms`;
+
+   const params = {
+      TableName: tableName,
+      Item: {
+         partitionId,
+         teamRoomId: uid,
+         teamRoomInfo: {
+            teamId,
+            name,
+            purpose,
+            publish,
+            active
+         }
+      }
+   };
+
+   return docClient.put(params).promise();
+}
+
+function addTeamRoomMemberToDb(req, partitionId, uid, teamMemberId, teamRoomId) {
+   const docClient = new req.app.locals.AWS.DynamoDB.DocumentClient();
+   const tableName = `${config.tablePrefix}teamRoomMembers`;
+
+   const params = {
+      TableName: tableName,
+      Item: {
+         partitionId,
+         teamRoomMemberId: uid,
+         teamRoomMemberInfo: {
+            teamMemberId,
+            teamRoomId
+         }
+      }
+   };
+
+   return docClient.put(params).promise();
+}
+
 
 class UserService {
    addUser(req, userInfo) {
@@ -118,12 +197,25 @@ class UserService {
                   const subscriberOrgId = uuid.v4();
                   const subscriberOrgName = req.body.displayName;
                   const subscriberUserId = uuid.v4();
+                  const teamId = uuid.v4();
+                  const teamName = req.body.displayName;
+                  const teamMemberId = uuid.v4();
+                  const teamRoomId = uuid.v4();
+                  const teamRoomName = req.body.displayName;
+                  const teamRoomPurpose = 'My intitial room.';
+                  const teamRoomPublish = true;
+                  const teamRoomActive = true;
+                  const TeamRoomMemberId = uuid.v4();
 
                   return Promise.all([
                      addUserToCache(req, email, uid, status),
                      addUserToDb(req, -1, uid, req.body),
                      addSubscriberOrgToDb(req, -1, subscriberOrgId, subscriberOrgName),
-                     addSubscriberUserToDb(req, -1, subscriberUserId, uid, subscriberOrgId)
+                     addSubscriberUserToDb(req, -1, subscriberUserId, uid, subscriberOrgId),
+                     addTeamToDb(req, -1, teamId, subscriberOrgId, teamName),
+                     addTeamMemberToDb(req, -1, teamMemberId, subscriberUserId, teamId),
+                     addTeamRoomToDb(req, -1, teamRoomId, teamId, teamRoomName, teamRoomPurpose, teamRoomPublish, teamRoomActive),
+                     addTeamRoomMemberToDb(req, -1, TeamRoomMemberId, teamMemberId, teamRoomId)
                   ]);
                }
                return undefined;

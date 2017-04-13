@@ -1,6 +1,6 @@
 #%RAML 1.0
 ---
-title: Habla API
+title: Habla
 version: v0.1.6
 baseUri: https://api.habla.ai
 mediaType:  application/json
@@ -290,6 +290,9 @@ documentation:
                               teamId:
                                  type: string
                                  required: true
+                              subscriberOrgId:
+                                 type: string
+                                 required: true
                               name:
                                  type: string
                                  required: true
@@ -298,10 +301,12 @@ documentation:
                         "teams": [
                            {
                               "teamId": "9dec8947-0381-4809-a053-b56777f782f4",
+                              "subscriberOrgId": "ea794510-cea6-4132-0008-a7ae1d32abb5",
                               "name": "Posse"
                            },
                            {
                               "teamId": "9dec8947-0381-4809-a053-b56777f782f5",
+                              "subscriberOrgId": "ea794510-cea6-4132-0008-a7ae1d32abb5",
                               "name": "Friends"
                            }
                         ]
@@ -397,6 +402,9 @@ documentation:
                               teamRoomId:
                                  type: string
                                  required: true
+                              teamId:
+                                 type: string
+                                 required: true
                               name:
                                  type: string
                                  required: true
@@ -415,6 +423,7 @@ documentation:
                         "teamRooms": [
                            {
                               "teamRoomId": "9dec8947-0381-4809-a053-b56777f782f4",
+                              "teamId": "ea794510-cea6-4132-0008-a7ae1d32abb5",
                               "name": "Posse",
                               "purpose": "Place to hang.",
                               "publish": false,
@@ -422,6 +431,7 @@ documentation:
                            },
                            {
                               "teamRoomId": "9dec8947-0381-4809-a053-b56777f782f5",
+                              "teamId": "ea794510-cea6-4132-0008-a7ae1d32abb5",
                               "name": "Friends",
                               "purpose": "My buddies.",
                               "publish": true,
@@ -561,31 +571,45 @@ documentation:
 /conversations:
 
    /getConversations:
-        get:
-           description: |
-              Retrieve the conversations that the authenticated user is privy to.
-           responses:
-              200:
-                 description: |
-                    OK
-                 body:
-                    properties:
-                       conversations:
-                          type: array
-                          required: true
-                          items:
-                             properties:
-                                conversationId:
-                                   type: string
-                                   required: true
-                    example: |
-                       {
-                          "conversations": [
-                             {
-                                "conversationId": "9dec8947-0381-4809-a053-b56777f782f4"
-                             }
-                          ]
-                       }
+      get:
+         description: |
+            Retrieve the conversations that the authenticated user is privy to.
+            To narrow down the results to conversations of a team room, add the `teamRoomId` query parameter.
+         queryParameters:
+            teamRoomId:
+               description: Narrow the results to conversations of a team room.
+               type: string
+               required: false
+               example: /conversations/getConversations?teamRoomId=9dec8947-0381-4809-a053-b56777f782f4
+         responses:
+            200:
+               description: |
+                  OK
+               body:
+                  properties:
+                     conversations:
+                        type: array
+                        required: true
+                        items:
+                           properties:
+                              conversationId:
+                                 type: string
+                                 required: true
+                              teamRoomId:
+                                 type: string
+                                 required: false
+                  example: |
+                     {
+                        "conversations": [
+                           {
+                              "conversationId": "9dec8947-0381-4809-a053-b56777f782f4"
+                           },
+                           {
+                              "conversationId": "9dec8947-0381-4809-a053-b56777f782f5",
+                              "teamRoomId": "9dec8947-0381-4809-a053-b56777f782f6"
+                           }
+                        ]
+                     }
 
    /startConversationWithUsers:
       post:
@@ -700,6 +724,11 @@ documentation:
                                  text:
                                     type: string
                                     required: true
+                                 replyTo:
+                                    description: |
+                                       messageId this messages is attached to.  This is for threaded messages support.
+                                    type: string
+                                    required: false
                      example: |
                         {
                            "messages": [
