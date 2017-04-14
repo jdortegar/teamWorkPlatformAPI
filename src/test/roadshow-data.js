@@ -5,7 +5,7 @@ var endpoint =
 AWS.config.update({
    region: 'us-west-2',
    endpoint: 'dynamodb.us-west-2.amazonaws.com'
-   //endpoint: 'http://localhost:8000'
+   // endpoint: 'http://localhost:8000'
 });
 
 var tablePrefix = 'DEV_';
@@ -160,7 +160,9 @@ addDocuments(teamMembers);
 
 teamRooms = [
    { Item: { teamRoomInfo: { name: '3.4 Release', purpose: 'Prepare for next release.', publish: false, active: true, teamId: 'ea794510-cea6-4132-0008-a7ae1d32abb5' }, teamRoomId: 'ea794510-cea6-4132-0015-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'teamRooms' },
-   { Item: { teamRoomInfo: { name: 'Intelligent Mockup', purpose: 'UI sprint planning.', publish: true, active: true, teamId: 'ea794510-cea6-4132-0008-a7ae1d32abb5' }, teamRoomId: 'ea794510-cea6-4132-0016-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'teamRooms' }
+   { Item: { teamRoomInfo: { name: 'Intelligent Mockup', purpose: 'UI sprint planning.', publish: true, active: true, teamId: 'ea794510-cea6-4132-0008-a7ae1d32abb5' }, teamRoomId: 'ea794510-cea6-4132-0016-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'teamRooms' },
+   { Item: { teamRoomInfo: { name: 'Profile Details', purpose: 'Detailed design of user profile pages.', publish: true, active: false, teamId: 'ea794510-cea6-4132-0008-a7ae1d32abb5' }, teamRoomId: 'ea794510-cea6-4132-0116-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'teamRooms' },
+   { Item: { teamRoomInfo: { name: 'REST APIs for Mockups', purpose: null, publish: false, active: false, teamId: 'ea794510-cea6-4132-0008-a7ae1d32abb5' }, teamRoomId: 'ea794510-cea6-4132-0117-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'teamRooms' }
 ];
 addDocuments(teamRooms);
 
@@ -170,7 +172,9 @@ teamRoomMembers = [
    { Item: { teamRoomMemberInfo: { teamMemberId: 'ea794510-cea6-4132-0011-a7ae1d32abb5', teamRoomId: 'ea794510-cea6-4132-0015-a7ae1d32abb5' }, teamRoomMemberId: 'ea794510-cea6-4132-0019-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'teamRoomMembers' },
    { Item: { teamRoomMemberInfo: { teamMemberId: 'ea794510-cea6-4132-0012-a7ae1d32abb5', teamRoomId: 'ea794510-cea6-4132-0016-a7ae1d32abb5' }, teamRoomMemberId: 'ea794510-cea6-4132-0020-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'teamRoomMembers' },
    { Item: { teamRoomMemberInfo: { teamMemberId: 'ea794510-cea6-4132-0013-a7ae1d32abb5', teamRoomId: 'ea794510-cea6-4132-0016-a7ae1d32abb5' }, teamRoomMemberId: 'ea794510-cea6-4132-0021-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'teamRoomMembers' },
-   { Item: { teamRoomMemberInfo: { teamMemberId: 'ea794510-cea6-4132-0014-a7ae1d32abb5', teamRoomId: 'ea794510-cea6-4132-0016-a7ae1d32abb5' }, teamRoomMemberId: 'ea794510-cea6-4132-0022-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'teamRoomMembers' }
+   { Item: { teamRoomMemberInfo: { teamMemberId: 'ea794510-cea6-4132-0014-a7ae1d32abb5', teamRoomId: 'ea794510-cea6-4132-0016-a7ae1d32abb5' }, teamRoomMemberId: 'ea794510-cea6-4132-0022-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'teamRoomMembers' },
+   { Item: { teamRoomMemberInfo: { teamMemberId: 'ea794510-cea6-4132-0014-a7ae1d32abb5', teamRoomId: 'ea794510-cea6-4132-0116-a7ae1d32abb5' }, teamRoomMemberId: 'ea794510-cea6-4132-0122-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'teamRoomMembers' },
+   { Item: { teamRoomMemberInfo: { teamMemberId: 'ea794510-cea6-4132-0014-a7ae1d32abb5', teamRoomId: 'ea794510-cea6-4132-0117-a7ae1d32abb5' }, teamRoomMemberId: 'ea794510-cea6-4132-0123-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'teamRoomMembers' }
 ];
 addDocuments(teamRoomMembers);
 
