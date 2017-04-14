@@ -61,7 +61,6 @@
     "babel-cli": "^6.24.0",
     "babel-eslint": "^7.2.0",
     "babel-istanbul": "^0.12.2",
-    "babel-jest": "^19.0.0",
     "babel-node-debug": "^2.0.0",
     "babel-plugin-add-module-exports": "^0.2.1",
     "babel-preset-babili": "0.0.12",
@@ -124,9 +123,14 @@
     "globals": {
       "__DEV__": true
     },
-    "collectCoverage": true,
     "testMatch": [
       "**/__tests__/**/*spec.js?(x)"
+    ],
+    "collectCoverage": true,
+    "coverageReporters": [
+      "text",
+      "lcov",
+      "html"
     ]
   }
 }
