@@ -25,8 +25,9 @@ export function passwordMatch(user, password) {
 }
 
 export function getPublicData(user) {
-   const { emailAddress, firstName, lastName, displayName, country, timeZone, icon } = user;
+   const { userId, emailAddress, firstName, lastName, displayName, country, timeZone, icon } = user;
    return {
+      userId,
       username: emailAddress,
       email: emailAddress,
       firstName,

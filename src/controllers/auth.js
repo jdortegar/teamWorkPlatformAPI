@@ -21,9 +21,9 @@ export function login(req, res, next) {
 
    // Retrieve UUID from cache.
    req.app.locals.redis.hmgetAsync(username, 'uid', 'status')
-      .then((res) => { // id=res[0], status=res[1]
-         const userId = res[0];
-         const status = res[1];
+      .then((redisResponse) => { // id=redisResponse[0], status=redisResponse[1]
+         const userId = redisResponse[0];
+         const status = redisResponse[1];
          if ((userId !== null) && (status === '1')) {
             // Retrieve user from DB.
             const docClient = new req.app.locals.AWS.DynamoDB.DocumentClient();
@@ -42,6 +42,8 @@ export function login(req, res, next) {
       .then((dbData) => {
          if (dbData) {
             const user = dbData.Item.userInfo;
+            user.userId = dbData.Item.userId;
+
             if (passwordMatch(user, password)) {
                res.status(httpStatus.OK).json({
                   status: 'SUCCESS',
