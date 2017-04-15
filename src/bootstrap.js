@@ -4,7 +4,8 @@ import redis from 'redis';
 import config from './config/env';
 import app from './config/express';
 
-let redisclient;
+let redisClient;
+let server;
 
 function startupInfo() {
    console.log('Habla API Startup');
@@ -17,6 +18,7 @@ function startupInfo() {
    console.log(`NodeJS Port      : ${config.nodePort}`);
    console.log();
 }
+
 
 export function setupDynamoDb() {
    return new Promise((resolve) => {
@@ -33,6 +35,7 @@ export function setupDynamoDb() {
    });
 }
 
+
 export function connectRedis() {
    bluebird.promisifyAll(redis.RedisClient.prototype);
    bluebird.promisifyAll(redis.Multi.prototype);
@@ -41,36 +44,44 @@ export function connectRedis() {
       host: config.cacheServer,
       port: config.cachePort
    };
-   redisclient = redis.createClient(redisConfig);
-   app.locals.redis = redisclient;
+   const client = redis.createClient(redisConfig);
+   app.locals.redis = client;
 
-   redisclient.on('error', (err) => {
+   client.on('error', (err) => {
       console.log(`Redis Client Error ${err}`);
    });
 
    console.log('Connected to Redis.');
-   return Promise.resolve(redisclient);
+   return Promise.resolve(client);
 }
 
-export function disconnectRedis() {
-   redisclient.quit();
-   console.log('Disonnected from Redis.');
+export function disconnectRedis(client) {
+   client.quit();
+   console.log('Disconnected from Redis.');
    return Promise.resolve();
 }
 
-let server;
 
-function startServer() {
+export function startServer() {
    return new Promise((resolve, reject) => {
-      server = app.listen(config.nodePort, (err) => {
+      const httpServer = app.listen(config.nodePort, (err) => {
          if (err) {
             console.err(`Error starting server on port ${config.nodePort}.  ${err}`);
             reject(err);
          } else {
             console.log(`Server started on port ${config.nodePort}`);
             console.log('---------------------------------------------------------');
-            resolve();
+            resolve(httpServer);
          }
+      });
+   });
+}
+
+export function stopServer(httpServer) {
+   return new Promise((resolve) => {
+      httpServer.close(() => {
+         console.log('Stopped server.');
+         resolve();
       });
    });
 }
@@ -79,16 +90,19 @@ function startServer() {
 // i.e. wait for existing connections
 function gracefulShutdown() {
    console.log('Received kill signal, shutting down gracefully.');
-   server.close(() => {
-      console.log('Closed out remaining connections.');
-      redisclient.quit();
-      process.exit();
-   });
+   stopServer(server)
+      .then(() => disconnectRedis(redisClient))
+      .catch(err => console.error(err));
+   // server.close(() => {
+   //    console.log('Closed out remaining connections.');
+   //    redisclient.quit();
+   //    process.exit();
+   // });
 
    // if after
    setTimeout(() => {
       console.error('Could not close connections in time, forcefully shutting down');
-      redisclient.end(true);
+      redisClient.end(true);
       process.exit();
    }, 10 * 1000);
 }
@@ -110,7 +124,13 @@ function registerGracefulShutdown() {
 export default function start() {
    startupInfo();
    Promise.all([setupDynamoDb(), connectRedis()])
-      .then(() => startServer())
-      .then(() => registerGracefulShutdown())
+      .then((dbAndRedisStatuses) => {
+         redisClient = dbAndRedisStatuses[1];
+         return startServer();
+      })
+      .then((httpServer) => {
+         server = httpServer;
+         return registerGracefulShutdown();
+      })
       .catch(err => console.error(err));
 }
