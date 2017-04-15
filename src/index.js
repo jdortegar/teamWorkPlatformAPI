@@ -1,7 +1,7 @@
 /**
 ---------------------------------------------------------------------
  src/index.js
- 
+
  container for hablaapi service
 ---------------------------------------------------------------------
   Date         Initials    Description
@@ -10,5 +10,6 @@
 
 ---------------------------------------------------------------------
 */
-import bootstrap from './bootstrap';
+import start from './bootstrap';
 
+start();
