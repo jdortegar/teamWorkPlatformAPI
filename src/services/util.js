@@ -115,6 +115,7 @@ export function getUsersByIds(req, userIds) {
    return batchGetItemBySortKey(req, tableName, 'userId', userIds);
 }
 
+
 export function getSubscriberUsersByUserIds(req, userIds) {
    if (userIds === undefined) {
       return Promise.reject('userIds needs to be specified.');
@@ -132,6 +133,41 @@ export function getSubscriberUsersByIds(req, subscriberUserIds) {
    const tableName = `${config.tablePrefix}subscriberUsers`;
    return batchGetItemBySortKey(req, tableName, 'subscriberUserId', subscriberUserIds);
 }
+
+export function getSubscriberUsersBySubscriberOrgId(req, subscriberOrgId) {
+   if (subscriberOrgId === undefined) {
+      return Promise.reject('subscriberOrgId needs to be specified.');
+   }
+
+   const tableName = `${config.tablePrefix}subscriberUsers`;
+
+   const filterExpression = 'subscriberUserInfo.subscriberOrgId = :subscriberOrgId';
+   const params = {
+      TableName: tableName,
+      FilterExpression: filterExpression,
+      ExpressionAttributeValues: {
+         ':subscriberOrgId': subscriberOrgId
+      },
+      Limit: 50
+   };
+
+   return new Promise((resolve, reject) => {
+      docClient().scan(params).promise()
+         .then(data => resolve(data.Items))
+         .catch(err => reject(err));
+   });
+}
+
+
+export function getSubscriberOrgsByIds(req, subscriberOrgIds) {
+   if (subscriberOrgIds === undefined) {
+      return Promise.reject('subscriberOrgIds needs to be specified.');
+   }
+
+   const tableName = `${config.tablePrefix}subscriberOrgs`;
+   return batchGetItemBySortKey(req, tableName, 'subscriberOrgId', subscriberOrgIds);
+}
+
 
 export function getTeamMembersBySubscriberUserIds(req, subscriberUserIds) {
    if (subscriberUserIds === undefined) {
@@ -175,6 +211,7 @@ export function getTeamMembersByTeamId(req, teamId) {
    });
 }
 
+
 export function getTeamsByIds(req, teamIds) {
    if (teamIds === undefined) {
       return Promise.reject('teamIds needs to be specified.');
@@ -183,6 +220,7 @@ export function getTeamsByIds(req, teamIds) {
    const tableName = `${config.tablePrefix}teams`;
    return batchGetItemBySortKey(req, tableName, 'teamId', teamIds);
 }
+
 
 export function getTeamRoomMembersByTeamRoomId(req, teamRoomId) {
    if (teamRoomId === undefined) {
@@ -202,6 +240,7 @@ export function getTeamRoomMembersByTeamMemberIds(req, teamMemberIds) {
    return filteredScan(req, tableName, 'teamRoomMemberInfo.teamMemberId', teamMemberIds);
 }
 
+
 export function getTeamRoomsByIds(req, teamRoomIds) {
    if (teamRoomIds === undefined) {
       return Promise.reject('teamRoomIds needs to be specified.');
@@ -211,6 +250,7 @@ export function getTeamRoomsByIds(req, teamRoomIds) {
    return batchGetItemBySortKey(req, tableName, 'teamRoomId', teamRoomIds);
 }
 
+
 export function getConversationsByIds(req, conversationIds) {
    if (conversationIds === undefined) {
       return Promise.reject('conversationIds needs to be specified.');
@@ -219,6 +259,7 @@ export function getConversationsByIds(req, conversationIds) {
    const tableName = `${config.tablePrefix}conversations`;
    return batchGetItemBySortKey(req, tableName, 'conversationId', conversationIds);
 }
+
 
 export function getMessagesByConversationId(req, conversationId) {
    if (conversationId === undefined) {

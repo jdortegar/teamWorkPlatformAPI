@@ -11,11 +11,12 @@
 
 import express from 'express';
 import authRoutes from './auth';
-import userRoutes from './user';
-import teamsRoutes from './teams';
-import teamRoomsRoutes from './teamRooms';
 import conversationsRoutes from './conversations';
 import { containsAnyRole, containsRole, roles } from '../policies';
+import subscriberOrgRoutes from './subscriberOrgs';
+import teamsRoutes from './teams';
+import teamRoomsRoutes from './teamRooms';
+import userRoutes from './user';
 
 const router = express.Router();
 
@@ -32,6 +33,7 @@ const isHablaUser = containsRole(roles.hablaUser);
 
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
+router.use('/subscriberOrgs', subscriberOrgRoutes);
 router.use('/teams', teamsRoutes);
 router.use('/teamRooms', teamRoomsRoutes);
 router.use('/conversations', conversationsRoutes);

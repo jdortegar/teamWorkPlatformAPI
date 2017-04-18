@@ -274,6 +274,113 @@ documentation:
                      The Reservation ID either does not exist or is no longer valid (i.e. expired).
 
 
+/subscriberOrgs:
+
+   /getSubscriberOrgs:
+      get:
+         description: |
+            Retrieve the organizations that the authenticated user is privy to.
+         responses:
+            200:
+               description: |
+                  OK
+               body:
+                  properties:
+                     subscriberOrgs:
+                        type: array
+                        required: true
+                        items:
+                           properties:
+                              subscriberOrgId:
+                                 type: string
+                                 required: true
+                              name:
+                                 type: string
+                                 required: true
+                  example: |
+                     {
+                        "subscriberOrgs": [
+                           {
+                              "subscriberOrgId": "ea794510-cea6-4132-0008-a7ae1d32abb5",
+                              "name": "Anthony Daga"
+                           },
+                           {
+                              "subscriberOrgId": "ea794510-cea6-4132-0008-a7ae1d32abb5",
+                              "name": "Acme"
+                           }
+                        ]
+                     }
+
+   /getSubscribers:
+      /{subscriberOrgId}:
+         uriParameters:
+            subscriberOrgId:
+               description: Subscriber Org ID.
+         get:
+            description: |
+               Retrieve the subscribers (i.e. users) of an organization given the subscriber org ID.
+            responses:
+               200:
+                  description: |
+                     OK
+                  body:
+                     properties:
+                        subscribers:
+                           type: array
+                           required: true
+                           items:
+                              properties:
+                                 userId:
+                                    type: string
+                                    required: true
+                                 firstName:
+                                    type: string
+                                    required: true
+                                 lastName:
+                                    type: string
+                                    required: true
+                                 displayName:
+                                    type: string
+                                    required: true
+                                 icon:
+                                    description: Base64 representation.
+                                    type: string | nil
+                                    required: false
+                                    default: nil
+                                 userType:
+                                    type: string
+                                    required: true
+                     example: |
+                        {
+                           "subscribers": [
+                              {
+                                 "userId": "9dec8947-0381-4809-a053-b56777f782f4",
+                                 "firstName": "Anthony",
+                                 "lastName": "Daga",
+                                 "displayName": "Anthony Dude Daga",
+                                 "icon": null,
+                                 "userType": "hablaUser"
+                              },
+                              {
+                                 "userId": "9dec8947-0381-4809-a053-b56777f782f5",
+                                 "firstName": "Jill",
+                                 "lastName": "Goodacre",
+                                 "displayName": "Jill Goodacre",
+                                 "icon": null,
+                                 "userType": "hablaUser"
+                              }
+                           ]
+                        }
+               404:
+                  description: |
+                     NOT_FOUND<br />
+                     The subscriber org with the given `subscriberOrgId` doesn't exist.
+               403:
+                  description: |
+                     FORBIDDEN<br />
+                     The user doesn't have permissions to view this subscriber org.
+
+
 /teams:
 
    /getTeams:

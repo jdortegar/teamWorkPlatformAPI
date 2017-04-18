@@ -18,6 +18,23 @@ export function publicUsers(dbUsers) {
    });
 }
 
+
+export function publicSubscriberOrg(dbSubscriberOrg) {
+   const subscriberOrgId = dbSubscriberOrg.subscriberOrgId;
+   const { name } = dbSubscriberOrg.subscriberOrgInfo;
+   return {
+      subscriberOrgId,
+      name
+   };
+}
+
+export function publicSubscriberOrgs(dbSubscriberOrgs) {
+   return dbSubscriberOrgs.map((dbSubscriberOrg) => {
+      return publicSubscriberOrg(dbSubscriberOrg);
+   });
+}
+
+
 export function publicTeam(dbTeam) {
    const teamId = dbTeam.teamId;
    const { name, subscriberOrgId } = dbTeam.teamInfo;
