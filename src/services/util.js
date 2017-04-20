@@ -324,3 +324,12 @@ export function getConversationParticipantsByUserId(req, userId) {
    const tableName = `${config.tablePrefix}conversationParticipants`;
    return filteredScan(req, tableName, 'conversationParticipantInfo.userId', [userId]);
 }
+
+export function getConversationParticipantsByConversationId(req, conversationId) {
+   if (conversationId === undefined) {
+      return Promise.reject('conversationId needs to be specified.');
+   }
+
+   const tableName = `${config.tablePrefix}conversationParticipants`;
+   return filteredScan(req, tableName, 'conversationParticipantInfo.conversationId', [conversationId]);
+}

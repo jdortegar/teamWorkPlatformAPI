@@ -16,7 +16,10 @@ const validationSchemas = {
          password: Joi.string().min(1).required(),
          country: Joi.string().min(1).required(),
          timeZone: Joi.string().min(1).required(),
-         icon: Joi.string().base64().allow(null)
+         icon: Joi.string().base64().allow(null),
+         preferences: Joi.object().required().keys({
+            personal: Joi.object().required()
+         })
       }
    },
    login: {

@@ -24,7 +24,7 @@ function addUserToDb(req, partitionId, uid, requestBody) {
    const docClient = new req.app.locals.AWS.DynamoDB.DocumentClient();
    const tableName = `${config.tablePrefix}users`;
 
-   const { email, firstName, lastName, displayName, password, country, timeZone } = requestBody;
+   const { email, firstName, lastName, displayName, password, country, timeZone, preferences } = requestBody;
    let { icon } = requestBody;
    icon = icon || null;
    const params = {
@@ -40,26 +40,12 @@ function addUserToDb(req, partitionId, uid, requestBody) {
             password: hashPassword(password),
             country,
             timeZone,
-            icon
+            icon,
+            preferences
             // ,iconType
          }
       }
    };
-   // TODO: for update.
-   // userInfo: {
-   //    emailAddress: email,
-   //       firstName,
-   //       lastName,
-   //       displayName,
-   //       country,
-   //       timeZone,
-   //       icon,
-   //       iconType,
-   //       address1,
-   //       address2,
-   //       zip_postalcode,
-   //       city_province
-   // }
 
    console.log('Adding a new item...');
    return docClient.put(params).promise();
@@ -165,7 +151,7 @@ function addTeamRoomMemberToDb(req, partitionId, uid, teamMemberId, teamRoomId) 
 
 
 class UserService {
-   addUser(req, userInfo) {
+   createUser(req, userInfo) {
       return new Promise((resolve, reject) => {
          const { email } = userInfo;
 
@@ -192,7 +178,7 @@ class UserService {
                   return Promise.all([
                      addUserToCache(req, email, uid, status),
                      addUserToDb(req, -1, uid, req.body),
-                     subscriberOrgSvc.createSubscriberOrgUsingBaseName(req, -1, subscriberOrgId, subscriberOrgName),
+                     subscriberOrgSvc.createSubscriberOrgUsingBaseName(req, subscriberOrgId, subscriberOrgName),
                      addSubscriberUserToDb(req, -1, subscriberUserId, uid, subscriberOrgId),
                      addTeamToDb(req, -1, teamId, subscriberOrgId, teamName),
                      addTeamMemberToDb(req, -1, teamMemberId, subscriberUserId, teamId),

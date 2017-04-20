@@ -102,6 +102,14 @@ documentation:
                            userType:
                               type: string
                               required: true
+                           preferences:
+                              type: object
+                              required: true
+                              properties:
+                                 personal:
+                                    description: Personal preferences only available to the user.
+                                    type: object
+                                    required: true
                   example: |
                      {
                         "status": "SUCCESS",
@@ -116,7 +124,13 @@ documentation:
                            "country": "US",
                            "timeZone": "America/Los_Angeles",
                            "icon": null,
-                           "userType": "hablaUser"
+                           "userType": "hablaUser",
+                           "preferences": {
+                              "iconColor": "red",
+                              "personal": {
+                                 "lastWindowLocation": "110, 64"
+                              }
+                           }
                         }
                      }
             401:
@@ -171,6 +185,14 @@ documentation:
                   type: string | nil
                   required: false
                   default: nil
+               preferences:
+                  type: object
+                  required: true
+                  properties:
+                     personal:
+                        description: Personal preferences only available to the user.
+                        type: object
+                        required: true
             example:
                {
                   "firstName": "Anthony",
@@ -180,8 +202,14 @@ documentation:
                   "password": "HelloWorld#123",
                   "country": "US",
                   "timeZone": "America/Los_Angeles",
-                  "icon": null
+                  "icon": null,
+                  "preferences": {
+                     "iconColor": "red",
+                     "personal": {
+                        "lastWindowLocation": "110, 64"
+                     }
                   }
+               }
          responses:
             201:
                description: |
@@ -404,6 +432,9 @@ documentation:
                                  userType:
                                     type: string
                                     required: true
+                                 preferences:
+                                    type: object
+                                    required: true
                      example: |
                         {
                            "subscribers": [
@@ -413,7 +444,9 @@ documentation:
                                  "lastName": "Daga",
                                  "displayName": "Anthony Dude Daga",
                                  "icon": null,
-                                 "userType": "hablaUser"
+                                 "userType": "hablaUser",
+                                 "preferences": {
+                                 }
                               },
                               {
                                  "userId": "9dec8947-0381-4809-a053-b56777f782f5",
@@ -421,7 +454,9 @@ documentation:
                                  "lastName": "Goodacre",
                                  "displayName": "Jill Goodacre",
                                  "icon": null,
-                                 "userType": "hablaUser"
+                                 "userType": "hablaUser",
+                                 "preferences": {
+                                 }
                               }
                            ]
                         }
@@ -583,6 +618,9 @@ documentation:
                                  userType:
                                     type: string
                                     required: true
+                                 preferences:
+                                    type: object
+                                    required: true
                      example: |
                         {
                            "teamMembers": [
@@ -592,7 +630,9 @@ documentation:
                                  "lastName": "Daga",
                                  "displayName": "Anthony Dude Daga",
                                  "icon": null,
-                                 "userType": "hablaUser"
+                                 "userType": "hablaUser",
+                                 "preferences": {
+                                 }
                               },
                               {
                                  "userId": "9dec8947-0381-4809-a053-b56777f782f5",
@@ -600,7 +640,9 @@ documentation:
                                  "lastName": "Goodacre",
                                  "displayName": "Jill Goodacre",
                                  "icon": null,
-                                 "userType": "hablaUser"
+                                 "userType": "hablaUser",
+                                 "preferences": {
+                                 }
                               }
                            ]
                         }
@@ -776,6 +818,9 @@ documentation:
                                  userType:
                                     type: string
                                     required: true
+                                 preferences:
+                                    type: object
+                                    required: true
                      example: |
                         {
                            "teamRoomMembers": [
@@ -785,7 +830,9 @@ documentation:
                                  "lastName": "Daga",
                                  "displayName": "Anthony Dude Daga",
                                  "icon": null,
-                                 "userType": "hablaUser"
+                                 "userType": "hablaUser",
+                                 "preferences": {
+                                 }
                               },
                               {
                                  "userId": "9dec8947-0381-4809-a053-b56777f782f5",
@@ -793,7 +840,9 @@ documentation:
                                  "lastName": "Goodacre",
                                  "displayName": "Jill Goodacre",
                                  "icon": null,
-                                 "userType": "hablaUser"
+                                 "userType": "hablaUser",
+                                 "preferences": {
+                                 }
                               }
                            ]
                         }

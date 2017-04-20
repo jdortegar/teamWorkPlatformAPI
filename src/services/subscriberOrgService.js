@@ -94,12 +94,14 @@ class SubscriberOrgService {
    createSubscriberOrgUsingBaseName(req, subscriberOrgId, subscriberOrgName, appendNumber = undefined) {
       const tryName = subscriberOrgName + ((appendNumber) ? ` (${appendNumber})` : '');
       return new Promise((resolve, reject) => {
-         this.createSubscriberOrg(req, tryName)
+         this.createSubscriberOrg(req, tryName, subscriberOrgId)
             .then(createdSubscriberOrg => resolve(createdSubscriberOrg))
             .catch((err) => {
                if (err instanceof SubscriberOrgExistsError) {
                   const tryNumber = (appendNumber) ? appendNumber + 1 : 1;
-                  this.createSubscriberOrgUsingBaseName(req, subscriberOrgName, tryNumber);
+                  this.createSubscriberOrgUsingBaseName(req, subscriberOrgId, subscriberOrgName, tryNumber)
+                     .then(createdSubscriberOrg => resolve(createdSubscriberOrg))
+                     .catch(err => reject(err));
                } else {
                   reject(err);
                }

@@ -92,14 +92,13 @@ export function validateEmail(req, res, next) {
 };
 
 /**
- * TODO: This should also create subscriberOrg and subscriberUser.
  *
  * @param req
  * @param res
  * @param next
  */
 export function create(req, res, next) {
-   userService.addUser(req, req.body)
+   userService.createUser(req, req.body)
       .then((status) => {
          res.status(status.httpStatus).end();
       })
