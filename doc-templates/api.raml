@@ -311,6 +311,60 @@ documentation:
                         ]
                      }
 
+   /createSubscriberOrg:
+      post:
+         description: |
+            Create a subscriber organization in Habla.
+         body:
+            properties:
+               name:
+                  type: string
+                  required: true
+            example:
+               {
+                  "name": "My Org"
+               }
+         responses:
+            201:
+               description: CREATED
+               body:
+                  properties:
+                     subscriberOrgId:
+                        type: string
+                        required: true
+                        example: 9dec8947-0381-4809-a053-b56777f782f4
+                  example: |
+                     {
+                       "subscriberOrgId": "9dec8947-0381-4809-a053-b56777f782f4",
+                       "name": "Acme"
+                     }
+            409:
+               description: |
+                  CONFLICT<br />
+                  A subscriber org by the requested name already exists.
+               body:
+                  properties:
+                     status:
+                        type: string
+                        required: true
+                  example: |
+                     {
+                        "status": "EXISTS"
+                     }
+            403:
+               description: |
+                  FORBIDDEN<br />
+                  The user is not allowed to create an organization.
+               body:
+                  properties:
+                     status:
+                        type: string
+                        required: true
+                  example: |
+                     {
+                        "status": "FORBIDDEN"
+                     }
+
    /getSubscribers:
       /{subscriberOrgId}:
          uriParameters:
@@ -374,11 +428,11 @@ documentation:
                404:
                   description: |
                      NOT_FOUND<br />
-                     The subscriber org with the given `subscriberOrgId` doesn't exist.
+                     The subscriber organization with the given `subscriberOrgId` doesn't exist.
                403:
                   description: |
                      FORBIDDEN<br />
-                     The user doesn't have permissions to view this subscriber org.
+                     The user doesn't have permissions to view this subscriber organization.
 
 
 /teams:
@@ -387,6 +441,12 @@ documentation:
       get:
          description: |
             Retrieve the teams that the authenticated user is privy to.
+         queryParameters:
+            subscriberOrgId:
+               description: Narrow the results to teams of a subscriber organization.
+               type: string
+               required: false
+               example: /teams/getTeams?subscriberOrgIdId=9dec8947-0381-4809-a053-b56777f782f4
          responses:
             200:
                description: |
@@ -421,6 +481,67 @@ documentation:
                               "name": "Friends"
                            }
                         ]
+                     }
+
+   /createTeam:
+      post:
+         description: |
+            Create a team within a subscriber organization in Habla.
+         body:
+            properties:
+               subscriberOrgId:
+                  type: string
+                  required: true
+               name:
+                  type: string
+                  required: true
+            example:
+               {
+                  "subscriberOrgId": "ea794510-cea6-4132-0008-a7ae1d32abb5",
+                  "name": "My Team"
+               }
+         responses:
+            201:
+               description: CREATED
+               body:
+                  properties:
+                     teamId:
+                        type: string
+                        required: true
+                     subscriberOrgId:
+                        type: string
+                        required: true
+                  example: |
+                     {
+                       "teamId": "9dec8947-0381-4809-a053-b56777f782f5",
+                       "subscriberOrgId": "9dec8947-0381-4809-a053-b56777f782f4",
+                       "name": "My Team"
+                     }
+            409:
+               description: |
+                  CONFLICT<br />
+                  A team with the specified `name` within the specified subscriber organization (i.e. `subscriberOrgId`) already exists.
+               body:
+                  properties:
+                     status:
+                        type: string
+                        required: true
+                  example: |
+                     {
+                        "status": "EXISTS"
+                     }
+            403:
+               description: |
+                  FORBIDDEN<br />
+                  The user is not allowed to create a team within the specified subscriber organization.
+               body:
+                  properties:
+                     status:
+                        type: string
+                        required: true
+                  example: |
+                     {
+                        "status": "FORBIDDEN"
                      }
 
    /getMembers:
@@ -499,6 +620,12 @@ documentation:
       get:
          description: |
             Retrieve the team rooms that the authenticated user is privy to.
+         queryParameters:
+            teamId:
+               description: Narrow the results to team rooms of a team.
+               type: string
+               required: false
+               example: /teamRooms/getTeamRooms?teamId=9dec8947-0381-4809-a053-b56777f782f4
          responses:
             200:
                description: |

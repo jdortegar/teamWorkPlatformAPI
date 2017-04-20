@@ -6,6 +6,7 @@ import { publicTeamRooms, publicUsers } from './publicData';
 
 export function getTeamRooms(req, res, next) {
    const userId = req.user._id;
+   const { subscriberOrgId } = req.query;
 
    teamRoomSvc.getUserTeamRooms(req, userId)
       .then((teamRooms) => {

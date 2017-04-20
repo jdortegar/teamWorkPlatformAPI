@@ -2,7 +2,7 @@ import httpStatus from 'http-status';
 import uuid from 'uuid';
 import config from '../config/env';
 import { hashPassword } from '../models/user';
-// import { mailer } from '../helpers/mailer';
+import subscriberOrgSvc from './subscriberOrgService';
 
 function addUserToCache(req, email, uid, status) {
    return new Promise((resolve, reject) => {
@@ -62,24 +62,6 @@ function addUserToDb(req, partitionId, uid, requestBody) {
    // }
 
    console.log('Adding a new item...');
-   return docClient.put(params).promise();
-}
-
-function addSubscriberOrgToDb(req, partitionId, uid, name) {
-   const docClient = new req.app.locals.AWS.DynamoDB.DocumentClient();
-   const tableName = `${config.tablePrefix}subscriberOrgs`;
-
-   const params = {
-      TableName: tableName,
-      Item: {
-         partitionId,
-         subscriberOrgId: uid,
-         subscriberOrgInfo: {
-            name
-         }
-      }
-   };
-
    return docClient.put(params).promise();
 }
 
@@ -210,7 +192,7 @@ class UserService {
                   return Promise.all([
                      addUserToCache(req, email, uid, status),
                      addUserToDb(req, -1, uid, req.body),
-                     addSubscriberOrgToDb(req, -1, subscriberOrgId, subscriberOrgName),
+                     subscriberOrgSvc.createSubscriberOrgUsingBaseName(req, -1, subscriberOrgId, subscriberOrgName),
                      addSubscriberUserToDb(req, -1, subscriberUserId, uid, subscriberOrgId),
                      addTeamToDb(req, -1, teamId, subscriberOrgId, teamName),
                      addTeamMemberToDb(req, -1, teamMemberId, subscriberUserId, teamId),

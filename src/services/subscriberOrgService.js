@@ -1,5 +1,9 @@
+import uuid from 'uuid';
+import config from '../config/env';
+import { NoPermissionsError } from './teamService';
 import {
    getSubscriberOrgsByIds,
+   getSubscriberOrgsByName,
    getSubscriberUsersBySubscriberOrgId,
    getSubscriberUsersByUserIds,
    getUsersByIds
@@ -10,6 +14,32 @@ export class SubscriberOrgNotExistError extends Error {
       super(...args);
       Error.captureStackTrace(this, SubscriberOrgNotExistError);
    }
+}
+
+export class SubscriberOrgExistsError extends Error {
+   constructor(...args) {
+      super(...args);
+      Error.captureStackTrace(this, SubscriberOrgExistsError);
+   }
+}
+
+
+function createSubscriberOrgInDb(req, partitionId, uid, name) {
+   const docClient = new req.app.locals.AWS.DynamoDB.DocumentClient();
+   const tableName = `${config.tablePrefix}subscriberOrgs`;
+
+   const params = {
+      TableName: tableName,
+      Item: {
+         partitionId,
+         subscriberOrgId: uid,
+         subscriberOrgInfo: {
+            name
+         }
+      }
+   };
+
+   return docClient.put(params).promise();
 }
 
 
@@ -33,6 +63,47 @@ class SubscriberOrgService {
                resolve(retSubscriberOrgs);
             })
             .catch(err => reject(err));
+      });
+   }
+
+   createSubscriberOrg(req, subscriberOrgName, subscriberOrgId = undefined) {
+      return new Promise((resolve, reject) => {
+         // TODO: canCreateSubscriberOrg() -> false, reject 403 forbidden
+         const actualSubscriberOrgId = subscriberOrgId || uuid.v4();
+         getSubscriberOrgsByName(req, subscriberOrgName)
+            .then((existingSubscriberOrgs) => {
+               if (existingSubscriberOrgs.length > 0) {
+                  throw new SubscriberOrgExistsError(subscriberOrgName);
+               } else {
+                  return createSubscriberOrgInDb(req, -1, actualSubscriberOrgId, subscriberOrgName);
+               }
+            })
+            .then(() => resolve({ subscriberOrgId: actualSubscriberOrgId, name: subscriberOrgName }))
+            .catch(err => reject(err));
+      });
+   }
+
+   /**
+    * Create a subscriber organization given the name+`appendNumber`.
+    * if the name exists, append ' (n)', where n >= 1 to avoid conflict.
+    *
+    * @param req
+    * @param subscriberOrgName
+    * @param appendNumber (optional)
+    */
+   createSubscriberOrgUsingBaseName(req, subscriberOrgId, subscriberOrgName, appendNumber = undefined) {
+      const tryName = subscriberOrgName + ((appendNumber) ? ` (${appendNumber})` : '');
+      return new Promise((resolve, reject) => {
+         this.createSubscriberOrg(req, tryName)
+            .then(createdSubscriberOrg => resolve(createdSubscriberOrg))
+            .catch((err) => {
+               if (err instanceof SubscriberOrgExistsError) {
+                  const tryNumber = (appendNumber) ? appendNumber + 1 : 1;
+                  this.createSubscriberOrgUsingBaseName(req, subscriberOrgName, tryNumber);
+               } else {
+                  reject(err);
+               }
+            });
       });
    }
 

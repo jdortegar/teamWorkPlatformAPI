@@ -24,6 +24,11 @@ const validationSchemas = {
          username: Joi.string().email().required(),
          password: Joi.string().required()
       }
+   },
+   createSubscriberOrg: {
+      body: {
+         name: Joi.string().min(1).required()
+      }
    }
 };
 

@@ -58,6 +58,10 @@ function removeIntermediateDataTypeFromArray(arr) {
 
 
 function batchGetItemBySortKey(req, tableName, sortKeyName, sortKeys) {
+   if ((sortKeys === undefined) || (sortKeys.length === 0)) {
+      return Promise.resolve([]);
+   }
+
    const dynamoDb = req.app.locals.db;
 
    const requestItemKeys = sortKeys.map((sortKey) => {
@@ -80,27 +84,60 @@ function batchGetItemBySortKey(req, tableName, sortKeyName, sortKeys) {
    });
 }
 
+/**
+ * References:
+ * http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.ExpressionAttributeNames.html
+ * http://stackoverflow.com/questions/36698945/scan-function-in-dynamodb-with-reserved-keyword-as-filterexpression-nodejs#36712485
+ * http://stackoverflow.com/questions/40283653/how-to-use-in-statement-in-filterexpression-using-array-dynamodb#40301073
+ *
+ * @param req
+ * @param tableName
+ * @param attributeName
+ * @param values
+ * @returns {*}
+ */
 function filteredScan(req, tableName, attributeName, values) {
-   const queryObject = {};
+   if ((values === undefined) || (values.length === 0)) {
+      return Promise.resolve([]);
+   }
+
    let filterExpression = '';
+
+   // Convert `attributeName` to query expressions.
+   const queryNames = {};
    let index = 0;
+   let queryName;
+   attributeName.split('.').forEach((path) => {
+      index += 1;
+      queryName = `#n1${index}`;
+      queryNames[queryName.toString()] = path;
+      filterExpression += (filterExpression.length === 0) ? '' : '.';
+      filterExpression += queryName;
+   });
+
+   // Convert attribute `values` to query expression.
+   const queryValues = {};
+   index = 0;
    values.forEach((value) => {
       index += 1;
       const queryKey = `:v1${index}`;
-      queryObject[queryKey.toString()] = value;
+      queryValues[queryKey.toString()] = value;
    });
-   filterExpression += `${attributeName} IN (${Object.keys(queryObject).toString()})`;
+   filterExpression += ` IN (${Object.keys(queryValues).toString()})`;
+
    const params = {
       TableName: tableName,
       FilterExpression: filterExpression,
-      ExpressionAttributeValues: queryObject,
+      ExpressionAttributeNames: queryNames,
+      ExpressionAttributeValues: queryValues,
       Limit: 50
    };
-   // TODO: this query sucks.  http://stackoverflow.com/questions/40283653/how-to-use-in-statement-in-filterexpression-using-array-dynamodb#40301073
 
    return new Promise((resolve, reject) => {
       docClient().scan(params).promise()
-         .then(data => resolve(data.Items))
+         .then((data) => {
+            resolve(data.Items);
+         })
          .catch(err => reject(err));
    });
 }
@@ -166,6 +203,15 @@ export function getSubscriberOrgsByIds(req, subscriberOrgIds) {
 
    const tableName = `${config.tablePrefix}subscriberOrgs`;
    return batchGetItemBySortKey(req, tableName, 'subscriberOrgId', subscriberOrgIds);
+}
+
+export function getSubscriberOrgsByName(req, subscriberOrgName) {
+   if (subscriberOrgName === undefined) {
+      return Promise.reject('subscriberOrgName needs to be specified.');
+   }
+
+   const tableName = `${config.tablePrefix}subscriberOrgs`;
+   return filteredScan(req, tableName, 'subscriberOrgInfo.name', [subscriberOrgName]);
 }
 
 
