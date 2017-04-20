@@ -1,14 +1,15 @@
 export function publicUser(dbUser) {
    const userId = dbUser.userId;
-   const { firstName, lastName, displayName, icon } = dbUser.userInfo;
+   const { firstName, lastName, displayName, icon, preferences } = dbUser.userInfo;
    return {
       userId,
       firstName,
       lastName,
       displayName,
       icon,
-      userType: 'hablaUser'
+      userType: 'hablaUser',
       // userType: dbUser.userType || 'hablaUser'
+      preferences
    };
 }
 
@@ -74,10 +75,12 @@ export function publicTeamRooms(dbTeamRooms) {
 
 export function publicConversation(dbConversation) {
    const conversationId = dbConversation.conversationId;
+   const participants = publicUsers(dbConversation.participants);
    const { teamRoomId } = dbConversation.conversationInfo;
    return {
       conversationId,
-      teamRoomId
+      teamRoomId,
+      participants
    };
 }
 

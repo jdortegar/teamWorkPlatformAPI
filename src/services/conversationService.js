@@ -1,8 +1,10 @@
 import moment from 'moment';
 import {
+   getConversationParticipantsByConversationId,
    getConversationParticipantsByUserId,
    getConversationsByIds,
-   getMessagesByConversationId
+   getMessagesByConversationId,
+   getUsersByIds
 } from './util';
 import teamRoomSvc from './teamRoomService';
 
@@ -16,6 +18,31 @@ export class ConversationNotExistError extends Error {
 
 class ConversationService {
 
+   _convertParticipantsToUsers(req, conversationParticipantsUserIds) {
+      const userIds = new Set();
+      conversationParticipantsUserIds.forEach((participants) => {
+         participants.forEach(userId => userIds.add(userId));
+      });
+
+      return new Promise((resolve, reject) => {
+         getUsersByIds(req, Array.from(userIds))
+            .then((users) => {
+               const usersMap = {};
+               users.forEach((user) => {
+                  usersMap[user.userId] = user;
+               });
+
+               // Replace userIds in `conversationParticipantsUserIds` to actual user info.
+               const conversationsUsers = conversationParticipantsUserIds.map((conversationParticipants) => {
+                  const conversationUsers = conversationParticipants.map(userId => usersMap[userId]);
+                  return conversationUsers;
+               });
+               resolve(conversationsUsers);
+            })
+            .catch(err => reject(err));
+      });
+   }
+
    /**
     * Retrieve all conversations that the specified user is privy to.
     * If the optional 'teamRoomId' is specified, the results are narrowed down to conversations of the team room.
@@ -27,19 +54,42 @@ class ConversationService {
     */
    getConversations(req, userId, teamRoomId = undefined) {
       return new Promise((resolve, reject) => {
+         let conversations;
          getConversationParticipantsByUserId(req, userId)
             .then((conversationParticipants) => {
                const conversationIds = conversationParticipants.map(conversationParticipant => conversationParticipant.conversationParticipantInfo.conversationId);
-               return getConversationsByIds(req, conversationIds);
+               const promises = [getConversationsByIds(req, conversationIds)];
+               conversationIds.forEach((conversationId) => {
+                  promises.push(getConversationParticipantsByConversationId(req, conversationId));
+               });
+               return Promise.all(promises);
             })
-            .then((conversations) => {
-               if (teamRoomId) {
-                  const conversationsOfTeamRoom = conversations.filter(conversation => (conversation.conversationInfo.teamRoomId === teamRoomId));
-                  return conversationsOfTeamRoom;
-               }
-               return conversations;
+            .then((conversationsAndParticipants) => {
+               const conversationParticipantsUserIds = [];
+
+               let participantsIdx = 0;
+               conversations = conversationsAndParticipants[0].filter((conversation) => {
+                  participantsIdx += 1;
+                  if ((teamRoomId === undefined) || (conversation.conversationInfo.teamRoomId === teamRoomId)) {
+                     const participants = conversationsAndParticipants[participantsIdx].map(participant => {
+                        return participant.conversationParticipantInfo.userId;
+                     });
+                     conversationParticipantsUserIds.push(participants);
+
+                     return conversation;
+                  }
+               });
+
+               return this._convertParticipantsToUsers(req, conversationParticipantsUserIds);
             })
-            .then(conversations => resolve(conversations))
+            .then((conversationsUsers) => {
+               let idx = 0;
+               conversations.forEach((conversation) => {
+                  conversation.participants = conversationsUsers[idx];
+                  idx += 1;
+               })
+            })
+            .then(() => resolve(conversations))
             .catch(err => reject(err));
       });
    }
@@ -70,7 +120,7 @@ class ConversationService {
       messages.forEach((message) => {
          flattenedMessages.push(message);
          if (message.thread) {
-            flattenedMessages = [...flattenedMessages, flattenMessagesArray(message.thread)];
+            flattenedMessages = [...flattenedMessages, this.flattenMessagesArray(message.thread)];
             delete message.thread;
          }
       });
