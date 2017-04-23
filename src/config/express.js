@@ -14,12 +14,12 @@
 import bodyParser from 'body-parser';
 import cors from 'cors';
 import express from 'express';
-import jwt from 'express-jwt';
 import expressValidation from 'express-validation';
+import jwt from 'express-jwt';
 import httpStatus from 'http-status';
 import morgan from 'morgan';
-import config from './env';
 import APIError from '../helpers/APIError';
+import config from './env';
 import routes from '../routes';
 
 const app = express();

@@ -12,6 +12,7 @@
 import express from 'express';
 import authRoutes from './auth';
 import conversationsRoutes from './conversations';
+import messagingRoutes from './messaging';
 import { containsAnyRole, containsRole, roles } from '../policies';
 import subscriberOrgRoutes from './subscriberOrgs';
 import teamsRoutes from './teams';
@@ -37,6 +38,7 @@ router.use('/subscriberOrgs', subscriberOrgRoutes);
 router.use('/teams', teamsRoutes);
 router.use('/teamRooms', teamRoomsRoutes);
 router.use('/conversations', conversationsRoutes);
+router.use('/messaging', messagingRoutes);
 
 export default router;
 

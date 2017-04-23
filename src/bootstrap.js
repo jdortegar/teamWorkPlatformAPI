@@ -1,6 +1,7 @@
 import AWS from 'aws-sdk';
 import bluebird from 'bluebird';
 import redis from 'redis';
+import messagingSvc from './services/messaging/messagingService';
 import config from './config/env';
 import app from './config/express';
 
@@ -31,7 +32,7 @@ export function setupDynamoDb() {
       app.locals.db = dynamodb;
 
       console.log('Connected to DynamoDB.');
-      resolve();
+      resolve(dynamodb);
    });
 }
 
@@ -69,6 +70,7 @@ export function startServer() {
             console.err(`Error starting server on port ${config.nodePort}.  ${err}`);
             reject(err);
          } else {
+            messagingSvc.init(httpServer);
             console.log(`Server started on port ${config.nodePort}`);
             console.log('---------------------------------------------------------');
             resolve(httpServer);
@@ -78,11 +80,26 @@ export function startServer() {
 }
 
 export function stopServer(httpServer) {
-   return new Promise((resolve) => {
-      httpServer.close(() => {
-         console.log('Stopped server.');
-         resolve();
-      });
+   return new Promise((resolve, reject) => {
+      messagingSvc.close()
+         .then(() => {
+            return new Promise((resolveHttpServer) => {
+               httpServer.close(() => {
+                  console.log('Stopped server.');
+                  resolveHttpServer();
+               });
+            });
+         })
+         .catch(() => {
+            return new Promise((resolveHttpServer) => {
+               httpServer.close(() => {
+                  console.log('Stopped server.');
+                  resolveHttpServer();
+               });
+            });
+         })
+         .then(() => resolve())
+         .catch(err => reject(err));
    });
 }
 

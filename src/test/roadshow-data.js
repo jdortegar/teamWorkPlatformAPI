@@ -36,17 +36,17 @@ function addDocuments(documents, log) {
 // Add user, subscriberOrg, and subscriberUser.
 var userOrgSubs = [
    [
-      { Item: { userInfo: { emailAddress: 'robert.abbott@habla.ai', firstName: 'Rob', lastName: 'Abbott', displayName: 'Rob Abbott', country: 'US', timeZone: 'America/Los_Angeles', icon: null, password: '$2a$11$fT4XWeKcQqW3daoSJdKILO4UDJIXNmtqimkvoj.y2PjEOcRhCVLZG' }, userId: 'ea794510-cea6-4132-ae22-a7ae1d32abb2', partitionId: -1 }, TableName: tablePrefix + 'users' },
+      { Item: { userInfo: { emailAddress: 'robert.abbott@habla.ai', firstName: 'Rob', lastName: 'Abbott', displayName: 'Rob Abbott', country: 'US', timeZone: 'America/Los_Angeles', icon: null, preferences: { personal: {} }, password: '$2a$11$fT4XWeKcQqW3daoSJdKILO4UDJIXNmtqimkvoj.y2PjEOcRhCVLZG' }, userId: 'ea794510-cea6-4132-ae22-a7ae1d32abb2', partitionId: -1 }, TableName: tablePrefix + 'users' },
       { Item: { subscriberOrgInfo: { name: 'Rob Abbott' }, subscriberOrgId: 'ea794510-cea6-4132-ae22-a7ae1d32abb3', partitionId: -1 }, TableName: tablePrefix + 'subscriberOrgs' },
       { Item: { subscriberUserInfo: { userId: 'ea794510-cea6-4132-ae22-a7ae1d32abb2', subscriberOrgId: 'ea794510-cea6-4132-ae22-a7ae1d32abb3' }, subscriberUserId: 'ea794510-cea6-4132-ae22-a7ae1d32abb4', partitionId: -1 }, TableName: tablePrefix + 'subscriberUsers' }
    ],
    [
-      { Item: { userInfo: { emailAddress: 'anthony.daga@habla.ai', firstName: 'Anthony', lastName: 'Daga', displayName: 'Anthony Daga', country: 'US', timeZone: 'America/Los_Angeles', icon: null, password: '$2a$11$fT4XWeKcQqW3daoSJdKILO4UDJIXNmtqimkvoj.y2PjEOcRhCVLZG' }, userId: 'ea794510-cea6-4132-ae22-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'users' },
+      { Item: { userInfo: { emailAddress: 'anthony.daga@habla.ai', firstName: 'Anthony', lastName: 'Daga', displayName: 'Anthony Daga', country: 'US', timeZone: 'America/Los_Angeles', icon: null, preferences: { personal: {} }, password: '$2a$11$fT4XWeKcQqW3daoSJdKILO4UDJIXNmtqimkvoj.y2PjEOcRhCVLZG' }, userId: 'ea794510-cea6-4132-ae22-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'users' },
       { Item: { subscriberOrgInfo: { name: 'Anthony Daga' }, subscriberOrgId: 'ea794510-cea6-4132-ae22-a7ae1d32abb6', partitionId: -1 }, TableName: tablePrefix + 'subscriberOrgs' },
       { Item: { subscriberUserInfo: { userId: 'ea794510-cea6-4132-ae22-a7ae1d32abb5', subscriberOrgId: 'ea794510-cea6-4132-ae22-a7ae1d32abb6' }, subscriberUserId: 'ea794510-cea6-4132-ae22-a7ae1d32abb7', partitionId: -1 }, TableName: tablePrefix + 'subscriberUsers' }
    ],
    [
-      { Item: { userInfo: { emailAddress: 'son.dao@habla.ai', firstName: 'Son', lastName: 'Dao', displayName: 'Son Dao', country: 'US', timeZone: 'America/Los_Angeles', icon: null, password: '$2a$11$fT4XWeKcQqW3daoSJdKILO4UDJIXNmtqimkvoj.y2PjEOcRhCVLZG' }, userId: 'ea794510-cea6-4132-0000-aa8e1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'users' },
+      { Item: { userInfo: { emailAddress: 'son.dao@habla.ai', firstName: 'Son', lastName: 'Dao', displayName: 'Son Dao', country: 'US', timeZone: 'America/Los_Angeles', icon: null, preferences: { personal: {} }, password: '$2a$11$fT4XWeKcQqW3daoSJdKILO4UDJIXNmtqimkvoj.y2PjEOcRhCVLZG' }, userId: 'ea794510-cea6-4132-0000-aa8e1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'users' },
       { Item: { subscriberOrgInfo: { name: 'Son Dao' }, subscriberOrgId: 'ea794510-cea6-4132-0001-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'subscriberOrgs' },
       { Item: { subscriberUserInfo: { userId: 'ea794510-cea6-4132-0000-a7ae1d32abb5', subscriberOrgId: 'ea794510-cea6-4132-0001-a7ae1d32abb5' }, subscriberUserId: 'ea794510-cea6-4132-0002-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'subscriberUsers' }
    ]
