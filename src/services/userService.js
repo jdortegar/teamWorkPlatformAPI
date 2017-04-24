@@ -1,8 +1,9 @@
-import httpStatus from 'http-status';
 import uuid from 'uuid';
 import config from '../config/env';
+import { userCreated, userUpdated } from './messaging';
 import { hashPassword } from '../models/user';
 import subscriberOrgSvc from './subscriberOrgService';
+import { NoPermissionsError } from './teamService';
 
 function addUserToCache(req, email, uid, status) {
    return new Promise((resolve, reject) => {
@@ -20,30 +21,16 @@ function addUserToCache(req, email, uid, status) {
    });
 }
 
-function addUserToDb(req, partitionId, uid, requestBody) {
+function createUserInDb(req, partitionId, userId, user) {
    const docClient = new req.app.locals.AWS.DynamoDB.DocumentClient();
    const tableName = `${config.tablePrefix}users`;
 
-   const { email, firstName, lastName, displayName, password, country, timeZone, preferences } = requestBody;
-   let { icon } = requestBody;
-   icon = icon || null;
    const params = {
       TableName: tableName,
       Item: {
          partitionId,
-         userId: uid,
-         userInfo: {
-            emailAddress: email,
-            firstName,
-            lastName,
-            displayName,
-            password: hashPassword(password),
-            country,
-            timeZone,
-            icon,
-            preferences
-            // ,iconType
-         }
+         userId,
+         userInfo: user
       }
    };
 
@@ -154,13 +141,14 @@ class UserService {
    createUser(req, userInfo) {
       return new Promise((resolve, reject) => {
          const { email } = userInfo;
+         const userId = uuid.v4();
+         let user;
 
          // First, use email addr to see if it's already in redis.
          req.app.locals.redis.hgetallAsync(email)
             .then((cachedEmail) => {
                if (cachedEmail === null) {
                   // Otherwise, add user to cache add user table.
-                  const uid = uuid.v4();
                   const status = 1;
                   const subscriberOrgId = uuid.v4();
                   const subscriberOrgName = req.body.displayName;
@@ -175,11 +163,30 @@ class UserService {
                   const teamRoomActive = true;
                   const TeamRoomMemberId = uuid.v4();
 
+                  const { firstName, lastName, displayName, password, country, timeZone } = userInfo;
+                  const icon = userInfo.icon || null;
+                  const preferences = userInfo.preferences || { private: {} };
+                  if (preferences.private === undefined) {
+                     preferences.private = {};
+                  }
+                  user = {
+                     emailAddress: email,
+                     firstName,
+                     lastName,
+                     displayName,
+                     password: hashPassword(password),
+                     country,
+                     timeZone,
+                     icon,
+                     preferences
+                     // ,iconType
+                  };
+
                   return Promise.all([
-                     addUserToCache(req, email, uid, status),
-                     addUserToDb(req, -1, uid, req.body),
+                     addUserToCache(req, email, userId, status),
+                     createUserInDb(req, -1, userId, user),
                      subscriberOrgSvc.createSubscriberOrgUsingBaseName(req, subscriberOrgId, subscriberOrgName),
-                     addSubscriberUserToDb(req, -1, subscriberUserId, uid, subscriberOrgId),
+                     addSubscriberUserToDb(req, -1, subscriberUserId, userId, subscriberOrgId),
                      addTeamToDb(req, -1, teamId, subscriberOrgId, teamName),
                      addTeamMemberToDb(req, -1, teamMemberId, subscriberUserId, teamId),
                      addTeamRoomToDb(req, -1, teamRoomId, teamId, teamRoomName, teamRoomPurpose, teamRoomPublish, teamRoomActive),
@@ -202,11 +209,13 @@ class UserService {
                   //
                   // }); // Needs to be a promise.
 
-                  resolve({ httpStatus: httpStatus.CREATED });
+                  user.userId = userId;
+                  resolve(user);
+                  userCreated(req, user);
                } else {
                   // Key is found in cache, user already registered.
                   console.log(`users-create: user ${email} found in cache`);
-                  resolve({ httpStatus: httpStatus.FORBIDDEN });
+                  reject(new NoPermissionsError(email));
                }
             })
             .catch((err) => {

@@ -13,7 +13,8 @@ import httpStatus from 'http-status';
 import jwt from 'jsonwebtoken';
 import config from '../config/env';
 import APIError from '../helpers/APIError';
-import { getAuthData, getPublicData, passwordMatch } from '../models/user';
+import { privateUser } from '../helpers/publishedVisibility';
+import { getAuthData, passwordMatch } from '../models/user';
 
 export function login(req, res, next) {
    const username = req.body.username || '';
@@ -48,7 +49,7 @@ export function login(req, res, next) {
                res.status(httpStatus.OK).json({
                   status: 'SUCCESS',
                   token: jwt.sign(getAuthData(user, dbData.Item.userId), config.jwtSecret),
-                  user: getPublicData(user)
+                  user: privateUser(user)
                });
                return;
             }

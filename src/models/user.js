@@ -24,24 +24,6 @@ export function passwordMatch(user, password) {
    // return user.hashedPassword === encryptPassword(pass, user.salt);
 }
 
-export function getPublicData(user) {
-   const { userId, emailAddress, firstName, lastName, displayName, country, timeZone, icon } = user;
-   return {
-      userId,
-      username: emailAddress,
-      email: emailAddress,
-      firstName,
-      lastName,
-      displayName,
-      country,
-      timeZone,
-      icon,
-      roleMemberships: user.roleMemberships,
-      defaultPage: user.defaultPage,
-      userType: user.userType || 'hablaUser'
-   };
-}
-
 export function getAuthData(user, id) {
    return {
       _id: id,

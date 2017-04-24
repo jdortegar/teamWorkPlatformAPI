@@ -18,7 +18,7 @@ export class ConversationNotExistError extends Error {
       Error.captureStackTrace(this, ConversationNotExistError);
    }
 }
-function createMessageInDb(req, partitionId, messageId, conversationId, created, createdBy, messageType, text, replyTo) {
+function createMessageInDb(req, partitionId, messageId, message) {
    const docClient = new req.app.locals.AWS.DynamoDB.DocumentClient();
    const tableName = `${config.tablePrefix}messages`;
 
@@ -27,14 +27,7 @@ function createMessageInDb(req, partitionId, messageId, conversationId, created,
       Item: {
          partitionId,
          messageId,
-         messageInfo: {
-            conversationId,
-            created,
-            createdBy,
-            messageType,
-            text,
-            replyTo
-         }
+         messageInfo: message
       }
    };
 
@@ -225,8 +218,14 @@ class ConversationService {
          const messageId = uuid.v4();
          const created = req.now.format();
 
-         // TODO: Validate conversation exists.
-         // TODO: Validate user is in conversation.
+         const message = {
+            conversationId,
+            created,
+            createdBy: userId,
+            messageType,
+            text,
+            replyTo
+         };
          getConversationParticipantsByConversationId(req, conversationId)
             .then((participants) => {
                if (participants.length === 0) {
@@ -237,18 +236,10 @@ class ConversationService {
                if (userIds.indexOf(userId) < 0) {
                   throw new NoPermissionsError(conversationId);
                }
-               return createMessageInDb(req, -1, messageId, conversationId, created, userId, messageType, text, replyTo);
+               return createMessageInDb(req, -1, messageId, message);
             })
             .then(() => {
-               const message = {
-                  messageId,
-                  conversationId,
-                  created,
-                  createdBy: userId,
-                  messageType,
-                  text,
-                  replyTo
-               };
+               message.messageId = messageId;
                resolve(message);
                messageCreated(req, message);
             })

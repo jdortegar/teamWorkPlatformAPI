@@ -1,8 +1,8 @@
 import httpStatus from 'http-status';
 import APIError from '../helpers/APIError';
+import { publicSubscriberOrgs, publicUsers } from '../helpers/publishedVisibility';
 import subscriberOrgSvc, { SubscriberOrgExistsError, SubscriberOrgNotExistError } from '../services/subscriberOrgService';
 import { NoPermissionsError } from '../services/teamService';
-import { publicSubscriberOrgs, publicUsers } from './publicData';
 
 export function getSubscriberOrgs(req, res, next) {
    const userId = req.user._id;
@@ -17,11 +17,11 @@ export function getSubscriberOrgs(req, res, next) {
       });
 }
 
-export function create(req, res, next) {
+export function createSubscriberOrg(req, res, next) {
    const userId = req.user._id;
    const name = req.body.name;
 
-   subscriberOrgSvc.createSubscriberOrg(req, name)
+   subscriberOrgSvc.createSubscriberOrg(req, name, { userId })
       .then((createdSubscriberOrg) => {
          res.status(httpStatus.CREATED).json(createdSubscriberOrg);
       })

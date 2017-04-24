@@ -9,3 +9,4 @@ export function events(req, res, next) {
       .then(() => res.status(httpStatus.CREATED).end())
       .catch(err => next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE)));
 }
+

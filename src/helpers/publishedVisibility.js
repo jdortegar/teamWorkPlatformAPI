@@ -1,6 +1,29 @@
+export function privateUser(dbUser) {
+   const userId = dbUser.userId;
+   const { emailAddress, firstName, lastName, displayName, country, timeZone, icon, preferences } = dbUser.userInfo || dbUser;
+   return {
+      userId,
+      username: emailAddress,
+      email: emailAddress,
+      firstName,
+      lastName,
+      displayName,
+      country,
+      timeZone,
+      icon,
+      preferences,
+      roleMemberships: dbUser.roleMemberships,
+      defaultPage: dbUser.defaultPage,
+      userType: dbUser.userType || 'hablaUser'
+   };
+}
+
 export function publicUser(dbUser) {
    const userId = dbUser.userId;
-   const { firstName, lastName, displayName, icon, preferences } = dbUser.userInfo;
+   const { firstName, lastName, displayName, icon, preferences } = dbUser.userInfo || dbUser;
+   if ((preferences) && (preferences.private)) {
+      delete preferences.private;
+   }
    return {
       userId,
       firstName,
@@ -22,7 +45,7 @@ export function publicUsers(dbUsers) {
 
 export function publicSubscriberOrg(dbSubscriberOrg) {
    const subscriberOrgId = dbSubscriberOrg.subscriberOrgId;
-   const { name } = dbSubscriberOrg.subscriberOrgInfo;
+   const { name } = dbSubscriberOrg.subscriberOrgInfo || dbSubscriberOrg;
    return {
       subscriberOrgId,
       name
@@ -38,7 +61,7 @@ export function publicSubscriberOrgs(dbSubscriberOrgs) {
 
 export function publicTeam(dbTeam) {
    const teamId = dbTeam.teamId;
-   const { name, subscriberOrgId } = dbTeam.teamInfo;
+   const { name, subscriberOrgId } = dbTeam.teamInfo || dbTeam;
    return {
       teamId,
       subscriberOrgId,
@@ -55,7 +78,7 @@ export function publicTeams(dbTeams) {
 
 export function publicTeamRoom(dbTeamRoom) {
    const teamRoomId = dbTeamRoom.teamRoomId;
-   const { teamId, name, purpose, publish, active } = dbTeamRoom.teamRoomInfo;
+   const { teamId, name, purpose, publish, active } = dbTeamRoom.teamRoomInfo || dbTeamRoom;
    return {
       teamRoomId,
       teamId,
@@ -75,8 +98,8 @@ export function publicTeamRooms(dbTeamRooms) {
 
 export function publicConversation(dbConversation) {
    const conversationId = dbConversation.conversationId;
-   const participants = publicUsers(dbConversation.participants);
-   const { teamRoomId } = dbConversation.conversationInfo;
+   const { teamRoomId } = dbConversation.conversationInfo || dbConversation;
+   const participants = (dbConversation.participants) ? publicUsers(dbConversation.participants) : undefined;
    return {
       conversationId,
       teamRoomId,
@@ -92,7 +115,7 @@ export function publicConversations(dbConversations) {
 
 
 export function publicMessage(dbMessage) {
-   const messageId = dbMessage.messageId || dbMessage.messageId;
+   const messageId = dbMessage.messageId;
    const { created, createdBy, messageType, text, replyTo } = dbMessage.messageInfo || dbMessage;
    return {
       messageId,

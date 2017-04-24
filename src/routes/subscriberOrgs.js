@@ -9,7 +9,7 @@ router.route('/getSubscriberOrgs')
    .get(subscriberOrgs.getSubscriberOrgs);
 
 router.route('/createSubscriberOrg')
-   .post(validate(paramValidation.createSubscriberOrg), subscriberOrgs.create)
+   .post(validate(paramValidation.createSubscriberOrg), subscriberOrgs.createSubscriberOrg)
 
 router.route('/getSubscribers/:subscriberOrgId')
    .get(subscriberOrgs.getSubscriberOrgUsers);

@@ -9,12 +9,24 @@ import conversationSvc from '../conversationService';
 
 
 export const EventTypes = Object.freeze({
-   presence: 'presence',
-   message: 'message',
+   presenceChanged: 'presenceChanged',
+   userCreated: 'userCreated',
+   userUpdated: 'userUpdated',
+   subscriberOrgCreated: 'subscriberOrgCreated',
+   subscriberOrgUpdated: 'subscriberOrgUpdated',
+   teamCreated: 'teamCreated',
+   teamUpdated: 'teamUpdated',
+   teamRoomCreated: 'teamRoomCreated',
+   teamRoomUpdated: 'teamRoomUpdated',
+   messageCreated: 'messageCreated',
    from(value) { return (this[value]); }
 });
 
 export class ChannelFactory {
+   static publicChannel() {
+      return 'public';
+   }
+
    static subscriberOrgChannel(subscriberOrgId) {
       return `subscriberOrgId=${subscriberOrgId}`;
    }
@@ -115,11 +127,14 @@ class MessagingService {
    }
 
    _joinChannels(req, socket, userId) {
+      socket.join(ChannelFactory.publicChannel());
+
       conversationSvc.getConversations(req, userId)
          .then((conversations) => {
             const conversationIds = conversations.map(conversation => conversation.conversationId);
             conversationIds.forEach((conversationId) => {
-               socket.join(`conversationId=${conversationId}`); // Join channel.
+               socket.join(`conversationId=${conversationId}`);
+               socket.join(ChannelFactory.conversationChannel(conversationId));
             });
          })
          .catch(err => console.error(err));
@@ -131,13 +146,15 @@ class MessagingService {
    }
 
 
-   broadcastEvent(req, eventType, event, channel = undefined) {
-      if (channel) {
-         this.io.to(channel).emit(eventType, event);
+   broadcastEvent(req, eventType, event, channels = undefined) {
+      if (channels) {
+         channels.forEach((channel) => {
+            this.io.to(channel).emit(eventType, event);
+         });
       } else {
          this.io.emit(eventType, event);
       }
-      console.log(`MessagingService.broadcastEvent(eventType=${eventType}, event=${JSON.stringify(event)}), channel="${channel}"`);
+      console.log(`MessagingService.broadcastEvent(eventType=${eventType}, event=${JSON.stringify(event)}), channels="${channels}"`);
    }
 }
 const messagingService = new MessagingService();

@@ -6,16 +6,18 @@ import { containsRole,roles } from '../policies';
 
 const router = express.Router();
 
-router.route('/createUser')
-  .post(validate(paramValidation.createUser), users.create)
-  .delete(users.del);
-
 router.route('/registerUser')
-  .post(validate(paramValidation.registerUser), users.createReservation);
+   .post(validate(paramValidation.registerUser), users.createReservation);
 
 router.route('/validateEmail/:rid')
-  // .post(users.validateEmail)
-  .get(users.validateEmail);
+   .get(users.validateEmail);
+
+router.route('/createUser')
+  .post(validate(paramValidation.createUser), users.createUser)
+  .delete(users.del);
+
+router.route('/updateUser')
+   .patch(validate(paramValidation.updateUser), users.updateUser);
 
 router.route('/:userId')
   .put(users.update);

@@ -16,6 +16,7 @@ import config from '../config/env';
 import APIError from '../helpers/APIError';
 import * as mailer from '../helpers/mailer';
 import User from '../models/user';
+import { NoPermissionsError } from '../services/teamService';
 import userService from '../services/userService';
 
 /**
@@ -24,7 +25,6 @@ import userService from '../services/userService';
 * A reservation is ...
 */
 export function createReservation(req, res, next) {
-   const db = req.app.locals.db;
    const email = req.body.email || '';
 
    // Add new reservation to cache
@@ -35,11 +35,9 @@ export function createReservation(req, res, next) {
    req.app.locals.redis.set(rid, email, 'EX', 1800, (err, reply) => {
       if (err) {
          console.log('createReservation: hset status - redis error');
-      }
-      else {
+      } else {
          console.log(`createReservation: created reservation for email: ${email}`);
          mailer.sendActivationLink(email, rid).then(() => {
-
             const response = {
                status: 'SUCCESS',
                uuid: rid
@@ -91,25 +89,30 @@ export function validateEmail(req, res, next) {
    });
 };
 
-/**
- *
- * @param req
- * @param res
- * @param next
- */
-export function create(req, res, next) {
+export function createUser(req, res, next) {
    userService.createUser(req, req.body)
-      .then((status) => {
-         res.status(status.httpStatus).end();
+      .then(() => {
+         res.status(httpStatus.CREATED).end();
       })
       .catch((err) => {
-         console.error(err);
-         return next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE));
+         if (err instanceof NoPermissionsError) {
+            res.status(httpStatus.FORBIDDEN).end();
+         } else {
+            next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE));
+         }
       });
 }
 
+export function updateUser(req, res, next) {
+   const userId = req.user._id;
+   userService.updateUser(req, userId, req.body)
+      .then(() => {
+
+      })
+      .catch(err => next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE)));
+}
+
 export function del(req, res, next) {
-  const db = req.app.locals.db;
   const email = req.body.email || '';
   const uid = req.body.uid || '';
   // first, use email addr to see if it's already in redis
