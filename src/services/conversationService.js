@@ -1,4 +1,9 @@
 import moment from 'moment';
+import uuid from 'uuid';
+import config from '../config/env';
+import { messageCreated } from './messaging';
+import teamRoomSvc from './teamRoomService';
+import { NoPermissionsError } from './teamService';
 import {
    getConversationParticipantsByConversationId,
    getConversationParticipantsByUserId,
@@ -6,13 +11,34 @@ import {
    getMessagesByConversationId,
    getUsersByIds
 } from './util';
-import teamRoomSvc from './teamRoomService';
 
 export class ConversationNotExistError extends Error {
    constructor(...args) {
       super(...args);
       Error.captureStackTrace(this, ConversationNotExistError);
    }
+}
+function createMessageInDb(req, partitionId, messageId, conversationId, created, createdBy, messageType, text, replyTo) {
+   const docClient = new req.app.locals.AWS.DynamoDB.DocumentClient();
+   const tableName = `${config.tablePrefix}messages`;
+
+   const params = {
+      TableName: tableName,
+      Item: {
+         partitionId,
+         messageId,
+         messageInfo: {
+            conversationId,
+            created,
+            createdBy,
+            messageType,
+            text,
+            replyTo
+         }
+      }
+   };
+
+   return docClient.put(params).promise();
 }
 
 
@@ -71,13 +97,12 @@ class ConversationService {
                conversations = conversationsAndParticipants[0].filter((conversation) => {
                   participantsIdx += 1;
                   if ((teamRoomId === undefined) || (conversation.conversationInfo.teamRoomId === teamRoomId)) {
-                     const participants = conversationsAndParticipants[participantsIdx].map(participant => {
+                     const participants = conversationsAndParticipants[participantsIdx].map((participant) => {
                         return participant.conversationParticipantInfo.userId;
                      });
                      conversationParticipantsUserIds.push(participants);
-
-                     return conversation;
                   }
+                  return conversation;
                });
 
                return this._convertParticipantsToUsers(req, conversationParticipantsUserIds);
@@ -191,6 +216,42 @@ class ConversationService {
             })
             .then(messages => this.sortMessages(messages))
             .then(messages => resolve(messages))
+            .catch(err => reject(err));
+      });
+   }
+
+   createMessage(req, conversationId, userId, messageType, text, replyTo) {
+      return new Promise((resolve, reject) => {
+         const messageId = uuid.v4();
+         const created = req.now.format();
+
+         // TODO: Validate conversation exists.
+         // TODO: Validate user is in conversation.
+         getConversationParticipantsByConversationId(req, conversationId)
+            .then((participants) => {
+               if (participants.length === 0) {
+                  throw new ConversationNotExistError(conversationId);
+               }
+
+               const userIds = participants.map((participant) => participant.conversationParticipantInfo.userId);
+               if (userIds.indexOf(userId) < 0) {
+                  throw new NoPermissionsError(conversationId);
+               }
+               return createMessageInDb(req, -1, messageId, conversationId, created, userId, messageType, text, replyTo);
+            })
+            .then(() => {
+               const message = {
+                  messageId,
+                  conversationId,
+                  created,
+                  createdBy: userId,
+                  messageType,
+                  text,
+                  replyTo
+               };
+               resolve(message);
+               messageCreated(req, message);
+            })
             .catch(err => reject(err));
       });
    }

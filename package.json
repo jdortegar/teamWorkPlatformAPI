@@ -33,7 +33,6 @@
     "monitor": "nodejs-dashboard -- node -r nodejs-dashboard dist",
     "clean": "shx rm -rf dist coverage doc",
     "pristine": "npm run clean && shx rm -rf node_modules",
-
     "raml": "shx mkdir -p doc && raml2html doc-templates/api.raml > doc/api.html",
     "md": "npm run md:users && npm run md:auth",
     "md:users": "shx mkdir -p doc/api && shx cat doc-templates/api/md-pre.html > doc/api/users.html && marked -i doc-templates/api/users.md >> doc/api/users.html && shx cat doc-templates/api/md-post.html >> doc/api/users.html",
@@ -119,9 +118,9 @@
     "socket.io": "^1.7.3",
     "socket.io-redis": "^4.0.0",
     "socketio-jwt": "^4.5.0",
+    "socketio-wildcard": "^0.4.0",
     "uuid": "^3.0.1"
   },
-
   "jest": {
     "verbose": true,
     "globals": {

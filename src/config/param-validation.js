@@ -32,8 +32,14 @@ const validationSchemas = {
       body: {
          name: Joi.string().min(1).required()
       }
+   },
+   createMessage: {
+      body: {
+         messageType: Joi.string().min(1).required(),
+         text: Joi.string().min(1).required(),
+         replyTo: Joi.string().min(1).allow(null)
+      }
    }
 };
 
 export default validationSchemas;
-

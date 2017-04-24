@@ -370,28 +370,10 @@ documentation:
                description: |
                   CONFLICT<br />
                   A subscriber org by the requested name already exists.
-               body:
-                  properties:
-                     status:
-                        type: string
-                        required: true
-                  example: |
-                     {
-                        "status": "EXISTS"
-                     }
             403:
                description: |
                   FORBIDDEN<br />
                   The user is not allowed to create an organization.
-               body:
-                  properties:
-                     status:
-                        type: string
-                        required: true
-                  example: |
-                     {
-                        "status": "FORBIDDEN"
-                     }
 
    /getSubscribers:
       /{subscriberOrgId}:
@@ -1085,7 +1067,7 @@ documentation:
                                     required: true
                                  replyTo:
                                     description: |
-                                       messageId this messages is attached to.  This is for threaded messages support.
+                                       `messageId` this messages is attached to.  This is for threaded messages support.
                                     type: string
                                     required: false
                      example: |
@@ -1115,3 +1097,75 @@ documentation:
                   description: |
                      FORBIDDEN<br />
                      The user doesn't have permissions to view this conversation.
+
+   /{conversationId}:
+      uriParameters:
+         conversationId:
+            description: Conversation ID for which subsequent operations are scoped.
+      /createMessage:
+         post:
+            description: |
+               Create a message in a specified conversation.
+            body:
+               properties:
+                  messageType:
+                     type: string
+                     required: true
+                  text:
+                     type: string
+                     required: true
+                  replyTo:
+                     description: |
+                        `messageId` this message is attached to.  This is for threaded messages support.
+                     type: string
+                     required: false
+               example: |
+                  {
+                     "messageType": "text",
+                     "text": "What's up?"
+                  }
+            responses:
+               201:
+                  description: CREATED
+                  body:
+                     properties:
+                        messageId:
+                           type: string
+                           required: true
+                        created:
+                           description: The format is in [RFC339](https://xml2rfc.tools.ietf.org/public/rfc/html/rfc3339.html#anchor14), which is a profile of [ISO 8601].
+                           type: datetime
+                           required: true
+                        createdBy:
+                           description: |
+                              `userId`
+                           type: string
+                           required: true
+                        messageType:
+                           enum: [ text ]
+                           required: true
+                        text:
+                           type: string
+                           required: true
+                        replyTo:
+                           description: |
+                              `messageId` this messages is attached to.  This is for threaded messages support.
+                           type: string
+                           required: false
+                     example: |
+                        {
+                           "messageId": "9dec8947-0381-4809-a053-b56777f782f4",
+                           "created": "2017-04-12T23:20:50.52Z",
+                           "createdBy": "9dec8947-0381-4809-a053-b56777f782f4",
+                           "messageType": "text",
+                           "text": "Alright.",
+                           "replyTo": "9dec8947-0381-4809-a053-b56777f782f5"
+                        }
+               404:
+                  description: |
+                     NOT_FOUND<br />
+                     The specified conversation does not exist.
+               403:
+                  description: |
+                     FORBIDDEN<br />
+                     The user is not allowed to create a message in the specified conversation.

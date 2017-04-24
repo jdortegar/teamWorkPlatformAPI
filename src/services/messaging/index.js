@@ -1,5 +1,15 @@
-import messagingSvc from './messagingService';
+import messagingSvc, { ChannelFactory, EventTypes } from './messagingService';
 
-export function messageCreated(req, message, conversationId) {
-   return messagingSvc.event(req, message);
+
+// EventType = presence
+
+export function presenceChanged(req, userId, presenceStatus, presenceMessage = undefined) {
+   return messagingSvc._presenceChanged(req, EventTypes.presence, { userId, presenceStatus, presenceMessage });
+}
+
+
+// EventType = message
+
+export function messageCreated(req, message) {
+   return messagingSvc.broadcastEvent(req, EventTypes.message, message, ChannelFactory.conversationChannel(message.conversationId));
 }
