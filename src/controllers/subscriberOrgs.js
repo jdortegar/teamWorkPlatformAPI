@@ -21,7 +21,7 @@ export function createSubscriberOrg(req, res, next) {
    const userId = req.user._id;
    const name = req.body.name;
 
-   subscriberOrgSvc.createSubscriberOrg(req, name, { userId })
+   subscriberOrgSvc.createSubscriberOrg(req, req.body, { userId })
       .then((createdSubscriberOrg) => {
          res.status(httpStatus.CREATED).json(createdSubscriberOrg);
       })

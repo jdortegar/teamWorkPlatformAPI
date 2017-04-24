@@ -30,7 +30,7 @@ const validationSchemas = {
       timeZone: Joi.string().min(1),
       icon: Joi.string().base64().allow(null),
       preferences: Joi.object().keys({
-         private: Joi.object().required()
+         private: Joi.object()
       })
    },
    login: {
@@ -41,7 +41,18 @@ const validationSchemas = {
    },
    createSubscriberOrg: {
       body: {
-         name: Joi.string().min(1).required()
+         name: Joi.string().min(1).required(),
+         preferences: Joi.object().keys({
+            private: Joi.object().required()
+         })
+      }
+   },
+   updateSubscriberOrg: {
+      body: {
+         name: Joi.string().min(1),
+         preferences: Joi.object().keys({
+            private: Joi.object()
+         })
       }
    },
    createMessage: {

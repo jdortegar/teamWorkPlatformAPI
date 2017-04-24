@@ -65,15 +65,22 @@ class SubscriberOrgService {
       });
    }
 
-   createSubscriberOrg(req, subscriberOrgName, { subscriberOrgId, userId }) {
+   createSubscriberOrg(req, subscriberOrgInfo, { subscriberOrgId, userId }) {
       return new Promise((resolve, reject) => {
          // TODO: if (userId), check canCreateSubscriberOrg() -> false, reject 403 forbidden
          const actualSubscriberOrgId = subscriberOrgId || uuid.v4();
-         const subscriberOrg = { name: subscriberOrgName };
-         getSubscriberOrgsByName(req, subscriberOrgName)
+         const preferences = subscriberOrgInfo.preferences || { private: {} };
+         if (preferences.private === undefined) {
+            preferences.private = {};
+         }
+         const subscriberOrg = {
+            name: subscriberOrgInfo.name,
+            preferences
+         };
+         getSubscriberOrgsByName(req, subscriberOrgInfo.name)
             .then((existingSubscriberOrgs) => {
                if (existingSubscriberOrgs.length > 0) {
-                  throw new SubscriberOrgExistsError(subscriberOrgName);
+                  throw new SubscriberOrgExistsError(subscriberOrgInfo.name);
                } else {
                   return createSubscriberOrgInDb(req, -1, actualSubscriberOrgId, subscriberOrg);
                }
@@ -103,7 +110,7 @@ class SubscriberOrgService {
             .catch((err) => {
                if (err instanceof SubscriberOrgExistsError) {
                   const tryNumber = (appendNumber) ? appendNumber + 1 : 1;
-                  this.createSubscriberOrgUsingBaseName(req, subscriberOrgId, subscriberOrgName, tryNumber)
+                  this.createSubscriberOrgUsingBaseName(req, subscriberOrgId, { name: subscriberOrgName }, tryNumber)
                      .then(createdSubscriberOrg => resolve(createdSubscriberOrg))
                      .catch(err2 => reject(err2));
                } else {

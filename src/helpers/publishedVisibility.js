@@ -45,10 +45,14 @@ export function publicUsers(dbUsers) {
 
 export function publicSubscriberOrg(dbSubscriberOrg) {
    const subscriberOrgId = dbSubscriberOrg.subscriberOrgId;
-   const { name } = dbSubscriberOrg.subscriberOrgInfo || dbSubscriberOrg;
+   const { name, preferences } = dbSubscriberOrg.subscriberOrgInfo || dbSubscriberOrg;
+   if ((preferences) && (preferences.private)) {
+      delete preferences.private;
+   }
    return {
       subscriberOrgId,
-      name
+      name,
+      preferences
    };
 }
 
