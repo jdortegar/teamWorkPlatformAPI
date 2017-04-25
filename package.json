@@ -25,7 +25,7 @@
     "start": "nodemon $NODE_DEBUG_OPTION src/index.js --exec babel-node",
     "debug": "nodemon src/index.js --exec babel-node --debug",
     "lint": "eslint src",
-    "test": "jest",
+    "test": "cross-env NODE_ENV=test jest",
     "watch:test": "npm run test -- --watch",
     "doc": "esdoc && npm run raml && npm run md",
     "build": "cross-env NODE_ENV=production babel -s true src -d dist",
@@ -33,7 +33,6 @@
     "monitor": "nodejs-dashboard -- node -r nodejs-dashboard dist",
     "clean": "shx rm -rf dist coverage doc",
     "pristine": "npm run clean && shx rm -rf node_modules",
-
     "raml": "shx mkdir -p doc && raml2html doc-templates/api.raml > doc/api.html",
     "md": "npm run md:users && npm run md:auth",
     "md:users": "shx mkdir -p doc/api && shx cat doc-templates/api/md-pre.html > doc/api/users.html && marked -i doc-templates/api/users.md >> doc/api/users.html && shx cat doc-templates/api/md-post.html >> doc/api/users.html",
@@ -87,6 +86,7 @@
     "sinon": "^2.0.0"
   },
   "dependencies": {
+    "aws-sdk": "^2.28.0",
     "babel-cli": "^6.24.0",
     "babel-eslint": "^7.2.0",
     "babel-istanbul": "^0.12.2",
@@ -100,8 +100,6 @@
     "babel-preset-stage-0": "^6.22.0",
     "babel-register": "^6.24.0",
     "babili": "0.0.12",
-    "cross-env": "^3.2.4",
-    "aws-sdk": "^2.28.0",
     "bcryptjs": "^2.4.3",
     "bluebird": "^3.5.0",
     "body-parser": "^1.17.1",
@@ -112,12 +110,17 @@
     "express-validation": "^1.0.2",
     "http-status": "^1.0.1",
     "joi": "^10.2.2",
+    "lodash": "^4.17.4",
+    "moment": "^2.18.1",
     "morgan": "^1.8.1",
     "nodemailer": "^3.1.7",
     "redis": "^2.7.1",
+    "socket.io": "^1.7.3",
+    "socket.io-redis": "^4.0.0",
+    "socketio-jwt": "^4.5.0",
+    "socketio-wildcard": "^0.4.0",
     "uuid": "^3.0.1"
   },
-
   "jest": {
     "verbose": true,
     "globals": {

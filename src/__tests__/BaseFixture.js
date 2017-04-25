@@ -1,4 +1,4 @@
-import { setupDynamoDb, connectRedis, disconnectRedis } from '../bootstrap';
+import { setupDynamoDb, connectRedis, disconnectRedis, startServer, stopServer } from '../bootstrap';
 
 export default class BaseFixture {
    static TestTypes = Object.freeze({
@@ -10,7 +10,9 @@ export default class BaseFixture {
    });
 
    testType;
+   dynamoDb;
    redisClient;
+   httpServer;
 
 
    constructor(testType) {
@@ -32,13 +34,29 @@ export default class BaseFixture {
                   connectRedis()
                ])
                   .then((dbRedisStatuses) => {
-                     this.redisCLient = dbRedisStatuses[1];
+                     this.dynamoDb = dbRedisStatuses[0];
+                     this.redisClient = dbRedisStatuses[1];
                      resolve();
                   })
                   .catch(err => reject(err));
             });
          case BaseFixture.TestTypes.server:
-            return Promise.reject('TODO: test type server.');
+            return new Promise((resolve, reject) => {
+               Promise.all([
+                  setupDynamoDb(),
+                  connectRedis()
+               ])
+                  .then((dbRedisStatuses) => {
+                     this.dynamoDb = dbRedisStatuses[0];
+                     this.redisClient = dbRedisStatuses[1];
+                     return startServer();
+                  })
+                  .then((httpServer) => {
+                     this.httpServer = httpServer;
+                     resolve();
+                  })
+                  .catch(err => reject(err));
+            });
          case BaseFixture.TestTypes.ui:
             return Promise.reject('TODO: tet type ui');
          default:
@@ -52,10 +70,14 @@ export default class BaseFixture {
             // Nothing to setup.
             return Promise.resolve();
          case BaseFixture.TestTypes.db:
-            disconnectRedis(this.redisClient);
-            return Promise.resolve();
+            return disconnectRedis(this.redisClient);
          case BaseFixture.TestTypes.server:
-            return Promise.reject('TODO: test type server.');
+            return new Promise((resolve, reject) => {
+               disconnectRedis(this.redisClient)
+                  .then(() => stopServer(this.httpServer))
+                  .then(() => resolve())
+                  .catch(err => reject(err));
+            });
          case BaseFixture.TestTypes.ui:
             return Promise.reject('TODO: tet type ui');
          default:

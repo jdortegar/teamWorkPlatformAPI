@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------
 // helpers/APIError.js
-// 
+//
 // helper function to process API Error messages
 //---------------------------------------------------------------------
 //  Date         Initials    Description
@@ -20,6 +20,8 @@ export default function APIError(message, status) {
   this.message = message;
   this.status = status || httpStatus.INTERNAL_SERVER_ERROR;
   Error.captureStackTrace(this, this.constructor.name);
+
+   console.error(this);
 }
 util.inherits(APIError, Error);
 

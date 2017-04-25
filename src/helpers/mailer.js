@@ -31,5 +31,6 @@ export function sendActivationLink(email, rid) {
       subject: 'Your Habla.ai Account',
       html
    });
+   // TODO: need to return a promise.
 }
 

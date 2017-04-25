@@ -1,8 +1,10 @@
-import httpStatus from 'http-status';
 import uuid from 'uuid';
 import config from '../config/env';
+import { NoPermissionsError, UserNotExistError } from './errors';
+import { userCreated, userUpdated } from './messaging';
+import subscriberOrgSvc from './subscriberOrgService';
+import { getUsersByIds } from './queries';
 import { hashPassword } from '../models/user';
-// import { mailer } from '../helpers/mailer';
 
 function addUserToCache(req, email, uid, status) {
    return new Promise((resolve, reject) => {
@@ -20,66 +22,20 @@ function addUserToCache(req, email, uid, status) {
    });
 }
 
-function addUserToDb(req, partitionId, uid, requestBody) {
+function createUserInDb(req, partitionId, userId, user) {
    const docClient = new req.app.locals.AWS.DynamoDB.DocumentClient();
    const tableName = `${config.tablePrefix}users`;
 
-   const { email, firstName, lastName, displayName, password, country, timeZone } = requestBody;
-   let { icon } = requestBody;
-   icon = icon || null;
    const params = {
       TableName: tableName,
       Item: {
          partitionId,
-         userId: uid,
-         userInfo: {
-            emailAddress: email,
-            firstName,
-            lastName,
-            displayName,
-            password: hashPassword(password),
-            country,
-            timeZone,
-            icon
-            // ,iconType
-         }
+         userId,
+         userInfo: user
       }
    };
-   // TODO: for update.
-   // userInfo: {
-   //    emailAddress: email,
-   //       firstName,
-   //       lastName,
-   //       displayName,
-   //       country,
-   //       timeZone,
-   //       icon,
-   //       iconType,
-   //       address1,
-   //       address2,
-   //       zip_postalcode,
-   //       city_province
-   // }
 
    console.log('Adding a new item...');
-   return docClient.put(params).promise();
-}
-
-function addSubscriberOrgToDb(req, partitionId, uid, name) {
-   const docClient = new req.app.locals.AWS.DynamoDB.DocumentClient();
-   const tableName = `${config.tablePrefix}subscriberOrgs`;
-
-   const params = {
-      TableName: tableName,
-      Item: {
-         partitionId,
-         subscriberOrgId: uid,
-         subscriberOrgInfo: {
-            name
-         }
-      }
-   };
-
    return docClient.put(params).promise();
 }
 
@@ -183,16 +139,17 @@ function addTeamRoomMemberToDb(req, partitionId, uid, teamMemberId, teamRoomId) 
 
 
 class UserService {
-   addUser(req, userInfo) {
+   createUser(req, userInfo) {
       return new Promise((resolve, reject) => {
          const { email } = userInfo;
+         const userId = uuid.v4();
+         let user;
 
          // First, use email addr to see if it's already in redis.
          req.app.locals.redis.hgetallAsync(email)
             .then((cachedEmail) => {
                if (cachedEmail === null) {
                   // Otherwise, add user to cache add user table.
-                  const uid = uuid.v4();
                   const status = 1;
                   const subscriberOrgId = uuid.v4();
                   const subscriberOrgName = req.body.displayName;
@@ -207,11 +164,30 @@ class UserService {
                   const teamRoomActive = true;
                   const TeamRoomMemberId = uuid.v4();
 
+                  const { firstName, lastName, displayName, password, country, timeZone } = userInfo;
+                  const icon = userInfo.icon || null;
+                  const preferences = userInfo.preferences || { private: {} };
+                  if (preferences.private === undefined) {
+                     preferences.private = {};
+                  }
+                  user = {
+                     emailAddress: email,
+                     firstName,
+                     lastName,
+                     displayName,
+                     password: hashPassword(password),
+                     country,
+                     timeZone,
+                     icon,
+                     preferences
+                     // ,iconType
+                  };
+
                   return Promise.all([
-                     addUserToCache(req, email, uid, status),
-                     addUserToDb(req, -1, uid, req.body),
-                     addSubscriberOrgToDb(req, -1, subscriberOrgId, subscriberOrgName),
-                     addSubscriberUserToDb(req, -1, subscriberUserId, uid, subscriberOrgId),
+                     addUserToCache(req, email, userId, status),
+                     createUserInDb(req, -1, userId, user),
+                     subscriberOrgSvc.createSubscriberOrgUsingBaseName(req, subscriberOrgId, subscriberOrgName),
+                     addSubscriberUserToDb(req, -1, subscriberUserId, userId, subscriberOrgId),
                      addTeamToDb(req, -1, teamId, subscriberOrgId, teamName),
                      addTeamMemberToDb(req, -1, teamMemberId, subscriberUserId, teamId),
                      addTeamRoomToDb(req, -1, teamRoomId, teamId, teamRoomName, teamRoomPurpose, teamRoomPublish, teamRoomActive),
@@ -234,16 +210,33 @@ class UserService {
                   //
                   // }); // Needs to be a promise.
 
-                  resolve({ httpStatus: httpStatus.CREATED });
+                  user.userId = userId;
+                  resolve(user);
+                  userCreated(req, user);
                } else {
                   // Key is found in cache, user already registered.
                   console.log(`users-create: user ${email} found in cache`);
-                  resolve({ httpStatus: httpStatus.FORBIDDEN });
+                  reject(new NoPermissionsError(email));
                }
             })
             .catch((err) => {
                reject(err);
             });
+      });
+   }
+
+   updateUser(req, userId, updateInfo) {
+      return new Promise((resolve, reject) => {
+         getUsersByIds(req, [userId])
+            .then((dbUsers) => {
+               if (dbUsers.length < 1) {
+                  throw new UserNotExistError(userId);
+               }
+
+               const user = dbUsers[0];
+               resolve(user);
+            })
+            .catch(err => reject(err));
       });
    }
 }

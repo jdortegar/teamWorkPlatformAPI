@@ -1,3 +1,4 @@
+import { NoPermissionsError, TeamNotExistError } from './errors';
 import {
    getSubscriberUsersByIds,
    getSubscriberUsersByUserIds,
@@ -5,21 +6,8 @@ import {
    getTeamMembersByTeamId,
    getTeamsByIds,
    getUsersByIds
-} from './util';
+} from './queries';
 
-export class TeamNotExistError extends Error {
-   constructor(...args) {
-      super(...args);
-      Error.captureStackTrace(this, TeamNotExistError);
-   }
-}
-
-export class NoPermissionsError extends Error {
-   constructor(...args) {
-      super(...args);
-      Error.captureStackTrace(this, NoPermissionsError);
-   }
-}
 
 class TeamService {
 
