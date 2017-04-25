@@ -1,8 +1,8 @@
 import httpStatus from 'http-status';
 import APIError from '../helpers/APIError';
 import { publicSubscriberOrgs, publicUsers } from '../helpers/publishedVisibility';
-import subscriberOrgSvc, { SubscriberOrgExistsError, SubscriberOrgNotExistError } from '../services/subscriberOrgService';
-import { NoPermissionsError } from '../services/teamService';
+import subscriberOrgSvc from '../services/subscriberOrgService';
+import { NoPermissionsError, SubscriberOrgExistsError, SubscriberOrgNotExistError } from '../services/errors';
 
 export function getSubscriberOrgs(req, res, next) {
    const userId = req.user._id;
@@ -34,6 +34,16 @@ export function createSubscriberOrg(req, res, next) {
             next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
          }
       });
+}
+
+export function updateSubscriberOrg(req, res, next) {
+   const userId = req.user._id;
+   const subscriberOrgId = req.param.subscriberOrgId;
+   subscriberOrgSvc.updateSubscriberOrg(req, subscriberOrgId, req.body, { userId })
+      .then(() => {
+
+      })
+      .catch(err => next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE)));
 }
 
 export function getSubscriberOrgUsers(req, res, next) {

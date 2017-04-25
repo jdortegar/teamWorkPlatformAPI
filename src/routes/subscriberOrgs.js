@@ -11,6 +11,9 @@ router.route('/getSubscriberOrgs')
 router.route('/createSubscriberOrg')
    .post(validate(paramValidation.createSubscriberOrg), subscriberOrgs.createSubscriberOrg)
 
+router.route('/updateSubscriberOrg/:subscriberOrgId')
+   .patch(validate(paramValidation.updateSubscriberOrg), subscriberOrgs.updateSubscriberOrg);
+
 router.route('/getSubscribers/:subscriberOrgId')
    .get(subscriberOrgs.getSubscriberOrgUsers);
 

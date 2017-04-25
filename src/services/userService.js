@@ -1,9 +1,10 @@
 import uuid from 'uuid';
 import config from '../config/env';
+import { NoPermissionsError, UserNotExistError } from './errors';
 import { userCreated, userUpdated } from './messaging';
-import { hashPassword } from '../models/user';
 import subscriberOrgSvc from './subscriberOrgService';
-import { NoPermissionsError } from './teamService';
+import { getUsersByIds } from './queries';
+import { hashPassword } from '../models/user';
 
 function addUserToCache(req, email, uid, status) {
    return new Promise((resolve, reject) => {
@@ -221,6 +222,21 @@ class UserService {
             .catch((err) => {
                reject(err);
             });
+      });
+   }
+
+   updateUser(req, userId, updateInfo) {
+      return new Promise((resolve, reject) => {
+         getUsersByIds(req, [userId])
+            .then((dbUsers) => {
+               if (dbUsers.length < 1) {
+                  throw new UserNotExistError(userId);
+               }
+
+               const user = dbUsers[0];
+               resolve(user);
+            })
+            .catch(err => reject(err));
       });
    }
 }

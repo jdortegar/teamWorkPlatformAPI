@@ -7,15 +7,8 @@ import {
    getTeamRoomMembersByTeamRoomId,
    getTeamRoomsByIds,
    getUsersByIds
-} from './util';
-import { NoPermissionsError } from './teamService';
-
-export class TeamRoomNotExistError extends Error {
-   constructor(...args) {
-      super(...args);
-      Error.captureStackTrace(this, TeamRoomNotExistError);
-   }
-}
+} from './queries';
+import { NoPermissionsError, TeamRoomNotExistError } from './errors';
 
 
 class TeamRoomService {

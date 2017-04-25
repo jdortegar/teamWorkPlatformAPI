@@ -15,8 +15,9 @@ import uuid from 'uuid';
 import config from '../config/env';
 import APIError from '../helpers/APIError';
 import * as mailer from '../helpers/mailer';
+import { privateUser } from '../helpers/publishedVisibility';
 import User from '../models/user';
-import { NoPermissionsError } from '../services/teamService';
+import { NoPermissionsError, UserNotExistError } from '../services/errors';
 import userService from '../services/userService';
 
 /**
@@ -106,10 +107,16 @@ export function createUser(req, res, next) {
 export function updateUser(req, res, next) {
    const userId = req.user._id;
    userService.updateUser(req, userId, req.body)
-      .then(() => {
-
+      .then((user) => {
+         res.status(httpStatus.OK).json(privateUser(user));
       })
-      .catch(err => next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE)));
+      .catch((err) => {
+         if (err instanceof UserNotExistError) {
+            res.status(httpStatus.NOT_FOUND).end();
+         } else {
+            next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE));
+         }
+      });
 }
 
 export function del(req, res, next) {

@@ -1,8 +1,8 @@
 import httpStatus from 'http-status';
 import APIError from '../helpers/APIError';
 import { publicTeamRooms, publicUsers } from '../helpers/publishedVisibility';
-import teamRoomSvc, { TeamRoomNotExistError } from '../services/teamRoomService';
-import { NoPermissionsError } from '../services/teamService';
+import teamRoomSvc from '../services/teamRoomService';
+import { NoPermissionsError, TeamRoomNotExistError } from '../services/errors';
 
 export function getTeamRooms(req, res, next) {
    const userId = req.user._id;

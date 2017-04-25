@@ -2,8 +2,8 @@ import httpStatus from 'http-status';
 import moment from 'moment';
 import APIError from '../helpers/APIError';
 import { publicConversations, publicMessage, publicMessages } from '../helpers/publishedVisibility';
-import conversationsSvc, { ConversationNotExistError } from '../services/conversationService';
-import { NoPermissionsError } from '../services/teamService';
+import conversationsSvc from '../services/conversationService';
+import { ConversationNotExistError, NoPermissionsError } from '../services/errors';
 
 
 export function getConversations(req, res, next) {

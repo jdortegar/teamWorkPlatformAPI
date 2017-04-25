@@ -49,7 +49,8 @@ export function login(req, res, next) {
                res.status(httpStatus.OK).json({
                   status: 'SUCCESS',
                   token: jwt.sign(getAuthData(user, dbData.Item.userId), config.jwtSecret),
-                  user: privateUser(user)
+                  user: privateUser(user),
+                  websocketUrl: config.apiEndpoint
                });
                return;
             }

@@ -3,21 +3,15 @@ import uuid from 'uuid';
 import config from '../config/env';
 import { messageCreated } from './messaging';
 import teamRoomSvc from './teamRoomService';
-import { NoPermissionsError } from './teamService';
+import { ConversationNotExistError, NoPermissionsError } from './errors';
 import {
    getConversationParticipantsByConversationId,
    getConversationParticipantsByUserId,
    getConversationsByIds,
    getMessagesByConversationId,
    getUsersByIds
-} from './util';
+} from './queries';
 
-export class ConversationNotExistError extends Error {
-   constructor(...args) {
-      super(...args);
-      Error.captureStackTrace(this, ConversationNotExistError);
-   }
-}
 function createMessageInDb(req, partitionId, messageId, message) {
    const docClient = new req.app.locals.AWS.DynamoDB.DocumentClient();
    const tableName = `${config.tablePrefix}messages`;

@@ -1,28 +1,14 @@
 import uuid from 'uuid';
 import config from '../config/env';
 import { subscriberOrgCreated, subscriberOrgUpdated } from './messaging';
-import { NoPermissionsError } from './teamService';
+import { NoPermissionsError, SubscriberOrgExistsError, SubscriberOrgNotExistError } from './errors';
 import {
    getSubscriberOrgsByIds,
    getSubscriberOrgsByName,
    getSubscriberUsersBySubscriberOrgId,
    getSubscriberUsersByUserIds,
    getUsersByIds
-} from './util';
-
-export class SubscriberOrgNotExistError extends Error {
-   constructor(...args) {
-      super(...args);
-      Error.captureStackTrace(this, SubscriberOrgNotExistError);
-   }
-}
-
-export class SubscriberOrgExistsError extends Error {
-   constructor(...args) {
-      super(...args);
-      Error.captureStackTrace(this, SubscriberOrgExistsError);
-   }
-}
+} from './queries';
 
 
 function createSubscriberOrgInDb(req, partitionId, subscriberOrgId, subscriberOrg) {
@@ -92,6 +78,10 @@ class SubscriberOrgService {
             })
             .catch(err => reject(err));
       });
+   }
+
+   updateSubscriberOrg(req, subscriberOrgId, updateInfo, { userId }) {
+      // TODO: if userId exists, validate user can update this org.
    }
 
    /**

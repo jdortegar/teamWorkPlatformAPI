@@ -1,7 +1,8 @@
 import httpStatus from 'http-status';
 import APIError from '../helpers/APIError';
 import { publicTeams, publicUsers } from '../helpers/publishedVisibility';
-import teamSvc, { NoPermissionsError, TeamNotExistError } from '../services/teamService';
+import teamSvc from '../services/teamService';
+import { NoPermissionsError, TeamNotExistError } from '../services/errors';
 
 export function getTeams(req, res, next) {
    const userId = req.user._id;
