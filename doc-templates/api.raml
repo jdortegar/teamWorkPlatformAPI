@@ -106,10 +106,14 @@ documentation:
                               type: object
                               required: true
                               properties:
-                                 personal:
-                                    description: Personal preferences only available to the user.
+                                 private:
+                                    description: Private preferences only available to the user.
                                     type: object
                                     required: true
+                     websocketUrl:
+                        description: URL for socket.io connection.
+                        type: string
+                        required: true
                   example: |
                      {
                         "status": "SUCCESS",
@@ -127,11 +131,12 @@ documentation:
                            "userType": "hablaUser",
                            "preferences": {
                               "iconColor": "red",
-                              "personal": {
+                              "private": {
                                  "lastWindowLocation": "110, 64"
                               }
                            }
-                        }
+                        },
+                        "websocketUrl": "http://localhost:3000"
                      }
             401:
                description: |
@@ -187,13 +192,13 @@ documentation:
                   default: nil
                preferences:
                   type: object
-                  required: true
+                  required: false
                   properties:
-                     personal:
-                        description: Personal preferences only available to the user.
+                     private:
+                        description: Private preferences only available to the user.
                         type: object
-                        required: true
-            example:
+                        required: false
+            example: |
                {
                   "firstName": "Anthony",
                   "lastName": "Daga",
@@ -205,7 +210,7 @@ documentation:
                   "icon": null,
                   "preferences": {
                      "iconColor": "red",
-                     "personal": {
+                     "private": {
                         "lastWindowLocation": "110, 64"
                      }
                   }
@@ -325,16 +330,23 @@ documentation:
                               name:
                                  type: string
                                  required: true
+                              preferences:
+                                 type: object
+                                 required: true
                   example: |
                      {
                         "subscriberOrgs": [
                            {
                               "subscriberOrgId": "ea794510-cea6-4132-0008-a7ae1d32abb5",
-                              "name": "Anthony Daga"
+                              "name": "Anthony Daga",
+                              "preferences": {
+                              }
                            },
                            {
                               "subscriberOrgId": "ea794510-cea6-4132-0008-a7ae1d32abb5",
-                              "name": "Acme"
+                              "name": "Acme",
+                              "preferences": {
+                              }
                            }
                         ]
                      }
@@ -348,7 +360,15 @@ documentation:
                name:
                   type: string
                   required: true
-            example:
+               preferences:
+                  type: object
+                  required: false
+                  properties:
+                     private:
+                        description: Private preferences only available to the organization administrator.
+                        type: object
+                        required: false
+            example: |
                {
                   "name": "My Org"
                }
@@ -512,7 +532,7 @@ documentation:
                name:
                   type: string
                   required: true
-            example:
+            example: |
                {
                   "subscriberOrgId": "ea794510-cea6-4132-0008-a7ae1d32abb5",
                   "name": "My Team"
@@ -725,7 +745,7 @@ documentation:
                active:
                   type: boolean
                   required: true
-            example:
+            example: |
                {
                   "name": "Posse",
                   "purpose": "Place to hang.",
