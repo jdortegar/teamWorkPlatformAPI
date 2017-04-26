@@ -8,7 +8,7 @@ AWS.config.update({
    // endpoint: 'http://localhost:8000'
 });
 
-var tablePrefix = 'DEV_';
+var tablePrefix = 'DEMO_';
 var docClient = new AWS.DynamoDB.DocumentClient();
 
 function addDocument(params, log) {
