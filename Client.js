@@ -8,6 +8,8 @@ export default class Messaging {
    socket;
    listener;
 
+   printPing = false;
+
    constructor(url) {
       this.url = url;
    }
@@ -41,10 +43,14 @@ export default class Messaging {
                   console.log(`\n\t\t\tMessaging error: ${JSON.stringify(err)}  [${new Date()}]`);
                });
                this.socket.on('ping', () => {
-                  console.log(`\n\t\t\tMessaging ping  [${new Date()}]`);
+                  if (this.printPing) {
+                     console.log(`\n\t\t\tMessaging ping  [${new Date()}]`);
+                  }
                });
                this.socket.on('pong', (ms) => {
-                  console.log(`\n\t\t\tMessaging pong (${ms}ms)  [${new Date()}]`);
+                  if (this.printPing) {
+                     console.log(`\n\t\t\tMessaging pong (${ms}ms)  [${new Date()}]`);
+                  }
                });
 
                this.socket.on('*', (payload) => {
@@ -63,6 +69,10 @@ export default class Messaging {
             });
          });
       });
+   }
+
+   printPingMessages(printPing = true) {
+      this.printPing = printPing;
    }
 
    close() {
@@ -104,7 +114,7 @@ function login(baseUrl, username, password) {
    });
 }
 
-function selectChoice(promptMsg, nameVariable, idVariable, choices, allowNone = false) {
+function selectChoice(promptMsg, nameVariable, idVariable, choices, allowNone = false, showIds = true) {
    console.log(`\n${promptMsg}`);
 
    let minChoice = 1;
@@ -114,8 +124,11 @@ function selectChoice(promptMsg, nameVariable, idVariable, choices, allowNone = 
    }
 
    let idx = 1;
+   let choiceDesc;
    choices.forEach((choice) => {
-      console.log(`  ${idx}: ${choice[nameVariable]} (${choice[idVariable]})`);
+      choiceDesc = `  ${idx}: ${choice[nameVariable]}`;
+      choiceDesc += (showIds) ? ` (${choice[idVariable]})` : '';
+      console.log(choiceDesc);
       idx += 1;
    });
 
@@ -291,6 +304,7 @@ if (args.length !== 1) {
    process.exit();
 }
 
+let showPingMessages = false;
 
 const apiBaseUrl = args[0];
 let jwt;
@@ -303,6 +317,7 @@ const mainChoices = [
    { id: '3', name: 'Set team in session context' },
    { id: '4', name: 'Set teamRoom in session context' },
    { id: '5', name: 'Message with current context' },
+   { id: '-1', name: 'Show/hide ping messages' },
    { id: '6', name: 'Exit' }
 ];
 
@@ -316,22 +331,27 @@ function chat(conversation) {
       promptForMessage()
          .then((msg) => {
             if (msg === 'transcript') {
-               return getTranscript(apiBaseUrl, jwt, conversation.conversationId)
-                  .then((messages) => {
-                     messages.forEach((message) => {
-                        console.log(JSON.stringify(message));
-                     });
-                     chat(conversation);
-                  })
-                  .catch((err) => { throw err; });
+               return new Promise((resolveTranscript, rejectTranscript) => {
+                  getTranscript(apiBaseUrl, jwt, conversation.conversationId)
+                     .then((messages) => {
+                        messages.forEach((message) => {
+                           console.log(JSON.stringify(message));
+                        });
+                        resolveTranscript(true);
+                     })
+                     .catch(err => rejectTranscript(err));
+               });
             } else if (msg === 'exit') {
-               resolve();
+               return Promise.resolve();
             } else {
                return createMessage(apiBaseUrl, jwt, conversation.conversationId, msg);
             }
          })
-         .then(() => {
-            return chat(conversation);
+         .then((continueChat) => {
+            if (continueChat) {
+               resolve(chat(conversation));
+            }
+            resolve();
          })
          .catch(err => reject(err));
    });
@@ -341,9 +361,12 @@ function mainMenu() {
    printCurrentSessionContext(sessionCtx);
 
    return new Promise((resolve, reject) => {
-      selectChoice('Main Menu:', 'name', 'id', mainChoices)
+      selectChoice('Main Menu:', 'name', 'id', mainChoices, false, false)
          .then((choice) => {
-            if (choice.id === '1') {
+            if (choice.id === '-1') {
+               showPingMessages = !showPingMessages;
+               messaging.printPingMessages(showPingMessages);
+            } else if (choice.id === '1') {
                sessionCtx = {};
             } else if (choice.id === '2') {
                return selectChoice('Select a subscriberOrg:', 'name', 'subscriberOrgId', subscriberOrgs, true)
@@ -389,19 +412,49 @@ function mainMenu() {
                      .then((conversations) => {
                         if (conversations.length === 0) {
                            console.warn('***** No conversations found.  Bad data?');
-                           resolveChat();
-                           return;
+                           return Promise.resolve();
                         }
 
-                        if (conversations.length > 1) {
-                           console.warn('***** Multiple conversations found for current session context.  Bad data?  Using the last one just for the hell of it.');
-                           conversations.forEach(conversation => console.log(`${JSON.stringify(conversation)}`));
+                        const chatConversations = [];
+                        if (conversations.length === 1) {
+                           chatConversations.push(conversations[0]);
+                        } else if (conversations.length > 1) {
+                           console.warn('***** Multiple conversations found for current session context.  Bad data?');
+                           conversations.forEach((conversation) => {
+                              let problems = '';
+                              if ((conversation.participants === undefined) || (conversation.participants.length === 0)) {
+                                 problems += (problems.length > 0) ? '  ' : '';
+                                 problems += 'Bad data (no participants).';
+                              }
+                              if ((sessionCtx.teamRoom) && (conversation.teamRoomId !== sessionCtx.teamRoom.teamRoomId)) {
+                                 problems += (problems.length > 0) ? '  ' : '';
+                                 problems += 'teamRoomId doesn\'t match session context.';
+                              }
+                              if (problems.length > 0) {
+                                 console.warn(`Bad data (no participants) -> ${JSON.stringify(conversation)}`);
+                              } else {
+                                 console.log(`${JSON.stringify(conversation)}`);
+                                 chatConversations.push(conversation);
+                              }
+                           });
+
+                           if (chatConversations.length === 1) {
+                              console.log(`Chatting here: ${JSON.stringify(chatConversations[0])}`);
+                           } else {
+                              console.log('TODO: need to select which conversation.');
+                           }
                         }
 
-                        console.log('\nStart chatting!  Enter the word transcript to get the full transcript.  Enter the word exit to exit.');
-                        return chat(conversations[conversations.length - 1]);
+                        if (chatConversations.length === 1) {
+                           console.log('\nStart chatting!  Enter the word "transcript" to get the full transcript.  Enter the word "exit" to exit chat.');
+                           return chat(chatConversations[0]);
+                        }
+                        return Promise.resolve();
                      })
-                     .then(() => resolveChat())
+                     .then(() => {
+                        resolveChat();
+                        mainMenu();
+                     })
                      .catch(err => rejectChat(err));
                });
             } else if (choice.id === '6') {
@@ -438,10 +491,15 @@ promptCredentials()
       return mainMenu();
    })
    .catch((err) => {
-      messaging.close();
+      if (messaging) {
+         messaging.close();
+      }
+
       console.error(err.message);
       if ((err.response) && (err.response.data)) {
          console.error(err.response.data);
+      } else if (err.message.indexOf('ECONNREFUSED') >= 0) {
+         // No need for a verbose error message.
       } else {
          console.error(err);
       }
