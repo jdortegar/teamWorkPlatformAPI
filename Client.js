@@ -253,18 +253,18 @@ function getTranscript(baseUrl, jwt, conversationId) {
 function printCurrentSessionContext(sessionCtx) {
    let buf = '{';
    if (sessionCtx.subscriberOrg) {
-      buf += `\n\t"subscriberOrg": ${JSON.stringify(sessionCtx.subscriberOrg)}`;
+      buf += `\n   "subscriberOrg": ${JSON.stringify(sessionCtx.subscriberOrg)}`;
    }
    if (sessionCtx.team) {
       buf += (buf.length > 1) ? ',' : '';
-      buf += `\n\t"team": ${JSON.stringify(sessionCtx.team)}`;
+      buf += `\n   "team": ${JSON.stringify(sessionCtx.team)}`;
    }
    if (sessionCtx.teamRoom) {
       buf += (buf.length > 1) ? ',' : '';
-      buf += `\n\t"teamRoom": ${JSON.stringify(sessionCtx.teamRoom)}`;
+      buf += `\n   "teamRoom": ${JSON.stringify(sessionCtx.teamRoom)}`;
    }
    buf += (buf.length > 1) ? '\n}' : '}';
-   console.log(`\nCurrent Session Context: ${buf}`);
+   console.log(`\nCurrent SESSION CONTEXT: ${buf}`);
 }
 
 function promptForMessage() {
@@ -286,7 +286,7 @@ function createMessage(baseUrl, jwt, conversationId, messageText) {
             if (response.status === 201) {
                resolve(response.data);
             } else {
-               reject(response.status);
+               reject(response);
             }
          })
          .catch(err => reject(err));
@@ -353,7 +353,17 @@ function chat(conversation) {
             }
             resolve();
          })
-         .catch(err => reject(err));
+         .catch((err) => {
+            if ((err.response) && (err.response.status === 400)) {
+               console.log(err.message);
+               if ((err.response.data) && (err.response.data.message)) {
+                  console.log(err.response.data.message);
+               }
+               resolve(chat(conversation));
+            } else {
+               reject(err);
+            }
+         });
    });
 }
 
@@ -505,17 +515,3 @@ promptCredentials()
       }
       process.exit();
    });
-
-   //const messaging = new Messaging(config.apiEndpoint);
-
-   // LOCAL
-   //const messaging = new Messaging('http://localhost:3000');
-   //const jwt = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiJlYTc5NDUxMC1jZWE2LTQxMzItYWUyMi1hN2FlMWQzMmFiYjUiLCJlbWFpbCI6ImFudGhvbnkuZGFnYUBoYWJsYS5haSIsImlhdCI6MTQ5Mjk4OTM3N30.8f9ylrHqIlQyOKsAqeKIimDrrvChwP_V5ueBS0DNzxU';
-
-   // DEV
-//   const messaging = new Messaging('https://habla-fe-api-dev.habla.ai');
-//   const jwt = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiJlYTc5NDUxMC1jZWE2LTQxMzItYWUyMi1hN2FlMWQzMmFiYjUiLCJlbWFpbCI6ImFudGhvbnkuZGFnYUBoYWJsYS5haSIsImlhdCI6MTQ5MzI1NjQyNH0.KZoA9IGiaViWbBofMGaA_Q7AuOqruz9YxpWRL4QNJus';
-//
-//   messaging.connect(jwt);
-//   //messaging.send('Hello from client');
-//   //messaging.close();
