@@ -143,6 +143,101 @@ function filteredScan(req, tableName, attributeName, values) {
 }
 
 
+class ObjectExpressions {
+   nameVariables = {};
+   valueVariables = {};
+   sets = {};
+   removes = [];
+
+   constructor(json) {
+      this.process(json);
+   }
+
+   process(node, path, variablePath) {
+      if (typeof node === 'object') {
+         const objKeys = Object.keys(node);
+         objKeys.forEach((objKey) => {
+            const variable = `#n${objKey}`;
+            this.nameVariables[variable] = objKey;
+            this.process(node[objKey], objKey, (variablePath) ? `${variablePath}.${variable}` : variable);
+         });
+      } else {
+         const valueVariable = `$v${node}`;
+         this.valueVariables[valueVariable] = node;
+
+         if (node === undefined) {
+            this.removes.push(variablePath);
+         } else {
+            this.sets[variablePath] = node;
+         }
+      }
+   }
+
+   get UpdateExpression() {
+      let expression;
+
+      Object.keys(this.sets).forEach((objKey) => {
+         if (expression) {
+            expression = 'SET ';
+         } else {
+            expression += ', ';
+         }
+         expression += `${objKey}=${this.sets[objKey]}`;
+      });
+
+      this.removes.forEach((variable) => {
+         if (expression === undefined) {
+            expression += '  REMOVE ';
+         } else {
+            expression += ', ';
+         }
+         expression += variable;
+      });
+
+      return expression;
+   }
+
+   get ExpressionAttributeNames() {
+      return this.variables;
+   }
+
+   get ExpressionAttributeValues() {
+      return this.values;
+   }
+}
+
+export function updateItem(req, partitionId, tableName, sortKeyName, sortKey, updateInfo) {
+   if ((sortKeys === undefined) || (sortKeys.length === 0)) {
+      return Promise.resolve([]);
+   }
+
+   const dynamoDb = req.app.locals.db;
+   const partitionIdString = ((typeof partitionId === 'string') || (partitionId instanceof String)) ? partitionId : String(partitionId);
+   const expressions = new ObjectExpressions(updateInfo);
+
+   const params = {
+      TableName: tableName,
+      Key: {
+         partitionId: { N: partitionIdString },
+      },
+      UpdateExpression: expressions.UpdateExpression,
+      ExpressionAttributeNames: expressions.ExpressionAttributeNames,
+      ExpressionAttributeValues: expressions.ExpressionAttributeValues
+   };
+   params.Key[sortKeyName] = { S: sortKey };
+
+   return new Promise((resolve, reject) => {
+      dynamoDb.updatebatchGetItem(params).promise()
+         .then((data) => {
+            resolve(data);
+         })
+         .catch((err) => {
+            reject(err);
+         });
+   });
+}
+
+
 export function getUsersByIds(req, userIds) {
    if (userIds === undefined) {
       return Promise.reject('userIds needs to be specified.');

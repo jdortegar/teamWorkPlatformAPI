@@ -129,13 +129,14 @@ class MessagingService {
 
    _joinChannels(req, socket, userId) {
       socket.join(ChannelFactory.publicChannel());
+      console.log(`MessagingService: userId=${userId} joining ${ChannelFactory.publicChannel()}`);
 
       conversationSvc.getConversations(req, userId)
          .then((conversations) => {
             const conversationIds = conversations.map(conversation => conversation.conversationId);
             conversationIds.forEach((conversationId) => {
-               socket.join(`conversationId=${conversationId}`);
                socket.join(ChannelFactory.conversationChannel(conversationId));
+               console.log(`MessagingService: userId=${userId} joining ${ChannelFactory.conversationChannel()}`);
             });
          })
          .catch(err => console.error(err));
@@ -143,7 +144,7 @@ class MessagingService {
 
    _message(socket, eventType, event) {
       // Drop this on the floor.
-      console.log(`MessagingService: Message received from sId=${socket.id} userId=${socket.decoded_token._id} ${socket.decoded_token.email}. eventType=${eventType}, event=${event}`);
+      console.warn(`MessagingService: Message received from sId=${socket.id} userId=${socket.decoded_token._id} ${socket.decoded_token.email}. eventType=${eventType}, event=${event}`);
    }
 
 

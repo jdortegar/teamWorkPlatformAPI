@@ -670,6 +670,11 @@ documentation:
                type: string
                required: false
                example: /teamRooms/getTeamRooms?teamId=9dec8947-0381-4809-a053-b56777f782f4
+            subscriberOrgId:
+               description: Narrow the results to team rooms within a subscriberOrg.  If teamId is specified, this is ignored.
+               type: string
+               required: false
+               example: /teamRooms/getTeamRooms?subscriberOrgId=9dec8947-0381-4809-a053-b56777f782f4
          responses:
             200:
                description: |

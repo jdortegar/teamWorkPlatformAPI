@@ -6,9 +6,9 @@ import { NoPermissionsError, TeamRoomNotExistError } from '../services/errors';
 
 export function getTeamRooms(req, res, next) {
    const userId = req.user._id;
-   const { subscriberOrgId } = req.query;
+   const { teamId, subscriberOrgId } = req.query;
 
-   teamRoomSvc.getUserTeamRooms(req, userId)
+   teamRoomSvc.getUserTeamRooms(req, userId, { teamId, subscriberOrgId })
       .then((teamRooms) => {
          res.status(httpStatus.OK).json({ teamRooms: publicTeamRooms(teamRooms) });
       })

@@ -12,15 +12,18 @@ import { NoPermissionsError, TeamRoomNotExistError } from './errors';
 
 
 class TeamRoomService {
-   getUserTeamRooms(req, userId) {
+   getUserTeamRooms(req, userId, { teamId, subscriberOrgId } = {}) {
+      const filterSubscriberOrgId = (teamId) ? undefined : subscriberOrgId;
       return new Promise((resolve, reject) => {
          getSubscriberUsersByUserIds(req, [userId])
             .then((subscriberUsers) => {
-               const subscriberUserIds = subscriberUsers.map(subscriberUser => subscriberUser.subscriberUserId);
+               const filteredSubscriberUsers = (filterSubscriberOrgId) ? subscriberUsers.filter(subscriberUser => subscriberUser.subscriberUserInfo.subscriberOrgId === filterSubscriberOrgId) : subscriberUsers;
+               const subscriberUserIds = filteredSubscriberUsers.map(subscriberUser => subscriberUser.subscriberUserId);
                return getTeamMembersBySubscriberUserIds(req, subscriberUserIds);
             })
             .then((teamMembers) => {
-               const teamMemberIds = teamMembers.map((teamMember) => {
+            const filteredTeamMembers = (teamId) ? teamMembers.filter(teamMember => teamMember.teamMemberInfo.teamId === teamId) : teamMembers;
+               const teamMemberIds = filteredTeamMembers.map((teamMember) => {
                   return teamMember.teamMemberId;
                });
                return getTeamRoomMembersByTeamMemberIds(req, teamMemberIds);

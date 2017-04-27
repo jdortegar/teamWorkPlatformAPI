@@ -7,7 +7,8 @@ import {
    getSubscriberOrgsByName,
    getSubscriberUsersBySubscriberOrgId,
    getSubscriberUsersByUserIds,
-   getUsersByIds
+   getUsersByIds,
+   updateItem
 } from './queries';
 
 
@@ -82,6 +83,7 @@ class SubscriberOrgService {
 
    updateSubscriberOrg(req, subscriberOrgId, updateInfo, { userId }) {
       // TODO: if userId exists, validate user can update this org.
+      return updateItem(req, -1, `config.tablePrefix${subscriberOrgs}`, 'subscriberOrgId', subscriberOrgId, updateInfo);
    }
 
    /**
