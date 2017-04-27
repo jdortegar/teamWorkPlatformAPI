@@ -88,8 +88,9 @@ class ConversationService {
                         return participant.conversationParticipantInfo.userId;
                      });
                      conversationParticipantsUserIds.push(participants);
+                     return true;
                   }
-                  return conversation;
+                  return false;
                });
 
                return this._convertParticipantsToUsers(req, conversationParticipantsUserIds);

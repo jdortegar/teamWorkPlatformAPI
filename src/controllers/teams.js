@@ -6,8 +6,9 @@ import { NoPermissionsError, TeamNotExistError } from '../services/errors';
 
 export function getTeams(req, res, next) {
    const userId = req.user._id;
+   const { subscriberOrgId } = req.query;
 
-   teamSvc.getUserTeams(req, userId)
+   teamSvc.getUserTeams(req, userId, subscriberOrgId)
       .then((teams) => {
          res.status(httpStatus.OK).json({ teams: publicTeams(teams) });
       })

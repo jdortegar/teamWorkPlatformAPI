@@ -11,11 +11,12 @@ import {
 
 class TeamService {
 
-   getUserTeams(req, userId) {
+   getUserTeams(req, userId, subscriberOrgId = undefined) {
       return new Promise((resolve, reject) => {
          getSubscriberUsersByUserIds(req, [userId])
             .then((subscriberUsers) => {
-               const subscriberUserIds = subscriberUsers.map(subscriberUser => subscriberUser.subscriberUserId);
+               const filteredSubscriberUsers = (subscriberOrgId) ? subscriberUsers.filter(subscriberUser => subscriberUser.subscriberUserInfo.subscriberOrgId === subscriberOrgId) : subscriberUsers;
+               const subscriberUserIds = filteredSubscriberUsers.map(subscriberUser => subscriberUser.subscriberUserId);
                return getTeamMembersBySubscriberUserIds(req, subscriberUserIds);
             })
             .then((teamMembers) => {
