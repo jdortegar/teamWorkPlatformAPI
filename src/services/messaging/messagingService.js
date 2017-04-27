@@ -122,8 +122,9 @@ class MessagingService {
       this._presenceChanged(undefined, userId, PresenceStatuses.away);
    }
 
+   // TODO: maintain 'from' or count, just in case the same user is connected via multiple clients.
    _presenceChanged(req, userId, presenceStatus, presenceMessage = undefined) {
-      this.broadcastEvent(req, EventTypes.presence, { userId, presenceStatus, presenceMessage });
+      this.broadcastEvent(req, EventTypes.presenceChanged, { userId, presenceStatus, presenceMessage });
    }
 
    _joinChannels(req, socket, userId) {
