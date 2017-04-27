@@ -128,15 +128,17 @@ class MessagingService {
    }
 
    _joinChannels(req, socket, userId) {
-      socket.join(ChannelFactory.publicChannel());
-      console.log(`MessagingService: userId=${userId} joining ${ChannelFactory.publicChannel()}`);
+      const publicChannel = ChannelFactory.publicChannel();
+      socket.join(publicChannel);
+      console.log(`MessagingService: userId=${userId} joining ${publicChannel}`);
 
       conversationSvc.getConversations(req, userId)
          .then((conversations) => {
             const conversationIds = conversations.map(conversation => conversation.conversationId);
             conversationIds.forEach((conversationId) => {
-               socket.join(ChannelFactory.conversationChannel(conversationId));
-               console.log(`MessagingService: userId=${userId} joining ${ChannelFactory.conversationChannel()}`);
+               const conversationChannel = ChannelFactory.conversationChannel(conversationId);
+               socket.join(conversationChannel);
+               console.log(`MessagingService: userId=${userId} joining ${conversationChannel}`);
             });
          })
          .catch(err => console.error(err));
@@ -156,7 +158,8 @@ class MessagingService {
       } else {
          this.io.emit(eventType, event);
       }
-      console.log(`MessagingService.broadcastEvent(eventType=${eventType}, event=${JSON.stringify(event)}), channels="${channels}"`);
+      const channelsString = (channels) ? `, channels="${channels}"` : '';
+      console.log(`MessagingService.broadcastEvent(eventType=${eventType}, event=${JSON.stringify(event)})${channelsString}`);
    }
 }
 const messagingService = new MessagingService();
