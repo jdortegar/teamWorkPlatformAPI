@@ -29,6 +29,7 @@
     "watch:test": "npm run test -- --watch",
     "client:local": "babel-node $NODE_DEBUG_OPTION Client.js http://localhost:3000",
     "client:dev": "babel-node $NODE_DEBUG_OPTION Client.js https://habla-fe-api-dev.habla.ai",
+    "client:ngrok": "babel-node $NODE_DEBUG_OPTION Client.js https://hablaapi.ngrok.io",
     "doc": "esdoc && npm run raml && npm run md",
     "build": "cross-env NODE_ENV=production babel -s true src -d dist",
     "start:prod": "cross-env NODE_ENV=production babel -s true src -d dist && node dist",

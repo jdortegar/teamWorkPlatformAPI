@@ -1,6 +1,6 @@
 import axios from 'axios';
-import IO from 'socket.io-client';
 import prompt from 'prompt';
+import IO from 'socket.io-client';
 import SocketIOWildcard from 'socketio-wildcard';
 
 export default class Messaging {
@@ -171,6 +171,21 @@ function getSubscriberOrgs(baseUrl, jwt) {
    });
 }
 
+function getSubscribers(baseUrl, jwt, subscriberOrgId) {
+   console.log(`getSubscriberss(subscriberOrgId=${subscriberOrgId})`);
+   return new Promise((resolve, reject) => {
+      axios.get(`${baseUrl}/subscriberOrgs/getSubscribers/${subscriberOrgId}`, { headers: { Authorization: `Bearer ${jwt}` } })
+         .then((response) => {
+            if (response.status === 200) {
+               resolve(response.data.subscribers);
+            } else {
+               reject(response.status);
+            }
+         })
+         .catch(err => reject(err));
+   });
+}
+
 function getTeams(baseUrl, jwt, subscriberOrgId = undefined) {
    console.log(`getTeams(subscriberOrgId=${subscriberOrgId})`);
    return new Promise((resolve, reject) => {
@@ -179,6 +194,21 @@ function getTeams(baseUrl, jwt, subscriberOrgId = undefined) {
          .then((response) => {
             if (response.status === 200) {
                resolve(response.data.teams);
+            } else {
+               reject(response.status);
+            }
+         })
+         .catch(err => reject(err));
+   });
+}
+
+function getTeamMembers(baseUrl, jwt, teamId) {
+   console.log(`getTeamMembers(teamId=${teamId})`);
+   return new Promise((resolve, reject) => {
+      axios.get(`${baseUrl}/teams/getMembers/${teamId}`, { headers: { Authorization: `Bearer ${jwt}` } })
+         .then((response) => {
+            if (response.status === 200) {
+               resolve(response.data.teamMembers);
             } else {
                reject(response.status);
             }
@@ -209,6 +239,21 @@ function getTeamRooms(baseUrl, jwt, { teamId, subscriberOrgId } = {}) {
          .then((response) => {
             if (response.status === 200) {
                resolve(response.data.teamRooms);
+            } else {
+               reject(response.status);
+            }
+         })
+         .catch(err => reject(err));
+   });
+}
+
+function getTeamRoomMembers(baseUrl, jwt, teamRoomId) {
+   console.log(`getTeamRoomMembers(teamRoomId=${teamRoomId})`);
+   return new Promise((resolve, reject) => {
+      axios.get(`${baseUrl}/teamRooms/getMembers/${teamRoomId}`, { headers: { Authorization: `Bearer ${jwt}` } })
+         .then((response) => {
+            if (response.status === 200) {
+               resolve(response.data.teamRoomMembers);
             } else {
                reject(response.status);
             }
@@ -264,7 +309,7 @@ function printCurrentSessionContext(sessionCtx) {
       buf += `\n   "teamRoom": ${JSON.stringify(sessionCtx.teamRoom)}`;
    }
    buf += (buf.length > 1) ? '\n}' : '}';
-   console.log(`\nCurrent SESSION CONTEXT: ${buf}`);
+   console.log(`\n\nCurrent SESSION CONTEXT: ${buf}`);
 }
 
 function promptForMessage() {
@@ -316,15 +361,64 @@ const mainChoices = [
    { id: '2', name: 'Set subscriberOrg in session context' },
    { id: '3', name: 'Set team in session context' },
    { id: '4', name: 'Set teamRoom in session context' },
-   { id: '5', name: 'Message with current context' },
+   { id: '5', name: 'Show session context details' },
+   { id: '6', name: 'Message with current context' },
    { id: '-1', name: 'Show/hide ping messages' },
-   { id: '6', name: 'Exit' }
+   { id: '7', name: 'Exit' }
 ];
 
 let subscriberOrgs;
+let orgSubscribers;
 let teams;
+let teamMembers;
 let teamRooms;
+let teamRoomMembers;
 let sessionCtx = {};
+
+
+function showSessionContextDetails() {
+   if (sessionCtx.subscriberOrg) {
+      console.log(JSON.stringify(sessionCtx.subscriberOrg));
+      let subscriberOrgIdx = -1;
+      subscriberOrgs.some((org) => {
+         subscriberOrgIdx += 1;
+         return (org.subscriberOrgId === sessionCtx.subscriberOrg.subscriberOrgId);
+      });
+      console.log('Subscribers:');
+      orgSubscribers[subscriberOrgIdx].forEach((subscriber) => {
+         console.log(`     ${JSON.stringify(subscriber)}`);
+      });
+      console.log();
+   }
+
+   if (sessionCtx.team) {
+      console.log(JSON.stringify(sessionCtx.team));
+      let teamIdx = -1;
+      teams.some((team) => {
+         teamIdx += 1;
+         return (team.teamId === sessionCtx.team.teamId);
+      });
+      console.log('Team Members:');
+      teamMembers[teamIdx].forEach((team) => {
+         console.log(`     ${JSON.stringify(team)}`);
+      });
+      console.log();
+   }
+
+   if (sessionCtx.teamRoom) {
+      console.log(JSON.stringify(sessionCtx.teamRoom));
+      let teamRoomIdx = -1;
+      teamRooms.some((teamRoom) => {
+         teamRoomIdx += 1;
+         return (teamRoom.teamRoomId === sessionCtx.teamRoom.teamRoomId);
+      });
+      console.log('Team Room Members:');
+      teamRoomMembers[teamRoomIdx].forEach((teamRoom) => {
+         console.log(`     ${JSON.stringify(teamRoom)}`);
+      });
+      console.log();
+   }
+}
 
 function chat(conversation) {
    return new Promise((resolve, reject) => {
@@ -417,6 +511,8 @@ function mainMenu() {
                   })
                   .catch(err => reject(err));
             } else if (choice.id === '5') {
+               showSessionContextDetails();
+            } else if (choice.id === '6') {
                return new Promise((resolveChat, rejectChat) => {
                   getConversations(apiBaseUrl, jwt, (sessionCtx.teamRoom) ? sessionCtx.teamRoom.teamRoomId : sessionCtx.teamRoom)
                      .then((conversations) => {
@@ -467,7 +563,7 @@ function mainMenu() {
                      })
                      .catch(err => rejectChat(err));
                });
-            } else if (choice.id === '6') {
+            } else if (choice.id === '7') {
                messaging.close();
                process.exit();
             }
@@ -498,6 +594,21 @@ promptCredentials()
       subscriberOrgs = allData[1];
       teams = allData[2];
       teamRooms = allData[3];
+      const getOrgSubscribers = subscriberOrgs.map(subscriberOrg => getSubscribers(apiBaseUrl, jwt, subscriberOrg.subscriberOrgId));
+      return Promise.all(getOrgSubscribers);
+   })
+   .then((retrievedOrgSubscribers) => {
+      orgSubscribers = retrievedOrgSubscribers;
+      const getTeamMembersPromises = teams.map(team => getTeamMembers(apiBaseUrl, jwt, team.teamId));
+      return Promise.all(getTeamMembersPromises);
+   })
+   .then((retrievedTeamMembers) => {
+      teamMembers = retrievedTeamMembers;
+      const getTeamRoomMembersPromises = teamRooms.map(team => getTeamRoomMembers(apiBaseUrl, jwt, team.teamRoomId));
+      return Promise.all(getTeamRoomMembersPromises);
+   })
+   .then((retrievedTeamRoomMembers) => {
+      teamRoomMembers = retrievedTeamRoomMembers;
       return mainMenu();
    })
    .catch((err) => {
