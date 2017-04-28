@@ -124,7 +124,7 @@ class MessagingService {
 
    // TODO: maintain 'from' or count, just in case the same user is connected via multiple clients.
    _presenceChanged(req, userId, presenceStatus, presenceMessage = undefined) {
-      this.broadcastEvent(req, EventTypes.presenceChanged, { userId, presenceStatus, presenceMessage });
+      return this._broadcastEvent(req, EventTypes.presenceChanged, { userId, presenceStatus, presenceMessage });
    }
 
    _joinChannels(req, socket, userId) {
@@ -150,17 +150,29 @@ class MessagingService {
    }
 
 
-   broadcastEvent(req, eventType, event, channels = undefined) {
-      if (channels) {
-         channels.forEach((channel) => {
-            this.io.to(channel).emit(eventType, event);
-         });
-      } else {
-         this.io.emit(eventType, event);
-      }
-      const channelsString = (channels) ? `, channels="${channels}"` : '';
-      console.log(`MessagingService.broadcastEvent(eventType=${eventType}, event=${JSON.stringify(event)})${channelsString}`);
+   _broadcastEvent(req, eventType, event, channels = undefined) {
+      return new Promise((resolve, reject) => {
+         if (channels) {
+            channels.forEach((channel) => {
+               this.io.to(channel).emit(eventType, event);
+            });
+         } else {
+            this.io.emit(eventType, event);
+         }
+         const channelsString = (channels) ? `, channels="${channels}"` : '';
+         console.log(`MessagingService.broadcastEvent(eventType=${eventType}, event=${JSON.stringify(event)})${channelsString}`);
+         resolve();
+      });
    }
 }
 const messagingService = new MessagingService();
 export default messagingService;
+
+
+export function _presenceChanged(req, userId, presenceStatus, presenceMessage = undefined) {
+   messagingService._presenceChanged(req, userId, presenceStatus, presenceMessage);
+}
+
+export function _broadcastEvent(req, eventType, event, channels = undefined) {
+   messagingService._broadcastEvent(req, eventType, event, channels);
+}
