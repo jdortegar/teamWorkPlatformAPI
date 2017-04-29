@@ -149,26 +149,42 @@ class ObjectExpressions {
    sets = {};
    removes = [];
 
+   nameCount = 0;
+   valueCount = 0;
+
    constructor(json) {
       this.process(json);
    }
 
-   process(node, path, variablePath) {
+   process(node, variablePath) {
       if (typeof node === 'object') {
          const objKeys = Object.keys(node);
          objKeys.forEach((objKey) => {
-            const variable = `#n${objKey}`;
+            const variable = `#n${this.nameCount}`;
             this.nameVariables[variable] = objKey;
-            this.process(node[objKey], objKey, (variablePath) ? `${variablePath}.${variable}` : variable);
+            this.nameCount += 1;
+            this.process(node[objKey], (variablePath) ? `${variablePath}.${variable}` : variable);
          });
       } else {
-         const valueVariable = `$v${node}`;
-         this.valueVariables[valueVariable] = node;
+         const valueVariable = `:v${this.valueCount}`;
+         this.valueCount += 1;
 
          if (node === undefined) {
             this.removes.push(variablePath);
          } else {
-            this.sets[variablePath] = node;
+            let nodeValue;
+            if (!isNaN(node)) {
+               nodeValue = { N: node };
+            } else if (typeof node === 'string') {
+               nodeValue = { S: node };
+            } else if (typeof node === 'boolean') {
+               nodeValue = { BOOL: node };
+            } else if (node === null) {
+               nodeValue = { NULL: null };
+            }
+
+            this.valueVariables[valueVariable] = nodeValue;
+            this.sets[variablePath] = valueVariable;
          }
       }
    }
@@ -177,7 +193,7 @@ class ObjectExpressions {
       let expression;
 
       Object.keys(this.sets).forEach((objKey) => {
-         if (expression) {
+         if (expression === undefined) {
             expression = 'SET ';
          } else {
             expression += ', ';
@@ -198,19 +214,28 @@ class ObjectExpressions {
    }
 
    get ExpressionAttributeNames() {
-      return this.variables;
+      return this.nameVariables;
    }
 
    get ExpressionAttributeValues() {
-      return this.values;
+      return this.valueVariables;
    }
 }
 
-export function updateItem(req, partitionId, tableName, sortKeyName, sortKey, updateInfo) {
-   if ((sortKeys === undefined) || (sortKeys.length === 0)) {
-      return Promise.resolve([]);
-   }
+export function createItem(req, partitionId, tableName, sortKeyName, sortKey, infoName, info) {
+   const params = {
+      TableName: tableName,
+      Item: {
+         partitionId
+      }
+   };
+   params.Item[sortKeyName] = sortKey;
+   params.Item[infoName] = info;
 
+   return _docClient.put(params).promise();
+}
+
+export function updateItem(req, partitionId, tableName, sortKeyName, sortKey, updateInfo) {
    const dynamoDb = req.app.locals.db;
    const partitionIdString = ((typeof partitionId === 'string') || (partitionId instanceof String)) ? partitionId : String(partitionId);
    const expressions = new ObjectExpressions(updateInfo);
@@ -227,13 +252,9 @@ export function updateItem(req, partitionId, tableName, sortKeyName, sortKey, up
    params.Key[sortKeyName] = { S: sortKey };
 
    return new Promise((resolve, reject) => {
-      dynamoDb.updatebatchGetItem(params).promise()
-         .then((data) => {
-            resolve(data);
-         })
-         .catch((err) => {
-            reject(err);
-         });
+      dynamoDb.updateItem(params).promise()
+         .then(() => resolve())
+         .catch(err => reject(err));
    });
 }
 

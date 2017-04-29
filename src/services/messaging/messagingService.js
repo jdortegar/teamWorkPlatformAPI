@@ -6,6 +6,7 @@ import SocketIOWildcard from 'socketio-wildcard';
 import config from '../../config/env';
 import app from '../../config/express';
 import conversationSvc from '../conversationService';
+import subscriberOrgSvc from '../subscriberOrgService';
 
 
 export const EventTypes = Object.freeze({
@@ -25,6 +26,10 @@ export const EventTypes = Object.freeze({
 export class ChannelFactory {
    static publicChannel() {
       return 'public';
+   }
+
+   static personalChannel(userId) {
+      return `userId=${userId}`;
    }
 
    static subscriberOrgChannel(subscriberOrgId) {
@@ -131,6 +136,21 @@ class MessagingService {
       const publicChannel = ChannelFactory.publicChannel();
       socket.join(publicChannel);
       console.log(`MessagingService: userId=${userId} joining ${publicChannel}`);
+
+      const personalChannel = ChannelFactory.personalChannel(userId);
+      socket.join(personalChannel);
+      console.log(`MessagingService: userId=${userId} joining ${personalChannel}`);
+
+      subscriberOrgSvc.getUserSubscriberOrgs(req, userId)
+         .then((subscriberOrgs) => {
+            const subscriberOrgIds = subscriberOrgs.map(subscriberOrg => subscriberOrg.subscriberOrgId);
+            subscriberOrgIds.forEach((subscriberOrgId) => {
+               const subscriberOrgChannel = ChannelFactory.subscriberOrgChannel(subscriberOrgId);
+               socket.join(subscriberOrgChannel);
+               console.log(`MessagingService: userId=${userId} joining ${subscriberOrgChannel}`);
+            });
+         })
+         .catch(err => console.error(err));
 
       conversationSvc.getConversations(req, userId)
          .then((conversations) => {

@@ -120,9 +120,10 @@ export function publicConversations(dbConversations) {
 
 export function publicMessage(dbMessage) {
    const messageId = dbMessage.messageId;
-   const { created, createdBy, messageType, text, replyTo } = dbMessage.messageInfo || dbMessage;
+   const { conversationId, created, createdBy, messageType, text, replyTo } = dbMessage.messageInfo || dbMessage;
    return {
       messageId,
+      conversationId,
       created,
       createdBy,
       messageType,

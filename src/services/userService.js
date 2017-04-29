@@ -39,25 +39,6 @@ function createUserInDb(req, partitionId, userId, user) {
    return docClient.put(params).promise();
 }
 
-function addSubscriberUserToDb(req, partitionId, uid, userId, subscriberOrgId) {
-   const docClient = new req.app.locals.AWS.DynamoDB.DocumentClient();
-   const tableName = `${config.tablePrefix}subscriberUsers`;
-
-   const params = {
-      TableName: tableName,
-      Item: {
-         partitionId,
-         subscriberUserId: uid,
-         subscriberUserInfo: {
-            userId,
-            subscriberOrgId
-         }
-      }
-   };
-
-   return docClient.put(params).promise();
-}
-
 function addTeamToDb(req, partitionId, uid, subscriberOrgId, name) {
    const docClient = new req.app.locals.AWS.DynamoDB.DocumentClient();
    const tableName = `${config.tablePrefix}teams`;
@@ -155,11 +136,11 @@ class UserService {
                   const subscriberOrgName = req.body.displayName;
                   const subscriberUserId = uuid.v4();
                   const teamId = uuid.v4();
-                  const teamName = req.body.displayName;
+                  const teamName = 'All';
                   const teamMemberId = uuid.v4();
                   const teamRoomId = uuid.v4();
-                  const teamRoomName = req.body.displayName;
-                  const teamRoomPurpose = 'My intitial room.';
+                  const teamRoomName = 'Lobby';
+                  const teamRoomPurpose = 'Everyone to talk.';
                   const teamRoomPublish = true;
                   const teamRoomActive = true;
                   const TeamRoomMemberId = uuid.v4();
@@ -186,8 +167,7 @@ class UserService {
                   return Promise.all([
                      addUserToCache(req, email, userId, status),
                      createUserInDb(req, -1, userId, user),
-                     subscriberOrgSvc.createSubscriberOrgUsingBaseName(req, subscriberOrgId, subscriberOrgName),
-                     addSubscriberUserToDb(req, -1, subscriberUserId, userId, subscriberOrgId),
+                     subscriberOrgSvc.createSubscriberOrgUsingBaseName(req, { name: subscriberOrgName }, userId, subscriberOrgId),
                      addTeamToDb(req, -1, teamId, subscriberOrgId, teamName),
                      addTeamMemberToDb(req, -1, teamMemberId, subscriberUserId, teamId),
                      addTeamRoomToDb(req, -1, teamRoomId, teamId, teamRoomName, teamRoomPurpose, teamRoomPublish, teamRoomActive),
