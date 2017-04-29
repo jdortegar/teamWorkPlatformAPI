@@ -3,6 +3,7 @@ import config from '../config/env';
 import { subscriberOrgCreated, subscriberOrgUpdated } from './messaging';
 import { NoPermissionsError, SubscriberOrgExistsError, SubscriberOrgNotExistError } from './errors';
 import {
+   createItem,
    getSubscriberOrgsByIds,
    getSubscriberOrgsByName,
    getSubscriberUsersBySubscriberOrgId,
@@ -10,23 +11,6 @@ import {
    getUsersByIds,
    updateItem
 } from './queries';
-
-
-function createSubscriberOrgInDb(req, partitionId, subscriberOrgId, subscriberOrg) {
-   const docClient = new req.app.locals.AWS.DynamoDB.DocumentClient();
-   const tableName = `${config.tablePrefix}subscriberOrgs`;
-
-   const params = {
-      TableName: tableName,
-      Item: {
-         partitionId,
-         subscriberOrgId,
-         subscriberOrgInfo: subscriberOrg
-      }
-   };
-
-   return docClient.put(params).promise();
-}
 
 
 class SubscriberOrgService {
@@ -52,9 +36,9 @@ class SubscriberOrgService {
       });
    }
 
-   createSubscriberOrg(req, subscriberOrgInfo, { subscriberOrgId, userId }) {
+   createSubscriberOrg(req, subscriberOrgInfo, userId, subscriberOrgId = undefined) {
       return new Promise((resolve, reject) => {
-         // TODO: if (userId), check canCreateSubscriberOrg() -> false, reject 403 forbidden
+         // TODO: if (userId), check canCreateSubscriberOrg() -> false, throw NoPermissionsError
          const actualSubscriberOrgId = subscriberOrgId || uuid.v4();
          const preferences = subscriberOrgInfo.preferences || { private: {} };
          if (preferences.private === undefined) {
@@ -69,8 +53,15 @@ class SubscriberOrgService {
                if (existingSubscriberOrgs.length > 0) {
                   throw new SubscriberOrgExistsError(subscriberOrgInfo.name);
                } else {
-                  return createSubscriberOrgInDb(req, -1, actualSubscriberOrgId, subscriberOrg);
+                  return createItem(req, -1, `${config.tablePrefix}subscriberOrgs`, 'subscriberOrgId', actualSubscriberOrgId, 'subscriberOrgInfo', subscriberOrg);
                }
+            })
+            .then(() => {
+               const subscriberUser = {
+                  userId,
+                  subscriberOrgId: actualSubscriberOrgId
+               };
+               return createItem(req, -1, `${config.tablePrefix}subscriberUsers`, 'subscriberUserId', userId, 'subscriberUserInfo', subscriberUser);
             })
             .then(() => {
                subscriberOrg.subscriberOrgId = actualSubscriberOrgId;
@@ -81,11 +72,6 @@ class SubscriberOrgService {
       });
    }
 
-   updateSubscriberOrg(req, subscriberOrgId, updateInfo, { userId }) {
-      // TODO: if userId exists, validate user can update this org.
-      return updateItem(req, -1, `config.tablePrefix${subscriberOrgs}`, 'subscriberOrgId', subscriberOrgId, updateInfo);
-   }
-
    /**
     * Create a subscriber organization given the name+`appendNumber`.
     * if the name exists, append ' (n)', where n >= 1 to avoid conflict.
@@ -94,17 +80,40 @@ class SubscriberOrgService {
     * @param subscriberOrgName
     * @param appendNumber (optional)
     */
-   createSubscriberOrgUsingBaseName(req, subscriberOrgId, subscriberOrgName, appendNumber = undefined) {
-      const tryName = subscriberOrgName + ((appendNumber) ? ` (${appendNumber})` : '');
+   createSubscriberOrgUsingBaseName(req, info, userId, subscriberOrgId = undefined, appendNumber = undefined) {
+      const tryInfo = {
+         name: info.name + ((appendNumber) ? ` (${appendNumber})` : ''),
+         preferences: info.preferences
+      };
       return new Promise((resolve, reject) => {
-         this.createSubscriberOrg(req, tryName, { subscriberOrgId })
+         this.createSubscriberOrg(req, tryInfo, userId, subscriberOrgId)
             .then(createdSubscriberOrg => resolve(createdSubscriberOrg))
             .catch((err) => {
                if (err instanceof SubscriberOrgExistsError) {
                   const tryNumber = (appendNumber) ? appendNumber + 1 : 1;
-                  this.createSubscriberOrgUsingBaseName(req, subscriberOrgId, { name: subscriberOrgName }, tryNumber)
+                  this.createSubscriberOrgUsingBaseName(req, info, userId, subscriberOrgId, tryNumber)
                      .then(createdSubscriberOrg => resolve(createdSubscriberOrg))
                      .catch(err2 => reject(err2));
+               } else {
+                  reject(err);
+               }
+            });
+      });
+   }
+
+   updateSubscriberOrg(req, subscriberOrgId, updateInfo, userId) {
+      // TODO: if userId exists, validate user can update this org.
+      return new Promise((resolve, reject) => {
+         updateItem(req, -1, `${config.tablePrefix}subscriberOrgs`, 'subscriberOrgId', subscriberOrgId, { subscriberOrgInfo: updateInfo })
+            .then(() => getSubscriberOrgsByIds(req, [subscriberOrgId]))
+            .then((subscriberOrgs) => {
+               resolve();
+               const subscriberOrg = subscriberOrgs[0];
+               subscriberOrgUpdated(req, subscriberOrg);
+            })
+            .catch((err) => {
+               if (err.code === 'ValidationException') {
+                  reject(new SubscriberOrgNotExistError(subscriberOrgId));
                } else {
                   reject(err);
                }

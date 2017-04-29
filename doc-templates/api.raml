@@ -395,6 +395,45 @@ documentation:
                   FORBIDDEN<br />
                   The user is not allowed to create an organization.
 
+   /updateSubscriberOrg:
+      /{subscriberOrgId}:
+         uriParameters:
+            subscriberOrgId:
+               description: Subscriber Org ID to update.
+         patch:
+            description: |
+               Update a subscriber organization in Habla.
+            body:
+               properties:
+                  name:
+                     type: string
+                     required: false
+                  preferences:
+                     type: object
+                     required: false
+                     properties:
+                        private:
+                           description: Private preferences only available to the organization administrator.
+                           type: object
+                           required: false
+               example: |
+                  {
+                     "name": "My Org"
+                  }
+            responses:
+               204:
+                  description: |
+                     NO_CONTENT<br />
+                     The subscriberOrg was updated successfully.
+               404:
+                  description: |
+                     NOT_FOUND<br />
+                     The `subscriberOrg` with the specified ID was not found.
+               403:
+                  description: |
+                     FORBIDDEN<br />
+                     The user is not allowed to update the specified organization.
+
    /getSubscribers:
       /{subscriberOrgId}:
          uriParameters:

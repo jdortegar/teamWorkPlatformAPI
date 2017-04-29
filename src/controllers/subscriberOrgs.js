@@ -19,9 +19,8 @@ export function getSubscriberOrgs(req, res, next) {
 
 export function createSubscriberOrg(req, res, next) {
    const userId = req.user._id;
-   const name = req.body.name;
 
-   subscriberOrgSvc.createSubscriberOrg(req, req.body, { userId })
+   subscriberOrgSvc.createSubscriberOrg(req, req.body, userId)
       .then((createdSubscriberOrg) => {
          res.status(httpStatus.CREATED).json(createdSubscriberOrg);
       })
@@ -38,12 +37,18 @@ export function createSubscriberOrg(req, res, next) {
 
 export function updateSubscriberOrg(req, res, next) {
    const userId = req.user._id;
-   const subscriberOrgId = req.param.subscriberOrgId;
-   subscriberOrgSvc.updateSubscriberOrg(req, subscriberOrgId, req.body, { userId })
+   const subscriberOrgId = req.params.subscriberOrgId;
+   subscriberOrgSvc.updateSubscriberOrg(req, subscriberOrgId, req.body, userId)
       .then(() => {
-
+         res.status(httpStatus.NO_CONTENT).end();
       })
-      .catch(err => next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE)));
+      .catch((err) => {
+         if (err instanceof SubscriberOrgNotExistError) {
+            res.status(httpStatus.NOT_FOUND).end();
+         } else {
+            next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE));
+         }
+      });
 }
 
 export function getSubscriberOrgUsers(req, res, next) {
