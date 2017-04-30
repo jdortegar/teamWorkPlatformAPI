@@ -1,9 +1,10 @@
+import _ from 'lodash';
 import uuid from 'uuid';
 import config from '../config/env';
 import { NoPermissionsError, UserNotExistError } from './errors';
 import { userCreated, userUpdated } from './messaging';
 import subscriberOrgSvc from './subscriberOrgService';
-import { getUsersByIds } from './queries';
+import { getUsersByIds, updateItem } from './queries';
 import { hashPassword } from '../models/user';
 
 function addUserToCache(req, email, uid, status) {
@@ -205,16 +206,25 @@ class UserService {
       });
    }
 
-   updateUser(req, userId, updateInfo) {
+   updateUser(req, userId, updateInfo, requestorUserId = undefined) {
+      // TODO: if (requestorUserId) check if allowed, throw NoPermissionsError if not.
       return new Promise((resolve, reject) => {
+         let user;
          getUsersByIds(req, [userId])
             .then((dbUsers) => {
                if (dbUsers.length < 1) {
                   throw new UserNotExistError(userId);
                }
 
-               const user = dbUsers[0];
-               resolve(user);
+               user = dbUsers[0].userInfo;
+               updateItem(req, -1, `${config.tablePrefix}users`, 'userId', userId, { userInfo: updateInfo });
+            })
+            .then(() => {
+               resolve();
+
+               _.merge(user, updateInfo);
+               user.userId = userId;
+               userUpdated(req, user);
             })
             .catch(err => reject(err));
       });

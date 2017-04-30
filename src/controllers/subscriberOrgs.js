@@ -45,6 +45,8 @@ export function updateSubscriberOrg(req, res, next) {
       .catch((err) => {
          if (err instanceof SubscriberOrgNotExistError) {
             res.status(httpStatus.NOT_FOUND).end();
+         } else if (err instanceof NoPermissionsError) {
+            res.status(httpStatus.FORBIDDEN).end();
          } else {
             next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE));
          }

@@ -1,7 +1,5 @@
-import { publicUser, publicMessage, publicSubscriberOrg } from '../../helpers/publishedVisibility';
-import { _broadcastEvent, _presenceChanged, ChannelFactory, EventTypes } from './messagingService';
-
-
+import { privateSubscriberOrg, privateUser, publicUser, publicMessage, publicSubscriberOrg } from '../../helpers/publishedVisibility';
+import { _broadcastEvent, _joinChannels, _presenceChanged, ChannelFactory, EventTypes } from './messagingService';
 
 // EventType = presence
 
@@ -24,10 +22,21 @@ export function userUpdated(req, user) {
    ]);
 }
 
+export function userPrivateInfoUpdated(req, user) {
+   return _broadcastEvent(req, EventTypes.userPrivateInfoUpdated, privateUser(user), [
+      ChannelFactory.personalChannel(user.userId)
+   ]);
+}
+
 
 // EventType = subscriberOrg
 
-export function subscriberOrgCreated(req, subscriberOrg) {
+export function subscriberOrgCreated(req, subscriberOrg, userId) {
+   _joinChannels(req, userId, [
+      ChannelFactory.subscriberOrgChannel(subscriberOrg.subscriberOrgId),
+      ChannelFactory.subscriberOrgAdminChannel(subscriberOrg.subscriberOrgId)
+   ]);
+
    return _broadcastEvent(req, EventTypes.subscriberOrgCreated, publicSubscriberOrg(subscriberOrg), [
       ChannelFactory.publicChannel()
    ]); // TODO: which channels gets this.
@@ -36,6 +45,12 @@ export function subscriberOrgCreated(req, subscriberOrg) {
 export function subscriberOrgUpdated(req, subscriberOrg) {
    return _broadcastEvent(req, EventTypes.subscriberOrgUpdated, publicSubscriberOrg(subscriberOrg), [
       ChannelFactory.subscriberOrgChannel(subscriberOrg.subscriberOrgId)
+   ]);
+}
+
+export function subscriberOrgPrivateInfoUpdated(req, subscriberOrg) {
+   return _broadcastEvent(req, EventTypes.subscriberOrgPrivateInfoUpdated, privateSubscriberOrg(subscriberOrg), [
+      ChannelFactory.subscriberOrgAdminChannel(subscriberOrg.subscriberOrgId)
    ]);
 }
 

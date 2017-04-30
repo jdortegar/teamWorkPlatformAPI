@@ -18,20 +18,29 @@ const validationSchemas = {
          timeZone: Joi.string().min(1).required(),
          icon: Joi.string().base64().allow(null),
          preferences: Joi.object().keys({
-            private: Joi.object().required()
+            private: Joi.object()
          })
       }
    },
    updateUser: {
-      firstName: Joi.string().min(1),
-      lastName: Joi.string().min(1),
-      displayName: Joi.string().min(1),
-      country: Joi.string().min(1),
-      timeZone: Joi.string().min(1),
-      icon: Joi.string().base64().allow(null),
-      preferences: Joi.object().keys({
-         private: Joi.object()
-      })
+      body: {
+         firstName: Joi.string().min(1),
+         lastName: Joi.string().min(1),
+         displayName: Joi.string().min(1),
+         country: Joi.string().min(1),
+         timeZone: Joi.string().min(1),
+         icon: Joi.string().base64().allow(null),
+         preferences: Joi.object().keys({
+            private: Joi.object()
+         })
+      }
+   },
+   updateUserPublicPreferences: {
+      body: {
+         preferences: Joi.object().min(1).keys({
+            private: Joi.any().forbidden()
+         }).required()
+      }
    },
    login: {
       body: {

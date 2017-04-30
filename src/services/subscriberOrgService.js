@@ -1,6 +1,7 @@
+import _ from 'lodash';
 import uuid from 'uuid';
 import config from '../config/env';
-import { subscriberOrgCreated, subscriberOrgUpdated } from './messaging';
+import { subscriberOrgCreated, subscriberOrgPrivateInfoUpdated, subscriberOrgUpdated } from './messaging';
 import { NoPermissionsError, SubscriberOrgExistsError, SubscriberOrgNotExistError } from './errors';
 import {
    createItem,
@@ -66,7 +67,7 @@ class SubscriberOrgService {
             .then(() => {
                subscriberOrg.subscriberOrgId = actualSubscriberOrgId;
                resolve(subscriberOrg);
-               subscriberOrgCreated(req, subscriberOrg);
+               subscriberOrgCreated(req, subscriberOrg, userId);
             })
             .catch(err => reject(err));
       });
@@ -102,14 +103,26 @@ class SubscriberOrgService {
    }
 
    updateSubscriberOrg(req, subscriberOrgId, updateInfo, userId) {
-      // TODO: if userId exists, validate user can update this org.
       return new Promise((resolve, reject) => {
-         updateItem(req, -1, `${config.tablePrefix}subscriberOrgs`, 'subscriberOrgId', subscriberOrgId, { subscriberOrgInfo: updateInfo })
+         getSubscriberUsersBySubscriberOrgId(req, subscriberOrgId)
+            .then((subscriberUsers) => {
+               const userIds = subscriberUsers.map(subscriberUser => subscriberUser.subscriberUserInfo.userId);
+               if (userIds.indexOf(userId) < 0) {
+                  throw new NoPermissionsError(subscriberOrgId);
+               }
+               updateItem(req, -1, `${config.tablePrefix}subscriberOrgs`, 'subscriberOrgId', subscriberOrgId, { subscriberOrgInfo: updateInfo });
+            })
             .then(() => getSubscriberOrgsByIds(req, [subscriberOrgId]))
             .then((subscriberOrgs) => {
                resolve();
-               const subscriberOrg = subscriberOrgs[0];
+
+               const subscriberOrg = subscriberOrgs[0].subscriberOrgInfo;
+               _.merge(subscriberOrg, updateInfo); // Eventual consistency, so might be old.
+               subscriberOrg.subscriberOrgId = subscriberOrgId;
                subscriberOrgUpdated(req, subscriberOrg);
+               if ((updateInfo.preferences) && (updateInfo.preferences.private)) {
+                  subscriberOrgPrivateInfoUpdated(req, subscriberOrg);
+               }
             })
             .catch((err) => {
                if (err.code === 'ValidationException') {

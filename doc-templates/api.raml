@@ -17,6 +17,10 @@ documentation:
          <br />
          500 INTERNAL_SERVER_ERROR
          <br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A server error has occurred, typically unforseen or unaccounted for.  Most likely a logic error.
+         **Additional Possible Responses for Post/Put/Patch Endpoints**
+         <br />
+         400 BAD_REQUEST
+         <br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Invalid format in the body of the request.
    - title: Auth
      content: |
          TODO: Auth overall description here...
@@ -270,6 +274,108 @@ documentation:
                   BAD_REQUEST<br />
                   No reason is given for privacy purposes, but could be an unknown username or bad password.
 
+   /updatePublicPreferences:
+      /{userId}:
+         uriParameters:
+            userId:
+               description: The `userId` of the user to update preferences of.
+         patch:
+            description: |
+               Update a user public preferences.
+            body:
+               properties:
+                  preferences:
+                     description: |
+                        Any properties tied to this user, to be shared typically by clients (ex. mobile, web).
+                        The property `private` is reserved and not to be used as the name of a property.
+                     type: object
+                     required: true
+               example: |
+                  {
+                     "preferences": {
+                        "iconColor": "red"
+                     }
+                  }
+            responses:
+               204:
+                  description: |
+                     NO_CONTENT<br />
+                     The user was updated successfully.
+               404:
+                  description: |
+                     NOT_FOUND<br />
+                     The user was not found.
+               403:
+                  description: |
+                     FORBIDDEN<br />
+                     The user is not allowed to create an organization.
+
+   /updateUser:
+      patch:
+         description: |
+            Update a user in Habla.
+         body:
+            properties:
+               firstName:
+                  type: string
+                  required: true
+                  example: Anthony
+               lastName:
+                  type: string
+                  required: true
+                  example: Daga
+               displayName:
+                  type: string
+                  required: true
+                  example: Dude
+               country:
+                  description: |
+                     [ISO 3166-2](https://en.wikipedia.org/wiki/ISO_3166-2) representation.
+                  type: string
+                  required: true
+                  example: US
+               timeZone:
+                  type: string
+                  required: true
+                  example: America/Los_Angeles
+               icon:
+                  description: The user's avatar, base64 of image.
+                  type: string | nil
+                  required: false
+                  default: nil
+               preferences:
+                  type: object
+                  required: false
+                  properties:
+                     private:
+                        description: Private preferences only available to the user.
+                        type: object
+                        required: false
+            example: |
+               {
+                  "firstName": "Anthony",
+                  "lastName": "Daga",
+                  "displayName": "Dude",
+                  "country": "US",
+                  "timeZone": "America/Los_Angeles",
+                  "icon": null,
+                  "preferences": {
+                     "iconColor": "red",
+                     "private": {
+                        "lastWindowLocation": "110, 64"
+                     }
+                  }
+               }
+         responses:
+            204:
+               description: |
+                  NO_CONTENT<br />
+                  The user was updated successfully.
+            404:
+               description: |
+                  NOT_FOUND<br />
+                  The user was not found.
+
    /validateEmail:
       /{rid}:
          uriParameters:
@@ -365,7 +471,7 @@ documentation:
                   required: false
                   properties:
                      private:
-                        description: Private preferences only available to the organization administrator.
+                        description: Private preferences only available to the organization administrators.
                         type: object
                         required: false
             example: |
@@ -413,7 +519,7 @@ documentation:
                      required: false
                      properties:
                         private:
-                           description: Private preferences only available to the organization administrator.
+                           description: Private preferences only available to the organization administrators.
                            type: object
                            required: false
                example: |

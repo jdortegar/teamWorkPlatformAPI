@@ -13,8 +13,10 @@ export const EventTypes = Object.freeze({
    presenceChanged: 'presenceChanged',
    userCreated: 'userCreated',
    userUpdated: 'userUpdated',
+   userPrivateInfoUpdated: 'userPrivateInfoUpdated',
    subscriberOrgCreated: 'subscriberOrgCreated',
    subscriberOrgUpdated: 'subscriberOrgUpdated',
+   subscriberOrgPrivateInfoUpdated: 'subscriberOrgPrivateInfoUpdated',
    teamCreated: 'teamCreated',
    teamUpdated: 'teamUpdated',
    teamRoomCreated: 'teamRoomCreated',
@@ -34,6 +36,10 @@ export class ChannelFactory {
 
    static subscriberOrgChannel(subscriberOrgId) {
       return `subscriberOrgId=${subscriberOrgId}`;
+   }
+
+   static subscriberOrgAdminChannel(subscriberOrgId) {
+      return `admin.subscriberOrgId=${subscriberOrgId}`;
    }
 
    static teamChannel(teamId) {
@@ -71,7 +77,8 @@ class MessagingService {
       // this.io = new SocketIO(this.httpServer, { pingInterval: this.pingInterval, pingTimeout: this.pingTimeout });
       // this.io.set('heartbeat interval', this.pingInterval);
       // this.io.set('heartbeat timeout', this.pingTimeout);
-      this.io.adapter(new SocketIORedisAdapter({ host: config.cacheServer, port: config.cachePort }));
+      const redisAdapter = new SocketIORedisAdapter({ host: config.cacheServer, port: config.cachePort });
+      this.io.adapter(redisAdapter);
       this.io.use(new SocketIOWildcard());
 
       // Set socket.io listeners.
@@ -114,9 +121,10 @@ class MessagingService {
       const userId = socket.decoded_token._id;
       console.log(`MessagingService: User connected. sId=${socket.id} userId=${userId} ${socket.decoded_token.email}`);
 
+      console.log(`AD: address=${socket.handshake.address}, user-agent=${socket.handshake.headers['user-agent']}`);
       const req = { app, now: moment.utc() };
+      this._joinCurrentChannels(req, socket, userId);
       this._presenceChanged(req, userId, PresenceStatuses.available);
-      this._joinChannels(req, socket, userId);
    }
 
    _disconnected(socket, reason) {
@@ -132,7 +140,7 @@ class MessagingService {
       return this._broadcastEvent(req, EventTypes.presenceChanged, { userId, presenceStatus, presenceMessage });
    }
 
-   _joinChannels(req, socket, userId) {
+   _joinCurrentChannels(req, socket, userId) {
       const publicChannel = ChannelFactory.publicChannel();
       socket.join(publicChannel);
       console.log(`MessagingService: userId=${userId} joining ${publicChannel}`);
@@ -148,6 +156,10 @@ class MessagingService {
                const subscriberOrgChannel = ChannelFactory.subscriberOrgChannel(subscriberOrgId);
                socket.join(subscriberOrgChannel);
                console.log(`MessagingService: userId=${userId} joining ${subscriberOrgChannel}`);
+
+               const subscriberOrgPrivateChannel = ChannelFactory.subscriberOrgAdminChannel(subscriberOrgId);
+               socket.join(subscriberOrgPrivateChannel);
+               console.log(`MessagingService: userId=${userId} joining ${subscriberOrgPrivateChannel}`);
             });
          })
          .catch(err => console.error(err));
@@ -165,7 +177,7 @@ class MessagingService {
    }
 
    _message(socket, eventType, event) {
-      // Drop this on the floor.
+      // Drop this on the floor.  User is trying to send a message via websockets.
       console.warn(`MessagingService: Message received from sId=${socket.id} userId=${socket.decoded_token._id} ${socket.decoded_token.email}. eventType=${eventType}, event=${event}`);
    }
 
@@ -184,6 +196,48 @@ class MessagingService {
          resolve();
       });
    }
+
+   _joinChannels(req, userId, channels) {
+      this.io.of('/').adapter.clients([ChannelFactory.personalChannel(userId)], (err, clientIds) => {
+         if (err) {
+            console.error(err);
+         } else {
+            clientIds.forEach((clientId) => {
+               channels.forEach((channel) => {
+                  this.io.of('/').adapter.remoteJoin(clientId, channel, (err2) => {
+                     if (err2) {
+                        console.error(err2);
+                     }
+                     else {
+                        console.log(`MessagingService: userId=${userId} joining ${channel}`);
+                     }
+                  });
+               });
+            });
+         }
+      });
+   }
+
+   _leaveChannels(req, userId, channels) {
+      this.io.of('/').adapter.clients([ChannelFactory.personalChannel(userId)], (err, clientIds) => {
+         if (err) {
+            console.error(err);
+         } else {
+            clientIds.forEach((clientId) => {
+               channels.forEach((channel) => {
+                  this.io.of('/').adapter.remoteLeav(clientId, channel, (err2) => {
+                     if (err2) {
+                        console.error(err2);
+                     }
+                     else {
+                        console.log(`MessagingService: userId=${userId} leaving ${channel}`);
+                     }
+                  });
+               });
+            });
+         }
+      });
+   }
 }
 const messagingService = new MessagingService();
 export default messagingService;
@@ -195,4 +249,12 @@ export function _presenceChanged(req, userId, presenceStatus, presenceMessage = 
 
 export function _broadcastEvent(req, eventType, event, channels = undefined) {
    messagingService._broadcastEvent(req, eventType, event, channels);
+}
+
+export function _joinChannels(req, userId, channels) {
+   messagingService._joinChannels(req, userId, channels);
+}
+
+export function _leaveChannels(req, userId, channels) {
+   messagingService._leaveChannels(req, userId, channels);
 }

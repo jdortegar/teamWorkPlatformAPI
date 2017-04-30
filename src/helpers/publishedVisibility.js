@@ -19,21 +19,16 @@ export function privateUser(dbUser) {
 }
 
 export function publicUser(dbUser) {
-   const userId = dbUser.userId;
-   const { firstName, lastName, displayName, icon, preferences } = dbUser.userInfo || dbUser;
-   if ((preferences) && (preferences.private)) {
-      delete preferences.private;
+   const ret = privateUser(dbUser);
+   delete ret.username;
+   delete ret.email;
+   if ((ret.preferences) && (ret.preferences.private)) {
+      delete ret.preferences.private;
    }
-   return {
-      userId,
-      firstName,
-      lastName,
-      displayName,
-      icon,
-      userType: 'hablaUser',
-      // userType: dbUser.userType || 'hablaUser'
-      preferences
-   };
+   delete ret.roleMemberships;
+   delete ret.defaultPage;
+   delete ret.userType;
+   return ret;
 }
 
 export function publicUsers(dbUsers) {
@@ -43,17 +38,22 @@ export function publicUsers(dbUsers) {
 }
 
 
-export function publicSubscriberOrg(dbSubscriberOrg) {
+export function privateSubscriberOrg(dbSubscriberOrg) {
    const subscriberOrgId = dbSubscriberOrg.subscriberOrgId;
    const { name, preferences } = dbSubscriberOrg.subscriberOrgInfo || dbSubscriberOrg;
-   if ((preferences) && (preferences.private)) {
-      delete preferences.private;
-   }
    return {
       subscriberOrgId,
       name,
       preferences
    };
+}
+
+export function publicSubscriberOrg(dbSubscriberOrg) {
+   const ret = privateSubscriberOrg(dbSubscriberOrg);
+   if ((ret.preferences) && (ret.preferences.private)) {
+      delete ret.preferences.private;
+   }
+   return ret;
 }
 
 export function publicSubscriberOrgs(dbSubscriberOrgs) {
