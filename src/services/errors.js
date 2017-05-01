@@ -26,10 +26,24 @@ export class SubscriberOrgNotExistError extends Error {
    }
 }
 
+export class TeamExistsError extends Error {
+   constructor(...args) {
+      super(...args);
+      Error.captureStackTrace(this, TeamExistsError);
+   }
+}
+
 export class TeamNotExistError extends Error {
    constructor(...args) {
       super(...args);
       Error.captureStackTrace(this, TeamNotExistError);
+   }
+}
+
+export class TeamRoomExistsError extends Error {
+   constructor(...args) {
+      super(...args);
+      Error.captureStackTrace(this, TeamRoomExistsError);
    }
 }
 

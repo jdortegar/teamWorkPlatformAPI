@@ -1,4 +1,15 @@
-import { privateSubscriberOrg, privateUser, publicUser, publicMessage, publicSubscriberOrg } from '../../helpers/publishedVisibility';
+import {
+   privateSubscriberOrg,
+   privateTeam,
+   privateTeamRoom,
+   privateUser,
+   publicConversation,
+   publicTeam,
+   publicTeamRoom,
+   publicUser,
+   publicMessage,
+   publicSubscriberOrg
+} from '../../helpers/publishedVisibility';
 import { _broadcastEvent, _joinChannels, _presenceChanged, ChannelFactory, EventTypes } from './messagingService';
 
 // EventType = presence
@@ -51,6 +62,77 @@ export function subscriberOrgUpdated(req, subscriberOrg) {
 export function subscriberOrgPrivateInfoUpdated(req, subscriberOrg) {
    return _broadcastEvent(req, EventTypes.subscriberOrgPrivateInfoUpdated, privateSubscriberOrg(subscriberOrg), [
       ChannelFactory.subscriberOrgAdminChannel(subscriberOrg.subscriberOrgId)
+   ]);
+}
+
+
+// EventType = team
+
+export function teamCreated(req, team, userId) {
+   _joinChannels(req, userId, [
+      ChannelFactory.teamChannel(team.teamId),
+      ChannelFactory.teamAdminChannel(team.teamId)
+   ]);
+
+   return _broadcastEvent(req, EventTypes.teamCreated, publicTeam(team), [
+      ChannelFactory.subscriberOrgChannel(team.subscriberOrgId)
+   ]);
+}
+
+export function teamUpdated(req, team) {
+   return _broadcastEvent(req, EventTypes.teamUpdated, publicTeam(team), [
+      ChannelFactory.teamChannel(team.teamId)
+   ]);
+}
+
+export function teamPrivateInfoUpdated(req, team) {
+   return _broadcastEvent(req, EventTypes.teamPrivateInfoUpdated, privateTeam(team), [
+      ChannelFactory.teamAdminChannel(team.teamId)
+   ]);
+}
+
+
+// EventType = teamRoom
+
+export function teamRoomCreated(req, teamRoom, userId) {
+   _joinChannels(req, userId, [
+      ChannelFactory.teamRoomChannel(teamRoom.teamRoomId),
+      ChannelFactory.teamRoomAdminChannel(teamRoom.teamRoomId)
+   ]);
+
+   return _broadcastEvent(req, EventTypes.teamRoomCreated, publicTeamRoom(teamRoom), [
+      ChannelFactory.teamChannel(teamRoom.teamId)
+   ]);
+}
+
+export function teamRoomUpdated(req, teamRoom) {
+   return _broadcastEvent(req, EventTypes.teamRoomUpdated, publicTeamRoom(teamRoom), [
+      ChannelFactory.teamRoomChannel(teamRoom.teamRoomId)
+   ]);
+}
+
+export function teamRoomPrivateInfoUpdated(req, teamRoom) {
+   return _broadcastEvent(req, EventTypes.teamRoomPrivateInfoUpdated, privateTeamRoom(teamRoom), [
+      ChannelFactory.teamRoomAdminChannel(teamRoom.teamRoomId)
+   ]);
+}
+
+
+// EventType = conversation
+
+export function conversationCreated(req, conversation, userId) {
+   _joinChannels(req, userId, [
+      ChannelFactory.conversationChannel(conversation.conversationId)
+   ]);
+
+   return _broadcastEvent(req, EventTypes.conversationCreated, publicConversation(conversation), [
+      ChannelFactory.teamRoomChannel(conversation.teamRoomId)
+   ]);
+}
+
+export function conversationUpdated(req, conversation) {
+   return _broadcastEvent(req, EventTypes.conversationUpdated, publicConversation(conversation), [
+      ChannelFactory.conversationChannel(conversation.conversationId)
    ]);
 }
 

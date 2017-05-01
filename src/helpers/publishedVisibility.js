@@ -1,3 +1,5 @@
+import _ from 'lodash';
+
 export function privateUser(dbUser) {
    const userId = dbUser.userId;
    const { emailAddress, firstName, lastName, displayName, country, timeZone, icon, preferences } = dbUser.userInfo || dbUser;
@@ -11,7 +13,7 @@ export function privateUser(dbUser) {
       country,
       timeZone,
       icon,
-      preferences,
+      preferences: _.cloneDeep(preferences),
       roleMemberships: dbUser.roleMemberships,
       defaultPage: dbUser.defaultPage,
       userType: dbUser.userType || 'hablaUser'
@@ -44,7 +46,7 @@ export function privateSubscriberOrg(dbSubscriberOrg) {
    return {
       subscriberOrgId,
       name,
-      preferences
+      preferences: _.cloneDeep(preferences)
    };
 }
 
@@ -63,14 +65,23 @@ export function publicSubscriberOrgs(dbSubscriberOrgs) {
 }
 
 
-export function publicTeam(dbTeam) {
+export function privateTeam(dbTeam) {
    const teamId = dbTeam.teamId;
-   const { name, subscriberOrgId } = dbTeam.teamInfo || dbTeam;
+   const { subscriberOrgId, name, preferences } = dbTeam.teamInfo || dbTeam;
    return {
       teamId,
       subscriberOrgId,
-      name
+      name,
+      preferences: _.cloneDeep(preferences)
    };
+}
+
+export function publicTeam(dbTeam) {
+   const ret = privateTeam(dbTeam);
+   if ((ret.preferences) && (ret.preferences.private)) {
+      delete ret.preferences.private;
+   }
+   return ret;
 }
 
 export function publicTeams(dbTeams) {
@@ -80,17 +91,26 @@ export function publicTeams(dbTeams) {
 }
 
 
-export function publicTeamRoom(dbTeamRoom) {
+export function privateTeamRoom(dbTeamRoom) {
    const teamRoomId = dbTeamRoom.teamRoomId;
-   const { teamId, name, purpose, publish, active } = dbTeamRoom.teamRoomInfo || dbTeamRoom;
+   const { teamId, name, purpose, publish, active, preferences } = dbTeamRoom.teamRoomInfo || dbTeamRoom;
    return {
       teamRoomId,
       teamId,
       name,
       purpose,
       publish,
-      active
+      active,
+      preferences: _.cloneDeep(preferences)
    };
+}
+
+export function publicTeamRoom(dbTeamRoom) {
+   const ret = privateTeamRoom(dbTeamRoom);
+   if ((ret.preferences) && (ret.preferences.private)) {
+      delete ret.preferences.private;
+   }
+   return ret;
 }
 
 export function publicTeamRooms(dbTeamRooms) {

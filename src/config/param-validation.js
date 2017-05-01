@@ -64,6 +64,44 @@ const validationSchemas = {
          })
       }
    },
+   createTeam: {
+      body: {
+         name: Joi.string().min(1).required(),
+         preferences: Joi.object().keys({
+            private: Joi.object().required()
+         })
+      }
+   },
+   updateTeam: {
+      body: {
+         name: Joi.string().min(1),
+         preferences: Joi.object().keys({
+            private: Joi.object()
+         })
+      }
+   },
+   createTeamRoom: {
+      body: {
+         name: Joi.string().min(1).required(),
+         purpose: Joi.string().min(1),
+         publish: Joi.boolean().required(),
+         active: Joi.boolean().required(),
+         preferences: Joi.object().keys({
+            private: Joi.object().required()
+         })
+      }
+   },
+   updateTeamRoom: {
+      body: {
+         name: Joi.string().min(1),
+         purpose: Joi.string().min(1),
+         publish: Joi.boolean(),
+         active: Joi.boolean(),
+         preferences: Joi.object().keys({
+            private: Joi.object()
+         })
+      }
+   },
    createMessage: {
       body: {
          messageType: Joi.string().min(1).required(),

@@ -3,6 +3,7 @@ import uuid from 'uuid';
 import config from '../config/env';
 import { subscriberOrgCreated, subscriberOrgPrivateInfoUpdated, subscriberOrgUpdated } from './messaging';
 import { NoPermissionsError, SubscriberOrgExistsError, SubscriberOrgNotExistError } from './errors';
+import teamSvc from './teamService';
 import {
    createItem,
    getSubscriberOrgsByIds,
@@ -37,38 +38,49 @@ class SubscriberOrgService {
       });
    }
 
-   createSubscriberOrg(req, subscriberOrgInfo, userId, subscriberOrgId = undefined) {
+   createSubscriberOrgNoCheck(req, subscriberOrgInfo, userId, subscriberOrgId = undefined) {
+      const actualSubscriberOrgId = subscriberOrgId || uuid.v4();
+      const preferences = subscriberOrgInfo.preferences || { private: {} };
+      if (preferences.private === undefined) {
+         preferences.private = {};
+      }
+      const subscriberOrg = {
+         name: subscriberOrgInfo.name,
+         preferences
+      };
+      const subscriberUserId = uuid.v4();
+
       return new Promise((resolve, reject) => {
-         // TODO: if (userId), check canCreateSubscriberOrg() -> false, throw NoPermissionsError
-         const actualSubscriberOrgId = subscriberOrgId || uuid.v4();
-         const preferences = subscriberOrgInfo.preferences || { private: {} };
-         if (preferences.private === undefined) {
-            preferences.private = {};
-         }
-         const subscriberOrg = {
-            name: subscriberOrgInfo.name,
-            preferences
-         };
-         getSubscriberOrgsByName(req, subscriberOrgInfo.name)
-            .then((existingSubscriberOrgs) => {
-               if (existingSubscriberOrgs.length > 0) {
-                  throw new SubscriberOrgExistsError(subscriberOrgInfo.name);
-               } else {
-                  return createItem(req, -1, `${config.tablePrefix}subscriberOrgs`, 'subscriberOrgId', actualSubscriberOrgId, 'subscriberOrgInfo', subscriberOrg);
-               }
-            })
+         createItem(req, -1, `${config.tablePrefix}subscriberOrgs`, 'subscriberOrgId', actualSubscriberOrgId, 'subscriberOrgInfo', subscriberOrg)
             .then(() => {
                const subscriberUser = {
                   userId,
                   subscriberOrgId: actualSubscriberOrgId
                };
-               return createItem(req, -1, `${config.tablePrefix}subscriberUsers`, 'subscriberUserId', userId, 'subscriberUserInfo', subscriberUser);
+               return createItem(req, -1, `${config.tablePrefix}subscriberUsers`, 'subscriberUserId', subscriberUserId, 'subscriberUserInfo', subscriberUser);
             })
             .then(() => {
                subscriberOrg.subscriberOrgId = actualSubscriberOrgId;
-               resolve(subscriberOrg);
                subscriberOrgCreated(req, subscriberOrg, userId);
+               return teamSvc.createTeamNoCheck(req, actualSubscriberOrgId, { name: 'All' }, subscriberUserId, userId);
             })
+            .then(() => resolve(subscriberOrg))
+            .catch(err => reject(err));
+      });
+   }
+
+   createSubscriberOrg(req, subscriberOrgInfo, userId, subscriberOrgId = undefined) {
+      return new Promise((resolve, reject) => {
+         // TODO: if (userId), check canCreateSubscriberOrg() -> false, throw NoPermissionsError
+         getSubscriberOrgsByName(req, subscriberOrgInfo.name)
+            .then((existingSubscriberOrgs) => {
+               if (existingSubscriberOrgs.length > 0) {
+                  throw new SubscriberOrgExistsError(subscriberOrgInfo.name);
+               }
+
+               return this.createSubscriberOrgNoCheck(req, subscriberOrgInfo, userId, subscriberOrgId);
+            })
+            .then(subscriberOrg => resolve(subscriberOrg))
             .catch(err => reject(err));
       });
    }

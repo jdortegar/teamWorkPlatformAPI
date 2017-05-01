@@ -1,10 +1,11 @@
 import moment from 'moment';
 import uuid from 'uuid';
 import config from '../config/env';
-import { messageCreated } from './messaging';
+import { conversationCreated, messageCreated } from './messaging';
 import teamRoomSvc from './teamRoomService';
 import { ConversationNotExistError, NoPermissionsError } from './errors';
 import {
+   createItem,
    getConversationParticipantsByConversationId,
    getConversationParticipantsByUserId,
    getConversationsByIds,
@@ -103,6 +104,35 @@ class ConversationService {
                })
             })
             .then(() => resolve(conversations))
+            .catch(err => reject(err));
+      });
+   }
+
+   createConversationNoCheck(req, teamRoomId, conversationInfo, userId, conversationId = undefined) {
+      const actualConversationId = conversationId || uuid.v4();
+      req.now = req.now || moment.utc(); // TODO: create middleware.
+      const created = req.now.format();
+      const conversation = {
+         created,
+         teamRoomId
+      };
+      const conversationParticipantId = uuid.v4();
+
+      return new Promise((resolve, reject) => {
+         createItem(req, -1, `${config.tablePrefix}conversations`, 'conversationId', actualConversationId, 'conversationInfo', conversation)
+            .then(() => {
+               const conversationParticipant = {
+                  conversationId: actualConversationId,
+                  userId
+               };
+               return createItem(req, -1, `${config.tablePrefix}conversationParticipants`, 'conversationParticipantId', conversationParticipantId, 'conversationParticipantInfo', conversationParticipant);
+            })
+            .then(() => {
+               conversation.conversationId = actualConversationId;
+               conversationCreated(req, conversation, userId);
+
+               resolve(conversation);
+            })
             .catch(err => reject(err));
       });
    }
@@ -211,6 +241,7 @@ class ConversationService {
    createMessage(req, conversationId, userId, messageType, text, replyTo) {
       return new Promise((resolve, reject) => {
          const messageId = uuid.v4();
+         req.now = req.now || moment.utc(); // TODO: create middleware.
          const created = req.now.format();
 
          const message = {

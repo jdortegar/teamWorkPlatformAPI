@@ -1,14 +1,21 @@
+import uuid from 'uuid';
+import config from '../config/env';
+import conversationSvc from './conversationService';
+import { teamRoomCreated } from './messaging';
 import {
+   createItem,
    getSubscriberUsersByIds,
    getSubscriberUsersByUserIds,
    getTeamMembersByIds,
    getTeamMembersBySubscriberUserIds,
+   getTeamMembersByTeamId,
    getTeamRoomMembersByTeamMemberIds,
    getTeamRoomMembersByTeamRoomId,
    getTeamRoomsByIds,
+   getTeamRoomsByTeamIdAndName,
    getUsersByIds
 } from './queries';
-import { NoPermissionsError, TeamRoomNotExistError } from './errors';
+import { NoPermissionsError, TeamRoomExistsError, TeamRoomNotExistError } from './errors';
 
 
 class TeamRoomService {
@@ -44,6 +51,83 @@ class TeamRoomService {
                });
                resolve(retTeamRooms);
             })
+            .catch(err => reject(err));
+      });
+   }
+
+   createTeamRoomNoCheck(req, teamId, teamRoomInfo, teamMemberId, userId, teamRoomId = undefined) {
+      const actualTeamRoomId = teamRoomId || uuid.v4();
+      const preferences = teamRoomInfo.preferences || { private: {} };
+      if (preferences.private === undefined) {
+         preferences.private = {};
+      }
+      const teamRoom = {
+         teamId,
+         name: teamRoomInfo.name,
+         purpose: teamRoomInfo.purpose,
+         publish: teamRoomInfo.publish,
+         active: teamRoomInfo.active,
+         preferences
+      };
+      const teamRoomMemberId = uuid.v4();
+
+      return new Promise((resolve, reject) => {
+         createItem(req, -1, `${config.tablePrefix}teamRooms`, 'teamRoomId', actualTeamRoomId, 'teamRoomInfo', teamRoom)
+            .then(() => {
+               const teamRoomMember = {
+                  teamMemberId,
+                  teamRoomId: actualTeamRoomId,
+                  userId
+               };
+               return createItem(req, -1, `${config.tablePrefix}teamRoomMembers`, 'teamRoomMemberId', teamRoomMemberId, 'teamRoomMemberInfo', teamRoomMember);
+            })
+            .then(() => {
+               teamRoom.teamRoomId = actualTeamRoomId;
+               teamRoomCreated(req, teamRoom, userId);
+
+               const conversation = {};
+               return conversationSvc.createConversationNoCheck(req, actualTeamRoomId, conversation, userId);
+            })
+            .then(() => resolve(teamRoom))
+            .catch(err => reject(err));
+      });
+   }
+
+   createTeamRoom(req, teamId, teamRoomInfo, userId, teamRoomId = undefined) {
+      return new Promise((resolve, reject) => {
+         let teamMembers;
+         let teamMemberId;
+
+         // TODO: if (userId), check canCreateTeamRoom() -> false, throw NoPermissionsError
+         getTeamMembersByTeamId(req, teamId)
+            .then((retrievedTeamMembers) => {
+               teamMembers = retrievedTeamMembers;
+               if (teamMembers.length === 0) {
+                  throw new NoPermissionsError(teamId);
+               }
+
+               return getSubscriberUsersByUserIds(req, [userId]);
+            })
+            .then((subscriberUsers) => {
+               const isTeamMember = subscriberUsers.some((subscriberUser) => {
+                  return teamMembers.some((teamMember) => {
+                     return (teamMember.teamMemberInfo.subscriberUserId === subscriberUser.subscriberUserId);
+                  });
+               });
+               if (!isTeamMember) {
+                  throw new NoPermissionsError(teamId);
+               }
+
+               return getTeamRoomsByTeamIdAndName(req, teamId, teamRoomInfo.name);
+            })
+            .then((teamRooms) => {
+               if (teamRooms.length > 0) {
+                  throw new TeamRoomExistsError(teamRoomInfo.name);
+               }
+
+               return this.createTeamRoomNoCheck(req, teamId, teamRoomInfo, teamMemberId, userId, teamRoomId);
+            })
+            .then(teamRoom => resolve(teamRoom))
             .catch(err => reject(err));
       });
    }

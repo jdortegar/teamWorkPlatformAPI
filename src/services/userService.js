@@ -4,7 +4,7 @@ import config from '../config/env';
 import { NoPermissionsError, UserNotExistError } from './errors';
 import { userCreated, userUpdated } from './messaging';
 import subscriberOrgSvc from './subscriberOrgService';
-import { getUsersByIds, updateItem } from './queries';
+import { createItem, getUsersByIds, updateItem } from './queries';
 import { hashPassword } from '../models/user';
 
 function addUserToCache(req, email, uid, status) {
@@ -23,102 +23,6 @@ function addUserToCache(req, email, uid, status) {
    });
 }
 
-function createUserInDb(req, partitionId, userId, user) {
-   const docClient = new req.app.locals.AWS.DynamoDB.DocumentClient();
-   const tableName = `${config.tablePrefix}users`;
-
-   const params = {
-      TableName: tableName,
-      Item: {
-         partitionId,
-         userId,
-         userInfo: user
-      }
-   };
-
-   console.log('Adding a new item...');
-   return docClient.put(params).promise();
-}
-
-function addTeamToDb(req, partitionId, uid, subscriberOrgId, name) {
-   const docClient = new req.app.locals.AWS.DynamoDB.DocumentClient();
-   const tableName = `${config.tablePrefix}teams`;
-
-   const params = {
-      TableName: tableName,
-      Item: {
-         partitionId,
-         teamId: uid,
-         teamInfo: {
-            subscriberOrgId,
-            name
-         }
-      }
-   };
-
-   return docClient.put(params).promise();
-}
-
-function addTeamMemberToDb(req, partitionId, uid, subscriberUserId, teamId) {
-   const docClient = new req.app.locals.AWS.DynamoDB.DocumentClient();
-   const tableName = `${config.tablePrefix}teamMembers`;
-
-   const params = {
-      TableName: tableName,
-      Item: {
-         partitionId,
-         teamMemberId: uid,
-         teamMemberInfo: {
-            subscriberUserId,
-            teamId
-         }
-      }
-   };
-
-   return docClient.put(params).promise();
-}
-
-function addTeamRoomToDb(req, partitionId, uid, teamId, name, purpose, publish, active) {
-   const docClient = new req.app.locals.AWS.DynamoDB.DocumentClient();
-   const tableName = `${config.tablePrefix}teamRooms`;
-
-   const params = {
-      TableName: tableName,
-      Item: {
-         partitionId,
-         teamRoomId: uid,
-         teamRoomInfo: {
-            teamId,
-            name,
-            purpose,
-            publish,
-            active
-         }
-      }
-   };
-
-   return docClient.put(params).promise();
-}
-
-function addTeamRoomMemberToDb(req, partitionId, uid, teamMemberId, teamRoomId) {
-   const docClient = new req.app.locals.AWS.DynamoDB.DocumentClient();
-   const tableName = `${config.tablePrefix}teamRoomMembers`;
-
-   const params = {
-      TableName: tableName,
-      Item: {
-         partitionId,
-         teamRoomMemberId: uid,
-         teamRoomMemberInfo: {
-            teamMemberId,
-            teamRoomId
-         }
-      }
-   };
-
-   return docClient.put(params).promise();
-}
-
 
 class UserService {
    createUser(req, userInfo) {
@@ -135,16 +39,6 @@ class UserService {
                   const status = 1;
                   const subscriberOrgId = uuid.v4();
                   const subscriberOrgName = req.body.displayName;
-                  const subscriberUserId = uuid.v4();
-                  const teamId = uuid.v4();
-                  const teamName = 'All';
-                  const teamMemberId = uuid.v4();
-                  const teamRoomId = uuid.v4();
-                  const teamRoomName = 'Lobby';
-                  const teamRoomPurpose = 'Everyone to talk.';
-                  const teamRoomPublish = true;
-                  const teamRoomActive = true;
-                  const TeamRoomMemberId = uuid.v4();
 
                   const { firstName, lastName, displayName, password, country, timeZone } = userInfo;
                   const icon = userInfo.icon || null;
@@ -167,12 +61,8 @@ class UserService {
 
                   return Promise.all([
                      addUserToCache(req, email, userId, status),
-                     createUserInDb(req, -1, userId, user),
-                     subscriberOrgSvc.createSubscriberOrgUsingBaseName(req, { name: subscriberOrgName }, userId, subscriberOrgId),
-                     addTeamToDb(req, -1, teamId, subscriberOrgId, teamName),
-                     addTeamMemberToDb(req, -1, teamMemberId, subscriberUserId, teamId),
-                     addTeamRoomToDb(req, -1, teamRoomId, teamId, teamRoomName, teamRoomPurpose, teamRoomPublish, teamRoomActive),
-                     addTeamRoomMemberToDb(req, -1, TeamRoomMemberId, teamMemberId, teamRoomId)
+                     createItem(req, -1, `${config.tablePrefix}subscriberOrgs`, 'userId', userId, 'userInfo', user),
+                     subscriberOrgSvc.createSubscriberOrgUsingBaseName(req, { name: subscriberOrgName }, userId, subscriberOrgId)
                   ]);
                }
                return undefined;

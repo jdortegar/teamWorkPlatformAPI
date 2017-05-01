@@ -6,6 +6,8 @@ import SocketIOWildcard from 'socketio-wildcard';
 import config from '../../config/env';
 import app from '../../config/express';
 import conversationSvc from '../conversationService';
+import teamRoomSvc from '../teamRoomService';
+import teamSvc from '../teamService';
 import subscriberOrgSvc from '../subscriberOrgService';
 
 
@@ -19,8 +21,12 @@ export const EventTypes = Object.freeze({
    subscriberOrgPrivateInfoUpdated: 'subscriberOrgPrivateInfoUpdated',
    teamCreated: 'teamCreated',
    teamUpdated: 'teamUpdated',
+   teamPrivateInfoUpdated: 'teamPrivateInfoUpdated',
    teamRoomCreated: 'teamRoomCreated',
    teamRoomUpdated: 'teamRoomUpdated',
+   teamRoomPrivateInfoUpdated: 'teamRoomPrivateInfoUpdated',
+   conversationCreated: 'conversationCreated',
+   conversationUpdated: 'conversationUpdated',
    messageCreated: 'messageCreated',
    from(value) { return (this[value]); }
 });
@@ -46,8 +52,16 @@ export class ChannelFactory {
       return `teamId=${teamId}`;
    }
 
+   static teamAdminChannel(teamId) {
+      return `admin.teamId=${teamId}`;
+   }
+
    static teamRoomChannel(teamRoomId) {
       return `teamRoomId=${teamRoomId}`;
+   }
+
+   static teamRoomAdminChannel(teamRoomId) {
+      return `admin.teamRoomId=${teamRoomId}`;
    }
 
    static conversationChannel(conversationId) {
@@ -121,7 +135,7 @@ class MessagingService {
       const userId = socket.decoded_token._id;
       console.log(`MessagingService: User connected. sId=${socket.id} userId=${userId} ${socket.decoded_token.email}`);
 
-      console.log(`AD: address=${socket.handshake.address}, user-agent=${socket.handshake.headers['user-agent']}`);
+      console.log(`AD: TODO: use this to deduce client type:  address=${socket.handshake.address}, user-agent=${socket.handshake.headers['user-agent']}`);
       const req = { app, now: moment.utc() };
       this._joinCurrentChannels(req, socket, userId);
       this._presenceChanged(req, userId, PresenceStatuses.available);
@@ -164,6 +178,36 @@ class MessagingService {
          })
          .catch(err => console.error(err));
 
+      teamSvc.getUserTeams(req, userId)
+         .then((teams) => {
+            const teamIds = teams.map(team => team.teamId);
+            teamIds.forEach((teamId) => {
+               const teamChannel = ChannelFactory.teamChannel(teamId);
+               socket.join(teamChannel);
+               console.log(`MessagingService: userId=${userId} joining ${teamChannel}`);
+
+               const teamPrivateChannel = ChannelFactory.teamAdminChannel(teamId);
+               socket.join(teamPrivateChannel);
+               console.log(`MessagingService: userId=${userId} joining ${teamPrivateChannel}`);
+            });
+         })
+         .catch(err => console.error(err));
+
+      teamRoomSvc.getUserTeamRooms(req, userId)
+         .then((teamRooms) => {
+            const teamRoomIds = teamRooms.map(teamRoom => teamRoom.teamRoomId);
+            teamRoomIds.forEach((teamRoomId) => {
+               const teamRoomChannel = ChannelFactory.teamRoomChannel(teamRoomId);
+               socket.join(teamRoomChannel);
+               console.log(`MessagingService: userId=${userId} joining ${teamRoomChannel}`);
+
+               const teamRoomPrivateChannel = ChannelFactory.teamRoomAdminChannel(teamRoomId);
+               socket.join(teamRoomPrivateChannel);
+               console.log(`MessagingService: userId=${userId} joining ${teamRoomPrivateChannel}`);
+            });
+         })
+         .catch(err => console.error(err));
+
       conversationSvc.getConversations(req, userId)
          .then((conversations) => {
             const conversationIds = conversations.map(conversation => conversation.conversationId);
@@ -198,45 +242,61 @@ class MessagingService {
    }
 
    _joinChannels(req, userId, channels) {
-      this.io.of('/').adapter.clients([ChannelFactory.personalChannel(userId)], (err, clientIds) => {
-         if (err) {
-            console.error(err);
-         } else {
-            clientIds.forEach((clientId) => {
-               channels.forEach((channel) => {
-                  this.io.of('/').adapter.remoteJoin(clientId, channel, (err2) => {
-                     if (err2) {
-                        console.error(err2);
-                     }
-                     else {
-                        console.log(`MessagingService: userId=${userId} joining ${channel}`);
-                     }
+      return new Promise((resolve, reject) => {
+         this.io.of('/').adapter.clients([ChannelFactory.personalChannel(userId)], (err, clientIds) => {
+            if (err) {
+               console.error(err);
+               resolve(err);
+            } else if ((clientIds === undefined) || (clientIds === null) || (clientIds.length === 0)) {
+               resolve();
+            } else {
+               const errors = [];
+               clientIds.forEach((clientId) => {
+                  channels.forEach((channel) => {
+                     this.io.of('/').adapter.remoteJoin(clientId, channel, (err2) => {
+                        if (err2) {
+                           console.error(err2);
+                           errors.push(err2);
+                        }
+                        else {
+                           console.log(`MessagingService: userId=${userId} joining ${channel}`);
+                        }
+                     });
                   });
                });
-            });
-         }
+               resolve((errors.length > 0) ? errors : undefined);
+            }
+         });
       });
    }
 
    _leaveChannels(req, userId, channels) {
-      this.io.of('/').adapter.clients([ChannelFactory.personalChannel(userId)], (err, clientIds) => {
-         if (err) {
-            console.error(err);
-         } else {
-            clientIds.forEach((clientId) => {
-               channels.forEach((channel) => {
-                  this.io.of('/').adapter.remoteLeav(clientId, channel, (err2) => {
-                     if (err2) {
-                        console.error(err2);
-                     }
-                     else {
-                        console.log(`MessagingService: userId=${userId} leaving ${channel}`);
-                     }
+         return new Promise((resolve, reject) => {
+            this.io.of('/').adapter.clients([ChannelFactory.personalChannel(userId)], (err, clientIds) => {
+               if (err) {
+                  console.error(err);
+                  resolve(err);
+               } else if ((clientIds === undefined) || (clientIds === null) || (clientIds.length === 0)) {
+                  resolve();
+               } else {
+                  const errors = [];
+                  clientIds.forEach((clientId) => {
+                     channels.forEach((channel) => {
+                        this.io.of('/').adapter.remoteLeav(clientId, channel, (err2) => {
+                           if (err2) {
+                              console.error(err2);
+                              errors.push(err2);
+                           }
+                           else {
+                              console.log(`MessagingService: userId=${userId} leaving ${channel}`);
+                           }
+                        });
+                     });
                   });
-               });
+                  resolve((errors.length > 0) ? errors : undefined);
+               }
             });
-         }
-      });
+         });
    }
 }
 const messagingService = new MessagingService();
