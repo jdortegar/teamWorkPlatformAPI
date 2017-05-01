@@ -6,6 +6,8 @@ import SocketIOWildcard from 'socketio-wildcard';
 import config from '../../config/env';
 import app from '../../config/express';
 import conversationSvc from '../conversationService';
+import teamRoomSvc from '../teamRoomService';
+import teamSvc from '../teamService';
 import subscriberOrgSvc from '../subscriberOrgService';
 
 
@@ -13,12 +15,18 @@ export const EventTypes = Object.freeze({
    presenceChanged: 'presenceChanged',
    userCreated: 'userCreated',
    userUpdated: 'userUpdated',
+   userPrivateInfoUpdated: 'userPrivateInfoUpdated',
    subscriberOrgCreated: 'subscriberOrgCreated',
    subscriberOrgUpdated: 'subscriberOrgUpdated',
+   subscriberOrgPrivateInfoUpdated: 'subscriberOrgPrivateInfoUpdated',
    teamCreated: 'teamCreated',
    teamUpdated: 'teamUpdated',
+   teamPrivateInfoUpdated: 'teamPrivateInfoUpdated',
    teamRoomCreated: 'teamRoomCreated',
    teamRoomUpdated: 'teamRoomUpdated',
+   teamRoomPrivateInfoUpdated: 'teamRoomPrivateInfoUpdated',
+   conversationCreated: 'conversationCreated',
+   conversationUpdated: 'conversationUpdated',
    messageCreated: 'messageCreated',
    from(value) { return (this[value]); }
 });
@@ -36,12 +44,24 @@ export class ChannelFactory {
       return `subscriberOrgId=${subscriberOrgId}`;
    }
 
+   static subscriberOrgAdminChannel(subscriberOrgId) {
+      return `admin.subscriberOrgId=${subscriberOrgId}`;
+   }
+
    static teamChannel(teamId) {
       return `teamId=${teamId}`;
    }
 
+   static teamAdminChannel(teamId) {
+      return `admin.teamId=${teamId}`;
+   }
+
    static teamRoomChannel(teamRoomId) {
       return `teamRoomId=${teamRoomId}`;
+   }
+
+   static teamRoomAdminChannel(teamRoomId) {
+      return `admin.teamRoomId=${teamRoomId}`;
    }
 
    static conversationChannel(conversationId) {
@@ -71,7 +91,8 @@ class MessagingService {
       // this.io = new SocketIO(this.httpServer, { pingInterval: this.pingInterval, pingTimeout: this.pingTimeout });
       // this.io.set('heartbeat interval', this.pingInterval);
       // this.io.set('heartbeat timeout', this.pingTimeout);
-      this.io.adapter(new SocketIORedisAdapter({ host: config.cacheServer, port: config.cachePort }));
+      const redisAdapter = new SocketIORedisAdapter({ host: config.cacheServer, port: config.cachePort });
+      this.io.adapter(redisAdapter);
       this.io.use(new SocketIOWildcard());
 
       // Set socket.io listeners.
@@ -114,9 +135,10 @@ class MessagingService {
       const userId = socket.decoded_token._id;
       console.log(`MessagingService: User connected. sId=${socket.id} userId=${userId} ${socket.decoded_token.email}`);
 
+      console.log(`AD: TODO: use this to deduce client type:  address=${socket.handshake.address}, user-agent=${socket.handshake.headers['user-agent']}`);
       const req = { app, now: moment.utc() };
+      this._joinCurrentChannels(req, socket, userId);
       this._presenceChanged(req, userId, PresenceStatuses.available);
-      this._joinChannels(req, socket, userId);
    }
 
    _disconnected(socket, reason) {
@@ -132,7 +154,7 @@ class MessagingService {
       return this._broadcastEvent(req, EventTypes.presenceChanged, { userId, presenceStatus, presenceMessage });
    }
 
-   _joinChannels(req, socket, userId) {
+   _joinCurrentChannels(req, socket, userId) {
       const publicChannel = ChannelFactory.publicChannel();
       socket.join(publicChannel);
       console.log(`MessagingService: userId=${userId} joining ${publicChannel}`);
@@ -148,6 +170,40 @@ class MessagingService {
                const subscriberOrgChannel = ChannelFactory.subscriberOrgChannel(subscriberOrgId);
                socket.join(subscriberOrgChannel);
                console.log(`MessagingService: userId=${userId} joining ${subscriberOrgChannel}`);
+
+               const subscriberOrgPrivateChannel = ChannelFactory.subscriberOrgAdminChannel(subscriberOrgId);
+               socket.join(subscriberOrgPrivateChannel);
+               console.log(`MessagingService: userId=${userId} joining ${subscriberOrgPrivateChannel}`);
+            });
+         })
+         .catch(err => console.error(err));
+
+      teamSvc.getUserTeams(req, userId)
+         .then((teams) => {
+            const teamIds = teams.map(team => team.teamId);
+            teamIds.forEach((teamId) => {
+               const teamChannel = ChannelFactory.teamChannel(teamId);
+               socket.join(teamChannel);
+               console.log(`MessagingService: userId=${userId} joining ${teamChannel}`);
+
+               const teamPrivateChannel = ChannelFactory.teamAdminChannel(teamId);
+               socket.join(teamPrivateChannel);
+               console.log(`MessagingService: userId=${userId} joining ${teamPrivateChannel}`);
+            });
+         })
+         .catch(err => console.error(err));
+
+      teamRoomSvc.getUserTeamRooms(req, userId)
+         .then((teamRooms) => {
+            const teamRoomIds = teamRooms.map(teamRoom => teamRoom.teamRoomId);
+            teamRoomIds.forEach((teamRoomId) => {
+               const teamRoomChannel = ChannelFactory.teamRoomChannel(teamRoomId);
+               socket.join(teamRoomChannel);
+               console.log(`MessagingService: userId=${userId} joining ${teamRoomChannel}`);
+
+               const teamRoomPrivateChannel = ChannelFactory.teamRoomAdminChannel(teamRoomId);
+               socket.join(teamRoomPrivateChannel);
+               console.log(`MessagingService: userId=${userId} joining ${teamRoomPrivateChannel}`);
             });
          })
          .catch(err => console.error(err));
@@ -165,7 +221,7 @@ class MessagingService {
    }
 
    _message(socket, eventType, event) {
-      // Drop this on the floor.
+      // Drop this on the floor.  User is trying to send a message via websockets.
       console.warn(`MessagingService: Message received from sId=${socket.id} userId=${socket.decoded_token._id} ${socket.decoded_token.email}. eventType=${eventType}, event=${event}`);
    }
 
@@ -184,6 +240,64 @@ class MessagingService {
          resolve();
       });
    }
+
+   _joinChannels(req, userId, channels) {
+      return new Promise((resolve, reject) => {
+         this.io.of('/').adapter.clients([ChannelFactory.personalChannel(userId)], (err, clientIds) => {
+            if (err) {
+               console.error(err);
+               resolve(err);
+            } else if ((clientIds === undefined) || (clientIds === null) || (clientIds.length === 0)) {
+               resolve();
+            } else {
+               const errors = [];
+               clientIds.forEach((clientId) => {
+                  channels.forEach((channel) => {
+                     this.io.of('/').adapter.remoteJoin(clientId, channel, (err2) => {
+                        if (err2) {
+                           console.error(err2);
+                           errors.push(err2);
+                        }
+                        else {
+                           console.log(`MessagingService: userId=${userId} joining ${channel}`);
+                        }
+                     });
+                  });
+               });
+               resolve((errors.length > 0) ? errors : undefined);
+            }
+         });
+      });
+   }
+
+   _leaveChannels(req, userId, channels) {
+         return new Promise((resolve, reject) => {
+            this.io.of('/').adapter.clients([ChannelFactory.personalChannel(userId)], (err, clientIds) => {
+               if (err) {
+                  console.error(err);
+                  resolve(err);
+               } else if ((clientIds === undefined) || (clientIds === null) || (clientIds.length === 0)) {
+                  resolve();
+               } else {
+                  const errors = [];
+                  clientIds.forEach((clientId) => {
+                     channels.forEach((channel) => {
+                        this.io.of('/').adapter.remoteLeav(clientId, channel, (err2) => {
+                           if (err2) {
+                              console.error(err2);
+                              errors.push(err2);
+                           }
+                           else {
+                              console.log(`MessagingService: userId=${userId} leaving ${channel}`);
+                           }
+                        });
+                     });
+                  });
+                  resolve((errors.length > 0) ? errors : undefined);
+               }
+            });
+         });
+   }
 }
 const messagingService = new MessagingService();
 export default messagingService;
@@ -195,4 +309,12 @@ export function _presenceChanged(req, userId, presenceStatus, presenceMessage = 
 
 export function _broadcastEvent(req, eventType, event, channels = undefined) {
    messagingService._broadcastEvent(req, eventType, event, channels);
+}
+
+export function _joinChannels(req, userId, channels) {
+   messagingService._joinChannels(req, userId, channels);
+}
+
+export function _leaveChannels(req, userId, channels) {
+   messagingService._leaveChannels(req, userId, channels);
 }

@@ -18,20 +18,29 @@ const validationSchemas = {
          timeZone: Joi.string().min(1).required(),
          icon: Joi.string().base64().allow(null),
          preferences: Joi.object().keys({
-            private: Joi.object().required()
+            private: Joi.object()
          })
       }
    },
    updateUser: {
-      firstName: Joi.string().min(1),
-      lastName: Joi.string().min(1),
-      displayName: Joi.string().min(1),
-      country: Joi.string().min(1),
-      timeZone: Joi.string().min(1),
-      icon: Joi.string().base64().allow(null),
-      preferences: Joi.object().keys({
-         private: Joi.object()
-      })
+      body: {
+         firstName: Joi.string().min(1),
+         lastName: Joi.string().min(1),
+         displayName: Joi.string().min(1),
+         country: Joi.string().min(1),
+         timeZone: Joi.string().min(1),
+         icon: Joi.string().base64().allow(null),
+         preferences: Joi.object().keys({
+            private: Joi.object()
+         })
+      }
+   },
+   updateUserPublicPreferences: {
+      body: {
+         preferences: Joi.object().min(1).keys({
+            private: Joi.any().forbidden()
+         }).required()
+      }
    },
    login: {
       body: {
@@ -50,6 +59,44 @@ const validationSchemas = {
    updateSubscriberOrg: {
       body: {
          name: Joi.string().min(1),
+         preferences: Joi.object().keys({
+            private: Joi.object()
+         })
+      }
+   },
+   createTeam: {
+      body: {
+         name: Joi.string().min(1).required(),
+         preferences: Joi.object().keys({
+            private: Joi.object().required()
+         })
+      }
+   },
+   updateTeam: {
+      body: {
+         name: Joi.string().min(1),
+         preferences: Joi.object().keys({
+            private: Joi.object()
+         })
+      }
+   },
+   createTeamRoom: {
+      body: {
+         name: Joi.string().min(1).required(),
+         purpose: Joi.string().min(1),
+         publish: Joi.boolean().required(),
+         active: Joi.boolean().required(),
+         preferences: Joi.object().keys({
+            private: Joi.object().required()
+         })
+      }
+   },
+   updateTeamRoom: {
+      body: {
+         name: Joi.string().min(1),
+         purpose: Joi.string().min(1),
+         publish: Joi.boolean(),
+         active: Joi.boolean(),
          preferences: Joi.object().keys({
             private: Joi.object()
          })

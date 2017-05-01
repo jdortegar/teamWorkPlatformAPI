@@ -211,12 +211,11 @@ Either that, or don't write tests...
 
 ## Documentation
 
-To generate html from inline documentation:
+To generate html from inline documentation and templates (including RAML API documentation):
 
     npm run doc
     open doc/code/index.html
-    open doc/api/users.html
-    open doc/api/auth.html
+    open doc/api.html
 
 Generic documentation is generated, and includes your added [esdoc](https://esdoc.org)-style comments.
 Don't go crazy, but try to document things that you think might be unclear to someone looking at your code.
@@ -249,4 +248,13 @@ Please refer to src/config/env/index.js for a more complete and up-to-latest lis
     
 That's one way.
 TODO: Another way is ...
+
+
+### Client
+
+You can use a command line client to invoke the REST APIs, play around with usage, and listen to events.
+
+    npm run client:dev
+    npm run client:local
+    npm run client:ngrok
 

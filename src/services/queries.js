@@ -84,65 +84,6 @@ function batchGetItemBySortKey(req, tableName, sortKeyName, sortKeys) {
    });
 }
 
-/**
- * References:
- * http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.ExpressionAttributeNames.html
- * http://stackoverflow.com/questions/36698945/scan-function-in-dynamodb-with-reserved-keyword-as-filterexpression-nodejs#36712485
- * http://stackoverflow.com/questions/40283653/how-to-use-in-statement-in-filterexpression-using-array-dynamodb#40301073
- *
- * @param req
- * @param tableName
- * @param attributeName
- * @param values
- * @returns {*}
- */
-function filteredScan(req, tableName, attributeName, values) {
-   if ((values === undefined) || (values.length === 0)) {
-      return Promise.resolve([]);
-   }
-
-   let filterExpression = '';
-
-   // Convert `attributeName` to query expressions.
-   const queryNames = {};
-   let index = 0;
-   let queryName;
-   attributeName.split('.').forEach((path) => {
-      index += 1;
-      queryName = `#n1${index}`;
-      queryNames[queryName.toString()] = path;
-      filterExpression += (filterExpression.length === 0) ? '' : '.';
-      filterExpression += queryName;
-   });
-
-   // Convert attribute `values` to query expression.
-   const queryValues = {};
-   index = 0;
-   values.forEach((value) => {
-      index += 1;
-      const queryKey = `:v1${index}`;
-      queryValues[queryKey.toString()] = value;
-   });
-   filterExpression += ` IN (${Object.keys(queryValues).toString()})`;
-
-   const params = {
-      TableName: tableName,
-      FilterExpression: filterExpression,
-      ExpressionAttributeNames: queryNames,
-      ExpressionAttributeValues: queryValues,
-      Limit: 50
-   };
-
-   return new Promise((resolve, reject) => {
-      docClient().scan(params).promise()
-         .then((data) => {
-            resolve(data.Items);
-         })
-         .catch(err => reject(err));
-   });
-}
-
-
 class ObjectExpressions {
    nameVariables = {};
    valueVariables = {};
@@ -189,6 +130,40 @@ class ObjectExpressions {
       }
    }
 
+   get FilterExpression() {
+      let expression;
+
+      Object.keys(this.sets).forEach((objKey) => {
+         if (expression === undefined) {
+            expression = '';
+         } else {
+            expression += ' AND ';
+         }
+         expression += `${objKey} = ${this.sets[objKey]}`;
+      });
+
+      this.removes.forEach((variable) => {
+         if (expression === undefined) {
+            expression += '';
+         } else {
+            expression += ' AND ';
+         }
+         expression += `${variable} = undefined`;
+      });
+
+      return expression;
+   }
+
+   get FilterExpressionAttributeValues() {
+      const ret = {};
+      Object.keys(this.valueVariables).forEach((valueVariable) => {
+         Object.keys(this.valueVariables[valueVariable]).forEach((value) => {
+            ret[valueVariable] = this.valueVariables[valueVariable][value];
+         });
+      });
+      return ret;
+   }
+
    get UpdateExpression() {
       let expression;
 
@@ -221,6 +196,80 @@ class ObjectExpressions {
       return this.valueVariables;
    }
 }
+
+function filteredScan(req, tableName, exactMatch) {
+   const expressions = new ObjectExpressions(exactMatch);
+   const params = {
+      TableName: tableName,
+      FilterExpression: expressions.FilterExpression,
+      ExpressionAttributeNames: expressions.ExpressionAttributeNames,
+      ExpressionAttributeValues: expressions.FilterExpressionAttributeValues
+   };
+
+   return new Promise((resolve, reject) => {
+      docClient().scan(params).promise()
+         .then(data => resolve(data.Items))
+         .catch(err => reject(err));
+   });
+}
+
+/**
+ * References:
+ * http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.ExpressionAttributeNames.html
+ * http://stackoverflow.com/questions/36698945/scan-function-in-dynamodb-with-reserved-keyword-as-filterexpression-nodejs#36712485
+ * http://stackoverflow.com/questions/40283653/how-to-use-in-statement-in-filterexpression-using-array-dynamodb#40301073
+ *
+ * @param req
+ * @param tableName
+ * @param attributeName
+ * @param values
+ * @returns {*}
+ */
+function filteredScanValueIn(req, tableName, attributeName, values) {
+   if ((values === undefined) || (values.length === 0)) {
+      return Promise.resolve([]);
+   }
+
+   let filterExpression = '';
+
+   // Convert `attributeName` to query expressions.
+   const queryNames = {};
+   let index = 0;
+   let queryName;
+   attributeName.split('.').forEach((path) => {
+      index += 1;
+      queryName = `#n1${index}`;
+      queryNames[queryName.toString()] = path;
+      filterExpression += (filterExpression.length === 0) ? '' : '.';
+      filterExpression += queryName;
+   });
+
+   // Convert attribute `values` to query expression.
+   const queryValues = {};
+   index = 0;
+   values.forEach((value) => {
+      index += 1;
+      const queryKey = `:v1${index}`;
+      queryValues[queryKey.toString()] = value;
+   });
+   filterExpression += ` IN (${Object.keys(queryValues).toString()})`;
+
+   const params = {
+      TableName: tableName,
+      FilterExpression: filterExpression,
+      ExpressionAttributeNames: queryNames,
+      ExpressionAttributeValues: queryValues
+   };
+
+   return new Promise((resolve, reject) => {
+      docClient().scan(params).promise()
+         .then((data) => {
+            resolve(data.Items);
+         })
+         .catch(err => reject(err));
+   });
+}
+
 
 export function createItem(req, partitionId, tableName, sortKeyName, sortKey, infoName, info) {
    const params = {
@@ -275,7 +324,7 @@ export function getSubscriberUsersByUserIds(req, userIds) {
    }
 
    const tableName = `${config.tablePrefix}subscriberUsers`;
-   return filteredScan(req, tableName, 'subscriberUserInfo.userId', userIds);
+   return filteredScanValueIn(req, tableName, 'subscriberUserInfo.userId', userIds);
 }
 
 export function getSubscriberUsersByIds(req, subscriberUserIds) {
@@ -293,22 +342,16 @@ export function getSubscriberUsersBySubscriberOrgId(req, subscriberOrgId) {
    }
 
    const tableName = `${config.tablePrefix}subscriberUsers`;
+   return filteredScanValueIn(req, tableName, 'subscriberUserInfo.subscriberOrgId', [subscriberOrgId]);
+}
 
-   const filterExpression = 'subscriberUserInfo.subscriberOrgId = :subscriberOrgId';
-   const params = {
-      TableName: tableName,
-      FilterExpression: filterExpression,
-      ExpressionAttributeValues: {
-         ':subscriberOrgId': subscriberOrgId
-      },
-      Limit: 50
-   };
+export function getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId) {
+   if ((userId === undefined) || (subscriberOrgId === undefined)) {
+      return Promise.reject('userId and subscriberOrgId needs to be specified.');
+   }
 
-   return new Promise((resolve, reject) => {
-      docClient().scan(params).promise()
-         .then(data => resolve(data.Items))
-         .catch(err => reject(err));
-   });
+   const tableName = `${config.tablePrefix}subscriberUsers`;
+   return filteredScan(req, tableName, { subscriberUserInfo: { userId, subscriberOrgId } });
 }
 
 
@@ -327,50 +370,7 @@ export function getSubscriberOrgsByName(req, subscriberOrgName) {
    }
 
    const tableName = `${config.tablePrefix}subscriberOrgs`;
-   return filteredScan(req, tableName, 'subscriberOrgInfo.name', [subscriberOrgName]);
-}
-
-
-export function getTeamMembersBySubscriberUserIds(req, subscriberUserIds) {
-   if (subscriberUserIds === undefined) {
-      return Promise.reject('subscriberUserIds needs to be specified.');
-   }
-
-   const tableName = `${config.tablePrefix}teamMembers`;
-   return filteredScan(req, tableName, 'teamMemberInfo.subscriberUserId', subscriberUserIds);
-}
-
-export function getTeamMembersByIds(req, teamMemberIds) {
-   if (teamMemberIds === undefined) {
-      return Promise.reject('teamMemberIds needs to be specified.');
-   }
-
-   const tableName = `${config.tablePrefix}teamMembers`;
-   return batchGetItemBySortKey(req, tableName, 'teamMemberId', teamMemberIds);
-}
-
-export function getTeamMembersByTeamId(req, teamId) {
-   if (teamId === undefined) {
-      return Promise.reject('teamId needs to be specified.');
-   }
-
-   const tableName = `${config.tablePrefix}teamMembers`;
-
-   const filterExpression = 'teamMemberInfo.teamId = :teamId';
-   const params = {
-      TableName: tableName,
-      FilterExpression: filterExpression,
-      ExpressionAttributeValues: {
-         ':teamId': teamId
-      },
-      Limit: 50
-   };
-
-   return new Promise((resolve, reject) => {
-      docClient().scan(params).promise()
-         .then(data => resolve(data.Items))
-         .catch(err => reject(err));
-   });
+   return filteredScanValueIn(req, tableName, 'subscriberOrgInfo.name', [subscriberOrgName]);
 }
 
 
@@ -383,6 +383,42 @@ export function getTeamsByIds(req, teamIds) {
    return batchGetItemBySortKey(req, tableName, 'teamId', teamIds);
 }
 
+export function getTeamBySubscriberOrgIdAndName(req, subscriberOrgId, name) {
+   if ((subscriberOrgId === undefined) || (name === undefined)) {
+      return Promise.reject('subscriberOrgId and name needs to be specified.');
+   }
+
+   const tableName = `${config.tablePrefix}teams`;
+   return filteredScan(req, tableName, { teamInfo: { subscriberOrgId, name } });
+}
+
+export function getTeamMembersBySubscriberUserIds(req, subscriberUserIds) {
+   if (subscriberUserIds === undefined) {
+      return Promise.reject('subscriberUserIds needs to be specified.');
+   }
+
+   const tableName = `${config.tablePrefix}teamMembers`;
+   return filteredScanValueIn(req, tableName, 'teamMemberInfo.subscriberUserId', subscriberUserIds);
+}
+
+export function getTeamMembersByTeamId(req, teamId) {
+   if (teamId === undefined) {
+      return Promise.reject('teamId needs to be specified.');
+   }
+
+   const tableName = `${config.tablePrefix}teamMembers`;
+   return filteredScanValueIn(req, tableName, 'teamMemberInfo.teamId', [teamId]);
+}
+
+export function getTeamMembersByIds(req, teamMemberIds) {
+   if (teamMemberIds === undefined) {
+      return Promise.reject('teamMemberIds needs to be specified.');
+   }
+
+   const tableName = `${config.tablePrefix}teamMembers`;
+   return batchGetItemBySortKey(req, tableName, 'teamMemberId', teamMemberIds);
+}
+
 
 export function getTeamRoomMembersByTeamRoomId(req, teamRoomId) {
    if (teamRoomId === undefined) {
@@ -390,7 +426,7 @@ export function getTeamRoomMembersByTeamRoomId(req, teamRoomId) {
    }
 
    const tableName = `${config.tablePrefix}teamRoomMembers`;
-   return filteredScan(req, tableName, 'teamRoomMemberInfo.teamRoomId', [teamRoomId]);
+   return filteredScanValueIn(req, tableName, 'teamRoomMemberInfo.teamRoomId', [teamRoomId]);
 }
 
 export function getTeamRoomMembersByTeamMemberIds(req, teamMemberIds) {
@@ -399,7 +435,7 @@ export function getTeamRoomMembersByTeamMemberIds(req, teamMemberIds) {
    }
 
    const tableName = `${config.tablePrefix}teamRoomMembers`;
-   return filteredScan(req, tableName, 'teamRoomMemberInfo.teamMemberId', teamMemberIds);
+   return filteredScanValueIn(req, tableName, 'teamRoomMemberInfo.teamMemberId', teamMemberIds);
 }
 
 
@@ -410,6 +446,15 @@ export function getTeamRoomsByIds(req, teamRoomIds) {
 
    const tableName = `${config.tablePrefix}teamRooms`;
    return batchGetItemBySortKey(req, tableName, 'teamRoomId', teamRoomIds);
+}
+
+export function getTeamRoomsByTeamIdAndName(req, teamId, name) {
+   if ((teamId === undefined) || (name === undefined)) {
+      return Promise.reject('teamId and name needs to be specified.');
+   }
+
+   const tableName = `${config.tablePrefix}teamRooms`;
+   return filteredScan(req, tableName, { teamRoomInfo: { teamId, name } });
 }
 
 
@@ -429,7 +474,7 @@ export function getMessagesByConversationId(req, conversationId) {
    }
 
    const tableName = `${config.tablePrefix}messages`;
-   return filteredScan(req, tableName, 'messageInfo.conversationId', [conversationId]);
+   return filteredScanValueIn(req, tableName, 'messageInfo.conversationId', [conversationId]);
 }
 
 export function getConversationParticipantsByUserId(req, userId) {
@@ -438,7 +483,7 @@ export function getConversationParticipantsByUserId(req, userId) {
    }
 
    const tableName = `${config.tablePrefix}conversationParticipants`;
-   return filteredScan(req, tableName, 'conversationParticipantInfo.userId', [userId]);
+   return filteredScanValueIn(req, tableName, 'conversationParticipantInfo.userId', [userId]);
 }
 
 export function getConversationParticipantsByConversationId(req, conversationId) {
@@ -447,5 +492,5 @@ export function getConversationParticipantsByConversationId(req, conversationId)
    }
 
    const tableName = `${config.tablePrefix}conversationParticipants`;
-   return filteredScan(req, tableName, 'conversationParticipantInfo.conversationId', [conversationId]);
+   return filteredScanValueIn(req, tableName, 'conversationParticipantInfo.conversationId', [conversationId]);
 }

@@ -19,6 +19,9 @@ router.route('/createUser')
 router.route('/updateUser')
    .patch(validate(paramValidation.updateUser), users.updateUser);
 
+router.route('/updatePublicPreferences/:userId')
+   .patch(validate(paramValidation.updateUserPublicPreferences), users.updatePublicPreferences);
+
 router.route('/:userId')
   .put(users.update);
 

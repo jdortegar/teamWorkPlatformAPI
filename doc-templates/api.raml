@@ -17,12 +17,14 @@ documentation:
          <br />
          500 INTERNAL_SERVER_ERROR
          <br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A server error has occurred, typically unforseen or unaccounted for.  Most likely a logic error.
-   - title: Auth
+         <br /><br />
+         **Additional Possible Responses for Post/Put/Patch Endpoints**
+         <br />
+         400 BAD_REQUEST
+         <br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Invalid format in the body of the request.
+   - title: Authentication
      content: |
          TODO: Auth overall description here...
-   - title: Users
-     content: |
-         TODO: Users overall description here...
 
 
 /auth:
@@ -146,6 +148,87 @@ documentation:
 
 /users:
 
+   /validateEmail:
+      /{rid}:
+         uriParameters:
+            rid:
+               description: Reservation ID (rid).
+         get:
+            description: |
+               Retrieve the email address associated with a Reservation ID (`rid`).
+               <br /><br />
+               The reservation should have been previously created from the `POST /users/registerUser` endpoint, and is valid until expired.
+               Use this method to obtain the email address associated with a rid, typically for display purposes.
+            responses:
+               200:
+                  description: |
+                     OK<br />
+                     The uuid is the Reservation ID (rid).
+                  body:
+                     properties:
+                        status:
+                           type: string
+                           required: true
+                           example: SUCCESS
+                        email:
+                           type: string
+                           required: true
+                           example: anthony.daga%40habla.ai
+                     example: |
+                        {
+                          "status": "SUCCESS",
+                          "email": "anthony.daga%40habla.ai"
+                        }
+               404:
+                  description: |
+                     NOT_FOUND<br />
+                     The Reservation ID either does not exist or is no longer valid (i.e. expired).
+
+   /registerUser:
+      post:
+         description: |
+            If a user submits a registration for a valid email address (formatted correctly), the service responds with a 200-OK status and a payload.  The payload includes a uuid field, which contains the reservation-id for the user.  The reservation-id is used by the validateEmail endpoint to mitigate hacking risks, and locates the associated email address in the Redis cache.  This registration is stored in cache for a defined time-to-live (TTL).  If the user does not respond to the email and complete registration prior to expiration of the registration, they must register again.
+            <br /><br />
+            A reservation is a uniquely generated key used in the process of securely registering a new user.
+            It is used in initial communication through email, web, and mobile clients.
+            There can be multiple reservations for a user/email concurrently existing, as actual registered user uniqueness is enforced later in the process when the user is actually created in the system.
+            The default expiration of a reservation is 30 minutes, after which it is cleared from cache and no longer valid.
+         body:
+            application/x-www-form-urlencoded:
+               properties:
+                  email:
+                     description: |
+                        The email address to register.
+                        Should be validated client-side prior to invocation to ensure that a properly formatted email address has been provided by the calling application.
+                     type: string
+                     required: true
+                     example: anthony.daga%40habla.ai
+         responses:
+            201:
+               description: |
+                  CREATED<br />
+                  The uuid is the Reservation ID (rid).
+                  TODO: Was 200 OK.
+               body:
+                  properties:
+                     status:
+                        type: string
+                        required: true
+                        example: SUCCESS
+                     uuid:
+                        type: string
+                        required: true
+                        example: 9dec8947-0381-4809-a053-b56777f782f4
+                  example: |
+                     {
+                       "status": "SUCCESS",
+                       "uuid": "9dec8947-0381-4809-a053-b56777f782f4"
+                     }
+            400:
+               description: |
+                  BAD_REQUEST<br />
+                  No reason is given for privacy purposes, but could be an unknown username or bad password.
+
    /createUser:
       post:
          description: |
@@ -225,86 +308,107 @@ documentation:
                   FORBIDDEN<br />
                   The user (specifically email) is already registered.
 
-   /registerUser:
-      post:
+   /updateUser:
+      patch:
          description: |
-            If a user submits a registration for a valid email address (formatted correctly), the service responds with a 200-OK status and a payload.  The payload includes a uuid field, which contains the reservation-id for the user.  The reservation-id is used by the validateEmail endpoint to mitigate hacking risks, and locates the associated email address in the Redis cache.  This registration is stored in cache for a defined time-to-live (TTL).  If the user does not respond to the email and complete registration prior to expiration of the registration, they must register again.
-            <br /><br />
-            A reservation is a uniquely generated key used in the process of securely registering a new user.
-            It is used in initial communication through email, web, and mobile clients.
-            There can be multiple reservations for a user/email concurrently existing, as actual registered user uniqueness is enforced later in the process when the user is actually created in the system.
-            The default expiration of a reservation is 30 minutes, after which it is cleared from cache and no longer valid.
+            Update a user in Habla.
          body:
-            application/x-www-form-urlencoded:
-               properties:
-                  email:
-                     description: |
-                        The email address to register.
-                        Should be validated client-side prior to invocation to ensure that a properly formatted email address has been provided by the calling application.
-                     type: string
-                     required: true
-                     example: anthony.daga%40habla.ai
-         responses:
-            201:
-               description: |
-                  CREATED<br />
-                  The uuid is the Reservation ID (rid).
-                  TODO: Was 200 OK.
-               body:
-                  properties:
-                     status:
-                        type: string
-                        required: true
-                        example: SUCCESS
-                     uuid:
-                        type: string
-                        required: true
-                        example: 9dec8947-0381-4809-a053-b56777f782f4
-                  example: |
-                     {
-                       "status": "SUCCESS",
-                       "uuid": "9dec8947-0381-4809-a053-b56777f782f4"
-                     }
-            400:
-               description: |
-                  BAD_REQUEST<br />
-                  No reason is given for privacy purposes, but could be an unknown username or bad password.
-
-   /validateEmail:
-      /{rid}:
-         uriParameters:
-            rid:
-               description: Reservation ID (rid).
-         get:
-            description: |
-               Retrieve the email address associated with a Reservation ID (`rid`).
-               <br /><br />
-               The reservation should have been previously created from the `POST /users/registerUser` endpoint, and is valid until expired.
-               Use this method to obtain the email address associated with a rid, typically for display purposes.
-            responses:
-               200:
+            properties:
+               firstName:
+                  type: string
+                  required: true
+                  example: Anthony
+               lastName:
+                  type: string
+                  required: true
+                  example: Daga
+               displayName:
+                  type: string
+                  required: true
+                  example: Dude
+               country:
                   description: |
-                     OK<br />
-                     The uuid is the Reservation ID (rid).
-                  body:
-                     properties:
-                        status:
-                           type: string
-                           required: true
-                           example: SUCCESS
-                        email:
-                           type: string
-                           required: true
-                           example: anthony.daga%40habla.ai
-                     example: |
-                        {
-                          "status": "SUCCESS",
-                          "email": "anthony.daga%40habla.ai"
-                        }
+                     [ISO 3166-2](https://en.wikipedia.org/wiki/ISO_3166-2) representation.
+                  type: string
+                  required: true
+                  example: US
+               timeZone:
+                  type: string
+                  required: true
+                  example: America/Los_Angeles
+               icon:
+                  description: The user's avatar, base64 of image.
+                  type: string | nil
+                  required: false
+                  default: nil
+               preferences:
+                  type: object
+                  required: false
+                  properties:
+                     private:
+                        description: Private preferences only available to the user.
+                        type: object
+                        required: false
+            example: |
+               {
+                  "firstName": "Anthony",
+                  "lastName": "Daga",
+                  "displayName": "Dude",
+                  "country": "US",
+                  "timeZone": "America/Los_Angeles",
+                  "icon": null,
+                  "preferences": {
+                     "iconColor": "red",
+                     "private": {
+                        "lastWindowLocation": "110, 64"
+                     }
+                  }
+               }
+         responses:
+            204:
+               description: |
+                  NO_CONTENT<br />
+                  The user was updated successfully.
+            404:
+               description: |
+                  NOT_FOUND<br />
+                  The user was not found.
+
+   /updatePublicPreferences:
+      /{userId}:
+         uriParameters:
+            userId:
+               description: The `userId` of the user to update preferences of.
+         patch:
+            description: |
+               Update a user public preferences.
+            body:
+               properties:
+                  preferences:
+                     description: |
+                        Any properties tied to this user, to be shared typically by clients (ex. mobile, web).
+                        The property `private` is reserved and not to be used as the name of a property.
+                     type: object
+                     required: true
+               example: |
+                  {
+                     "preferences": {
+                        "iconColor": "red"
+                     }
+                  }
+            responses:
+               204:
+                  description: |
+                     NO_CONTENT<br />
+                     The user was updated successfully.
                404:
                   description: |
                      NOT_FOUND<br />
-                     The Reservation ID either does not exist or is no longer valid (i.e. expired).
+                     The user was not found.
+               403:
+                  description: |
+                     FORBIDDEN<br />
+                     The user is not allowed to create an organization.
 
 
 /subscriberOrgs:
@@ -365,7 +469,7 @@ documentation:
                   required: false
                   properties:
                      private:
-                        description: Private preferences only available to the organization administrator.
+                        description: Private preferences only available to the organization administrators.
                         type: object
                         required: false
             example: |
@@ -413,7 +517,7 @@ documentation:
                      required: false
                      properties:
                         private:
-                           description: Private preferences only available to the organization administrator.
+                           description: Private preferences only available to the organization administrators.
                            type: object
                            required: false
                example: |
@@ -560,65 +664,106 @@ documentation:
                      }
 
    /createTeam:
-      post:
-         description: |
-            Create a team within a subscriber organization in Habla.
-         body:
-            properties:
-               subscriberOrgId:
-                  type: string
-                  required: true
-               name:
-                  type: string
-                  required: true
-            example: |
-               {
-                  "subscriberOrgId": "ea794510-cea6-4132-0008-a7ae1d32abb5",
-                  "name": "My Team"
-               }
-         responses:
-            201:
-               description: CREATED
-               body:
-                  properties:
-                     teamId:
-                        type: string
-                        required: true
-                     subscriberOrgId:
-                        type: string
-                        required: true
-                  example: |
-                     {
-                       "teamId": "9dec8947-0381-4809-a053-b56777f782f5",
-                       "subscriberOrgId": "9dec8947-0381-4809-a053-b56777f782f4",
-                       "name": "My Team"
+      /{subscriberOrgId}:
+         uriParameters:
+            subscriberOrgId:
+               description: Subscriber Org ID to create the team under.
+         post:
+            description: |
+               Create a team within a subscriber organization in Habla.
+            body:
+               properties:
+                  name:
+                     type: string
+                     required: true
+                  preferences:
+                     type: object
+                     required: false
+                     properties:
+                        private:
+                           description: Private preferences only available to the team administrators.
+                           type: object
+                           required: false
+               example: |
+                  {
+                     "name": "My Team"
+                  }
+            responses:
+               201:
+                  description: CREATED
+                  body:
+                     properties:
+                        teamId:
+                           type: string
+                           required: true
+                        subscriberOrgId:
+                           type: string
+                           required: true
+                        name:
+                           type: string
+                           required: true
+                     example: |
+                        {
+                           "teamId": "9dec8947-0381-4809-a053-b56777f782f5",
+                           "subscriberOrgId": "9dec8947-0381-4809-a053-b56777f782f4",
+                           "name": "My Team",
+                           "preferences": {
+                              "private": {}
+                           }
+                        }
+               409:
+                  description: |
+                     CONFLICT<br />
+                     A team with the specified `name` within the specified subscriber organization (i.e. `subscriberOrgId`) already exists.
+               403:
+                  description: |
+                     FORBIDDEN<br />
+                     The user is not allowed to create a team within the specified subscriber organization.
+
+   /updateTeam:
+      /{teamId}:
+         uriParameters:
+            teamId:
+               description: Team ID to update.
+         patch:
+            description: |
+               Update a team in Habla.
+            body:
+               properties:
+                  name:
+                     type: string
+                     required: false
+                  preferences:
+                     type: object
+                     required: false
+                     properties:
+                        private:
+                           description: Private preferences only available to the team administrators.
+                           type: object
+                           required: false
+               example: |
+                  {
+                     "name": "My Org",
+                     "preferences": {
+                        "abc": "def",
+                        "private": {
+                           "xyz": "123"
+                        }
                      }
-            409:
-               description: |
-                  CONFLICT<br />
-                  A team with the specified `name` within the specified subscriber organization (i.e. `subscriberOrgId`) already exists.
-               body:
-                  properties:
-                     status:
-                        type: string
-                        required: true
-                  example: |
-                     {
-                        "status": "EXISTS"
-                     }
-            403:
-               description: |
-                  FORBIDDEN<br />
-                  The user is not allowed to create a team within the specified subscriber organization.
-               body:
-                  properties:
-                     status:
-                        type: string
-                        required: true
-                  example: |
-                     {
-                        "status": "FORBIDDEN"
-                     }
+                  }
+            responses:
+               204:
+                  description: |
+                     NO_CONTENT<br />
+                     The team was updated successfully.
+               404:
+                  description: |
+                     NOT_FOUND<br />
+                     The `team` with the specified ID was not found.
+               403:
+                  description: |
+                     FORBIDDEN<br />
+                     The user is not allowed to update the specified team.
 
    /getMembers:
       /{teamId}:
@@ -767,63 +912,135 @@ documentation:
                      }
 
    /createTeamRoom:
-      post:
-         description: |
-            Create a team room in Habla.
-         body:
-            properties:
-               name:
-                  type: string
-                  required: true
-               purpose:
-                  type: string | nil
-                  required: false
-                  default: nil
-               teamId:
-                  description: The team to attach this room to.
-                  type: string
-                  required: true
-               publish:
-                  type: boolean
-                  required: true
-               active:
-                  type: boolean
-                  required: true
-            example: |
-               {
-                  "name": "Posse",
-                  "purpose": "Place to hang.",
-                  "teamId": "9dec8947-0381-4809-a053-b56777f782f4",
-                  "publish": false,
-                  "active": true
-               }
-         responses:
-            201:
-               description: CREATED
-               body:
-                  properties:
-                     teamRoomId:
-                        type: string
-                        required: true
-                        example: 9dec8947-0381-4809-a053-b56777f782f4
-                  example: |
-                     {
-                       "teamRoomId": "9dec8947-0381-4809-a053-b56777f782f4"
+      /{teamId}:
+         uriParameters:
+            teamId:
+               description: Team ID to create the team room under.
+         post:
+            description: |
+               Create a team room within a team.
+            body:
+               properties:
+                  name:
+                     type: string
+                     required: true
+                  purpose:
+                     type: string | nil
+                     required: false
+                     default: nil
+                  publish:
+                     type: boolean
+                     required: true
+                  active:
+                     type: boolean
+                     required: true
+               example: |
+                  {
+                     "name": "Posse",
+                     "purpose": "Place to hang.",
+                     "publish": false,
+                     "active": true
+                  }
+            responses:
+               201:
+                  description: CREATED
+                  body:
+                     properties:
+                        teamRoomId:
+                           type: string
+                           required: true
+                           example: 9dec8947-0381-4809-a053-b56777f782f4
+                        teamId:
+                           type: string
+                           required: true
+                           example: 9dec8947-0381-4809-a053-b56777f782f5
+                        name:
+                           type: string
+                           required: true
+                        purpose:
+                           type: string | nil
+                           required: false
+                           default: nil
+                        publish:
+                           type: boolean
+                           required: true
+                        active:
+                           type: boolean
+                           required: true
+                     example: |
+                        {
+                          "teamRoomId": "9dec8947-0381-4809-a053-b56777f782f4",
+                          "teamId": "9dec8947-0381-4809-a053-b56777f782f5",
+                          "name": "Posse",
+                          "purpose": "Place to hang.",
+                          "publish": false,
+                          "active": true
+                        }
+               409:
+                  description: |
+                     CONFLICT<br />
+                     A team room by the requested name already exists under the team.
+               403:
+                  description: |
+                     FORBIDDEN<br />
+                     The user is not allowed to create a team room within the specified team.
+
+   /updateTeamRoom:
+      /{teamRoomId}:
+         uriParameters:
+            teamRoomId:
+               description: Team room to update.
+         patch:
+            description: |
+               Update a team room in Habla.
+            body:
+               properties:
+                  name:
+                     type: string
+                     required: true
+                  purpose:
+                     type: string | nil
+                     required: false
+                     default: nil
+                  publish:
+                     type: boolean
+                     required: true
+                  active:
+                     type: boolean
+                     required: true
+                  preferences:
+                     type: object
+                     required: false
+                     properties:
+                        private:
+                           description: Private preferences only available to the team administrators.
+                           type: object
+                           required: false
+               example: |
+                  {
+                     "name": "My Org",
+                     "publish": true,
+                     "active": false,
+                     "preferences": {
+                        "abc": "def",
+                        "private": {
+                           "xyz": "123"
+                        }
                      }
-            409:
-               description: |
-                  CONFLICT<br />
-                  A team room by the requested name already exists under the team.
-               body:
-                  properties:
-                     status:
-                        type: string
-                        required: true
-                        example: EXISTS
-                  example: |
-                     {
-                        "status": "EXISTS"
-                     }
+                  }
+            responses:
+               204:
+                  description: |
+                     NO_CONTENT<br />
+                     The team was updated successfully.
+               404:
+                  description: |
+                     NOT_FOUND<br />
+                     The `team` with the specified ID was not found.
+               403:
+                  description: |
+                     FORBIDDEN<br />
+                     The user is not allowed to update the specified team.
 
    /getMembers:
       /{teamRoomId}:
@@ -1012,77 +1229,6 @@ documentation:
                                     }
                                  }
                               ]
-                           }
-                        ]
-                     }
-
-   /startConversationWithUsers:
-      post:
-         description: |
-            Begin a conversation with the specified users.
-            The requesting user is automatically included in the conversation.
-         body:
-            properties:
-               users:
-                  type: array
-                  required: true
-                  items:
-                     properties:
-                        userId:
-                           type: string
-                           required: true
-            example: |
-               {
-                  "users": [
-                     {
-                        "userId": "9dec8947-0381-4809-a053-b56777f782f4"
-                     },
-                     {
-                        "userId": "9dec8947-0381-4809-a053-b56777f782f5"
-                     }
-                  ]
-               }
-         responses:
-            201:
-               description: CREATED
-               body:
-                  properties:
-                     conversationId:
-                        type: string
-                        required: true
-                     transcriptExists:
-                        description: |
-                           True if a conversation already exists for the specified group of users.
-                           Refer to GET /conversations/getTranscript to retrieve the transcript.
-                        type: boolean
-                        required: true
-                  example: |
-                     {
-                        "conversationId": "9dec8947-0381-4809-a053-b56777f782f4",
-                        "transcriptExists": false
-                     }
-            400:
-               description: |
-                  BAD_REQUEST<br />
-                  One or more of the specified users does not exist.
-               body:
-                  properties:
-                     users:
-                        type: array
-                        required: true
-                        items:
-                           properties:
-                              userId:
-                                 type: string
-                                 required: true
-                  example: |
-                     {
-                        "users": [
-                           {
-                              "userId": "9dec8947-0381-4809-a053-b56777f782f4"
-                           },
-                           {
-                              "userId": "9dec8947-0381-4809-a053-b56777f782f5"
                            }
                         ]
                      }

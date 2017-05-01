@@ -106,13 +106,33 @@ export function createUser(req, res, next) {
 
 export function updateUser(req, res, next) {
    const userId = req.user._id;
+
    userService.updateUser(req, userId, req.body)
-      .then((user) => {
-         res.status(httpStatus.OK).json(privateUser(user));
+      .then(() => {
+         res.status(httpStatus.NO_CONTENT).end();
       })
       .catch((err) => {
          if (err instanceof UserNotExistError) {
             res.status(httpStatus.NOT_FOUND).end();
+         } else {
+            next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE));
+         }
+      });
+}
+
+export function updatePublicPreferences(req, res, next) {
+   const userId = req.user._id;
+   const updateUserId = req.params.userId;
+
+   userService.updateUser(req, updateUserId, req.body, userId)
+      .then(() => {
+         res.status(httpStatus.NO_CONTENT).end();
+      })
+      .catch((err) => {
+         if (err instanceof UserNotExistError) {
+            res.status(httpStatus.NOT_FOUND).end();
+         } else if (err instanceof NoPermissionsError) {
+            res.status(httpStatus.FORBIDDEN).end();
          } else {
             next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE));
          }

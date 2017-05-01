@@ -1,6 +1,6 @@
 import httpStatus from 'http-status';
 import APIError from '../helpers/APIError';
-import { publicSubscriberOrgs, publicUsers } from '../helpers/publishedVisibility';
+import { privateSubscriberOrg, publicSubscriberOrgs, publicUsers } from '../helpers/publishedVisibility';
 import subscriberOrgSvc from '../services/subscriberOrgService';
 import { NoPermissionsError, SubscriberOrgExistsError, SubscriberOrgNotExistError } from '../services/errors';
 
@@ -22,7 +22,7 @@ export function createSubscriberOrg(req, res, next) {
 
    subscriberOrgSvc.createSubscriberOrg(req, req.body, userId)
       .then((createdSubscriberOrg) => {
-         res.status(httpStatus.CREATED).json(createdSubscriberOrg);
+         res.status(httpStatus.CREATED).json(privateSubscriberOrg(createdSubscriberOrg));
       })
       .catch((err) => {
          if (err instanceof SubscriberOrgExistsError) {
@@ -45,6 +45,8 @@ export function updateSubscriberOrg(req, res, next) {
       .catch((err) => {
          if (err instanceof SubscriberOrgNotExistError) {
             res.status(httpStatus.NOT_FOUND).end();
+         } else if (err instanceof NoPermissionsError) {
+            res.status(httpStatus.FORBIDDEN).end();
          } else {
             next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE));
          }

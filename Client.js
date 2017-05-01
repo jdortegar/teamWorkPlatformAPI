@@ -172,7 +172,7 @@ function getSubscriberOrgs(baseUrl, jwt) {
 }
 
 function getSubscribers(baseUrl, jwt, subscriberOrgId) {
-   console.log(`getSubscriberss(subscriberOrgId=${subscriberOrgId})`);
+   console.log(`getSubscribers(subscriberOrgId=${subscriberOrgId})`);
    return new Promise((resolve, reject) => {
       axios.get(`${baseUrl}/subscriberOrgs/getSubscribers/${subscriberOrgId}`, { headers: { Authorization: `Bearer ${jwt}` } })
          .then((response) => {
