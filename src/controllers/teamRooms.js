@@ -37,6 +37,24 @@ export function createTeamRoom(req, res, next) {
       });
 }
 
+export function updateTeamRoom(req, res, next) {
+   const userId = req.user._id;
+   const teamRoomId = req.params.teamRoomId;
+   teamRoomSvc.updateTeamRoom(req, teamRoomId, req.body, userId)
+      .then(() => {
+         res.status(httpStatus.NO_CONTENT).end();
+      })
+      .catch((err) => {
+         if (err instanceof TeamRoomNotExistError) {
+            res.status(httpStatus.NOT_FOUND).end();
+         } else if (err instanceof NoPermissionsError) {
+            res.status(httpStatus.FORBIDDEN).end();
+         } else {
+            next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE));
+         }
+      });
+}
+
 export function getTeamRoomMembers(req, res, next) {
    const userId = req.user._id;
    const teamRoomId = req.params.teamRoomId;

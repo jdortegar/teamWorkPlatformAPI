@@ -11,8 +11,8 @@ router.route('/getTeams')
 router.route('/createTeam/:subscriberOrgId')
    .post(validate(paramValidation.createTeam), teams.createTeam);
 
-// router.route('/updateTeam/:subscriberOrgId')
-//    .patch(validate(paramValidation.updateTeam), teams.updateTeam);
+router.route('/updateTeam/:teamId')
+   .patch(validate(paramValidation.updateTeam), teams.updateTeam);
 
 router.route('/getMembers/:teamId')
    .get(teams.getTeamMembers);

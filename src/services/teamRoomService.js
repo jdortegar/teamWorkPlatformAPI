@@ -1,7 +1,7 @@
 import uuid from 'uuid';
 import config from '../config/env';
 import conversationSvc from './conversationService';
-import { teamRoomCreated } from './messaging';
+import { teamRoomCreated, teamRoomPrivateInfoUpdated, teamRoomUpdated } from './messaging';
 import {
    createItem,
    getSubscriberUsersByIds,
@@ -13,7 +13,8 @@ import {
    getTeamRoomMembersByTeamRoomId,
    getTeamRoomsByIds,
    getTeamRoomsByTeamIdAndName,
-   getUsersByIds
+   getUsersByIds,
+   updateItem
 } from './queries';
 import { NoPermissionsError, TeamRoomExistsError, TeamRoomNotExistError } from './errors';
 
@@ -29,7 +30,7 @@ class TeamRoomService {
                return getTeamMembersBySubscriberUserIds(req, subscriberUserIds);
             })
             .then((teamMembers) => {
-            const filteredTeamMembers = (teamId) ? teamMembers.filter(teamMember => teamMember.teamMemberInfo.teamId === teamId) : teamMembers;
+               const filteredTeamMembers = (teamId) ? teamMembers.filter(teamMember => teamMember.teamMemberInfo.teamId === teamId) : teamMembers;
                const teamMemberIds = filteredTeamMembers.map((teamMember) => {
                   return teamMember.teamMemberId;
                });
@@ -129,6 +130,59 @@ class TeamRoomService {
             })
             .then(teamRoom => resolve(teamRoom))
             .catch(err => reject(err));
+      });
+   }
+
+   updateTeamRoom(req, teamRoomId, updateInfo, userId) {
+      return new Promise((resolve, reject) => {
+         getTeamRoomMembersByTeamRoomId(req, teamRoomId)
+            .then((teamRoomMembers) => {
+               if (teamRoomMembers.length === 0) {
+                  throw new TeamRoomNotExistError(teamRoomId);
+               }
+
+               const teamMemberIds = teamRoomMembers.map(teamRoomMember => teamRoomMember.teamRoomMemberInfo.teamMemberId);
+               return getTeamMembersByIds(req, teamMemberIds);
+            })
+            .then((teamMembers) => {
+               if (teamMembers.length === 0) {
+                  throw new NoPermissionsError(teamRoomId);
+               }
+
+               const subscriberUserIds = teamMembers.map(teamMember => teamMember.teamMemberInfo.subscriberUserId);
+               return getSubscriberUsersByIds(req, subscriberUserIds);
+            })
+            .then((subscriberUsers) => {
+               if (subscriberUsers.length === 0) {
+                  throw new NoPermissionsError(teamRoomId);
+               }
+
+               const userIds = subscriberUsers.map(subscriberUser => subscriberUser.subscriberUserInfo.userId);
+               if (userIds.indexOf(userId) < 0) {
+                  throw new NoPermissionsError(teamRoomId);
+               }
+
+               updateItem(req, -1, `${config.tablePrefix}teamRooms`, 'teamRoomId', teamRoomId, { teamRoomInfo: updateInfo });
+               return getTeamRoomsByIds(req, [teamRoomId]);
+            })
+            .then((teamRooms) => {
+               resolve();
+
+               const teamRoom = teamRooms[0].teamRoomInfo;
+               _.merge(teamRoom, updateInfo); // Eventual consistency, so might be old.
+               teamRoom.teamRoomId = teamRoomId;
+               teamRoomUpdated(req, teamRoom);
+               if ((updateInfo.preferences) && (updateInfo.preferences.private)) {
+                  teamRoomPrivateInfoUpdated(req, teamRoom);
+               }
+            })
+            .catch((err) => {
+               if (err.code === 'ValidationException') {
+                  reject(new TeamRoomNotExistError(teamRoomId));
+               } else {
+                  reject(err);
+               }
+            });
       });
    }
 

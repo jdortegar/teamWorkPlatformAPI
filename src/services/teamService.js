@@ -1,7 +1,8 @@
+import _ from 'lodash';
 import uuid from 'uuid';
 import config from '../config/env';
 import { NoPermissionsError, TeamExistsError, TeamNotExistError } from './errors';
-import { teamCreated } from './messaging';
+import { teamCreated, teamPrivateInfoUpdated, teamUpdated } from './messaging';
 import teamRoomSvc from './teamRoomService';
 import {
    createItem,
@@ -12,7 +13,8 @@ import {
    getTeamMembersByTeamId,
    getTeamsByIds,
    getTeamBySubscriberOrgIdAndName,
-   getUsersByIds
+   getUsersByIds,
+   updateItem
 } from './queries';
 
 
@@ -109,6 +111,51 @@ class TeamService {
             })
             .then(team => resolve(team))
             .catch(err => reject(err));
+      });
+   }
+
+   updateTeam(req, teamId, updateInfo, userId) {
+      return new Promise((resolve, reject) => {
+         getTeamMembersByTeamId(req, teamId)
+            .then((teamMembers) => {
+               if (teamMembers.length === 0) {
+                  throw new TeamNotExistError(teamId);
+               }
+
+               const subscriberUserIds = teamMembers.map(teamMember => teamMember.teamMemberInfo.subscriberUserId);
+               return getSubscriberUsersByIds(req, subscriberUserIds);
+            })
+            .then((subscriberUsers) => {
+               if (subscriberUsers.length === 0) {
+                  throw new NoPermissionsError(teamId);
+               }
+
+               const userIds = subscriberUsers.map(subscriberUser => subscriberUser.subscriberUserInfo.userId);
+               if (userIds.indexOf(userId) < 0) {
+                  throw new NoPermissionsError(teamId);
+               }
+
+               updateItem(req, -1, `${config.tablePrefix}teams`, 'teamId', teamId, { teamInfo: updateInfo });
+               return getTeamsByIds(req, [teamId]);
+            })
+            .then((teams) => {
+               resolve();
+
+               const team = teams[0].teamInfo;
+               _.merge(team, updateInfo); // Eventual consistency, so might be old.
+               team.teamId = teamId;
+               teamUpdated(req, team);
+               if ((updateInfo.preferences) && (updateInfo.preferences.private)) {
+                  teamPrivateInfoUpdated(req, team);
+               }
+            })
+            .catch((err) => {
+               if (err.code === 'ValidationException') {
+                  reject(new TeamNotExistError(teamId));
+               } else {
+                  reject(err);
+               }
+            });
       });
    }
 

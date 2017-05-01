@@ -11,8 +11,8 @@ router.route('/getTeamRooms')
 router.route('/createTeamRoom/:teamId')
    .post(validate(paramValidation.createTeamRoom), teamRooms.createTeamRoom);
 
-// router.route('/updateTeamRoom/:teamId')
-//    .patch(validate(paramValidation.updateTeamRoom), teamRooms.updateTeamRoom);
+router.route('/updateTeamRoom/:teamRoomId')
+   .patch(validate(paramValidation.updateTeamRoom), teamRooms.updateTeamRoom);
 
 router.route('/getMembers/:teamRoomId')
    .get(teamRooms.getTeamRoomMembers);

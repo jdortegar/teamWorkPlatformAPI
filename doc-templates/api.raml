@@ -676,6 +676,14 @@ documentation:
                   name:
                      type: string
                      required: true
+                  preferences:
+                     type: object
+                     required: false
+                     properties:
+                        private:
+                           description: Private preferences only available to the team administrators.
+                           type: object
+                           required: false
                example: |
                   {
                      "name": "My Team"
@@ -696,9 +704,12 @@ documentation:
                            required: true
                      example: |
                         {
-                          "teamId": "9dec8947-0381-4809-a053-b56777f782f5",
-                          "subscriberOrgId": "9dec8947-0381-4809-a053-b56777f782f4",
-                          "name": "My Team"
+                           "teamId": "9dec8947-0381-4809-a053-b56777f782f5",
+                           "subscriberOrgId": "9dec8947-0381-4809-a053-b56777f782f4",
+                           "name": "My Team",
+                           "preferences": {
+                              "private": {}
+                           }
                         }
                409:
                   description: |
@@ -708,6 +719,51 @@ documentation:
                   description: |
                      FORBIDDEN<br />
                      The user is not allowed to create a team within the specified subscriber organization.
+
+   /updateTeam:
+      /{teamId}:
+         uriParameters:
+            teamId:
+               description: Team ID to update.
+         patch:
+            description: |
+               Update a team in Habla.
+            body:
+               properties:
+                  name:
+                     type: string
+                     required: false
+                  preferences:
+                     type: object
+                     required: false
+                     properties:
+                        private:
+                           description: Private preferences only available to the team administrators.
+                           type: object
+                           required: false
+               example: |
+                  {
+                     "name": "My Org",
+                     "preferences": {
+                        "abc": "def",
+                        "private": {
+                           "xyz": "123"
+                        }
+                     }
+                  }
+            responses:
+               204:
+                  description: |
+                     NO_CONTENT<br />
+                     The team was updated successfully.
+               404:
+                  description: |
+                     NOT_FOUND<br />
+                     The `team` with the specified ID was not found.
+               403:
+                  description: |
+                     FORBIDDEN<br />
+                     The user is not allowed to update the specified team.
 
    /getMembers:
       /{teamId}:
@@ -928,6 +984,63 @@ documentation:
                   description: |
                      FORBIDDEN<br />
                      The user is not allowed to create a team room within the specified team.
+
+   /updateTeamRoom:
+      /{teamRoomId}:
+         uriParameters:
+            teamRoomId:
+               description: Team room to update.
+         patch:
+            description: |
+               Update a team room in Habla.
+            body:
+               properties:
+                  name:
+                     type: string
+                     required: true
+                  purpose:
+                     type: string | nil
+                     required: false
+                     default: nil
+                  publish:
+                     type: boolean
+                     required: true
+                  active:
+                     type: boolean
+                     required: true
+                  preferences:
+                     type: object
+                     required: false
+                     properties:
+                        private:
+                           description: Private preferences only available to the team administrators.
+                           type: object
+                           required: false
+               example: |
+                  {
+                     "name": "My Org",
+                     "publish": true,
+                     "active": false,
+                     "preferences": {
+                        "abc": "def",
+                        "private": {
+                           "xyz": "123"
+                        }
+                     }
+                  }
+            responses:
+               204:
+                  description: |
+                     NO_CONTENT<br />
+                     The team was updated successfully.
+               404:
+                  description: |
+                     NOT_FOUND<br />
+                     The `team` with the specified ID was not found.
+               403:
+                  description: |
+                     FORBIDDEN<br />
+                     The user is not allowed to update the specified team.
 
    /getMembers:
       /{teamRoomId}:
