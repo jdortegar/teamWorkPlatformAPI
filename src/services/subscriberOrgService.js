@@ -1,8 +1,9 @@
 import _ from 'lodash';
 import uuid from 'uuid';
 import config from '../config/env';
-import { subscriberOrgCreated, subscriberOrgPrivateInfoUpdated, subscriberOrgUpdated } from './messaging';
 import { NoPermissionsError, SubscriberOrgExistsError, SubscriberOrgNotExistError } from './errors';
+import { subscriberOrgCreated, subscriberOrgPrivateInfoUpdated, subscriberOrgUpdated } from './messaging';
+import Roles from './roles';
 import teamSvc from './teamService';
 import {
    createItem,
@@ -55,7 +56,8 @@ class SubscriberOrgService {
             .then(() => {
                const subscriberUser = {
                   userId,
-                  subscriberOrgId: actualSubscriberOrgId
+                  subscriberOrgId: actualSubscriberOrgId,
+                  role: Roles.admin
                };
                return createItem(req, -1, `${config.tablePrefix}subscriberUsers`, 'subscriberUserId', subscriberUserId, 'subscriberUserInfo', subscriberUser);
             })

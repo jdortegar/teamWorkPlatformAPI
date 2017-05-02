@@ -61,7 +61,7 @@ class UserService {
 
                   return Promise.all([
                      addUserToCache(req, email, userId, status),
-                     createItem(req, -1, `${config.tablePrefix}subscriberOrgs`, 'userId', userId, 'userInfo', user),
+                     createItem(req, -1, `${config.tablePrefix}users`, 'userId', userId, 'userInfo', user),
                      subscriberOrgSvc.createSubscriberOrgUsingBaseName(req, { name: subscriberOrgName }, userId, subscriberOrgId)
                   ]);
                }
@@ -91,6 +91,8 @@ class UserService {
                }
             })
             .catch((err) => {
+               console.log('\n\nAD: 1');
+               console.error(err);
                reject(err);
             });
       });

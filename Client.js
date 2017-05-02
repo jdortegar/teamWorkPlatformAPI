@@ -2,6 +2,7 @@ import axios from 'axios';
 import prompt from 'prompt';
 import IO from 'socket.io-client';
 import SocketIOWildcard from 'socketio-wildcard';
+import { EventTypes } from './src/services/messaging/MessagingService';
 
 export default class Messaging {
    url;
@@ -65,10 +66,18 @@ export default class Messaging {
             })
             .on('unauthorized', (error) => {
                console.log(`Messaging unauthorized.  ${JSON.stringify(error)}`);
+               if ((error.data.type === 'UnauthorizedError') || (error.data.code === 'invalid_token')) {
+                  // redirect user to login page perhaps?
+                  console.log("User's token has expired");
+               }
                reject();
             });
          });
       });
+   }
+
+   typing(conversationId, isTyping) {
+      this.socket.send(EventTypes.typing, { conversationId, isTyping });
    }
 
    printPingMessages(printPing = true) {
@@ -445,6 +454,7 @@ function chat(conversation) {
             if (continueChat) {
                resolve(chat(conversation));
             }
+            messaging.typing(conversation.conversationId, false);
             resolve();
          })
          .catch((err) => {
@@ -455,6 +465,7 @@ function chat(conversation) {
                }
                resolve(chat(conversation));
             } else {
+               messaging.typing(conversation.conversationId, false);
                reject(err);
             }
          });
@@ -553,6 +564,7 @@ function mainMenu() {
 
                         if (chatConversations.length === 1) {
                            console.log('\nStart chatting!  Enter the word "transcript" to get the full transcript.  Enter the word "exit" to exit chat.');
+                           messaging.typing(chatConversations[0].conversationId, true);
                            return chat(chatConversations[0]);
                         }
                         return Promise.resolve();

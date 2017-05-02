@@ -281,7 +281,7 @@ export function createItem(req, partitionId, tableName, sortKeyName, sortKey, in
    params.Item[sortKeyName] = sortKey;
    params.Item[infoName] = info;
 
-   return _docClient.put(params).promise();
+   return docClient().put(params).promise();
 }
 
 export function updateItem(req, partitionId, tableName, sortKeyName, sortKey, updateInfo) {
@@ -345,13 +345,13 @@ export function getSubscriberUsersBySubscriberOrgId(req, subscriberOrgId) {
    return filteredScanValueIn(req, tableName, 'subscriberUserInfo.subscriberOrgId', [subscriberOrgId]);
 }
 
-export function getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId) {
-   if ((userId === undefined) || (subscriberOrgId === undefined)) {
-      return Promise.reject('userId and subscriberOrgId needs to be specified.');
+export function getSubscriberUsersByUserIdAndSubscriberOrgIdAndRole(req, userId, subscriberOrgId, role) {
+   if ((userId === undefined) || (subscriberOrgId === undefined) || (role === undefined)) {
+      return Promise.reject('userId, subscriberOrgId, and role needs to be specified.');
    }
 
    const tableName = `${config.tablePrefix}subscriberUsers`;
-   return filteredScan(req, tableName, { subscriberUserInfo: { userId, subscriberOrgId } });
+   return filteredScan(req, tableName, { subscriberUserInfo: { userId, subscriberOrgId, role } });
 }
 
 
@@ -390,6 +390,16 @@ export function getTeamBySubscriberOrgIdAndName(req, subscriberOrgId, name) {
 
    const tableName = `${config.tablePrefix}teams`;
    return filteredScan(req, tableName, { teamInfo: { subscriberOrgId, name } });
+}
+
+
+export function getTeamMembersByTeamIdAndUserIdAndRole(req, teamId, userId, role) {
+   if ((teamId === undefined) || (userId === undefined) || (role === undefined)) {
+      return Promise.reject('teamId, userId, and role needs to be specified.');
+   }
+
+   const tableName = `${config.tablePrefix}teamMembers`;
+   return filteredScan(req, tableName, { teamMemberInfo: { teamId, userId, role } });
 }
 
 export function getTeamMembersBySubscriberUserIds(req, subscriberUserIds) {

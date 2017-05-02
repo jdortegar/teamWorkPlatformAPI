@@ -1,6 +1,7 @@
 import uuid from 'uuid';
 import config from '../config/env';
 import conversationSvc from './conversationService';
+import { NoPermissionsError, TeamRoomExistsError, TeamRoomNotExistError } from './errors';
 import { teamRoomCreated, teamRoomPrivateInfoUpdated, teamRoomUpdated } from './messaging';
 import {
    createItem,
@@ -8,7 +9,7 @@ import {
    getSubscriberUsersByUserIds,
    getTeamMembersByIds,
    getTeamMembersBySubscriberUserIds,
-   getTeamMembersByTeamId,
+   getTeamMembersByTeamIdAndUserIdAndRole,
    getTeamRoomMembersByTeamMemberIds,
    getTeamRoomMembersByTeamRoomId,
    getTeamRoomsByIds,
@@ -16,7 +17,7 @@ import {
    getUsersByIds,
    updateItem
 } from './queries';
-import { NoPermissionsError, TeamRoomExistsError, TeamRoomNotExistError } from './errors';
+import Roles from './roles';
 
 
 class TeamRoomService {
@@ -78,7 +79,8 @@ class TeamRoomService {
                const teamRoomMember = {
                   teamMemberId,
                   teamRoomId: actualTeamRoomId,
-                  userId
+                  userId,
+                  role: Roles.admin
                };
                return createItem(req, -1, `${config.tablePrefix}teamRoomMembers`, 'teamRoomMemberId', teamRoomMemberId, 'teamRoomMemberInfo', teamRoomMember);
             })
@@ -96,29 +98,16 @@ class TeamRoomService {
 
    createTeamRoom(req, teamId, teamRoomInfo, userId, teamRoomId = undefined) {
       return new Promise((resolve, reject) => {
-         let teamMembers;
          let teamMemberId;
 
          // TODO: if (userId), check canCreateTeamRoom() -> false, throw NoPermissionsError
-         getTeamMembersByTeamId(req, teamId)
-            .then((retrievedTeamMembers) => {
-               teamMembers = retrievedTeamMembers;
+         getTeamMembersByTeamIdAndUserIdAndRole(req, teamId, userId, Roles.admin)
+            .then((teamMembers) => {
                if (teamMembers.length === 0) {
                   throw new NoPermissionsError(teamId);
                }
 
-               return getSubscriberUsersByUserIds(req, [userId]);
-            })
-            .then((subscriberUsers) => {
-               const isTeamMember = subscriberUsers.some((subscriberUser) => {
-                  return teamMembers.some((teamMember) => {
-                     return (teamMember.teamMemberInfo.subscriberUserId === subscriberUser.subscriberUserId);
-                  });
-               });
-               if (!isTeamMember) {
-                  throw new NoPermissionsError(teamId);
-               }
-
+               teamMemberId = teamMembers[0].teamMemberId;
                return getTeamRoomsByTeamIdAndName(req, teamId, teamRoomInfo.name);
             })
             .then((teamRooms) => {
@@ -135,40 +124,27 @@ class TeamRoomService {
 
    updateTeamRoom(req, teamRoomId, updateInfo, userId) {
       return new Promise((resolve, reject) => {
-         getTeamRoomMembersByTeamRoomId(req, teamRoomId)
-            .then((teamRoomMembers) => {
-               if (teamRoomMembers.length === 0) {
+         let dbTeamRoom;
+         getTeamRoomsByIds(req, [teamRoomId])
+            .then((teamRooms) => {
+               if (teamRooms.length === 0) {
                   throw new TeamRoomNotExistError(teamRoomId);
                }
 
-               const teamMemberIds = teamRoomMembers.map(teamRoomMember => teamRoomMember.teamRoomMemberInfo.teamMemberId);
-               return getTeamMembersByIds(req, teamMemberIds);
+               dbTeamRoom = teamRooms[0];
+               return getTeamMembersByTeamIdAndUserIdAndRole(req, dbTeamRoom.teamRoomId, userId, Roles.admin);
             })
             .then((teamMembers) => {
                if (teamMembers.length === 0) {
                   throw new NoPermissionsError(teamRoomId);
                }
 
-               const subscriberUserIds = teamMembers.map(teamMember => teamMember.teamMemberInfo.subscriberUserId);
-               return getSubscriberUsersByIds(req, subscriberUserIds);
-            })
-            .then((subscriberUsers) => {
-               if (subscriberUsers.length === 0) {
-                  throw new NoPermissionsError(teamRoomId);
-               }
-
-               const userIds = subscriberUsers.map(subscriberUser => subscriberUser.subscriberUserInfo.userId);
-               if (userIds.indexOf(userId) < 0) {
-                  throw new NoPermissionsError(teamRoomId);
-               }
-
                updateItem(req, -1, `${config.tablePrefix}teamRooms`, 'teamRoomId', teamRoomId, { teamRoomInfo: updateInfo });
-               return getTeamRoomsByIds(req, [teamRoomId]);
             })
-            .then((teamRooms) => {
+            .then(() => {
                resolve();
 
-               const teamRoom = teamRooms[0].teamRoomInfo;
+               const teamRoom = dbTeamRoom.teamRoomInfo;
                _.merge(teamRoom, updateInfo); // Eventual consistency, so might be old.
                teamRoom.teamRoomId = teamRoomId;
                teamRoomUpdated(req, teamRoom);

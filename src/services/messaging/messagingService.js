@@ -28,6 +28,7 @@ export const EventTypes = Object.freeze({
    conversationCreated: 'conversationCreated',
    conversationUpdated: 'conversationUpdated',
    messageCreated: 'messageCreated',
+   typing: 'typing',
    from(value) { return (this[value]); }
 });
 
@@ -135,7 +136,7 @@ class MessagingService {
       const userId = socket.decoded_token._id;
       console.log(`MessagingService: User connected. sId=${socket.id} userId=${userId} ${socket.decoded_token.email}`);
 
-      console.log(`AD: TODO: use this to deduce client type:  address=${socket.handshake.address}, user-agent=${socket.handshake.headers['user-agent']}`);
+      console.log(`AD: TODO: use this to deduce client type:  address=${socket.client.conn.remoteAddress}, user-agent=${socket.client.request.headers['user-agent']}`);
       const req = { app, now: moment.utc() };
       this._joinCurrentChannels(req, socket, userId);
       this._presenceChanged(req, userId, PresenceStatuses.available);
@@ -222,7 +223,16 @@ class MessagingService {
 
    _message(socket, eventType, event) {
       // Drop this on the floor.  User is trying to send a message via websockets.
-      console.warn(`MessagingService: Message received from sId=${socket.id} userId=${socket.decoded_token._id} ${socket.decoded_token.email}. eventType=${eventType}, event=${event}`);
+      if (eventType === EventTypes.typing) {
+         const conversationId = event.conversationId;
+         if (conversationId) {
+            const userId = socket.decoded_token._id;
+            const channel = ChannelFactory.conversationChannel(conversationId);
+            socket.to(channel).emit(eventType, { userId, conversationId, isTyping: event.isTyping });
+         }
+      } else {
+         console.warn(`MessagingService: Droping Message received from sId=${socket.id} userId=${socket.decoded_token._id} ${socket.decoded_token.email}. eventType=${eventType}, event=${event}`);
+      }
    }
 
 
@@ -230,7 +240,7 @@ class MessagingService {
       return new Promise((resolve, reject) => {
          if (channels) {
             channels.forEach((channel) => {
-               this.io.to(channel).emit(eventType, event);
+               this.io.in(channel).emit(eventType, event);
             });
          } else {
             this.io.emit(eventType, event);
