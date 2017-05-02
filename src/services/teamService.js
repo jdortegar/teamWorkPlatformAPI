@@ -3,11 +3,12 @@ import uuid from 'uuid';
 import config from '../config/env';
 import { NoPermissionsError, TeamExistsError, TeamNotExistError } from './errors';
 import { teamCreated, teamPrivateInfoUpdated, teamUpdated } from './messaging';
+import Roles from './roles';
 import teamRoomSvc from './teamRoomService';
 import {
    createItem,
    getSubscriberUsersByIds,
-   getSubscriberUserByUserIdAndSubscriberOrgId,
+   getSubscriberUsersByUserIdAndSubscriberOrgIdAndRole,
    getSubscriberUsersByUserIds,
    getTeamMembersBySubscriberUserIds,
    getTeamMembersByTeamId,
@@ -67,7 +68,8 @@ class TeamService {
                const teamMember = {
                   subscriberUserId,
                   teamId: actualTeamId,
-                  userId
+                  userId,
+                  role: Roles.admin
                };
                return createItem(req, -1, `${config.tablePrefix}teamMembers`, 'teamMemberId', teamMemberId, 'teamMemberInfo', teamMember);
             })
@@ -76,7 +78,7 @@ class TeamService {
                teamCreated(req, team, userId);
 
                const teamRoom = {
-                  name: 'Lobby',
+                  name: `${team.name} Lobby`,
                   purpose: undefined,
                   publish: true,
                   active: true
@@ -92,8 +94,7 @@ class TeamService {
       return new Promise((resolve, reject) => {
          let subscriberUserId;
 
-         // TODO: if (userId), check canCreateTeam() -> false, throw NoPermissionsError
-         getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId)
+         getSubscriberUsersByUserIdAndSubscriberOrgIdAndRole(req, userId, subscriberOrgId, Roles.admin)
             .then((subscriberUsers) => {
                if (subscriberUsers.length === 0) {
                   throw new NoPermissionsError(subscriberOrgId);
@@ -116,32 +117,27 @@ class TeamService {
 
    updateTeam(req, teamId, updateInfo, userId) {
       return new Promise((resolve, reject) => {
-         getTeamMembersByTeamId(req, teamId)
-            .then((teamMembers) => {
-               if (teamMembers.length === 0) {
+         let dbTeam;
+         getTeamsByIds(req, [teamId])
+            .then((teams) => {
+               if (teams.length === 0) {
                   throw new TeamNotExistError(teamId);
                }
 
-               const subscriberUserIds = teamMembers.map(teamMember => teamMember.teamMemberInfo.subscriberUserId);
-               return getSubscriberUsersByIds(req, subscriberUserIds);
+               dbTeam = teams[0];
+               return getSubscriberUsersByUserIdAndSubscriberOrgIdAndRole(req, userId, dbTeam.teamInfo.subscriberOrgId, Roles.admin);
             })
             .then((subscriberUsers) => {
                if (subscriberUsers.length === 0) {
                   throw new NoPermissionsError(teamId);
                }
 
-               const userIds = subscriberUsers.map(subscriberUser => subscriberUser.subscriberUserInfo.userId);
-               if (userIds.indexOf(userId) < 0) {
-                  throw new NoPermissionsError(teamId);
-               }
-
                updateItem(req, -1, `${config.tablePrefix}teams`, 'teamId', teamId, { teamInfo: updateInfo });
-               return getTeamsByIds(req, [teamId]);
             })
-            .then((teams) => {
+            .then(() => {
                resolve();
 
-               const team = teams[0].teamInfo;
+               const team = dbTeam.teamInfo;
                _.merge(team, updateInfo); // Eventual consistency, so might be old.
                team.teamId = teamId;
                teamUpdated(req, team);
