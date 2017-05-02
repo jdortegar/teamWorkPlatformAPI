@@ -160,27 +160,33 @@ class SubscriberOrgService {
     * @returns {Promise}
     */
    getSubscriberOrgUsers(req, subscriberOrgId, userId = undefined) {
+      const userIdsRoles = {};
+
       return new Promise((resolve, reject) => {
-         getSubscriberOrgsByIds(req, [subscriberOrgId])
-            .then((subscriberOrgs) => {
-               if (subscriberOrgs.length === 0) {
-                  throw new SubscriberOrgNotExistError(subscriberOrgId);
-               }
-               return getSubscriberUsersBySubscriberOrgId(req, subscriberOrgId);
-            })
+         getSubscriberUsersBySubscriberOrgId(req, subscriberOrgId)
             .then((subscriberUsers) => {
                if (subscriberUsers.length === 0) {
-                  throw new NoPermissionsError(subscriberOrgId);
+                  throw new SubscriberOrgNotExistError(subscriberOrgId);
                }
 
-               const userIds = subscriberUsers.map(subscriberUser => subscriberUser.subscriberUserInfo.userId);
+               const userIds = subscriberUsers.map((subscriberUser) => {
+                  userIdsRoles[subscriberUser.subscriberUserInfo.userId] = subscriberUser.subscriberUserInfo.role;
+                  return subscriberUser.subscriberUserInfo.userId;
+               });
                if ((userId) && (userIds.indexOf(userId)) < 0) {
                   throw new NoPermissionsError(subscriberOrgId);
                }
 
                return getUsersByIds(req, userIds);
             })
-            .then(users => resolve(users))
+            .then((users) => {
+               const usersWithRoles = users.map((user) => {
+                  const ret = _.cloneDeep(user);
+                  ret.userInfo.role = userIdsRoles[user.userId];
+                  return ret;
+               });
+               resolve(usersWithRoles);
+            })
             .catch(err => reject(err));
       });
    }

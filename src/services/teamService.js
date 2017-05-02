@@ -167,33 +167,33 @@ class TeamService {
     * @returns {Promise}
     */
    getTeamUsers(req, teamId, userId = undefined) {
+      const userIdsRoles = {};
+
       return new Promise((resolve, reject) => {
-         getTeamsByIds(req, [teamId])
-            .then((teams) => {
-               if (teams.length === 0) {
-                  throw new TeamNotExistError(teamId);
-               }
-               return getTeamMembersByTeamId(req, teamId);
-            })
+         getTeamMembersByTeamId(req, teamId)
             .then((teamMembers) => {
                if (teamMembers.length === 0) {
-                  throw new NoPermissionsError(teamId);
+                  throw new TeamNotExistError(teamId);
                }
 
-               const subscriberUserIds = teamMembers.map((teamMember) => {
-                  return teamMember.teamMemberInfo.subscriberUserId;
+               const userIds = teamMembers.map((teamMember) => {
+                  userIdsRoles[teamMember.teamMemberInfo.userId] = teamMember.teamMemberInfo.role;
+                  return teamMember.teamMemberInfo.userId;
                });
-               return getSubscriberUsersByIds(req, subscriberUserIds);
-            })
-            .then((subscriberUsers) => {
-               const userIds = subscriberUsers.map(subscriberUser => subscriberUser.subscriberUserInfo.userId);
                if ((userId) && (userIds.indexOf(userId)) < 0) {
                   throw new NoPermissionsError(teamId);
                }
 
                return getUsersByIds(req, userIds);
             })
-            .then(users => resolve(users))
+            .then((users) => {
+               const usersWithRoles = users.map((user) => {
+                  const ret = _.cloneDeep(user);
+                  ret.userInfo.role = userIdsRoles[user.userId];
+                  return ret;
+               });
+               resolve(usersWithRoles);
+            })
             .catch(err => reject(err));
       });
    }

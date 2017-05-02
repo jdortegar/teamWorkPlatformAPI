@@ -1,3 +1,4 @@
+import _ from 'lodash';
 import uuid from 'uuid';
 import config from '../config/env';
 import conversationSvc from './conversationService';
@@ -174,37 +175,33 @@ class TeamRoomService {
     * @returns {Promise}
     */
    getTeamRoomUsers(req, teamRoomId, userId = undefined) {
+      const userIdsRoles = {};
+
       return new Promise((resolve, reject) => {
-         getTeamRoomsByIds(req, [teamRoomId])
-            .then((teamRooms) => {
-               if (teamRooms.length === 0) {
-                  throw new TeamRoomNotExistError(teamRoomId);
-               }
-               return getTeamRoomMembersByTeamRoomId(req, teamRoomId);
-            })
+         getTeamRoomMembersByTeamRoomId(req, teamRoomId)
             .then((teamRoomMembers) => {
                if (teamRoomMembers.length === 0) {
-                  throw new NoPermissionsError(teamRoomId);
+                  throw new TeamRoomNotExistError(teamRoomId);
                }
 
-               const teamMemberIds = teamRoomMembers.map(teamRoomMember => teamRoomMember.teamRoomMemberInfo.teamMemberId);
-               return getTeamMembersByIds(req, teamMemberIds);
-            })
-            .then((teamMembers) => {
-               const subscriberUserIds = teamMembers.map((teamMember) => {
-                  return teamMember.teamMemberInfo.subscriberUserId;
+               const userIds = teamRoomMembers.map((teamRoomMember) => {
+                  userIdsRoles[teamRoomMember.teamRoomMemberInfo.userId] = teamRoomMember.teamRoomMemberInfo.role;
+                  return teamRoomMember.teamRoomMemberInfo.userId;
                });
-               return getSubscriberUsersByIds(req, subscriberUserIds);
-            })
-            .then((subscriberUsers) => {
-               const userIds = subscriberUsers.map(subscriberUser => subscriberUser.subscriberUserInfo.userId);
                if ((userId) && (userIds.indexOf(userId)) < 0) {
                   throw new NoPermissionsError(teamRoomId);
                }
 
                return getUsersByIds(req, userIds);
             })
-            .then(users => resolve(users))
+            .then((users) => {
+               const usersWithRoles = users.map((user) => {
+                  const ret = _.cloneDeep(user);
+                  ret.userInfo.role = userIdsRoles[user.userId];
+                  return ret;
+               });
+               resolve(usersWithRoles);
+            })
             .catch(err => reject(err));
       });
    }
