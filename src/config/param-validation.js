@@ -64,6 +64,13 @@ const validationSchemas = {
          })
       }
    },
+   inviteSubscribers: {
+      body: {
+         userIdOrEmails: Joi.array().min(1).items(
+            Joi.string().min(1).required()
+         ).required()
+      }
+   },
    createTeam: {
       body: {
          name: Joi.string().min(1).required(),

@@ -148,42 +148,6 @@ documentation:
 
 /users:
 
-   /validateEmail:
-      /{rid}:
-         uriParameters:
-            rid:
-               description: Reservation ID (rid).
-         get:
-            description: |
-               Retrieve the email address associated with a Reservation ID (`rid`).
-               <br /><br />
-               The reservation should have been previously created from the `POST /users/registerUser` endpoint, and is valid until expired.
-               Use this method to obtain the email address associated with a rid, typically for display purposes.
-            responses:
-               200:
-                  description: |
-                     OK<br />
-                     The uuid is the Reservation ID (rid).
-                  body:
-                     properties:
-                        status:
-                           type: string
-                           required: true
-                           example: SUCCESS
-                        email:
-                           type: string
-                           required: true
-                           example: anthony.daga%40habla.ai
-                     example: |
-                        {
-                          "status": "SUCCESS",
-                          "email": "anthony.daga%40habla.ai"
-                        }
-               404:
-                  description: |
-                     NOT_FOUND<br />
-                     The Reservation ID either does not exist or is no longer valid (i.e. expired).
-
    /registerUser:
       post:
          description: |
@@ -228,6 +192,42 @@ documentation:
                description: |
                   BAD_REQUEST<br />
                   No reason is given for privacy purposes, but could be an unknown username or bad password.
+
+   /validateEmail:
+      /{rid}:
+         uriParameters:
+            rid:
+               description: Reservation ID (rid).
+         get:
+            description: |
+               Retrieve the email address associated with a Reservation ID (`rid`).
+               <br /><br />
+               The reservation should have been previously created from the `POST /users/registerUser` endpoint, and is valid until expired.
+               Use this method to obtain the email address associated with a rid, typically for display purposes.
+            responses:
+               200:
+                  description: |
+                     OK<br />
+                     The uuid is the Reservation ID (rid).
+                  body:
+                     properties:
+                        status:
+                           type: string
+                           required: true
+                           example: SUCCESS
+                        email:
+                           type: string
+                           required: true
+                           example: anthony.daga%40habla.ai
+                     example: |
+                        {
+                          "status": "SUCCESS",
+                          "email": "anthony.daga%40habla.ai"
+                        }
+               404:
+                  description: |
+                     NOT_FOUND<br />
+                     The Reservation ID either does not exist or is no longer valid (i.e. expired).
 
    /createUser:
       post:
@@ -340,7 +340,6 @@ documentation:
                   description: The user's avatar, base64 of image.
                   type: string | nil
                   required: false
-                  default: nil
                preferences:
                   type: object
                   required: false
@@ -616,6 +615,45 @@ documentation:
                      FORBIDDEN<br />
                      The user doesn't have permissions to view this subscriber organization.
 
+   /inviteSubscribers:
+      /{subscriberOrgId}:
+         uriParameters:
+            subscriberOrgId:
+               description: subscriberOrg ID to invite users to.
+         post:
+            description: |
+               Invite a user to the specified subscriberOrg.
+               The requesting user must be an admin of the specified subscriberOrg.
+            body:
+               properties:
+                  userIdOrEmails:
+                     type: array
+                     required: true
+                     minItems: 1
+                     items:
+                        type: string
+                        required: true
+               example: |
+                  {
+                     "userIdOrEmails": [
+                        "9dec8947-0381-4809-a053-b56777f782f4",
+                        "anthony@habla.ai"
+                     ]
+                  }
+            responses:
+               202:
+                  description: |
+                     ACCEPTED<br />
+                     The specified users have been invited and pending acceptance.
+               404:
+                  description: |
+                     NOT_FOUND<br />
+                     The subscriberOrg with the given `subscriberOrgId` doesn't exist, or any specified userIds don't exist.
+               403:
+                  description: |
+                     FORBIDDEN<br />
+                     The user doesn't have permissions to invite users to this subscriberOrg.
+
 
 /teams:
 
@@ -842,6 +880,44 @@ documentation:
                   description: |
                      FORBIDDEN<br />
                      The user doesn't have permissions to view this team.
+
+   /inviteMembers:
+      /{teamId}:
+         uriParameters:
+            teamId:
+               description: Team ID to invite users to.
+         post:
+            description: |
+               Invite a user to the specified team.
+               The requesting user must be an admin of the specified team.
+            body:
+               properties:
+                  userIds:
+                     type: array
+                     required: true
+                     minItems: 1
+                     items:
+                        type: string
+                        required: true
+               example: |
+                  {
+                     "userIds": [
+                        "9dec8947-0381-4809-a053-b56777f782f4"
+                     ]
+                  }
+            responses:
+               202:
+                  description: |
+                     ACCEPTED<br />
+                     The specified users have been invited and pending acceptance.
+               404:
+                  description: |
+                     NOT_FOUND<br />
+                     The team with the given `teamId` doesn't exist.
+               403:
+                  description: |
+                     FORBIDDEN<br />
+                     The user doesn't have permissions to invite users to this team.
 
 
 /teamRooms:
@@ -1119,6 +1195,44 @@ documentation:
                   description: |
                      FORBIDDEN<br />
                      The user doesn't have permissions to view this team room.
+
+   /inviteMembers:
+      /{teamRoomId}:
+         uriParameters:
+            teamRoomId:
+               description: Team room ID to invite users to.
+         post:
+            description: |
+               Invite a user to the specified team room.
+               The requesting user must be an admin of the specified team room.
+            body:
+               properties:
+                  userIds:
+                     type: array
+                     required: true
+                     minItems: 1
+                     items:
+                        type: string
+                        required: true
+               example: |
+                  {
+                     "userIds": [
+                        "9dec8947-0381-4809-a053-b56777f782f4"
+                     ]
+                  }
+            responses:
+               202:
+                  description: |
+                     ACCEPTED<br />
+                     The specified users have been invited and pending acceptance.
+               404:
+                  description: |
+                     NOT_FOUND<br />
+                     The team room with the given `teamRoomId` doesn't exist.
+               403:
+                  description: |
+                     FORBIDDEN<br />
+                     The user doesn't have permissions to invite users to this team room.
 
 /conversations:
 

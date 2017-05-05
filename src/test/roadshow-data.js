@@ -38,17 +38,17 @@ var userOrgSubs = [
    [
       { Item: { userInfo: { emailAddress: 'robert.abbott@habla.ai', firstName: 'Rob', lastName: 'Abbott', displayName: 'Rob Abbott', country: 'US', timeZone: 'America/Los_Angeles', icon: null, preferences: { private: {} }, password: '$2a$11$fT4XWeKcQqW3daoSJdKILO4UDJIXNmtqimkvoj.y2PjEOcRhCVLZG' }, userId: 'ea794510-cea6-4132-ae22-a7ae1d32abb2', partitionId: -1 }, TableName: tablePrefix + 'users' },
       { Item: { subscriberOrgInfo: { name: 'Rob Abbott', preferences: { private: {} } }, subscriberOrgId: 'ea794510-cea6-4132-ae22-a7ae1d32abb3', partitionId: -1 }, TableName: tablePrefix + 'subscriberOrgs' },
-      { Item: { subscriberUserInfo: { userId: 'ea794510-cea6-4132-ae22-a7ae1d32abb2', subscriberOrgId: 'ea794510-cea6-4132-ae22-a7ae1d32abb3' }, subscriberUserId: 'ea794510-cea6-4132-ae22-a7ae1d32abb4', partitionId: -1 }, TableName: tablePrefix + 'subscriberUsers' }
+      { Item: { subscriberUserInfo: { userId: 'ea794510-cea6-4132-ae22-a7ae1d32abb2', subscriberOrgId: 'ea794510-cea6-4132-ae22-a7ae1d32abb3', role: 'admin' }, subscriberUserId: 'ea794510-cea6-4132-ae22-a7ae1d32abb4', partitionId: -1 }, TableName: tablePrefix + 'subscriberUsers' }
    ],
    [
       { Item: { userInfo: { emailAddress: 'anthony.daga@habla.ai', firstName: 'Anthony', lastName: 'Daga', displayName: 'Anthony Daga', country: 'US', timeZone: 'America/Los_Angeles', icon: null, preferences: { private: {} }, password: '$2a$11$fT4XWeKcQqW3daoSJdKILO4UDJIXNmtqimkvoj.y2PjEOcRhCVLZG' }, userId: 'ea794510-cea6-4132-ae22-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'users' },
       { Item: { subscriberOrgInfo: { name: 'Anthony Daga', preferences: { private: {} } }, subscriberOrgId: 'ea794510-cea6-4132-ae22-a7ae1d32abb6', partitionId: -1 }, TableName: tablePrefix + 'subscriberOrgs' },
-      { Item: { subscriberUserInfo: { userId: 'ea794510-cea6-4132-ae22-a7ae1d32abb5', subscriberOrgId: 'ea794510-cea6-4132-ae22-a7ae1d32abb6' }, subscriberUserId: 'ea794510-cea6-4132-ae22-a7ae1d32abb7', partitionId: -1 }, TableName: tablePrefix + 'subscriberUsers' }
+         { Item: { subscriberUserInfo: { userId: 'ea794510-cea6-4132-ae22-a7ae1d32abb5', subscriberOrgId: 'ea794510-cea6-4132-ae22-a7ae1d32abb6', role: 'admin' }, subscriberUserId: 'ea794510-cea6-4132-ae22-a7ae1d32abb7', partitionId: -1 }, TableName: tablePrefix + 'subscriberUsers' }
    ],
    [
       { Item: { userInfo: { emailAddress: 'son.dao@habla.ai', firstName: 'Son', lastName: 'Dao', displayName: 'Son Dao', country: 'US', timeZone: 'America/Los_Angeles', icon: null, preferences: { private: {} }, password: '$2a$11$fT4XWeKcQqW3daoSJdKILO4UDJIXNmtqimkvoj.y2PjEOcRhCVLZG' }, userId: 'ea794510-cea6-4132-0000-aa8e1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'users' },
       { Item: { subscriberOrgInfo: { name: 'Son Dao', preferences: { private: {} } }, subscriberOrgId: 'ea794510-cea6-4132-0001-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'subscriberOrgs' },
-      { Item: { subscriberUserInfo: { userId: 'ea794510-cea6-4132-0000-a7ae1d32abb5', subscriberOrgId: 'ea794510-cea6-4132-0001-a7ae1d32abb5' }, subscriberUserId: 'ea794510-cea6-4132-0002-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'subscriberUsers' }
+      { Item: { subscriberUserInfo: { userId: 'ea794510-cea6-4132-0000-a7ae1d32abb5', subscriberOrgId: 'ea794510-cea6-4132-0001-a7ae1d32abb5', role: 'admin' }, subscriberUserId: 'ea794510-cea6-4132-0002-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'subscriberUsers' }
    ]
 ];
 addDocuments(userOrgSubs);
@@ -64,8 +64,8 @@ addDocuments(subscriberOrgs);
 
 // Add users to subscriberOrg 'Acme'.
 var userSubscriberOrgs = [
-   { Item: { subscriberUserInfo: { userId: 'ea794510-cea6-4132-ae22-a7ae1d32abb2', subscriberOrgId: 'ea794510-cea6-4132-ae22-a7ae1d324400' }, subscriberUserId: 'ea794510-cea6-4132-ae22-a7ae1d320010', partitionId: -1 }, TableName: tablePrefix + 'subscriberUsers' },
-   { Item: { subscriberUserInfo: { userId: 'ea794510-cea6-4132-ae22-a7ae1d32abb5', subscriberOrgId: 'ea794510-cea6-4132-ae22-a7ae1d324400' }, subscriberUserId: 'ea794510-cea6-4132-ae22-a7ae1d320011', partitionId: -1 }, TableName: tablePrefix + 'subscriberUsers' }
+   { Item: { subscriberUserInfo: { userId: 'ea794510-cea6-4132-ae22-a7ae1d32abb2', subscriberOrgId: 'ea794510-cea6-4132-ae22-a7ae1d324400', role: 'admin' }, subscriberUserId: 'ea794510-cea6-4132-ae22-a7ae1d320010', partitionId: -1 }, TableName: tablePrefix + 'subscriberUsers' },
+   { Item: { subscriberUserInfo: { userId: 'ea794510-cea6-4132-ae22-a7ae1d32abb5', subscriberOrgId: 'ea794510-cea6-4132-ae22-a7ae1d324400', role: 'admin' }, subscriberUserId: 'ea794510-cea6-4132-ae22-a7ae1d320011', partitionId: -1 }, TableName: tablePrefix + 'subscriberUsers' }
 ];
 addDocuments(userSubscriberOrgs);
 
@@ -80,8 +80,8 @@ addDocuments(teams);
 
 // Add teamMembers to 'A Team'.
 var teamMembers = [
-   { Item: { teamMemberInfo: { subscriberUserId: 'ea794510-cea6-4132-ae22-a7ae1d32abb4', teamId: 'ea794510-cea6-4132-ae22-a7ae1d321111' }, teamMemberId: 'ea794510-cea6-4132-ae22-a7ae1d323000', partitionId: -1 }, TableName: tablePrefix + 'teamMembers' },
-   { Item: { teamMemberInfo: { subscriberUserId: 'ea794510-cea6-4132-ae22-a7ae1d32abb7', teamId: 'ea794510-cea6-4132-ae22-a7ae1d321111' }, teamMemberId: 'ea794510-cea6-4132-ae22-a7ae1d323001', partitionId: -1 }, TableName: tablePrefix + 'teamMembers' }
+   { Item: { teamMemberInfo: { subscriberUserId: 'ea794510-cea6-4132-ae22-a7ae1d32abb4', teamId: 'ea794510-cea6-4132-ae22-a7ae1d321111', userId: 'ea794510-cea6-4132-ae22-a7ae1d32abb2', role: 'admin' }, teamMemberId: 'ea794510-cea6-4132-ae22-a7ae1d323000', partitionId: -1 }, TableName: tablePrefix + 'teamMembers' },
+   { Item: { teamMemberInfo: { subscriberUserId: 'ea794510-cea6-4132-ae22-a7ae1d32abb7', teamId: 'ea794510-cea6-4132-ae22-a7ae1d321111', userId: 'ea794510-cea6-4132-ae22-a7ae1d32abb5', role: 'admin' }, teamMemberId: 'ea794510-cea6-4132-ae22-a7ae1d323001', partitionId: -1 }, TableName: tablePrefix + 'teamMembers' }
 ];
 addDocuments(teamMembers);
 
@@ -96,8 +96,8 @@ addDocuments(teamRooms);
 
 // Add teamRoomMember to teamRoom 'Posse'.
 var teamRoomMembers = [
-   { Item: { teamRoomMemberInfo: { teamMemberId: 'ea794510-cea6-4132-ae22-a7ae1d323000', teamRoomId: 'ea794510-cea6-4132-ae22-a7ae1d325000' }, teamRoomMemberId: 'ea794510-cea6-4132-ae22-a7ae1d323400', partitionId: -1 }, TableName: tablePrefix + 'teamRoomMembers' },
-   { Item: { teamRoomMemberInfo: { teamMemberId: 'ea794510-cea6-4132-ae22-a7ae1d323001', teamRoomId: 'ea794510-cea6-4132-ae22-a7ae1d325000' }, teamRoomMemberId: 'ea794510-cea6-4132-ae22-a7ae1d323401', partitionId: -1 }, TableName: tablePrefix + 'teamRoomMembers' }
+   { Item: { teamRoomMemberInfo: { teamMemberId: 'ea794510-cea6-4132-ae22-a7ae1d323000', teamRoomId: 'ea794510-cea6-4132-ae22-a7ae1d325000', userId: 'ea794510-cea6-4132-ae22-a7ae1d32abb2', role: 'admin' }, teamRoomMemberId: 'ea794510-cea6-4132-ae22-a7ae1d323400', partitionId: -1 }, TableName: tablePrefix + 'teamRoomMembers' },
+   { Item: { teamRoomMemberInfo: { teamMemberId: 'ea794510-cea6-4132-ae22-a7ae1d323001', teamRoomId: 'ea794510-cea6-4132-ae22-a7ae1d325000', userId: 'ea794510-cea6-4132-ae22-a7ae1d32abb5', role: 'admin' }, teamRoomMemberId: 'ea794510-cea6-4132-ae22-a7ae1d323401', partitionId: -1 }, TableName: tablePrefix + 'teamRoomMembers' }
 ];
 addDocuments(teamRoomMembers);
 
@@ -133,9 +133,9 @@ subscriberOrgs = [
 addDocuments(subscriberOrgs);
 
 var subscriberUsers = [
-   { Item: { subscriberUserInfo: { userId: 'ea794510-cea6-4132-ae22-a7ae1d32abb2', subscriberOrgId: 'ea794510-cea6-4132-0003-a7ae1d32abb5' }, subscriberUserId: 'ea794510-cea6-4132-0004-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'subscriberUsers' },
-   { Item: { subscriberUserInfo: { userId: 'ea794510-cea6-4132-ae22-a7ae1d32abb5', subscriberOrgId: 'ea794510-cea6-4132-0003-a7ae1d32abb5' }, subscriberUserId: 'ea794510-cea6-4132-0005-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'subscriberUsers' },
-   { Item: { subscriberUserInfo: { userId: 'ea794510-cea6-4132-0000-aa8e1d32abb5', subscriberOrgId: 'ea794510-cea6-4132-0003-a7ae1d32abb5' }, subscriberUserId: 'ea794510-cea6-4132-0006-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'subscriberUsers' }
+   { Item: { subscriberUserInfo: { userId: 'ea794510-cea6-4132-ae22-a7ae1d32abb2', subscriberOrgId: 'ea794510-cea6-4132-0003-a7ae1d32abb5', role: 'admin' }, subscriberUserId: 'ea794510-cea6-4132-0004-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'subscriberUsers' },
+   { Item: { subscriberUserInfo: { userId: 'ea794510-cea6-4132-ae22-a7ae1d32abb5', subscriberOrgId: 'ea794510-cea6-4132-0003-a7ae1d32abb5', role: 'user' }, subscriberUserId: 'ea794510-cea6-4132-0005-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'subscriberUsers' },
+   { Item: { subscriberUserInfo: { userId: 'ea794510-cea6-4132-0000-aa8e1d32abb5', subscriberOrgId: 'ea794510-cea6-4132-0003-a7ae1d32abb5', role: 'user' }, subscriberUserId: 'ea794510-cea6-4132-0006-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'subscriberUsers' }
 ];
 addDocuments(subscriberUsers);
 
@@ -148,12 +148,12 @@ addDocuments(teams);
 
 
 teamMembers = [
-   { Item: { teamMemberInfo: { subscriberUserId: 'ea794510-cea6-4132-0004-a7ae1d32abb5', teamId: 'ea794510-cea6-4132-0007-a7ae1d32abb5' }, teamMemberId: 'ea794510-cea6-4132-0009-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'teamMembers' },
-   { Item: { teamMemberInfo: { subscriberUserId: 'ea794510-cea6-4132-0005-a7ae1d32abb5', teamId: 'ea794510-cea6-4132-0007-a7ae1d32abb5' }, teamMemberId: 'ea794510-cea6-4132-0010-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'teamMembers' },
-   { Item: { teamMemberInfo: { subscriberUserId: 'ea794510-cea6-4132-0006-a7ae1d32abb5', teamId: 'ea794510-cea6-4132-0007-a7ae1d32abb5' }, teamMemberId: 'ea794510-cea6-4132-0011-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'teamMembers' },
-   { Item: { teamMemberInfo: { subscriberUserId: 'ea794510-cea6-4132-0004-a7ae1d32abb5', teamId: 'ea794510-cea6-4132-0008-a7ae1d32abb5' }, teamMemberId: 'ea794510-cea6-4132-0012-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'teamMembers' },
-   { Item: { teamMemberInfo: { subscriberUserId: 'ea794510-cea6-4132-0005-a7ae1d32abb5', teamId: 'ea794510-cea6-4132-0008-a7ae1d32abb5' }, teamMemberId: 'ea794510-cea6-4132-0013-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'teamMembers' },
-   { Item: { teamMemberInfo: { subscriberUserId: 'ea794510-cea6-4132-0006-a7ae1d32abb5', teamId: 'ea794510-cea6-4132-0008-a7ae1d32abb5' }, teamMemberId: 'ea794510-cea6-4132-0014-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'teamMembers' }
+   { Item: { teamMemberInfo: { subscriberUserId: 'ea794510-cea6-4132-0004-a7ae1d32abb5', teamId: 'ea794510-cea6-4132-0007-a7ae1d32abb5', userId: 'ea794510-cea6-4132-ae22-a7ae1d32abb2', role: 'admin' }, teamMemberId: 'ea794510-cea6-4132-0009-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'teamMembers' },
+   { Item: { teamMemberInfo: { subscriberUserId: 'ea794510-cea6-4132-0005-a7ae1d32abb5', teamId: 'ea794510-cea6-4132-0007-a7ae1d32abb5', userId: 'ea794510-cea6-4132-ae22-a7ae1d32abb5', role: 'user' }, teamMemberId: 'ea794510-cea6-4132-0010-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'teamMembers' },
+   { Item: { teamMemberInfo: { subscriberUserId: 'ea794510-cea6-4132-0006-a7ae1d32abb5', teamId: 'ea794510-cea6-4132-0007-a7ae1d32abb5', userId: 'ea794510-cea6-4132-0000-aa8e1d32abb5', role: 'user' }, teamMemberId: 'ea794510-cea6-4132-0011-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'teamMembers' },
+   { Item: { teamMemberInfo: { subscriberUserId: 'ea794510-cea6-4132-0004-a7ae1d32abb5', teamId: 'ea794510-cea6-4132-0008-a7ae1d32abb5', userId: 'ea794510-cea6-4132-ae22-a7ae1d32abb2', role: 'admin' }, teamMemberId: 'ea794510-cea6-4132-0012-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'teamMembers' },
+   { Item: { teamMemberInfo: { subscriberUserId: 'ea794510-cea6-4132-0005-a7ae1d32abb5', teamId: 'ea794510-cea6-4132-0008-a7ae1d32abb5', userId: 'ea794510-cea6-4132-ae22-a7ae1d32abb5', role: 'user' }, teamMemberId: 'ea794510-cea6-4132-0013-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'teamMembers' },
+   { Item: { teamMemberInfo: { subscriberUserId: 'ea794510-cea6-4132-0006-a7ae1d32abb5', teamId: 'ea794510-cea6-4132-0008-a7ae1d32abb5', userId: 'ea794510-cea6-4132-0000-aa8e1d32abb5', role: 'user' }, teamMemberId: 'ea794510-cea6-4132-0014-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'teamMembers' }
 ];
 addDocuments(teamMembers);
 
@@ -167,14 +167,14 @@ teamRooms = [
 addDocuments(teamRooms);
 
 teamRoomMembers = [
-   { Item: { teamRoomMemberInfo: { teamMemberId: 'ea794510-cea6-4132-0009-a7ae1d32abb5', teamRoomId: 'ea794510-cea6-4132-0015-a7ae1d32abb5' }, teamRoomMemberId: 'ea794510-cea6-4132-0017-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'teamRoomMembers' },
-   { Item: { teamRoomMemberInfo: { teamMemberId: 'ea794510-cea6-4132-0010-a7ae1d32abb5', teamRoomId: 'ea794510-cea6-4132-0015-a7ae1d32abb5' }, teamRoomMemberId: 'ea794510-cea6-4132-0018-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'teamRoomMembers' },
-   { Item: { teamRoomMemberInfo: { teamMemberId: 'ea794510-cea6-4132-0011-a7ae1d32abb5', teamRoomId: 'ea794510-cea6-4132-0015-a7ae1d32abb5' }, teamRoomMemberId: 'ea794510-cea6-4132-0019-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'teamRoomMembers' },
-   { Item: { teamRoomMemberInfo: { teamMemberId: 'ea794510-cea6-4132-0012-a7ae1d32abb5', teamRoomId: 'ea794510-cea6-4132-0016-a7ae1d32abb5' }, teamRoomMemberId: 'ea794510-cea6-4132-0020-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'teamRoomMembers' },
-   { Item: { teamRoomMemberInfo: { teamMemberId: 'ea794510-cea6-4132-0013-a7ae1d32abb5', teamRoomId: 'ea794510-cea6-4132-0016-a7ae1d32abb5' }, teamRoomMemberId: 'ea794510-cea6-4132-0021-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'teamRoomMembers' },
-   { Item: { teamRoomMemberInfo: { teamMemberId: 'ea794510-cea6-4132-0014-a7ae1d32abb5', teamRoomId: 'ea794510-cea6-4132-0016-a7ae1d32abb5' }, teamRoomMemberId: 'ea794510-cea6-4132-0022-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'teamRoomMembers' },
-   { Item: { teamRoomMemberInfo: { teamMemberId: 'ea794510-cea6-4132-0014-a7ae1d32abb5', teamRoomId: 'ea794510-cea6-4132-0116-a7ae1d32abb5' }, teamRoomMemberId: 'ea794510-cea6-4132-0122-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'teamRoomMembers' },
-   { Item: { teamRoomMemberInfo: { teamMemberId: 'ea794510-cea6-4132-0014-a7ae1d32abb5', teamRoomId: 'ea794510-cea6-4132-0117-a7ae1d32abb5' }, teamRoomMemberId: 'ea794510-cea6-4132-0123-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'teamRoomMembers' }
+   { Item: { teamRoomMemberInfo: { teamMemberId: 'ea794510-cea6-4132-0009-a7ae1d32abb5', teamRoomId: 'ea794510-cea6-4132-0015-a7ae1d32abb5', userId: 'ea794510-cea6-4132-ae22-a7ae1d32abb2', role: 'user' }, teamRoomMemberId: 'ea794510-cea6-4132-0017-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'teamRoomMembers' },
+   { Item: { teamRoomMemberInfo: { teamMemberId: 'ea794510-cea6-4132-0010-a7ae1d32abb5', teamRoomId: 'ea794510-cea6-4132-0015-a7ae1d32abb5', userId: 'ea794510-cea6-4132-ae22-a7ae1d32abb5', role: 'admin' }, teamRoomMemberId: 'ea794510-cea6-4132-0018-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'teamRoomMembers' },
+   { Item: { teamRoomMemberInfo: { teamMemberId: 'ea794510-cea6-4132-0011-a7ae1d32abb5', teamRoomId: 'ea794510-cea6-4132-0015-a7ae1d32abb5', userId: 'ea794510-cea6-4132-0000-aa8e1d32abb5', role: 'admin' }, teamRoomMemberId: 'ea794510-cea6-4132-0019-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'teamRoomMembers' },
+   { Item: { teamRoomMemberInfo: { teamMemberId: 'ea794510-cea6-4132-0012-a7ae1d32abb5', teamRoomId: 'ea794510-cea6-4132-0016-a7ae1d32abb5', userId: 'ea794510-cea6-4132-ae22-a7ae1d32abb2', role: 'admin' }, teamRoomMemberId: 'ea794510-cea6-4132-0020-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'teamRoomMembers' },
+   { Item: { teamRoomMemberInfo: { teamMemberId: 'ea794510-cea6-4132-0013-a7ae1d32abb5', teamRoomId: 'ea794510-cea6-4132-0016-a7ae1d32abb5', userId: 'ea794510-cea6-4132-ae22-a7ae1d32abb5', role: 'user' }, teamRoomMemberId: 'ea794510-cea6-4132-0021-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'teamRoomMembers' },
+   { Item: { teamRoomMemberInfo: { teamMemberId: 'ea794510-cea6-4132-0014-a7ae1d32abb5', teamRoomId: 'ea794510-cea6-4132-0016-a7ae1d32abb5', userId: 'ea794510-cea6-4132-0000-aa8e1d32abb5', role: 'admin' }, teamRoomMemberId: 'ea794510-cea6-4132-0022-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'teamRoomMembers' },
+   { Item: { teamRoomMemberInfo: { teamMemberId: 'ea794510-cea6-4132-0014-a7ae1d32abb5', teamRoomId: 'ea794510-cea6-4132-0116-a7ae1d32abb5', userId: 'ea794510-cea6-4132-0000-aa8e1d32abb5', role: 'admin' }, teamRoomMemberId: 'ea794510-cea6-4132-0122-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'teamRoomMembers' },
+   { Item: { teamRoomMemberInfo: { teamMemberId: 'ea794510-cea6-4132-0014-a7ae1d32abb5', teamRoomId: 'ea794510-cea6-4132-0117-a7ae1d32abb5', userId: 'ea794510-cea6-4132-0000-aa8e1d32abb5', role: 'user' }, teamRoomMemberId: 'ea794510-cea6-4132-0123-a7ae1d32abb5', partitionId: -1 }, TableName: tablePrefix + 'teamRoomMembers' }
 ];
 addDocuments(teamRoomMembers);
 

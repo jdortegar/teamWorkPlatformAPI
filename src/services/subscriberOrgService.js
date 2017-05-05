@@ -1,7 +1,8 @@
 import _ from 'lodash';
 import uuid from 'uuid';
 import config from '../config/env';
-import { NoPermissionsError, SubscriberOrgExistsError, SubscriberOrgNotExistError } from './errors';
+import { NoPermissionsError, SubscriberOrgExistsError, SubscriberOrgNotExistError, UserNotExistError } from './errors';
+import { inviteExistingUsersToSubscriberOrg, inviteExternalUsersToSubscriberOrg } from './invitations';
 import { subscriberOrgCreated, subscriberOrgPrivateInfoUpdated, subscriberOrgUpdated } from './messaging';
 import Roles from './roles';
 import teamSvc from './teamService';
@@ -10,7 +11,9 @@ import {
    getSubscriberOrgsByIds,
    getSubscriberOrgsByName,
    getSubscriberUsersBySubscriberOrgId,
+   getSubscriberUsersByUserIdAndSubscriberOrgIdAndRole,
    getSubscriberUsersByUserIds,
+   getUsersByEmailAddresses,
    getUsersByIds,
    updateItem
 } from './queries';
@@ -118,19 +121,26 @@ class SubscriberOrgService {
 
    updateSubscriberOrg(req, subscriberOrgId, updateInfo, userId) {
       return new Promise((resolve, reject) => {
-         getSubscriberUsersBySubscriberOrgId(req, subscriberOrgId)
+         let dbSubscriberOrg;
+         getSubscriberOrgsByIds(req, [subscriberOrgId])
+            .then((subscriberOrgs) => {
+               if (subscriberOrgs.length === 0) {
+                  throw new SubscriberOrgNotExistError(subscriberOrgId);
+               }
+
+               return getSubscriberUsersByUserIdAndSubscriberOrgIdAndRole(req, userId, subscriberOrgId, Roles.admin);
+            })
             .then((subscriberUsers) => {
-               const userIds = subscriberUsers.map(subscriberUser => subscriberUser.subscriberUserInfo.userId);
-               if (userIds.indexOf(userId) < 0) {
+               if (subscriberUsers.length === 0) {
                   throw new NoPermissionsError(subscriberOrgId);
                }
+
                updateItem(req, -1, `${config.tablePrefix}subscriberOrgs`, 'subscriberOrgId', subscriberOrgId, { subscriberOrgInfo: updateInfo });
             })
-            .then(() => getSubscriberOrgsByIds(req, [subscriberOrgId]))
-            .then((subscriberOrgs) => {
+            .then(() => {
                resolve();
 
-               const subscriberOrg = subscriberOrgs[0].subscriberOrgInfo;
+               const subscriberOrg = dbSubscriberOrg.subscriberOrgInfo;
                _.merge(subscriberOrg, updateInfo); // Eventual consistency, so might be old.
                subscriberOrg.subscriberOrgId = subscriberOrgId;
                subscriberOrgUpdated(req, subscriberOrg);
@@ -138,13 +148,7 @@ class SubscriberOrgService {
                   subscriberOrgPrivateInfoUpdated(req, subscriberOrg);
                }
             })
-            .catch((err) => {
-               if (err.code === 'ValidationException') {
-                  reject(new SubscriberOrgNotExistError(subscriberOrgId));
-               } else {
-                  reject(err);
-               }
-            });
+            .catch(err => reject(err));
       });
    }
 
@@ -187,6 +191,82 @@ class SubscriberOrgService {
                });
                resolve(usersWithRoles);
             })
+            .catch(err => reject(err));
+      });
+   }
+
+   inviteSubscribers(req, subscriberOrgId, subscriberUserIdEmails, userId) {
+      return new Promise((resolve, reject) => {
+         const userIds = new Set();
+         const emails = new Set();
+
+         Promise.all([
+            getSubscriberOrgsByIds(req, [subscriberOrgId]),
+            getSubscriberUsersByUserIdAndSubscriberOrgIdAndRole(req, userId, subscriberOrgId, Roles.admin)
+         ])
+            .then((promiseResults) => {
+               const subscriberOrgs = promiseResults[0];
+               const subscriberUsers = promiseResults[1];
+
+               if (subscriberOrgs.length === 0) {
+                  throw new SubscriberOrgNotExistError(subscriberOrgId);
+               }
+
+               if (subscriberUsers.length === 0) {
+                  throw new NoPermissionsError(subscriberOrgId);
+               }
+
+               subscriberUserIdEmails.forEach((userIdOrEmail) => {
+                  if (userIdOrEmail.indexOf('@') >= 0) {
+                     emails.add(userIdOrEmail);
+                  } else {
+                     userIds.add(userIdOrEmail);
+                  }
+               });
+
+               // See who we already have in the system.
+               return Promise.all([
+                  getUsersByIds(req, [userId, ...userIds]),
+                  getUsersByEmailAddresses(req, [...emails]),
+                  Promise.resolve(subscriberOrgs[0])
+               ]);
+            })
+            .then((promiseResults) => {
+               const dbUser = promiseResults[0][0];
+               let existingDbUsers = promiseResults[0];
+               existingDbUsers.splice(0, 1);
+               const retrievedUsersByEmail = promiseResults[1];
+               const subscriberOrg = promiseResults[2];
+
+               // If any of the userIds are bad, fail.
+               if (existingDbUsers.length !== userIds.size) {
+                  throw new UserNotExistError();
+               }
+
+               // Convert any found emails to existing users.
+               if (retrievedUsersByEmail.length > 0) {
+                  retrievedUsersByEmail.forEach((user) => {
+                     existingDbUsers.push(user);
+                     emails.delete(user.userInfo.emailAddress);
+                  });
+               }
+
+               // Remove duplicates.
+               existingDbUsers = existingDbUsers.reduce((prevList, existingDbUser) => {
+                  if (prevList.indexOf(existingDbUser) < 0) {
+                     prevList.push(existingDbUser);
+                  } else {
+                     emails.delete(existingDbUser.emailAddress);
+                  }
+                  return prevList;
+               }, []);
+
+               return Promise.all([
+                  inviteExistingUsersToSubscriberOrg(req, dbUser, existingDbUsers, subscriberOrg),
+                  inviteExternalUsersToSubscriberOrg(req, dbUser, emails, subscriberOrg)
+               ]);
+            })
+            .then(() => resolve())
             .catch(err => reject(err));
       });
    }

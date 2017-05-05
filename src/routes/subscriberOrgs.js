@@ -9,12 +9,15 @@ router.route('/getSubscriberOrgs')
    .get(subscriberOrgs.getSubscriberOrgs);
 
 router.route('/createSubscriberOrg')
-   .post(validate(paramValidation.createSubscriberOrg), subscriberOrgs.createSubscriberOrg)
+   .post(validate(paramValidation.createSubscriberOrg), subscriberOrgs.createSubscriberOrg);
 
 router.route('/updateSubscriberOrg/:subscriberOrgId')
    .patch(validate(paramValidation.updateSubscriberOrg), subscriberOrgs.updateSubscriberOrg);
 
 router.route('/getSubscribers/:subscriberOrgId')
    .get(subscriberOrgs.getSubscriberOrgUsers);
+
+router.route('/inviteSubscribers/:subscriberOrgId')
+   .post(validate(paramValidation.inviteSubscribers), subscriberOrgs.inviteSubscribers)
 
 export default router;

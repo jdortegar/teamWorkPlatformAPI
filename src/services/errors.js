@@ -1,7 +1,7 @@
-export class ConversationNotExistError extends Error {
+export class UserNotExistError extends Error {
    constructor(...args) {
       super(...args);
-      Error.captureStackTrace(this, ConversationNotExistError);
+      Error.captureStackTrace(this, UserNotExistError);
    }
 }
 
@@ -54,9 +54,9 @@ export class TeamRoomNotExistError extends Error {
    }
 }
 
-export class UserNotExistError extends Error {
+export class ConversationNotExistError extends Error {
    constructor(...args) {
       super(...args);
-      Error.captureStackTrace(this, UserNotExistError);
+      Error.captureStackTrace(this, ConversationNotExistError);
    }
 }
