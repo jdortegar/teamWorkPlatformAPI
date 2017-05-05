@@ -87,7 +87,7 @@ export default class Messaging {
    close() {
       if (this.socket) {
          this.socket.close();
-         this.socket= undefined;
+         this.socket = undefined;
       }
    }
 }

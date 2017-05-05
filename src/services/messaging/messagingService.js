@@ -13,6 +13,7 @@ import subscriberOrgSvc from '../subscriberOrgService';
 
 export const EventTypes = Object.freeze({
    presenceChanged: 'presenceChanged',
+   userInvited: 'userInvited',
    userCreated: 'userCreated',
    userUpdated: 'userUpdated',
    userPrivateInfoUpdated: 'userPrivateInfoUpdated',

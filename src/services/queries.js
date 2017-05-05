@@ -98,7 +98,7 @@ class ObjectExpressions {
    }
 
    process(node, variablePath) {
-      if (typeof node === 'object') {
+      if ((typeof node === 'object') && (node !== null)) {
          const objKeys = Object.keys(node);
          objKeys.forEach((objKey) => {
             const variable = `#n${this.nameCount}`;
@@ -315,6 +315,15 @@ export function getUsersByIds(req, userIds) {
 
    const tableName = `${config.tablePrefix}users`;
    return batchGetItemBySortKey(req, tableName, 'userId', userIds);
+}
+
+export function getUsersByEmailAddresses(req, emails) {
+   if (emails === undefined) {
+      return Promise.reject('emails needs to be specified.');
+   }
+
+   const tableName = `${config.tablePrefix}users`;
+   return filteredScanValueIn(req, tableName, 'userInfo.emailAddress', emails);
 }
 
 

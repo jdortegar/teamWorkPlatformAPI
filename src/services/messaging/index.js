@@ -60,8 +60,14 @@ export function subscriberOrgUpdated(req, subscriberOrg) {
 }
 
 export function subscriberOrgPrivateInfoUpdated(req, subscriberOrg) {
-   return _broadcastEvent(req, EventTypes.subscriberOrgPrivateInfoUpdated, privateSubscriberOrg(subscriberOrg), [
+   return _broadcastEvent(req, EventTypes.userInvited, privateSubscriberOrg(subscriberOrg), [
       ChannelFactory.subscriberOrgAdminChannel(subscriberOrg.subscriberOrgId)
+   ]);
+}
+
+export function userInvited(req, userId, invitation) {
+   return _broadcastEvent(req, userId, invitation, [
+      ChannelFactory.personalChannel(userId)
    ]);
 }
 

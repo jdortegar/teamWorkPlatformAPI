@@ -7,10 +7,10 @@ import Roles from './roles';
 import teamRoomSvc from './teamRoomService';
 import {
    createItem,
-   getSubscriberUsersByIds,
    getSubscriberUsersByUserIdAndSubscriberOrgIdAndRole,
    getSubscriberUsersByUserIds,
    getTeamMembersBySubscriberUserIds,
+   getTeamMembersByTeamIdAndUserIdAndRole,
    getTeamMembersByTeamId,
    getTeamsByIds,
    getTeamBySubscriberOrgIdAndName,
@@ -125,10 +125,10 @@ class TeamService {
                }
 
                dbTeam = teams[0];
-               return getSubscriberUsersByUserIdAndSubscriberOrgIdAndRole(req, userId, dbTeam.teamInfo.subscriberOrgId, Roles.admin);
+               return getTeamMembersByTeamIdAndUserIdAndRole(req, teamId, userId, Roles.admin);
             })
-            .then((subscriberUsers) => {
-               if (subscriberUsers.length === 0) {
+            .then((teamMembers) => {
+               if (teamMembers.length === 0) {
                   throw new NoPermissionsError(teamId);
                }
 
@@ -145,13 +145,7 @@ class TeamService {
                   teamPrivateInfoUpdated(req, team);
                }
             })
-            .catch((err) => {
-               if (err.code === 'ValidationException') {
-                  reject(new TeamNotExistError(teamId));
-               } else {
-                  reject(err);
-               }
-            });
+            .catch(err => reject(err));
       });
    }
 
