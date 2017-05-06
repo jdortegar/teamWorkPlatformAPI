@@ -257,7 +257,10 @@ class TeamRoomService {
                   throw new UserNotExistError();
                }
 
-               return inviteExistingUsersToTeamRoom(req, dbUser, existingDbUsers, subscriberOrg, team, teamRoom);
+               // Make sure you don't invite yourself.
+               const inviteDbUsers = existingDbUsers.filter(existingDbUser => (existingDbUser.userId !== userId));
+
+               return inviteExistingUsersToTeamRoom(req, dbUser, inviteDbUsers, subscriberOrg, team, teamRoom);
             })
             .then(() => resolve())
             .catch(err => reject(err));
