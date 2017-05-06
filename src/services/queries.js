@@ -448,6 +448,15 @@ export function getTeamRoomMembersByTeamRoomId(req, teamRoomId) {
    return filteredScanValueIn(req, tableName, 'teamRoomMemberInfo.teamRoomId', [teamRoomId]);
 }
 
+export function getTeamRoomMembersByTeamRoomIdAndUserIdAndRole(req, teamRoomId, userId, role) {
+   if ((teamRoomId === undefined) || (userId === undefined) || (role === undefined)) {
+      return Promise.reject('teamRoomId, userId, and role needs to be specified.');
+   }
+
+   const tableName = `${config.tablePrefix}teamRoomMembers`;
+   return filteredScan(req, tableName, { teamRoomMemberInfo: { teamRoomId, userId, role } });
+}
+
 export function getTeamRoomMembersByTeamMemberIds(req, teamMemberIds) {
    if (teamMemberIds === undefined) {
       return Promise.reject('teamMemberIds needs to be specified.');

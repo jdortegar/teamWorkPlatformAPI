@@ -18,6 +18,6 @@ router.route('/getSubscribers/:subscriberOrgId')
    .get(subscriberOrgs.getSubscriberOrgUsers);
 
 router.route('/inviteSubscribers/:subscriberOrgId')
-   .post(validate(paramValidation.inviteSubscribers), subscriberOrgs.inviteSubscribers)
+   .post(validate(paramValidation.inviteSubscribers), subscriberOrgs.inviteSubscribers);
 
 export default router;
