@@ -87,6 +87,13 @@ const validationSchemas = {
          })
       }
    },
+   inviteTeamMembers: {
+      body: {
+         userIds: Joi.array().min(1).items(
+            Joi.string().min(1).required()
+         ).required()
+      }
+   },
    createTeamRoom: {
       body: {
          name: Joi.string().min(1).required(),
@@ -107,6 +114,13 @@ const validationSchemas = {
          preferences: Joi.object().keys({
             private: Joi.object()
          })
+      }
+   },
+   inviteTeamRoomMembers: {
+      body: {
+         userIds: Joi.array().min(1).items(
+            Joi.string().min(1).required()
+         ).required()
       }
    },
    createMessage: {

@@ -2,17 +2,19 @@ import _ from 'lodash';
 import uuid from 'uuid';
 import config from '../config/env';
 import conversationSvc from './conversationService';
-import { NoPermissionsError, TeamRoomExistsError, TeamRoomNotExistError } from './errors';
+import { NoPermissionsError, TeamRoomExistsError, TeamRoomNotExistError, UserNotExistError } from './errors';
+import { inviteExistingUsersToTeamRoom } from './invitations';
 import { teamRoomCreated, teamRoomPrivateInfoUpdated, teamRoomUpdated } from './messaging';
 import {
    createItem,
-   getSubscriberUsersByIds,
+   getSubscriberOrgsByIds,
    getSubscriberUsersByUserIds,
-   getTeamMembersByIds,
+   getTeamsByIds,
    getTeamMembersBySubscriberUserIds,
    getTeamMembersByTeamIdAndUserIdAndRole,
    getTeamRoomMembersByTeamMemberIds,
    getTeamRoomMembersByTeamRoomId,
+   getTeamRoomMembersByTeamRoomIdAndUserIdAndRole,
    getTeamRoomsByIds,
    getTeamRoomsByTeamIdAndName,
    getUsersByIds,
@@ -202,6 +204,62 @@ class TeamRoomService {
                });
                resolve(usersWithRoles);
             })
+            .catch(err => reject(err));
+      });
+   }
+
+   inviteMembers(req, teamRoomId, userIds, userId) {
+      let teamRoom;
+      let team;
+      return new Promise((resolve, reject) => {
+         Promise.all([
+            getTeamRoomsByIds(req, [teamRoomId]),
+            getTeamRoomMembersByTeamRoomIdAndUserIdAndRole(req, teamRoomId, userId, Roles.admin)
+         ])
+            .then((promiseResults) => {
+               const teamRooms = promiseResults[0];
+               const teamRoomMembers = promiseResults[1];
+
+               if (teamRooms.length === 0) {
+                  throw new TeamRoomNotExistError(teamRoomId);
+               }
+               teamRoom = teamRooms[0];
+
+               if (teamRoomMembers.length === 0) {
+                  throw new NoPermissionsError(teamRoomId);
+               }
+
+               return getTeamsByIds(req, [teamRoom.teamRoomInfo.teamId]);
+            })
+            .then((teams) => {
+               team = teams[0];
+
+               const uniqueUserIds = userIds.reduce((prevList, userIdEntry) => {
+                  if (prevList.indexOf(userIdEntry) < 0) {
+                     prevList.push(userIdEntry);
+                  }
+                  return prevList;
+               }, []);
+
+               return Promise.all([
+                  getUsersByIds(req, [userId, ...uniqueUserIds]),
+                  getSubscriberOrgsByIds(req, [teams[0].teamInfo.subscriberOrgId])
+               ]);
+            })
+            .then((promiseResults) => {
+               const dbUser = promiseResults[0][0];
+               const existingDbUsers = promiseResults[0];
+               existingDbUsers.splice(0, 1);
+               const subscriberOrg = promiseResults[1][0];
+
+               // If any of the userIds are bad, fail.
+               if (existingDbUsers.length !== userIds.length) {
+                  throw new UserNotExistError();
+               }
+
+               return inviteExistingUsersToTeamRoom(req, dbUser, existingDbUsers, subscriberOrg, team, teamRoom);
+            })
+            .then(() => resolve())
             .catch(err => reject(err));
       });
    }

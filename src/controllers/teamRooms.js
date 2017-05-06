@@ -2,7 +2,7 @@ import httpStatus from 'http-status';
 import APIError from '../helpers/APIError';
 import { privateTeamRoom, publicTeamRooms, publicUsers } from '../helpers/publishedVisibility';
 import teamRoomSvc from '../services/teamRoomService';
-import { NoPermissionsError, TeamRoomExistsError, TeamRoomNotExistError } from '../services/errors';
+import { NoPermissionsError, TeamRoomExistsError, TeamRoomNotExistError, UserNotExistError } from '../services/errors';
 
 export function getTeamRooms(req, res, next) {
    const userId = req.user._id;
@@ -73,3 +73,23 @@ export function getTeamRoomMembers(req, res, next) {
          }
       });
 }
+
+export function inviteMembers(req, res, next) {
+   const userId = req.user._id;
+   const teamRoomId = req.params.teamRoomId;
+
+   teamRoomSvc.inviteMembers(req, teamRoomId, req.body.userIds, userId)
+      .then(() => {
+         res.status(httpStatus.ACCEPTED).end();
+      })
+      .catch((err) => {
+         if ((err instanceof TeamRoomNotExistError) || (err instanceof UserNotExistError)) {
+            res.status(httpStatus.NOT_FOUND).end();
+         } else if (err instanceof NoPermissionsError) {
+            res.status(httpStatus.FORBIDDEN).end();
+         } else {
+            next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
+         }
+      });
+}
+

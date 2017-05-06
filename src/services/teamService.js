@@ -1,12 +1,14 @@
 import _ from 'lodash';
 import uuid from 'uuid';
 import config from '../config/env';
-import { NoPermissionsError, TeamExistsError, TeamNotExistError } from './errors';
+import { NoPermissionsError, TeamExistsError, TeamNotExistError, UserNotExistError } from './errors';
+import { inviteExistingUsersToTeam } from './invitations';
 import { teamCreated, teamPrivateInfoUpdated, teamUpdated } from './messaging';
 import Roles from './roles';
 import teamRoomSvc from './teamRoomService';
 import {
    createItem,
+   getSubscriberOrgsByIds,
    getSubscriberUsersByUserIdAndSubscriberOrgIdAndRole,
    getSubscriberUsersByUserIds,
    getTeamMembersBySubscriberUserIds,
@@ -188,6 +190,56 @@ class TeamService {
                });
                resolve(usersWithRoles);
             })
+            .catch(err => reject(err));
+      });
+   }
+
+   inviteMembers(req, teamId, userIds, userId) {
+      return new Promise((resolve, reject) => {
+         let team;
+         Promise.all([
+            getTeamsByIds(req, [teamId]),
+            getTeamMembersByTeamIdAndUserIdAndRole(req, teamId, userId, Roles.admin)
+         ])
+            .then((promiseResults) => {
+               const teams = promiseResults[0];
+               const teamMembers = promiseResults[1];
+
+               if (teams.length === 0) {
+                  throw new TeamNotExistError(teamId);
+               }
+               team = teams[0];
+
+               if (teamMembers.length === 0) {
+                  throw new NoPermissionsError(teamId);
+               }
+
+               const uniqueUserIds = userIds.reduce((prevList, userIdEntry) => {
+                  if (prevList.indexOf(userIdEntry) < 0) {
+                     prevList.push(userIdEntry);
+                  }
+                  return prevList;
+               }, []);
+
+               return Promise.all([
+                  getUsersByIds(req, [userId, ...uniqueUserIds]),
+                  getSubscriberOrgsByIds(req, [teams[0].teamInfo.subscriberOrgId])
+               ]);
+            })
+            .then((promiseResults) => {
+               const dbUser = promiseResults[0][0];
+               const existingDbUsers = promiseResults[0];
+               existingDbUsers.splice(0, 1);
+               const subscriberOrg = promiseResults[1][0];
+
+               // If any of the userIds are bad, fail.
+               if (existingDbUsers.length !== userIds.length) {
+                  throw new UserNotExistError();
+               }
+
+               return inviteExistingUsersToTeam(req, dbUser, existingDbUsers, subscriberOrg, team);
+            })
+            .then(() => resolve())
             .catch(err => reject(err));
       });
    }

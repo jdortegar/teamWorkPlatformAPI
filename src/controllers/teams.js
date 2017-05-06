@@ -2,7 +2,7 @@ import httpStatus from 'http-status';
 import APIError from '../helpers/APIError';
 import { privateTeam, publicTeams, publicUsers } from '../helpers/publishedVisibility';
 import teamSvc from '../services/teamService';
-import { NoPermissionsError, TeamExistsError, TeamNotExistError } from '../services/errors';
+import { NoPermissionsError, TeamExistsError, TeamNotExistError, UserNotExistError } from '../services/errors';
 
 export function getTeams(req, res, next) {
    const userId = req.user._id;
@@ -65,6 +65,25 @@ export function getTeamMembers(req, res, next) {
       })
       .catch((err) => {
          if (err instanceof TeamNotExistError) {
+            res.status(httpStatus.NOT_FOUND).end();
+         } else if (err instanceof NoPermissionsError) {
+            res.status(httpStatus.FORBIDDEN).end();
+         } else {
+            next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
+         }
+      });
+}
+
+export function inviteMembers(req, res, next) {
+   const userId = req.user._id;
+   const teamId = req.params.teamId;
+
+   teamSvc.inviteMembers(req, teamId, req.body.userIds, userId)
+      .then(() => {
+         res.status(httpStatus.ACCEPTED).end();
+      })
+      .catch((err) => {
+         if ((err instanceof TeamNotExistError) || (err instanceof UserNotExistError)) {
             res.status(httpStatus.NOT_FOUND).end();
          } else if (err instanceof NoPermissionsError) {
             res.status(httpStatus.FORBIDDEN).end();

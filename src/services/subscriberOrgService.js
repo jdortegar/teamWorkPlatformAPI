@@ -195,6 +195,8 @@ class SubscriberOrgService {
       });
    }
 
+   // TODO: Error checking:  make sure you don't invite yourself.
+   // TODO: Make sure invitees are not already in org/room/teamroom invited to.
    inviteSubscribers(req, subscriberOrgId, subscriberUserIdEmails, userId) {
       return new Promise((resolve, reject) => {
          const userIds = new Set();

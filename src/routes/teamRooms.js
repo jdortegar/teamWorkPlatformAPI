@@ -17,4 +17,7 @@ router.route('/updateTeamRoom/:teamRoomId')
 router.route('/getMembers/:teamRoomId')
    .get(teamRooms.getTeamRoomMembers);
 
+router.route('/inviteMembers/:teamRoomId')
+   .post(validate(paramValidation.inviteTeamRoomMembers), teamRooms.inviteMembers);
+
 export default router;
