@@ -10,6 +10,7 @@ import {
    createItem,
    getSubscriberOrgsByIds,
    getSubscriberOrgsByName,
+   getSubscriberUsersByIds,
    getSubscriberUsersBySubscriberOrgId,
    getSubscriberUsersByUserIdAndSubscriberOrgIdAndRole,
    getSubscriberUsersByUserIds,
@@ -195,12 +196,13 @@ class SubscriberOrgService {
       });
    }
 
-   // TODO: Error checking:  make sure you don't invite yourself.
-   // TODO: Make sure invitees are not already in org/room/teamroom invited to.
    inviteSubscribers(req, subscriberOrgId, subscriberUserIdEmails, userId) {
       return new Promise((resolve, reject) => {
+         let subscriberOrg;
+         let dbUser;
          const userIds = new Set();
          const emails = new Set();
+         let inviteDbUsers;
 
          Promise.all([
             getSubscriberOrgsByIds(req, [subscriberOrgId]),
@@ -213,6 +215,7 @@ class SubscriberOrgService {
                if (subscriberOrgs.length === 0) {
                   throw new SubscriberOrgNotExistError(subscriberOrgId);
                }
+               subscriberOrg = subscriberOrgs[0];
 
                if (subscriberUsers.length === 0) {
                   throw new NoPermissionsError(subscriberOrgId);
@@ -229,16 +232,14 @@ class SubscriberOrgService {
                // See who we already have in the system.
                return Promise.all([
                   getUsersByIds(req, [userId, ...userIds]),
-                  getUsersByEmailAddresses(req, [...emails]),
-                  Promise.resolve(subscriberOrgs[0])
+                  getUsersByEmailAddresses(req, [...emails])
                ]);
             })
             .then((promiseResults) => {
-               const dbUser = promiseResults[0][0];
+               dbUser = promiseResults[0][0];
                let existingDbUsers = promiseResults[0];
                existingDbUsers.splice(0, 1);
                const retrievedUsersByEmail = promiseResults[1];
-               const subscriberOrg = promiseResults[2];
 
                // If any of the userIds are bad, fail.
                if (existingDbUsers.length !== userIds.size) {
@@ -263,8 +264,20 @@ class SubscriberOrgService {
                   return prevList;
                }, []);
 
+               // Make sure you don't invite yourself.
+               inviteDbUsers = existingDbUsers.filter(existingDbUser => (existingDbUser.userId !== userId));
+               const inviteDbUserIds = inviteDbUsers.map(inviteDbUser => inviteDbUser.userId);
+
+               // Make sure invitees are not already in here.
+               return getSubscriberUsersByIds(req, inviteDbUserIds);
+            })
+            .then((subscriberUsers) => {
+               if (subscriberUsers.length !== 0) {
+                  const doNotInviteUserIds = subscriberUsers.map(subscriberUser => subscriberUser.subscriberUserInfo.userId);
+                  inviteDbUsers = inviteDbUsers.filter(inviteDbUser => doNotInviteUserIds.indexOf(inviteDbUser.userId) < 0);
+               }
                return Promise.all([
-                  inviteExistingUsersToSubscriberOrg(req, dbUser, existingDbUsers, subscriberOrg),
+                  inviteExistingUsersToSubscriberOrg(req, dbUser, inviteDbUsers, subscriberOrg),
                   inviteExternalUsersToSubscriberOrg(req, dbUser, emails, subscriberOrg)
                ]);
             })

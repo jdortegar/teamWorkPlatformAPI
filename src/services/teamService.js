@@ -237,7 +237,10 @@ class TeamService {
                   throw new UserNotExistError();
                }
 
-               return inviteExistingUsersToTeam(req, dbUser, existingDbUsers, subscriberOrg, team);
+               // Make sure you don't invite yourself.
+               const inviteDbUsers = existingDbUsers.filter(existingDbUser => (existingDbUser.userId !== userId));
+
+               return inviteExistingUsersToTeam(req, dbUser, inviteDbUsers, subscriberOrg, team);
             })
             .then(() => resolve())
             .catch(err => reject(err));
