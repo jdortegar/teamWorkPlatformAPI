@@ -11,33 +11,71 @@ export const InvitationKeys = Object.freeze({
 
 const defaultExpiration = 7 * 24 * 60 * 60; // 1 week.
 
+function hashKey(email) {
+   return `${email}#pendingInvite`;
+}
+
+function toInvitationKey(invitationKey, invitationValue) {
+   return `${invitationKey}=${invitationValue}`;
+}
+
+
+function getRedisInvitations(req, email) {
+   return new Promise((resolve, reject) => {
+      req.app.locals.redis.hgetallAsync(hashKey(email))
+         .then(keyValues => resolve(keyValues))
+         .catch(err => reject(err));
+   });
+}
+
 function createRedisInvitation(req, email, invitationKeys, invitationValues) {
    return new Promise((resolve, reject) => {
-      const hash = `habla#pendingInvite#${email}`;
-      const methodArgs = [hash];
+      const hash = hashKey(email);
+
+      const lastElemIdx = invitationKeys.length - 1;
+      const key = toInvitationKey(invitationKeys[lastElemIdx], invitationValues[lastElemIdx]);
+
+      const value = {};
       let idx = 0;
       invitationKeys.forEach((invitationKey) => {
-         methodArgs.push(invitationKey);
-         methodArgs.push(invitationValues[idx]);
+         value[invitationKey] = invitationValues[idx];
          idx += idx;
       })
-      req.app.locals.redis.hmsetAsync(...methodArgs)
+      req.app.locals.redis.hmsetAsync(hash, key, JSON.stringify(value))
          .then(() => req.app.locals.redis.expire(hash, defaultExpiration))
          .then(() => resolve())
          .catch(err => reject(err));
    });
 }
 
-function deleteRedisInvitation(req, email) {
+export function deleteRedisInvitation(req, email, invitationKey, invitationValue) {
    return new Promise((resolve, reject) => {
-      const hash = `habla#pendingInvite#${email}`;
-      req.app.locals.redis.hmgetAsync(hash, InvitationKeys.subscriberOrgId, InvitationKeys.teamId, InvitationKeys.teamRoomId)
+      let invitation;
+      getRedisInvitations(req, email)
          .then((keyValues) => {
-            const subscriberOrgId = keyValues[0];
-            const teamId = keyValues[1];
-            const teamRoomId = keyValues[2];
-            resolve({ subscriberOrgId, teamId, teamRoomId });
+            if (keyValues === null) {
+               return undefined;
+            }
+
+            const lookForKey = toInvitationKey(invitationKey, invitationValue);
+            let val;
+            Object.keys(keyValues).forEach((key) => {
+               if ((val === undefined) && (key === lookForKey)) {
+                  val = keyValues[key];
+               }
+            });
+
+            if (val) {
+               invitation = JSON.parse(val);
+               const hash = hashKey(email);
+               if (keyValues.length <= 2) {
+                  return req.app.locals.redis.delAsync(hash);
+               }
+               return req.app.locals.redis.hdelAsync(hash, lookForKey);
+            }
+            return undefined;
          })
+         .then(() => resolve(invitation))
          .catch(err => reject(err));
    });
 }
@@ -49,8 +87,8 @@ export function inviteExistingUsersToSubscriberOrg(req, invitingDbUser, existing
       existingDbUsers.forEach((dbUser) => {
          const email = dbUser.userInfo.emailAddress;
          const promise = createRedisInvitation(req, dbUser.userInfo.emailAddress, [InvitationKeys.subscriberOrgId], [subscriberOrg.subscriberOrgId])
-            .then(() => createRedisRegistration(req, email))
-            .then((rid) => {
+            .then(() => {
+               const key = toInvitationKey(InvitationKeys.subscriberOrgId, subscriberOrg.subscriberOrgId);
                const invitation = {
                   byUserId: invitingDbUser.userId,
                   byUserDisplayName: invitingDbUser.userInfo.displayName,
@@ -58,7 +96,7 @@ export function inviteExistingUsersToSubscriberOrg(req, invitingDbUser, existing
                   subscriberOrgName: subscriberOrg.subscriberOrgInfo.name
                };
                return Promise.all([
-                  sendSubscriberOrgInviteToExistingUser(email, subscriberOrg.subscriberOrgInfo.name, invitingDbUser.userInfo.displayName, rid),
+                  sendSubscriberOrgInviteToExistingUser(email, subscriberOrg.subscriberOrgInfo.name, invitingDbUser.userInfo.displayName, key),
                   userInvited(req, dbUser.userId, invitation)
                ]);
             });
@@ -76,8 +114,8 @@ export function inviteExistingUsersToTeam(req, invitingDbUser, existingDbUsers, 
       existingDbUsers.forEach((dbUser) => {
          const email = dbUser.userInfo.emailAddress;
          const promise = createRedisInvitation(req, dbUser.userInfo.emailAddress, [InvitationKeys.subscriberOrgId, InvitationKeys.teamId], [team.teamInfo.subscriberOrgId, team.teamId])
-            .then(() => createRedisRegistration(req, email))
-            .then((rid) => {
+            .then(() => {
+               const key = toInvitationKey(InvitationKeys.teamId, team.teamId);
                const invitation = {
                   byUserId: invitingDbUser.userId,
                   byUserDisplayName: invitingDbUser.userInfo.displayName,
@@ -87,7 +125,7 @@ export function inviteExistingUsersToTeam(req, invitingDbUser, existingDbUsers, 
                   teamName: team.teamInfo.name
                };
                return Promise.all([
-                  sendTeamInviteToExistingUser(email, subscriberOrg.subscriberOrgInfo.name, team.teamInfo.name, invitingDbUser.userInfo.displayName, rid),
+                  sendTeamInviteToExistingUser(email, subscriberOrg.subscriberOrgInfo.name, team.teamInfo.name, invitingDbUser.userInfo.displayName, key),
                   userInvited(req, dbUser.userId, invitation)
                ]);
             });
@@ -105,8 +143,8 @@ export function inviteExistingUsersToTeamRoom(req, invitingDbUser, existingDbUse
       existingDbUsers.forEach((dbUser) => {
          const email = dbUser.userInfo.emailAddress;
          const promise = createRedisInvitation(req, dbUser.userInfo.emailAddress, [InvitationKeys.subscriberOrgId, InvitationKeys.teamId, InvitationKeys.teamRoomId], [team.teamInfo.subscriberOrgId, team.teamId, teamRoom.teamRoomId])
-            .then(() => createRedisRegistration(req, email))
-            .then((rid) => {
+            .then(() => {
+               const key = toInvitationKey(InvitationKeys.teamRoomId, teamRoom.teamRoomId);
                const invitation = {
                   byUserId: invitingDbUser.userId,
                   byUserDisplayName: invitingDbUser.userInfo.displayName,
@@ -118,7 +156,7 @@ export function inviteExistingUsersToTeamRoom(req, invitingDbUser, existingDbUse
                   teamRoomName: teamRoom.teamRoomInfo.name
                };
                return Promise.all([
-                  sendTeamRoomInviteToExistingUser(email, subscriberOrg.subscriberOrgInfo.name, team.teamInfo.name, teamRoom.teamRoomInfo.name, invitingDbUser.userInfo.displayName, rid),
+                  sendTeamRoomInviteToExistingUser(email, subscriberOrg.subscriberOrgInfo.name, team.teamInfo.name, teamRoom.teamRoomInfo.name, invitingDbUser.userInfo.displayName, key),
                   userInvited(req, dbUser.userId, invitation)
                ]);
             });

@@ -2,8 +2,8 @@ import _ from 'lodash';
 import uuid from 'uuid';
 import config from '../config/env';
 import conversationSvc from './conversationService';
-import { NoPermissionsError, TeamRoomExistsError, TeamRoomNotExistError, UserNotExistError } from './errors';
-import { inviteExistingUsersToTeamRoom } from './invitations';
+import { InvitationNotExistError, NoPermissionsError, TeamRoomExistsError, TeamRoomNotExistError, UserNotExistError } from './errors';
+import { deleteRedisInvitation, InvitationKeys, inviteExistingUsersToTeamRoom } from './invitations';
 import { teamRoomCreated, teamRoomPrivateInfoUpdated, teamRoomUpdated } from './messaging';
 import {
    createItem,
@@ -15,6 +15,7 @@ import {
    getTeamRoomMembersByTeamMemberIds,
    getTeamRoomMembersByTeamRoomId,
    getTeamRoomMembersByTeamRoomIdAndUserIdAndRole,
+   getTeamRoomMembersByUserIds,
    getTeamRoomsByIds,
    getTeamRoomsByTeamIdAndName,
    getUsersByIds,
@@ -211,6 +212,9 @@ class TeamRoomService {
    inviteMembers(req, teamRoomId, userIds, userId) {
       let teamRoom;
       let team;
+      let inviteDbUsers;
+      let dbUser;
+      let subscriberOrg;
       return new Promise((resolve, reject) => {
          Promise.all([
             getTeamRoomsByIds(req, [teamRoomId]),
@@ -247,10 +251,10 @@ class TeamRoomService {
                ]);
             })
             .then((promiseResults) => {
-               const dbUser = promiseResults[0][0];
+               dbUser = promiseResults[0][0];
                const existingDbUsers = promiseResults[0];
                existingDbUsers.splice(0, 1);
-               const subscriberOrg = promiseResults[1][0];
+               subscriberOrg = promiseResults[1][0];
 
                // If any of the userIds are bad, fail.
                if (existingDbUsers.length !== userIds.length) {
@@ -258,9 +262,65 @@ class TeamRoomService {
                }
 
                // Make sure you don't invite yourself.
-               const inviteDbUsers = existingDbUsers.filter(existingDbUser => (existingDbUser.userId !== userId));
+               inviteDbUsers = existingDbUsers.filter(existingDbUser => (existingDbUser.userId !== userId));
+               const inviteDbUserIds = inviteDbUsers.map(inviteDbUser => inviteDbUser.userId);
 
+               // Make sure invitees are not already in here.
+               return getTeamRoomMembersByUserIds(req, inviteDbUserIds);
+            })
+            .then((teamRoomMembers) => {
+               if (teamRoomMembers.length !== 0) {
+                  const doNotInviteUserIds = teamRoomMembers.map(teamRoomMember => teamRoomMember.teamRoomMemberInfo.userId);
+                  inviteDbUsers = inviteDbUsers.filter(inviteDbUser => doNotInviteUserIds.indexOf(inviteDbUser.userId) < 0);
+               }
                return inviteExistingUsersToTeamRoom(req, dbUser, inviteDbUsers, subscriberOrg, team, teamRoom);
+            })
+            .then(() => resolve())
+            .catch(err => reject(err));
+      });
+   }
+
+   _addUserToTeamRoom(req, userId, teamRoomId, role) {
+      return new Promise((resolve, reject) => {
+         getTeamRoomsByIds(req, [teamRoomId])
+            .then((teamRooms) => {
+               if (teamRooms.length === 0) {
+                  throw new TeamRoomNotExistError(teamRoomId);
+               }
+
+               const teamRoomMemberId = uuid.v4();
+               const teamRoomMember = {
+                  userId,
+                  teamRoomId,
+                  role
+               };
+               return createItem(req, -1, `${config.tablePrefix}teamRoomMembers`, 'teamRoomMemberId', teamRoomMemberId, 'teamRoomMemberInfo', teamRoomMember);
+            })
+            .then(() => resolve())
+            .catch(err => reject(err));
+      });
+   }
+
+   replyToInvite(req, teamRoomId, accept, userId) {
+      return new Promise((resolve, reject) => {
+         let user;
+         getUsersByIds(req, [userId])
+            .then((users) => {
+               if (users.length === 0) {
+                  throw new UserNotExistError();
+               }
+
+               user = users[0];
+               return deleteRedisInvitation(req, user.userInfo.emailAddress, InvitationKeys.teamRoomId, teamRoomId);
+            })
+            .then((invitation) => {
+               if (invitation) {
+                  if (accept) {
+                     return this._addUserToTeamRoom(req, user, teamRoomId);
+                  }
+                  return undefined;
+               }
+               throw new InvitationNotExistError(teamRoomId);
             })
             .then(() => resolve())
             .catch(err => reject(err));

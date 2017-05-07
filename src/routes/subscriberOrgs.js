@@ -20,4 +20,7 @@ router.route('/getSubscribers/:subscriberOrgId')
 router.route('/inviteSubscribers/:subscriberOrgId')
    .post(validate(paramValidation.inviteSubscribers), subscriberOrgs.inviteSubscribers);
 
+router.route('/replyToInvite/:subscriberOrgId')
+   .post(validate(paramValidation.replyToInvite), subscriberOrgs.replyToInvite);
+
 export default router;

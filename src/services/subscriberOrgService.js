@@ -1,8 +1,8 @@
 import _ from 'lodash';
 import uuid from 'uuid';
 import config from '../config/env';
-import { NoPermissionsError, SubscriberOrgExistsError, SubscriberOrgNotExistError, UserNotExistError } from './errors';
-import { inviteExistingUsersToSubscriberOrg, inviteExternalUsersToSubscriberOrg } from './invitations';
+import { InvitationNotExistError, NoPermissionsError, SubscriberOrgExistsError, SubscriberOrgNotExistError, UserNotExistError } from './errors';
+import { deleteRedisInvitation, InvitationKeys, inviteExistingUsersToSubscriberOrg, inviteExternalUsersToSubscriberOrg } from './invitations';
 import { subscriberOrgCreated, subscriberOrgPrivateInfoUpdated, subscriberOrgUpdated } from './messaging';
 import Roles from './roles';
 import teamSvc from './teamService';
@@ -269,7 +269,7 @@ class SubscriberOrgService {
                const inviteDbUserIds = inviteDbUsers.map(inviteDbUser => inviteDbUser.userId);
 
                // Make sure invitees are not already in here.
-               return getSubscriberUsersByIds(req, inviteDbUserIds);
+               return getSubscriberUsersByUserIds(req, inviteDbUserIds);
             })
             .then((subscriberUsers) => {
                if (subscriberUsers.length !== 0) {
@@ -280,6 +280,53 @@ class SubscriberOrgService {
                   inviteExistingUsersToSubscriberOrg(req, dbUser, inviteDbUsers, subscriberOrg),
                   inviteExternalUsersToSubscriberOrg(req, dbUser, emails, subscriberOrg)
                ]);
+            })
+            .then(() => resolve())
+            .catch(err => reject(err));
+      });
+   }
+
+   _addUserToSubscriberOrg(req, userId, subscriberOrgId, role) {
+      return new Promise((resolve, reject) => {
+         getSubscriberOrgsByIds(req, [subscriberOrgId])
+            .then((subscriberOrgs) => {
+               if (subscriberOrgs.length === 0) {
+                  throw new SubscriberOrgNotExistError(subscriberOrgId);
+               }
+
+               const subscriberUserId = uuid.v4();
+               const subscriberUser = {
+                  userId,
+                  subscriberOrgId,
+                  role
+               };
+               return createItem(req, -1, `${config.tablePrefix}subscriberUsers`, 'subscriberUserId', subscriberUserId, 'subscriberUserInfo', subscriberUser);
+            })
+            .then(() => resolve())
+            .catch(err => reject(err));
+      });
+   }
+
+   replyToInvite(req, subscriberOrgId, accept, userId) {
+      return new Promise((resolve, reject) => {
+         let user;
+         getUsersByIds(req, [userId])
+            .then((users) => {
+               if (users.length === 0) {
+                  throw new UserNotExistError();
+               }
+
+               user = users[0];
+               return deleteRedisInvitation(req, user.userInfo.emailAddress, InvitationKeys.subscriberOrgId, subscriberOrgId);
+            })
+            .then((invitation) => {
+               if (invitation) {
+                  if (accept) {
+                     return this._addUserToSubscriberOrg(req, user, subscriberOrgId, Roles.admin);
+                  }
+                  return undefined;
+               }
+               throw new InvitationNotExistError(subscriberOrgId);
             })
             .then(() => resolve())
             .catch(err => reject(err));

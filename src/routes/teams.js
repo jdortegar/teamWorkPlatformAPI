@@ -20,4 +20,7 @@ router.route('/getMembers/:teamId')
 router.route('/inviteMembers/:teamId')
    .post(validate(paramValidation.inviteTeamMembers), teams.inviteMembers);
 
+router.route('/replyToInvite/:teamId')
+   .post(validate(paramValidation.replyToInvite), teams.replyToInvite);
+
 export default router;

@@ -71,6 +71,11 @@ const validationSchemas = {
          ).required()
       }
    },
+   replyToInvite: {
+      body: {
+         accept: Joi.boolean().required()
+      }
+   },
    createTeam: {
       body: {
          name: Joi.string().min(1).required(),
