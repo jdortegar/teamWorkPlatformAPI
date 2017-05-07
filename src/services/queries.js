@@ -114,14 +114,14 @@ class ObjectExpressions {
             this.removes.push(variablePath);
          } else {
             let nodeValue;
-            if (!isNaN(node)) {
+            if (node === null) {
+               nodeValue = { NULL: true };
+            } else if (!isNaN(node)) {
                nodeValue = { N: node };
             } else if (typeof node === 'string') {
                nodeValue = { S: node };
             } else if (typeof node === 'boolean') {
                nodeValue = { BOOL: node };
-            } else if (node === null) {
-               nodeValue = { NULL: null };
             }
 
             this.valueVariables[valueVariable] = nodeValue;

@@ -32,13 +32,23 @@ export default class Messaging {
             this.socket.emit('authenticate', { token: jwt })
             .on('authenticated', () => {
                console.log('Messaging authenticated.');
+               // TODO: important.  ONLINE
 
+               this.socket.on('reconnect_failed', (a) => {
+                  console.log(`\n\t\t\tMessaging reconnect_failed: a=${a}  [${new Date()}]`);
+               });
                this.socket.on('reconnect', (attemptNumber) => {
                   console.log(`\n\t\t\tMessaging reconnect: attemptNumber=${attemptNumber}  [${new Date()}]`);
                });
                this.socket.on('connect_error', (err) => {
+                  // TODO: important.  OFFLINE
                   console.log(`\n\t\t\tMessaging connect_error: ${JSON.stringify(err)}  [${new Date()}]`);
-                  //this.socket.open();
+               });
+               this.socket.on('reconnect_error', (err) => {
+                  console.log(`\n\t\t\tMessaging reconnect_error: ${JSON.stringify(err)}  [${new Date()}]`);
+               });
+               this.socket.on('connect_timeout', () => {
+                  console.log(`\n\t\t\tMessaging connect_timeout: [${new Date()}]`);
                });
                this.socket.on('error', (err) => {
                   console.log(`\n\t\t\tMessaging error: ${JSON.stringify(err)}  [${new Date()}]`);
@@ -58,7 +68,7 @@ export default class Messaging {
                   const eventType = payload.data[0];
                   const event = payload.data[1];
                   console.log(`\n\t\t\tMessaging received eventType=${eventType}  event=${JSON.stringify(event)}  [${new Date()}]`);
-                  if (this.listener) {
+                  if ((eventType !== 'authenticated' ) && (this.listener)) {
                      this.listener(eventType, event);
                   }
                });
@@ -453,9 +463,10 @@ function chat(conversation) {
          .then((continueChat) => {
             if (continueChat) {
                resolve(chat(conversation));
+            } else {
+               messaging.typing(conversation.conversationId, false);
+               resolve();
             }
-            messaging.typing(conversation.conversationId, false);
-            resolve();
          })
          .catch((err) => {
             if ((err.response) && (err.response.status === 400)) {

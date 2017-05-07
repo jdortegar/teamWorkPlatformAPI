@@ -65,6 +65,13 @@ export function publicSubscriberOrgs(dbSubscriberOrgs) {
    });
 }
 
+export function publicSubscriber(subscriberOrgId, dbUser) {
+   return {
+      subscriberOrgId,
+      user: publicUser(dbUser)
+   };
+}
+
 
 export function privateTeam(dbTeam) {
    const teamId = dbTeam.teamId;
@@ -89,6 +96,13 @@ export function publicTeams(dbTeams) {
    return dbTeams.map((dbTeam) => {
       return publicTeam(dbTeam);
    });
+}
+
+export function publicTeamMember(teamId, dbUser) {
+   return {
+      teamId,
+      user: publicUser(dbUser)
+   };
 }
 
 
@@ -118,6 +132,13 @@ export function publicTeamRooms(dbTeamRooms) {
    return dbTeamRooms.map((dbTeamRoom) => {
       return publicTeamRoom(dbTeamRoom);
    });
+}
+
+export function publicTeamRoomMember(teamRoomId, dbUser) {
+   return {
+      teamRoomId,
+      user: publicUser(dbUser)
+   };
 }
 
 

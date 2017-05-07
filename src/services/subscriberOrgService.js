@@ -3,15 +3,15 @@ import uuid from 'uuid';
 import config from '../config/env';
 import { InvitationNotExistError, NoPermissionsError, SubscriberOrgExistsError, SubscriberOrgNotExistError, UserNotExistError } from './errors';
 import { deleteRedisInvitation, InvitationKeys, inviteExistingUsersToSubscriberOrg, inviteExternalUsersToSubscriberOrg } from './invitations';
-import { subscriberOrgCreated, subscriberOrgPrivateInfoUpdated, subscriberOrgUpdated } from './messaging';
+import { subscriberAdded, subscriberOrgCreated, subscriberOrgPrivateInfoUpdated, subscriberOrgUpdated } from './messaging';
 import Roles from './roles';
 import teamSvc from './teamService';
 import {
    createItem,
    getSubscriberOrgsByIds,
    getSubscriberOrgsByName,
-   getSubscriberUsersByIds,
    getSubscriberUsersBySubscriberOrgId,
+   getSubscriberUsersByUserIdAndSubscriberOrgId,
    getSubscriberUsersByUserIdAndSubscriberOrgIdAndRole,
    getSubscriberUsersByUserIds,
    getUsersByEmailAddresses,
@@ -43,7 +43,7 @@ class SubscriberOrgService {
       });
    }
 
-   createSubscriberOrgNoCheck(req, subscriberOrgInfo, userId, subscriberOrgId = undefined) {
+   createSubscriberOrgNoCheck(req, subscriberOrgInfo, user, subscriberOrgId = undefined) {
       const actualSubscriberOrgId = subscriberOrgId || uuid.v4();
       const preferences = subscriberOrgInfo.preferences || { private: {} };
       if (preferences.private === undefined) {
@@ -59,7 +59,7 @@ class SubscriberOrgService {
          createItem(req, -1, `${config.tablePrefix}subscriberOrgs`, 'subscriberOrgId', actualSubscriberOrgId, 'subscriberOrgInfo', subscriberOrg)
             .then(() => {
                const subscriberUser = {
-                  userId,
+                  userId: user.userId,
                   subscriberOrgId: actualSubscriberOrgId,
                   role: Roles.admin
                };
@@ -67,8 +67,9 @@ class SubscriberOrgService {
             })
             .then(() => {
                subscriberOrg.subscriberOrgId = actualSubscriberOrgId;
-               subscriberOrgCreated(req, subscriberOrg, userId);
-               return teamSvc.createTeamNoCheck(req, actualSubscriberOrgId, { name: 'All' }, subscriberUserId, userId);
+               subscriberOrgCreated(req, subscriberOrg, user.userId);
+               subscriberAdded(req, actualSubscriberOrgId, user);
+               return teamSvc.createTeamNoCheck(req, actualSubscriberOrgId, { name: 'All' }, subscriberUserId, user);
             })
             .then(() => resolve(subscriberOrg))
             .catch(err => reject(err));
@@ -78,13 +79,16 @@ class SubscriberOrgService {
    createSubscriberOrg(req, subscriberOrgInfo, userId, subscriberOrgId = undefined) {
       return new Promise((resolve, reject) => {
          // TODO: if (userId), check canCreateSubscriberOrg() -> false, throw NoPermissionsError
-         getSubscriberOrgsByName(req, subscriberOrgInfo.name)
-            .then((existingSubscriberOrgs) => {
+         Promise.all([getSubscriberOrgsByName(req, subscriberOrgInfo.name), getUsersByIds(req, [userId])])
+            .then((promiseResults) => {
+               const existingSubscriberOrgs = promiseResults[0];
+               const user = promiseResults[1][0];
+
                if (existingSubscriberOrgs.length > 0) {
                   throw new SubscriberOrgExistsError(subscriberOrgInfo.name);
                }
 
-               return this.createSubscriberOrgNoCheck(req, subscriberOrgInfo, userId, subscriberOrgId);
+               return this.createSubscriberOrgNoCheck(req, subscriberOrgInfo, user, subscriberOrgId);
             })
             .then(subscriberOrg => resolve(subscriberOrg))
             .catch(err => reject(err));
@@ -136,7 +140,7 @@ class SubscriberOrgService {
                   throw new NoPermissionsError(subscriberOrgId);
                }
 
-               updateItem(req, -1, `${config.tablePrefix}subscriberOrgs`, 'subscriberOrgId', subscriberOrgId, { subscriberOrgInfo: updateInfo });
+               return updateItem(req, -1, `${config.tablePrefix}subscriberOrgs`, 'subscriberOrgId', subscriberOrgId, { subscriberOrgInfo: updateInfo });
             })
             .then(() => {
                resolve();
@@ -236,9 +240,13 @@ class SubscriberOrgService {
                ]);
             })
             .then((promiseResults) => {
-               dbUser = promiseResults[0][0];
-               let existingDbUsers = promiseResults[0];
-               existingDbUsers.splice(0, 1);
+               let existingDbUsers = promiseResults[0].filter((existingDbUser) => {
+                  if (existingDbUser.userId === userId) {
+                     dbUser = existingDbUser;
+                     return false;
+                  }
+                  return true;
+               });
                const retrievedUsersByEmail = promiseResults[1];
 
                // If any of the userIds are bad, fail.
@@ -272,8 +280,9 @@ class SubscriberOrgService {
                return getSubscriberUsersByUserIds(req, inviteDbUserIds);
             })
             .then((subscriberUsers) => {
-               if (subscriberUsers.length !== 0) {
-                  const doNotInviteUserIds = subscriberUsers.map(subscriberUser => subscriberUser.subscriberUserInfo.userId);
+               const subscriberUsersOfOrg = subscriberUsers.filter(subscriberUser => subscriberUser.subscriberUserInfo.subscriberOrgId === subscriberOrgId);
+               if (subscriberUsersOfOrg.length !== 0) {
+                  const doNotInviteUserIds = subscriberUsersOfOrg.map(subscriberUser => subscriberUser.subscriberUserInfo.userId);
                   inviteDbUsers = inviteDbUsers.filter(inviteDbUser => doNotInviteUserIds.indexOf(inviteDbUser.userId) < 0);
                }
                return Promise.all([
@@ -286,7 +295,7 @@ class SubscriberOrgService {
       });
    }
 
-   _addUserToSubscriberOrg(req, userId, subscriberOrgId, role) {
+   _addUserToSubscriberOrg(req, user, subscriberOrgId, role) {
       return new Promise((resolve, reject) => {
          getSubscriberOrgsByIds(req, [subscriberOrgId])
             .then((subscriberOrgs) => {
@@ -296,13 +305,16 @@ class SubscriberOrgService {
 
                const subscriberUserId = uuid.v4();
                const subscriberUser = {
-                  userId,
+                  userId: user.userId,
                   subscriberOrgId,
                   role
                };
                return createItem(req, -1, `${config.tablePrefix}subscriberUsers`, 'subscriberUserId', subscriberUserId, 'subscriberUserInfo', subscriberUser);
             })
-            .then(() => resolve())
+            .then(() => {
+               subscriberAdded(req, subscriberOrgId, user);
+               resolve();
+            })
             .catch(err => reject(err));
       });
    }
@@ -322,7 +334,7 @@ class SubscriberOrgService {
             .then((invitation) => {
                if (invitation) {
                   if (accept) {
-                     return this._addUserToSubscriberOrg(req, user.userId, subscriberOrgId, Roles.admin);
+                     return this._addUserToSubscriberOrg(req, user, subscriberOrgId, Roles.admin);
                   }
                   return undefined;
                }

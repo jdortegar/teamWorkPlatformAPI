@@ -3,7 +3,7 @@ import uuid from 'uuid';
 import config from '../config/env';
 import { InvitationNotExistError, NoPermissionsError, TeamExistsError, TeamNotExistError, UserNotExistError } from './errors';
 import { deleteRedisInvitation, InvitationKeys, inviteExistingUsersToTeam } from './invitations';
-import { teamCreated, teamPrivateInfoUpdated, teamUpdated } from './messaging';
+import { teamCreated, teamMemberAdded, teamPrivateInfoUpdated, teamUpdated } from './messaging';
 import Roles from './roles';
 import teamRoomSvc from './teamRoomService';
 import {
@@ -52,7 +52,7 @@ class TeamService {
       });
    }
 
-   createTeamNoCheck(req, subscriberOrgId, teamInfo, subscriberUserId, userId, teamId = undefined) {
+   createTeamNoCheck(req, subscriberOrgId, teamInfo, subscriberUserId, user, teamId = undefined) {
       const actualTeamId = teamId || uuid.v4();
       const preferences = teamInfo.preferences || { private: {} };
       if (preferences.private === undefined) {
@@ -71,14 +71,15 @@ class TeamService {
                const teamMember = {
                   subscriberUserId,
                   teamId: actualTeamId,
-                  userId,
+                  userId: user.userId,
                   role: Roles.admin
                };
                return createItem(req, -1, `${config.tablePrefix}teamMembers`, 'teamMemberId', teamMemberId, 'teamMemberInfo', teamMember);
             })
             .then(() => {
                team.teamId = actualTeamId;
-               teamCreated(req, team, userId);
+               teamCreated(req, team, user.userId);
+               teamMemberAdded(req, actualTeamId, user);
 
                const teamRoom = {
                   name: `${team.name} Lobby`,
@@ -86,7 +87,7 @@ class TeamService {
                   publish: true,
                   active: true
                };
-               return teamRoomSvc.createTeamRoomNoCheck(req, actualTeamId, teamRoom, teamMemberId, userId);
+               return teamRoomSvc.createTeamRoomNoCheck(req, actualTeamId, teamRoom, teamMemberId, user);
             })
             .then(() => resolve(team))
             .catch(err => reject(err));
@@ -104,14 +105,20 @@ class TeamService {
                }
 
                subscriberUserId = subscriberUsers[0].subscriberUserId;
-               return getTeamBySubscriberOrgIdAndName(req, subscriberOrgId, teamInfo.name);
+               return Promise.all([
+                  getTeamBySubscriberOrgIdAndName(req, subscriberOrgId, teamInfo.name),
+                  getUsersByIds(req, [userId])
+               ]);
             })
-            .then((existingTeam) => {
-               if (existingTeam.length > 0) {
+            .then((promiseResults) => {
+               const existingTeams = promiseResults[0];
+               const user = promiseResults[1][0];
+
+               if (existingTeams.length > 0) {
                   throw new TeamExistsError(teamInfo.name);
                }
 
-               return this.createTeamNoCheck(req, subscriberOrgId, teamInfo, subscriberUserId, userId, teamId);
+               return this.createTeamNoCheck(req, subscriberOrgId, teamInfo, subscriberUserId, user, teamId);
             })
             .then(team => resolve(team))
             .catch(err => reject(err));
@@ -135,7 +142,7 @@ class TeamService {
                   throw new NoPermissionsError(teamId);
                }
 
-               updateItem(req, -1, `${config.tablePrefix}teams`, 'teamId', teamId, { teamInfo: updateInfo });
+               return updateItem(req, -1, `${config.tablePrefix}teams`, 'teamId', teamId, { teamInfo: updateInfo });
             })
             .then(() => {
                resolve();
@@ -231,9 +238,13 @@ class TeamService {
                ]);
             })
             .then((promiseResults) => {
-               dbUser = promiseResults[0][0];
-               const existingDbUsers = promiseResults[0];
-               existingDbUsers.splice(0, 1);
+               const existingDbUsers = promiseResults[0].filter((existingDbUser) => {
+                  if (existingDbUser.userId === userId) {
+                     dbUser = existingDbUser;
+                     return false;
+                  }
+                  return true;
+               });
                subscriberOrg = promiseResults[1][0];
 
                // If any of the userIds are bad, fail.
@@ -249,8 +260,9 @@ class TeamService {
                return getTeamMembersByUserIds(req, inviteDbUserIds);
             })
             .then((teamMembers) => {
-               if (teamMembers.length !== 0) {
-                  const doNotInviteUserIds = teamMembers.map(teamMember => teamMember.teamMemberInfo.userId);
+               const teamMembersOfTeam = teamMembers.filter(teamMember => teamMember.teamMemberInfo.teamId === teamId);
+               if (teamMembersOfTeam.length !== 0) {
+                  const doNotInviteUserIds = teamMembersOfTeam.map(teamMember => teamMember.teamMemberInfo.userId);
                   inviteDbUsers = inviteDbUsers.filter(inviteDbUser => doNotInviteUserIds.indexOf(inviteDbUser.userId) < 0);
                }
                return inviteExistingUsersToTeam(req, dbUser, inviteDbUsers, subscriberOrg, team);
@@ -260,7 +272,7 @@ class TeamService {
       });
    }
 
-   _addUserToTeam(req, userId, teamId, role) {
+   _addUserToTeam(req, user, teamId, role) {
       return new Promise((resolve, reject) => {
          getTeamsByIds(req, [teamId])
             .then((teams) => {
@@ -270,13 +282,16 @@ class TeamService {
 
                const teamMemberId = uuid.v4();
                const teamMember = {
-                  userId,
+                  userId: user.userId,
                   teamId,
                   role
                };
                return createItem(req, -1, `${config.tablePrefix}teamMembers`, 'teamMemberId', teamMemberId, 'teamMemberInfo', teamMember);
             })
-            .then(() => resolve())
+            .then(() => {
+               teamMemberAdded(req, teamId, user);
+               resolve();
+            })
             .catch(err => reject(err));
       });
    }
@@ -296,7 +311,7 @@ class TeamService {
             .then((invitation) => {
                if (invitation) {
                   if (accept) {
-                     return this._addUserToTeam(req, user.userId, teamId);
+                     return this._addUserToTeam(req, user, teamId);
                   }
                   return undefined;
                }
