@@ -322,7 +322,7 @@ class SubscriberOrgService {
             .then((invitation) => {
                if (invitation) {
                   if (accept) {
-                     return this._addUserToSubscriberOrg(req, user, subscriberOrgId, Roles.admin);
+                     return this._addUserToSubscriberOrg(req, user.userId, subscriberOrgId, Roles.admin);
                   }
                   return undefined;
                }

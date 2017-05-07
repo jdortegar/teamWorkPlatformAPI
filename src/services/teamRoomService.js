@@ -316,7 +316,7 @@ class TeamRoomService {
             .then((invitation) => {
                if (invitation) {
                   if (accept) {
-                     return this._addUserToTeamRoom(req, user, teamRoomId);
+                     return this._addUserToTeamRoom(req, user.userId, teamRoomId);
                   }
                   return undefined;
                }
