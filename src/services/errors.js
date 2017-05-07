@@ -60,3 +60,10 @@ export class ConversationNotExistError extends Error {
       Error.captureStackTrace(this, ConversationNotExistError);
    }
 }
+
+export class InvitationNotExistError extends Error {
+   constructor(...args) {
+      super(...args);
+      Error.captureStackTrace(this, InvitationNotExistError);
+   }
+}

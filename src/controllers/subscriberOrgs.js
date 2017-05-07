@@ -2,7 +2,7 @@ import httpStatus from 'http-status';
 import APIError from '../helpers/APIError';
 import { privateSubscriberOrg, publicSubscriberOrgs, publicUsers } from '../helpers/publishedVisibility';
 import subscriberOrgSvc from '../services/subscriberOrgService';
-import { NoPermissionsError, SubscriberOrgExistsError, SubscriberOrgNotExistError, UserNotExistError } from '../services/errors';
+import { InvitationNotExistError, NoPermissionsError, SubscriberOrgExistsError, SubscriberOrgNotExistError, UserNotExistError } from '../services/errors';
 
 export function getSubscriberOrgs(req, res, next) {
    const userId = req.user._id;
@@ -82,6 +82,25 @@ export function inviteSubscribers(req, res, next) {
       })
       .catch((err) => {
          if ((err instanceof SubscriberOrgNotExistError) || (err instanceof UserNotExistError)) {
+            res.status(httpStatus.NOT_FOUND).end();
+         } else if (err instanceof NoPermissionsError) {
+            res.status(httpStatus.FORBIDDEN).end();
+         } else {
+            next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
+         }
+      });
+}
+
+export function replyToInvite(req, res, next) {
+   const userId = req.user._id;
+   const subscriberOrgId = req.params.subscriberOrgId;
+
+   subscriberOrgSvc.replyToInvite(req, subscriberOrgId, req.body.accept, userId)
+      .then(() => {
+         res.status(httpStatus.OK).end();
+      })
+      .catch((err) => {
+         if ((err instanceof SubscriberOrgNotExistError) || (err instanceof UserNotExistError) || (err instanceof InvitationNotExistError)) {
             res.status(httpStatus.NOT_FOUND).end();
          } else if (err instanceof NoPermissionsError) {
             res.status(httpStatus.FORBIDDEN).end();

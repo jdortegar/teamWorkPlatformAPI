@@ -654,6 +654,37 @@ documentation:
                      FORBIDDEN<br />
                      The user doesn't have permissions to invite users to this subscriberOrg.
 
+   /replyToInvite:
+      /{subscriberOrgId}:
+         uriParameters:
+            subscriberOrgId:
+               description: subscriberOrg ID to accept/decline invite to.
+         post:
+            description: |
+               Accept or decline an invite to the specified subscriberOrg.
+            body:
+               properties:
+                  accept:
+                     type: boolean
+                     required: true
+               example: |
+                  {
+                     "accept": true
+                  }
+            responses:
+               200:
+                  description: |
+                     OK<br />
+                     The specified users has been added as a subscriber to the subscriberOrg.
+               404:
+                  description: |
+                     NOT_FOUND<br />
+                     The invitation or subscriberOrg was not found.
+               403:
+                  description: |
+                     FORBIDDEN<br />
+                     The user doesn't have permissions to reply to the invite.
+
 
 /teams:
 
@@ -918,6 +949,37 @@ documentation:
                   description: |
                      FORBIDDEN<br />
                      The user doesn't have permissions to invite users to this team.
+
+   /replyToInvite:
+      /{teamId}:
+         uriParameters:
+            teamId:
+               description: Team ID to accept/decline invite to.
+         post:
+            description: |
+               Accept or decline an invite to the specified team.
+            body:
+               properties:
+                  accept:
+                     type: boolean
+                     required: true
+               example: |
+                  {
+                     "accept": true
+                  }
+            responses:
+               200:
+                  description: |
+                     OK<br />
+                     The specified users has been added as a member to the team.
+               404:
+                  description: |
+                     NOT_FOUND<br />
+                     The invitation or team was not found.
+               403:
+                  description: |
+                     FORBIDDEN<br />
+                     The user doesn't have permissions to reply to the invite.
 
 
 /teamRooms:
@@ -1233,6 +1295,37 @@ documentation:
                   description: |
                      FORBIDDEN<br />
                      The user doesn't have permissions to invite users to this team room.
+
+   /replyToInvite:
+      /{teamRoomId}:
+         uriParameters:
+            teamId:
+               description: Team room ID to accept/decline invite to.
+         post:
+            description: |
+               Accept or decline an invite to the specified team room.
+            body:
+               properties:
+                  accept:
+                     type: boolean
+                     required: true
+               example: |
+                  {
+                     "accept": true
+                  }
+            responses:
+               200:
+                  description: |
+                     OK<br />
+                     The specified users has been added as a member to the team room.
+               404:
+                  description: |
+                     NOT_FOUND<br />
+                     The invitation or team room was not found.
+               403:
+                  description: |
+                     FORBIDDEN<br />
+                     The user doesn't have permissions to reply to the invite.
 
 /conversations:
 

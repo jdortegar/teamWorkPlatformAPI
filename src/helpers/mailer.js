@@ -56,11 +56,11 @@ export function sendSubscriberOrgInviteToExternalUser(email, subscriberOrgName, 
    });
 }
 
-export function sendSubscriberOrgInviteToExistingUser(email, subscriberOrgName, byUserDisplayName, rid) {
+export function sendSubscriberOrgInviteToExistingUser(email, subscriberOrgName, byUserDisplayName, key) {
    const html = `
       <h1><img src="https://static.wixstatic.com/media/ac0e25_95ce977831a9430989f049b46928fda6~mv2.jpg/v1/fill/w_247,h_244,al_c,q_80,usm_0.66_1.00_0.01/ac0e25_95ce977831a9430989f049b46928fda6~mv2.jpg" height="100" width="100" align="middle"></h1>
       <br>
-      ${byUserDisplayName} has invited you to "${subscriberOrgName}" in Habla.  Please click on this <a href="${config.webappBaseUri}/acceptinvitation/${rid}">link</a> to join them.
+      ${byUserDisplayName} has invited you to "${subscriberOrgName}" in Habla.  Please click on this <a href="${config.webappBaseUri}/acceptinvitation/?${key}">link</a> to join them.
    `;
    return sendMail({
       from: 'habla-mailer-dev@habla.ai',
@@ -70,11 +70,11 @@ export function sendSubscriberOrgInviteToExistingUser(email, subscriberOrgName, 
    });
 }
 
-export function sendTeamInviteToExistingUser(email, subscriberOrgName, teamName, byUserDisplayName, rid) {
+export function sendTeamInviteToExistingUser(email, subscriberOrgName, teamName, byUserDisplayName, key) {
    const html = `
       <h1><img src="https://static.wixstatic.com/media/ac0e25_95ce977831a9430989f049b46928fda6~mv2.jpg/v1/fill/w_247,h_244,al_c,q_80,usm_0.66_1.00_0.01/ac0e25_95ce977831a9430989f049b46928fda6~mv2.jpg" height="100" width="100" align="middle"></h1>
       <br>
-      ${byUserDisplayName} has invited you to team "${teamName}" of "${subscriberOrgName}" in Habla.  Please click on this <a href="${config.webappBaseUri}/acceptinvitation/${rid}">link</a> to join them.
+      ${byUserDisplayName} has invited you to team "${teamName}" of "${subscriberOrgName}" in Habla.  Please click on this <a href="${config.webappBaseUri}/acceptinvitation/?${key}">link</a> to join them.
    `;
    return sendMail({
       from: 'habla-mailer-dev@habla.ai',
@@ -84,11 +84,11 @@ export function sendTeamInviteToExistingUser(email, subscriberOrgName, teamName,
    });
 }
 
-export function sendTeamRoomInviteToExistingUser(email, subscriberOrgName, teamName, teamRoomName, byUserDisplayName, rid) {
+export function sendTeamRoomInviteToExistingUser(email, subscriberOrgName, teamName, teamRoomName, byUserDisplayName, key) {
    const html = `
       <h1><img src="https://static.wixstatic.com/media/ac0e25_95ce977831a9430989f049b46928fda6~mv2.jpg/v1/fill/w_247,h_244,al_c,q_80,usm_0.66_1.00_0.01/ac0e25_95ce977831a9430989f049b46928fda6~mv2.jpg" height="100" width="100" align="middle"></h1>
       <br>
-      ${byUserDisplayName} has invited you to team room "${teamRoomName}" of "${subscriberOrgName}" in Habla.  Please click on this <a href="${config.webappBaseUri}/acceptinvitation/${rid}">link</a> to join them.
+      ${byUserDisplayName} has invited you to team room "${teamRoomName}" of "${subscriberOrgName}" in Habla.  Please click on this <a href="${config.webappBaseUri}/acceptinvitation/?${key}">link</a> to join them.
    `;
    return sendMail({
       from: 'habla-mailer-dev@habla.ai',

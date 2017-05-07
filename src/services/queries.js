@@ -438,6 +438,15 @@ export function getTeamMembersByIds(req, teamMemberIds) {
    return batchGetItemBySortKey(req, tableName, 'teamMemberId', teamMemberIds);
 }
 
+export function getTeamMembersByUserIds(req, userIds) {
+   if (userIds === undefined) {
+      return Promise.reject('userIds needs to be specified.');
+   }
+
+   const tableName = `${config.tablePrefix}teamMembers`;
+   return filteredScanValueIn(req, tableName, 'teamMemberInfo.userId', userIds);
+}
+
 
 export function getTeamRoomMembersByTeamRoomId(req, teamRoomId) {
    if (teamRoomId === undefined) {
@@ -464,6 +473,15 @@ export function getTeamRoomMembersByTeamMemberIds(req, teamMemberIds) {
 
    const tableName = `${config.tablePrefix}teamRoomMembers`;
    return filteredScanValueIn(req, tableName, 'teamRoomMemberInfo.teamMemberId', teamMemberIds);
+}
+
+export function getTeamRoomMembersByUserIds(req, userIds) {
+   if (userIds === undefined) {
+      return Promise.reject('userIds needs to be specified.');
+   }
+
+   const tableName = `${config.tablePrefix}teamRoomMembers`;
+   return filteredScanValueIn(req, tableName, 'teamRoomMemberInfo.userId', userIds);
 }
 
 
