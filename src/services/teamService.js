@@ -296,7 +296,7 @@ class TeamService {
             .then((invitation) => {
                if (invitation) {
                   if (accept) {
-                     return this._addUserToTeam(req, user, teamId);
+                     return this._addUserToTeam(req, user.userId, teamId);
                   }
                   return undefined;
                }
