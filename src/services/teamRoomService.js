@@ -4,7 +4,7 @@ import config from '../config/env';
 import conversationSvc from './conversationService';
 import { InvitationNotExistError, NoPermissionsError, TeamRoomExistsError, TeamRoomNotExistError, UserNotExistError } from './errors';
 import { deleteRedisInvitation, InvitationKeys, inviteExistingUsersToTeamRoom } from './invitations';
-import { teamRoomCreated, teamRoomPrivateInfoUpdated, teamRoomUpdated } from './messaging';
+import { teamRoomCreated, teamRoomMemberAdded, teamRoomPrivateInfoUpdated, teamRoomUpdated } from './messaging';
 import {
    createItem,
    getSubscriberOrgsByIds,
@@ -61,7 +61,7 @@ class TeamRoomService {
       });
    }
 
-   createTeamRoomNoCheck(req, teamId, teamRoomInfo, teamMemberId, userId, teamRoomId = undefined) {
+   createTeamRoomNoCheck(req, teamId, teamRoomInfo, teamMemberId, user, teamRoomId = undefined) {
       const actualTeamRoomId = teamRoomId || uuid.v4();
       const preferences = teamRoomInfo.preferences || { private: {} };
       if (preferences.private === undefined) {
@@ -83,17 +83,18 @@ class TeamRoomService {
                const teamRoomMember = {
                   teamMemberId,
                   teamRoomId: actualTeamRoomId,
-                  userId,
+                  userId: user.userId,
                   role: Roles.admin
                };
                return createItem(req, -1, `${config.tablePrefix}teamRoomMembers`, 'teamRoomMemberId', teamRoomMemberId, 'teamRoomMemberInfo', teamRoomMember);
             })
             .then(() => {
                teamRoom.teamRoomId = actualTeamRoomId;
-               teamRoomCreated(req, teamRoom, userId);
+               teamRoomCreated(req, teamRoom, user.userId);
+               teamRoomMemberAdded(req, actualTeamRoomId, user);
 
                const conversation = {};
-               return conversationSvc.createConversationNoCheck(req, actualTeamRoomId, conversation, userId);
+               return conversationSvc.createConversationNoCheck(req, actualTeamRoomId, conversation, user.userId);
             })
             .then(() => resolve(teamRoom))
             .catch(err => reject(err));
@@ -112,14 +113,19 @@ class TeamRoomService {
                }
 
                teamMemberId = teamMembers[0].teamMemberId;
-               return getTeamRoomsByTeamIdAndName(req, teamId, teamRoomInfo.name);
+               return Promise.all([
+                  getTeamRoomsByTeamIdAndName(req, teamId, teamRoomInfo.name),
+                  getUsersByIds(req, [userId])
+               ]);
             })
-            .then((teamRooms) => {
+            .then((promiseResults) => {
+               const teamRooms = promiseResults[0];
+               const user = promiseResults[1][0];
                if (teamRooms.length > 0) {
                   throw new TeamRoomExistsError(teamRoomInfo.name);
                }
 
-               return this.createTeamRoomNoCheck(req, teamId, teamRoomInfo, teamMemberId, userId, teamRoomId);
+               return this.createTeamRoomNoCheck(req, teamId, teamRoomInfo, teamMemberId, user, teamRoomId);
             })
             .then(teamRoom => resolve(teamRoom))
             .catch(err => reject(err));
@@ -143,7 +149,7 @@ class TeamRoomService {
                   throw new NoPermissionsError(teamRoomId);
                }
 
-               updateItem(req, -1, `${config.tablePrefix}teamRooms`, 'teamRoomId', teamRoomId, { teamRoomInfo: updateInfo });
+               return updateItem(req, -1, `${config.tablePrefix}teamRooms`, 'teamRoomId', teamRoomId, { teamRoomInfo: updateInfo });
             })
             .then(() => {
                resolve();
@@ -251,9 +257,13 @@ class TeamRoomService {
                ]);
             })
             .then((promiseResults) => {
-               dbUser = promiseResults[0][0];
-               const existingDbUsers = promiseResults[0];
-               existingDbUsers.splice(0, 1);
+               const existingDbUsers = promiseResults[0].filter((existingDbUser) => {
+                  if (existingDbUser.userId === userId) {
+                     dbUser = existingDbUser;
+                     return false;
+                  }
+                  return true;
+               });
                subscriberOrg = promiseResults[1][0];
 
                // If any of the userIds are bad, fail.
@@ -269,8 +279,9 @@ class TeamRoomService {
                return getTeamRoomMembersByUserIds(req, inviteDbUserIds);
             })
             .then((teamRoomMembers) => {
-               if (teamRoomMembers.length !== 0) {
-                  const doNotInviteUserIds = teamRoomMembers.map(teamRoomMember => teamRoomMember.teamRoomMemberInfo.userId);
+               const teamRoomMembersOfTeamRoom = teamRoomMembers.filter(teamRoomMember => teamRoomMember.teamRoomMemberInfo.teamRoomId === teamRoomId);
+               if (teamRoomMembersOfTeamRoom.length !== 0) {
+                  const doNotInviteUserIds = teamRoomMembersOfTeamRoom.map(teamRoomMember => teamRoomMember.teamRoomMemberInfo.userId);
                   inviteDbUsers = inviteDbUsers.filter(inviteDbUser => doNotInviteUserIds.indexOf(inviteDbUser.userId) < 0);
                }
                return inviteExistingUsersToTeamRoom(req, dbUser, inviteDbUsers, subscriberOrg, team, teamRoom);
@@ -280,7 +291,7 @@ class TeamRoomService {
       });
    }
 
-   _addUserToTeamRoom(req, userId, teamRoomId, role) {
+   _addUserToTeamRoom(req, user, teamRoomId, role) {
       return new Promise((resolve, reject) => {
          getTeamRoomsByIds(req, [teamRoomId])
             .then((teamRooms) => {
@@ -290,13 +301,16 @@ class TeamRoomService {
 
                const teamRoomMemberId = uuid.v4();
                const teamRoomMember = {
-                  userId,
+                  userId: user.userId,
                   teamRoomId,
                   role
                };
                return createItem(req, -1, `${config.tablePrefix}teamRoomMembers`, 'teamRoomMemberId', teamRoomMemberId, 'teamRoomMemberInfo', teamRoomMember);
             })
-            .then(() => resolve())
+            .then(() => {
+               teamRoomMemberAdded(req, teamRoomId, user);
+               resolve();
+            })
             .catch(err => reject(err));
       });
    }
@@ -316,7 +330,7 @@ class TeamRoomService {
             .then((invitation) => {
                if (invitation) {
                   if (accept) {
-                     return this._addUserToTeamRoom(req, user.userId, teamRoomId);
+                     return this._addUserToTeamRoom(req, user, teamRoomId);
                   }
                   return undefined;
                }

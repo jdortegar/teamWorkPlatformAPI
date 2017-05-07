@@ -12,7 +12,7 @@ export const InvitationKeys = Object.freeze({
 const defaultExpiration = 7 * 24 * 60 * 60; // 1 week.
 
 function hashKey(email) {
-   return `${email}#pendingInvite`;
+   return `${email}#pendingInvites`;
 }
 
 function toInvitationKey(invitationKey, invitationValue) {

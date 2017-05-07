@@ -20,12 +20,18 @@ export const EventTypes = Object.freeze({
    subscriberOrgCreated: 'subscriberOrgCreated',
    subscriberOrgUpdated: 'subscriberOrgUpdated',
    subscriberOrgPrivateInfoUpdated: 'subscriberOrgPrivateInfoUpdated',
+   subscriberAdded: 'subscriberAdded',
+   subscriberRemoved: 'subscriberRemoved',
    teamCreated: 'teamCreated',
    teamUpdated: 'teamUpdated',
    teamPrivateInfoUpdated: 'teamPrivateInfoUpdated',
+   teamMemberAdded: 'teamMemberAdded',
+   teamMemberRemoved: 'teamMemberRemoved',
    teamRoomCreated: 'teamRoomCreated',
    teamRoomUpdated: 'teamRoomUpdated',
    teamRoomPrivateInfoUpdated: 'teamRoomPrivateInfoUpdated',
+   teamRoomMemberAdded: 'teamRoomMemberAdded',
+   teamRoomMemberRemoved: 'teamRoomMemberRemoved',
    conversationCreated: 'conversationCreated',
    conversationUpdated: 'conversationUpdated',
    messageCreated: 'messageCreated',
@@ -105,17 +111,25 @@ class MessagingService {
             callback: false
          }))
          .on('authenticated', (socket) => {
+            console.log('\nAD: authenticated');
             this._connected(socket);
 
             socket.on('message', (eventType, event) => {
+               console.log('\nAD: message');
                this._message(socket, eventType, event);
             });
 
             socket.on('disconnect', (reason) => {
+               console.log(`\nAD: disconnect: ${reason}`);
                this._disconnected(socket, reason);
             });
 
+            socket.on('disconnecting', (reason) => {
+               console.log(`\nAD: disconnecting: ${reason}`);
+            });
+
             socket.on('error', (error) => {
+               console.log('\nAD: error');
                console.log(`MessagingService error. ${error}`);
             });
          });

@@ -110,7 +110,7 @@ class UserService {
                }
 
                user = dbUsers[0].userInfo;
-               updateItem(req, -1, `${config.tablePrefix}users`, 'userId', userId, { userInfo: updateInfo });
+               return updateItem(req, -1, `${config.tablePrefix}users`, 'userId', userId, { userInfo: updateInfo });
             })
             .then(() => {
                resolve();

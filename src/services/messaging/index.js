@@ -5,9 +5,12 @@ import {
    privateUser,
    publicConversation,
    publicTeam,
+   publicTeamMember,
    publicTeamRoom,
+   publicTeamRoomMember,
    publicUser,
    publicMessage,
+   publicSubscriber,
    publicSubscriberOrg
 } from '../../helpers/publishedVisibility';
 import { _broadcastEvent, _joinChannels, _presenceChanged, ChannelFactory, EventTypes } from './messagingService';
@@ -39,6 +42,12 @@ export function userPrivateInfoUpdated(req, user) {
    ]);
 }
 
+export function userInvited(req, userId, invitation) {
+   return _broadcastEvent(req, userId, invitation, [
+      ChannelFactory.personalChannel(userId)
+   ]);
+}
+
 
 // EventType = subscriberOrg
 
@@ -60,14 +69,14 @@ export function subscriberOrgUpdated(req, subscriberOrg) {
 }
 
 export function subscriberOrgPrivateInfoUpdated(req, subscriberOrg) {
-   return _broadcastEvent(req, EventTypes.userInvited, privateSubscriberOrg(subscriberOrg), [
+   return _broadcastEvent(req, EventTypes.userPrivateInfoUpdated, privateSubscriberOrg(subscriberOrg), [
       ChannelFactory.subscriberOrgAdminChannel(subscriberOrg.subscriberOrgId)
    ]);
 }
 
-export function userInvited(req, userId, invitation) {
-   return _broadcastEvent(req, userId, invitation, [
-      ChannelFactory.personalChannel(userId)
+export function subscriberAdded(req, subscriberOrgId, user) {
+   return _broadcastEvent(req, EventTypes.subscriberAdded, publicSubscriber(subscriberOrgId, user), [
+      ChannelFactory.subscriberOrgChannel(subscriberOrgId)
    ]);
 }
 
@@ -97,6 +106,12 @@ export function teamPrivateInfoUpdated(req, team) {
    ]);
 }
 
+export function teamMemberAdded(req, teamId, user) {
+   return _broadcastEvent(req, EventTypes.teamMemberAdded, publicTeamMember(teamId, user), [
+      ChannelFactory.subscriberOrgChannel(teamId)
+   ]);
+}
+
 
 // EventType = teamRoom
 
@@ -120,6 +135,12 @@ export function teamRoomUpdated(req, teamRoom) {
 export function teamRoomPrivateInfoUpdated(req, teamRoom) {
    return _broadcastEvent(req, EventTypes.teamRoomPrivateInfoUpdated, privateTeamRoom(teamRoom), [
       ChannelFactory.teamRoomAdminChannel(teamRoom.teamRoomId)
+   ]);
+}
+
+export function teamRoomMemberAdded(req, teamRoomId, user) {
+   return _broadcastEvent(req, EventTypes.teamRoomMemberAdded, publicTeamRoomMember(teamRoomId, user), [
+      ChannelFactory.subscriberOrgChannel(teamRoomId)
    ]);
 }
 
