@@ -453,9 +453,10 @@ function chat(conversation) {
          .then((continueChat) => {
             if (continueChat) {
                resolve(chat(conversation));
+            } else {
+               messaging.typing(conversation.conversationId, false);
+               resolve();
             }
-            messaging.typing(conversation.conversationId, false);
-            resolve();
          })
          .catch((err) => {
             if ((err.response) && (err.response.status === 400)) {

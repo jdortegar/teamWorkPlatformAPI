@@ -22,9 +22,13 @@ router.route('/updateUser')
 router.route('/updatePublicPreferences/:userId')
    .patch(validate(paramValidation.updateUserPublicPreferences), users.updatePublicPreferences);
 
+router.route('/getInvitations')
+   .get(users.getInvitations);
+
+
+
 router.route('/:userId')
   .put(users.update);
-
 
 router.route('/passwordreset')
   .post(users.resetPassword);

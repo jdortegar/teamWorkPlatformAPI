@@ -2,6 +2,7 @@ import _ from 'lodash';
 import uuid from 'uuid';
 import config from '../config/env';
 import { NoPermissionsError, UserNotExistError } from './errors';
+import { getRedisInvitations } from './invitations';
 import { userCreated, userUpdated } from './messaging';
 import subscriberOrgSvc from './subscriberOrgService';
 import { createItem, getUsersByIds, updateItem } from './queries';
@@ -117,6 +118,22 @@ class UserService {
                _.merge(user, updateInfo);
                user.userId = userId;
                userUpdated(req, user);
+            })
+            .catch(err => reject(err));
+      });
+   }
+
+   getInvitations(req, email) {
+      return new Promise((resolve, reject) => {
+         getRedisInvitations(req, email)
+            .then((keyValues) => {
+               if (keyValues === null) {
+                  resolve([]);
+               } else {
+                  const invitations = [];
+                  Object.values(keyValues).forEach(invitation => invitations.push(invitation));
+                  resolve(invitations);
+               }
             })
             .catch(err => reject(err));
       });

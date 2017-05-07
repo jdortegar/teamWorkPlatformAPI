@@ -15,7 +15,6 @@ import uuid from 'uuid';
 import config from '../config/env';
 import APIError from '../helpers/APIError';
 import * as mailer from '../helpers/mailer';
-import { privateUser } from '../helpers/publishedVisibility';
 import User from '../models/user';
 import { NoPermissionsError, UserNotExistError } from '../services/errors';
 import userService from '../services/userService';
@@ -138,6 +137,18 @@ export function updatePublicPreferences(req, res, next) {
          }
       });
 }
+
+export function getInvitations(req, res, next) {
+   const email = req.user.email;
+
+   userService.getInvitations(req, email)
+      .then(invitations => res.status(httpStatus.OK).json({ invitations }))
+      .catch(err => next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE)));
+}
+
+
+
+
 
 export function del(req, res, next) {
   const email = req.body.email || '';
