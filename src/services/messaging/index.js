@@ -17,9 +17,11 @@ import { _broadcastEvent, _joinChannels, _presenceChanged, ChannelFactory, Event
 
 // EventType = presence
 
-export function presenceChanged(req, userId, presenceStatus, presenceMessage = undefined) {
-   return _presenceChanged(req, EventTypes.presenceChanged, { userId, presenceStatus, presenceMessage });
-}
+// export function presenceChanged(req, userId, presenceStatus, presenceMessage = undefined) {
+//    // TODO: presence only for orgs of user.
+//    // TODO: get address, userAgent, location
+//    return _presenceChanged(req, EventTypes.presenceChanged, userId, address, userAgent, location, presenceStatus, presenceMessage });
+// }
 
 
 // EventType = user

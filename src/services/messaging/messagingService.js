@@ -36,6 +36,7 @@ export const EventTypes = Object.freeze({
    conversationUpdated: 'conversationUpdated',
    messageCreated: 'messageCreated',
    typing: 'typing',
+   location: 'location',
    from(value) { return (this[value]); }
 });
 
@@ -87,18 +88,14 @@ export const PresenceStatuses = Object.freeze({
 class MessagingService {
    httpServer;
    io;
-   // pingInterval = 120000; // 2 minutes.
-   // pingTimeout = (this.pingInterval * 2) + 1;
 
+   // TODO: remove this.  We ain't using it.
    socketsBySocketId = {};
    socketsByUserId = {};
 
    init(httpServer) {
       this.httpServer = httpServer;
       this.io = new SocketIO(this.httpServer);
-      // this.io = new SocketIO(this.httpServer, { pingInterval: this.pingInterval, pingTimeout: this.pingTimeout });
-      // this.io.set('heartbeat interval', this.pingInterval);
-      // this.io.set('heartbeat timeout', this.pingTimeout);
       const redisAdapter = new SocketIORedisAdapter({ host: config.cacheServer, port: config.cachePort });
       this.io.adapter(redisAdapter);
       this.io.use(new SocketIOWildcard());
@@ -111,25 +108,21 @@ class MessagingService {
             callback: false
          }))
          .on('authenticated', (socket) => {
-            console.log('\nAD: authenticated');
             this._connected(socket);
 
             socket.on('message', (eventType, event) => {
-               console.log('\nAD: message');
                this._message(socket, eventType, event);
             });
 
             socket.on('disconnect', (reason) => {
-               console.log(`\nAD: disconnect: ${reason}`);
                this._disconnected(socket, reason);
             });
 
-            socket.on('disconnecting', (reason) => {
-               console.log(`\nAD: disconnecting: ${reason}`);
-            });
+            // Called just before 'disconnect', so no reason to listen for this.
+            // socket.on('disconnecting', (reason) => {
+            // });
 
             socket.on('error', (error) => {
-               console.log('\nAD: error');
                console.log(`MessagingService error. ${error}`);
             });
          });
@@ -149,25 +142,36 @@ class MessagingService {
       this.socketsByUserId[socket.decoded_token._id] = socket;
 
       const userId = socket.decoded_token._id;
-      console.log(`MessagingService: User connected. sId=${socket.id} userId=${userId} ${socket.decoded_token.email}`);
+      const address = socket.client.conn.remoteAddress;
+      const userAgent = socket.client.request.headers['user-agent'];
+      const location = undefined;
+      console.log(`MessagingService: User connected. sId=${socket.id} userId=${userId} ${socket.decoded_token.email} address=${address} userAgent=${userAgent}`);
 
-      console.log(`AD: TODO: use this to deduce client type:  address=${socket.client.conn.remoteAddress}, user-agent=${socket.client.request.headers['user-agent']}`);
       const req = { app, now: moment.utc() };
       this._joinCurrentChannels(req, socket, userId);
-      this._presenceChanged(req, userId, PresenceStatuses.available);
+      this._presenceChanged(req, userId, address, userAgent, location, PresenceStatuses.available);
    }
 
    _disconnected(socket, reason) {
       delete this.socketsBySocketId[socket.id];
       delete this.socketsByUserId[socket.decoded_token._id];
+
       const userId = socket.decoded_token._id;
-      console.log(`MessagingService: User disconnected. sId=${socket.id} userId=${userId} ${socket.decoded_token.email} (${reason})`);
-      this._presenceChanged(undefined, userId, PresenceStatuses.away);
+      const address = socket.client.conn.remoteAddress;
+      const userAgent = socket.client.request.headers['user-agent'];
+      const location = undefined;
+      console.log(`MessagingService: User disconnected. sId=${socket.id} userId=${userId} ${socket.decoded_token.email} address=${address} userAgent=${userAgent} (${reason})`);
+
+      const req = { app, now: moment.utc() };
+      this._presenceChanged(req, userId, address, userAgent, location, PresenceStatuses.away);
    }
 
-   // TODO: maintain 'from' or count, just in case the same user is connected via multiple clients.
-   _presenceChanged(req, userId, presenceStatus, presenceMessage = undefined) {
-      return this._broadcastEvent(req, EventTypes.presenceChanged, { userId, presenceStatus, presenceMessage });
+   _presenceChanged(req, userId, address, userAgent, location, presenceStatus, presenceMessage = undefined) {
+      // Use a separate module for presence.js.
+      // TODO: expiration?
+      // TODO: Delete from redis if (presenceStatus === away).  Store/update, otherwise.  Don't override location if undefined.
+      // TODO: presence only for orgs of user.
+      return this._broadcastEvent(req, EventTypes.presenceChanged, { userId, address, userAgent, location, presenceStatus, presenceMessage });
    }
 
    _joinCurrentChannels(req, socket, userId) {
@@ -237,7 +241,6 @@ class MessagingService {
    }
 
    _message(socket, eventType, event) {
-      // Drop this on the floor.  User is trying to send a message via websockets.
       if (eventType === EventTypes.typing) {
          const conversationId = event.conversationId;
          if (conversationId) {
@@ -245,8 +248,19 @@ class MessagingService {
             const channel = ChannelFactory.conversationChannel(conversationId);
             socket.to(channel).emit(eventType, { userId, conversationId, isTyping: event.isTyping });
          }
+      } else if (eventType === EventTypes.location) {
+         const { lat, lon, alt } = event;
+         if ((lat) && (lon)) {
+            const req = { app, now: moment.utc() };
+            const userId = socket.decoded_token._id;
+            const address = socket.client.conn.remoteAddress;
+            const userAgent = socket.client.request.headers['user-agent'];
+            const location = { lat, lon, alt };
+            this._presenceChanged(req, userId, address, userAgent, location, PresenceStatuses.available);
+            // broadcast.
+         }
       } else {
-         console.warn(`MessagingService: Droping Message received from sId=${socket.id} userId=${socket.decoded_token._id} ${socket.decoded_token.email}. eventType=${eventType}, event=${event}`);
+         console.warn(`MessagingService: Dropping Message received from sId=${socket.id} userId=${socket.decoded_token._id} ${socket.decoded_token.email}. eventType=${eventType}, event=${event}`);
       }
    }
 
@@ -328,9 +342,9 @@ const messagingService = new MessagingService();
 export default messagingService;
 
 
-export function _presenceChanged(req, userId, presenceStatus, presenceMessage = undefined) {
-   messagingService._presenceChanged(req, userId, presenceStatus, presenceMessage);
-}
+// export function _presenceChanged(req, userId, address, userAgent, location, presenceStatus, presenceMessage = undefined) {
+//    messagingService._presenceChanged(req, userId, address, userAgent, location, presenceStatus, presenceMessage);
+// }
 
 export function _broadcastEvent(req, eventType, event, channels = undefined) {
    messagingService._broadcastEvent(req, eventType, event, channels);
