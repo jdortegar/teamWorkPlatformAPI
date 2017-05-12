@@ -7,16 +7,136 @@ import { EventTypes } from './src/services/messaging/MessagingService';
 export default class Messaging {
    url;
    socket;
-   listener;
 
-   printPing = false;
+   eventListeners = new Set();
+   onlineOfflineListeners = new Set();
+   unauthorizedListeners= new Set();
+
+   connectionListenersInitialized = false;
+
+   verbose = false;
 
    constructor(url) {
       this.url = url;
    }
 
-   set eventListener(listener) {
-      this.listener = listener;
+   /**
+    * Refer to repository hablaapi/src/services/messaging/messagingService#EventTypes for valid event types.
+    *
+    * @param listener Callback function that accepts a two parameter of eventType, and event json.
+    */
+   addEventListener(listener) {
+      this.eventListeners.add(listener);
+   }
+
+   /**
+    * Make sure to retrieve missed messages.  (ex. /conversations/{conversationId}/getTranscript?since=2017-05-07T06:14:30Z)
+    *
+    * @param listener Callback function that accepts a single parameter of true (online) or false (offline).
+    */
+   addOnlineOfflineListener(listener) {
+      this.onlineOfflineListeners.add(listener);
+   }
+
+
+   /**
+    * Redirect user to login page perhaps?
+    *
+    * @param listener
+    */
+   addUnauthorizedListener(listener) {
+      this.unauthorizedListeners.add(listener);
+   }
+
+   _verbose(verbose = true) {
+      this.verbose = verbose;
+   }
+
+   _initializeConnectionListeners() {
+      if (!this.connectionListenersInitialized) {
+         this.socket.on('unauthorized', (error) => {
+            if (this.verbose) {
+               console.log(`Messaging unauthorized.  ${JSON.stringify(error)}`);
+            }
+
+            if ((error.data.type === 'UnauthorizedError') || (error.data.code === 'invalid_token')) {
+               if (this.verbose) {
+                  console.log("User's token has expired");
+               }
+
+               this._notifyUnauthorizedListeners();
+            }
+         });
+
+         this.socket.on('reconnect_failed', (a) => {
+            if (this.verbose) {
+               console.log(`\n\t\t\tMessaging reconnect_failed: a=${a}  [${new Date()}]`);
+            }
+         });
+         this.socket.on('reconnect', (attemptNumber) => {
+            if (this.verbose) {
+               console.log(`\n\t\t\tMessaging reconnect: attemptNumber=${attemptNumber}  [${new Date()}]`);
+            }
+         });
+         this.socket.on('connect_error', (err) => {
+            if (this.verbose) {
+               console.log(`\n\t\t\tMessaging connect_error: ${JSON.stringify(err)}  [${new Date()}]`);
+            }
+            if (this.onlineOfflineListeners) {
+               this.onlineOfflineListeners(false);
+            }
+         });
+         this.socket.on('reconnect_error', (err) => {
+            if (this.verbose) {
+               console.log(`\n\t\t\tMessaging reconnect_error: ${JSON.stringify(err)}  [${new Date()}]`);
+            }
+         });
+         this.socket.on('connect_timeout', () => {
+            if (this.verbose) {
+               console.log(`\n\t\t\tMessaging connect_timeout: [${new Date()}]`);
+            }
+         });
+         this.socket.on('error', (err) => {
+            if (this.verbose) {
+               console.log(`\n\t\t\tMessaging error: ${JSON.stringify(err)}  [${new Date()}]`);
+            }
+         });
+         this.socket.on('ping', () => {
+            if (this.verbose) {
+               console.log(`\n\t\t\tMessaging ping  [${new Date()}]`);
+            }
+         });
+         this.socket.on('pong', (ms) => {
+            if (this.verbose) {
+               console.log(`\n\t\t\tMessaging pong (${ms}ms)  [${new Date()}]`);
+            }
+         });
+
+         this.socket.on('*', (payload) => {
+            const eventType = payload.data[0];
+            const event = payload.data[1];
+
+            if (eventType !== 'authenticated' ) {
+               console.log(`\n\t\t\tMessaging received eventType=${eventType}  event=${JSON.stringify(event)}  [${new Date()}]`);
+
+               this._notifyEventListeners(eventType, event);
+            }
+         });
+
+         this.connectionListenersInitialized = true;
+      }
+   }
+
+   _notifyEventListeners(eventType, event) {
+      this.eventListeners.forEach(listener => listener(eventType, event));
+   }
+
+   _notifyOnlineOfflineListener(online) {
+      this.onlineOfflineListeners.forEach(listener => listener(online));
+   }
+
+   _notifyUnauthorizedListeners() {
+      this.unauthorizedListeners.forEach(listener => listener());
    }
 
    connect(jwt) {
@@ -28,78 +148,48 @@ export default class Messaging {
          wildcardPatch(this.socket);
 
          this.socket.on('connect', () => {
-            console.log('Messaging connected.');
-            this.socket.emit('authenticate', { token: jwt })
-            .on('authenticated', () => {
-               console.log('Messaging authenticated.');
-               // TODO: important.  ONLINE
+            if (this.verbose) {
+               console.log(`\n\t\t\tMessaging connected.  [${new Date()}]`);
+            }
+            this.socket.emit('authenticate', { token: jwt });
 
-               this.socket.on('reconnect_failed', (a) => {
-                  console.log(`\n\t\t\tMessaging reconnect_failed: a=${a}  [${new Date()}]`);
-               });
-               this.socket.on('reconnect', (attemptNumber) => {
-                  console.log(`\n\t\t\tMessaging reconnect: attemptNumber=${attemptNumber}  [${new Date()}]`);
-               });
-               this.socket.on('connect_error', (err) => {
-                  // TODO: important.  OFFLINE
-                  console.log(`\n\t\t\tMessaging connect_error: ${JSON.stringify(err)}  [${new Date()}]`);
-               });
-               this.socket.on('reconnect_error', (err) => {
-                  console.log(`\n\t\t\tMessaging reconnect_error: ${JSON.stringify(err)}  [${new Date()}]`);
-               });
-               this.socket.on('connect_timeout', () => {
-                  console.log(`\n\t\t\tMessaging connect_timeout: [${new Date()}]`);
-               });
-               this.socket.on('error', (err) => {
-                  console.log(`\n\t\t\tMessaging error: ${JSON.stringify(err)}  [${new Date()}]`);
-               });
-               this.socket.on('ping', () => {
-                  if (this.printPing) {
-                     console.log(`\n\t\t\tMessaging ping  [${new Date()}]`);
+            if (!this.connectionListenersInitialized) {
+               this.socket.on('authenticated', () => {
+                  if (this.verbose) {
+                     console.log(`\n\t\t\tMessaging authenticated.  [${new Date()}]`);
                   }
-               });
-               this.socket.on('pong', (ms) => {
-                  if (this.printPing) {
-                     console.log(`\n\t\t\tMessaging pong (${ms}ms)  [${new Date()}]`);
-                  }
-               });
 
-               this.socket.on('*', (payload) => {
-                  const eventType = payload.data[0];
-                  const event = payload.data[1];
-                  console.log(`\n\t\t\tMessaging received eventType=${eventType}  event=${JSON.stringify(event)}  [${new Date()}]`);
-                  if ((eventType !== 'authenticated' ) && (this.listener)) {
-                     this.listener(eventType, event);
-                  }
+
+                  this._notifyOnlineOfflineListener(true);
+                  resolve();
                });
-               resolve();
-            })
-            .on('unauthorized', (error) => {
-               console.log(`Messaging unauthorized.  ${JSON.stringify(error)}`);
-               if ((error.data.type === 'UnauthorizedError') || (error.data.code === 'invalid_token')) {
-                  // redirect user to login page perhaps?
-                  console.log("User's token has expired");
-               }
-               reject();
-            });
+            }
+
+            this._initializeConnectionListeners();
          });
       });
    }
+
 
    typing(conversationId, isTyping) {
       this.socket.send(EventTypes.typing, { conversationId, isTyping });
    }
 
-   printPingMessages(printPing = true) {
-      this.printPing = printPing;
+   location(lat, lon, alt = undefined) {
+      this.socket.send(EventTypes.location, { lat, lon, alt });
    }
 
    close() {
       if (this.socket) {
          this.socket.close();
          this.socket = undefined;
+         this.connectionListenersInitialized = false;
       }
    }
+}
+
+function myEventListener(eventType, event) {
+   console.log(`myEventListener(${eventType}, ${JSON.stringify(event)})`);
 }
 
 
@@ -368,7 +458,7 @@ if (args.length !== 1) {
    process.exit();
 }
 
-let showPingMessages = false;
+let verbose = false;
 
 const apiBaseUrl = args[0];
 let jwt;
@@ -382,7 +472,7 @@ const mainChoices = [
    { id: '4', name: 'Set teamRoom in session context' },
    { id: '5', name: 'Show session context details' },
    { id: '6', name: 'Message with current context' },
-   { id: '-1', name: 'Show/hide ping messages' },
+   { id: '-1', name: 'Verbose messages' },
    { id: '7', name: 'Exit' }
 ];
 
@@ -490,8 +580,8 @@ function mainMenu() {
       selectChoice('Main Menu:', 'name', 'id', mainChoices, false, false)
          .then((choice) => {
             if (choice.id === '-1') {
-               showPingMessages = !showPingMessages;
-               messaging.printPingMessages(showPingMessages);
+               verbose = !verbose;
+               messaging._verbose(verbose);
             } else if (choice.id === '1') {
                sessionCtx = {};
             } else if (choice.id === '2') {
@@ -605,6 +695,8 @@ promptCredentials()
       console.log(`User: ${JSON.stringify(user)}`);
 
       messaging = new Messaging(responseData.websocketUrl);
+
+      messaging.addEventListener(myEventListener);
 
       return Promise.all([
          messaging.connect(jwt),

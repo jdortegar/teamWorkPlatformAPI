@@ -126,12 +126,10 @@ class UserService {
    getInvitations(req, email) {
       return new Promise((resolve, reject) => {
          getRedisInvitations(req, email)
-            .then((keyValues) => {
-               if (keyValues === null) {
+            .then((invitations) => {
+               if (invitations === null) {
                   resolve([]);
                } else {
-                  const invitations = [];
-                  Object.values(keyValues).forEach(invitation => invitations.push(invitation));
                   resolve(invitations);
                }
             })
