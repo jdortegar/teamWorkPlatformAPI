@@ -10,6 +10,7 @@ import {
    getConversationParticipantsByUserId,
    getConversationsByIds,
    getMessagesByConversationId,
+   getMessageById,
    getUsersByIds
 } from './queries';
 
@@ -29,6 +30,7 @@ function createMessageInDb(req, partitionId, messageId, message) {
    return docClient.put(params).promise();
 }
 
+const MESSAGE_PATH_SEPARATOR = '##';
 
 class ConversationService {
 
@@ -262,6 +264,22 @@ class ConversationService {
                if (userIds.indexOf(userId) < 0) {
                   throw new NoPermissionsError(conversationId);
                }
+
+               if (message.replyTo) {
+                  return getMessageById(req, message.replyTo);
+               }
+               return undefined;
+            })
+            .then((replyToMessage) => {
+               if (replyToMessage) {
+                  message.level = ((replyToMessage.level) ? replyToMessage.level : 0) + 1;
+                  message.path = (replyToMessage.path) ? replyToMessage.path : '';
+                  message.path = `${message.path}${MESSAGE_PATH_SEPARATOR}${messageId}`;
+               } else {
+                  message.level = 0;
+                  message.path = messageId;
+               }
+
                return createMessageInDb(req, -1, messageId, message);
             })
             .then(() => {

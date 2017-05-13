@@ -514,6 +514,15 @@ export function getConversationsByIds(req, conversationIds) {
 }
 
 
+export function getMessageById(req, messageId) {
+   if (messageId === undefined) {
+      return Promise.reject('messageId needs to be specified.');
+   }
+
+   const tableName = `${config.tablePrefix}messages`;
+   return batchGetItemBySortKey(req, tableName, 'messageId', [messageId]);
+}
+
 export function getMessagesByConversationId(req, conversationId) {
    if (conversationId === undefined) {
       return Promise.reject('conversationId needs to be specified.');

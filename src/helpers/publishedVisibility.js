@@ -162,7 +162,7 @@ export function publicConversations(dbConversations) {
 
 export function publicMessage(dbMessage) {
    const messageId = dbMessage.messageId;
-   const { conversationId, created, createdBy, messageType, text, replyTo } = dbMessage.messageInfo || dbMessage;
+   const { conversationId, created, createdBy, messageType, text, replyTo, path, level } = dbMessage.messageInfo || dbMessage;
    return {
       messageId,
       conversationId,
@@ -170,7 +170,9 @@ export function publicMessage(dbMessage) {
       createdBy,
       messageType,
       text,
-      replyTo
+      replyTo,
+      path,
+      level
    };
 }
 
