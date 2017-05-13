@@ -27,7 +27,7 @@ export function getRedisInvitations(req, email) {
 
    return new Promise((resolve, reject) => {
       req.app.locals.redis.zremrangebyscoreAsync(hashKey(email), 0, req.now.unix())
-         .then(() => req.app.locals.redis.zrangebyscoreAsync(hashKey(email), req.now.unix(), moment(req.now).add(defaultExpirationMinutes, 'minutes')))
+         .then(() => req.app.locals.redis.zrangebyscoreAsync(hashKey(email), req.now.unix(), moment(req.now).add(defaultExpirationMinutes, 'minutes').unix()))
          .then(invitations => resolve(invitations))
          .catch(err => reject(err));
    });
