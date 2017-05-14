@@ -13,7 +13,11 @@ export function getPresence(req, userId) {
    return new Promise((resolve, reject) => {
       req.app.locals.redis.zremrangebyscoreAsync(hashKey(userId), 0, req.now.unix())
          .then(() => req.app.locals.redis.zrangebyscoreAsync(hashKey(userId), req.now.unix(), moment(req.now).add(defaultExpirationMinutes, 'minutes').unix()))
-         .then(presences => resolve(presences))
+         .then((presenceAsStrings) => {
+            const presences = [];
+            presenceAsStrings.forEach((presenceAsString) => { presences.push(JSON.parse(presenceAsString)); });
+            resolve(presences);
+         })
          .catch(err => reject(err));
    });
 }

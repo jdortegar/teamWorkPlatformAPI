@@ -4,6 +4,7 @@ import config from '../config/env';
 import { InvitationNotExistError, NoPermissionsError, TeamExistsError, TeamNotExistError, UserNotExistError } from './errors';
 import { deleteRedisInvitation, InvitationKeys, inviteExistingUsersToTeam } from './invitations';
 import { teamCreated, teamMemberAdded, teamPrivateInfoUpdated, teamUpdated } from './messaging';
+import { getPresence } from './messaging/presence';
 import Roles from './roles';
 import teamRoomSvc from './teamRoomService';
 import {
@@ -172,6 +173,7 @@ class TeamService {
     */
    getTeamUsers(req, teamId, userId = undefined) {
       const userIdsRoles = {};
+      let usersWithRoles;
 
       return new Promise((resolve, reject) => {
          getTeamMembersByTeamId(req, teamId)
@@ -191,10 +193,28 @@ class TeamService {
                return getUsersByIds(req, userIds);
             })
             .then((users) => {
-               const usersWithRoles = users.map((user) => {
+               usersWithRoles = users.map((user) => {
                   const ret = _.cloneDeep(user);
                   ret.userInfo.role = userIdsRoles[user.userId];
                   return ret;
+               });
+
+               const presencePromises = [];
+               usersWithRoles.forEach((userWithRoles) => {
+                  presencePromises.push(getPresence(req, userWithRoles.userId));
+               });
+               return Promise.all(presencePromises);
+            })
+            .then((presences) => {
+               const userIdPresences = {};
+               presences.forEach((presence) => {
+                  if ((presence) && (presence.length > 0)) {
+                     userIdPresences[presence[0].userId] = presence;
+                     presence.forEach((p) => { delete p.userId; });
+                  }
+               });
+               usersWithRoles.forEach((userWithRoles) => {
+                  userWithRoles.userInfo.presence = userIdPresences[userWithRoles.userId];
                });
                resolve(usersWithRoles);
             })

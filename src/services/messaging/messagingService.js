@@ -255,13 +255,13 @@ class MessagingService {
             socket.to(channel).emit(eventType, { userId, conversationId, isTyping: event.isTyping });
          }
       } else if (eventType === EventTypes.location) {
-         const { lat, lon, alt } = event;
+         const { lat, lon, alt, accuracy } = event;
          if ((lat) && (lon)) {
             const req = { app, now: moment.utc() };
             const userId = socket.decoded_token._id;
             const address = socket.client.conn.remoteAddress;
             const userAgent = socket.client.request.headers['user-agent'];
-            const location = { lat, lon, alt };
+            const location = { lat, lon, alt, accuracy };
             this._presenceChanged(req, userId, address, userAgent, location, PresenceStatuses.available);
             // broadcast.
          }

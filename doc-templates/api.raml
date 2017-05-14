@@ -642,6 +642,44 @@ documentation:
                                  preferences:
                                     type: object
                                     required: true
+                                 role:
+                                    description: User's role related to this organization.  Currently admin | user.
+                                    type: string
+                                    required: true
+                                 presence:
+                                    type: array
+                                    required: false
+                                    minItems: 1
+                                    items:
+                                       properties:
+                                          address:
+                                             type: string
+                                             required: true
+                                          userAgent:
+                                             type: string
+                                             required: true
+                                          presenceStatus:
+                                             type: string
+                                             required: true
+                                          presenceMessage:
+                                             type: string
+                                             required: false
+                                          location:
+                                             type: object
+                                             required: false
+                                             properties:
+                                                lat:
+                                                   type: number
+                                                   required: true
+                                                lon:
+                                                   type: number
+                                                   required: true
+                                                alt:
+                                                   type: number
+                                                   required: false
+                                                accuracy:
+                                                   type: number
+                                                   required: false
                      example: |
                         {
                            "subscribers": [
@@ -653,7 +691,15 @@ documentation:
                                  "icon": null,
                                  "userType": "hablaUser",
                                  "preferences": {
-                                 }
+                                 },
+                                 "role": "admin",
+                                 "presence": [
+                                    {
+                                       "address": "::ffff:127.0.0.1",
+                                       "userAgent": "node-XMLHttpRequest",
+                                       "presenceStatus": "available"
+                                    }
+                                 ]
                               },
                               {
                                  "userId": "9dec8947-0381-4809-a053-b56777f782f5",
@@ -663,7 +709,8 @@ documentation:
                                  "icon": null,
                                  "userType": "hablaUser",
                                  "preferences": {
-                                 }
+                                 },
+                                 "role": "user"
                               }
                            ]
                         }
@@ -939,6 +986,44 @@ documentation:
                                  preferences:
                                     type: object
                                     required: true
+                                 role:
+                                    description: User's role related to this organization.  Currently admin | user.
+                                    type: string
+                                    required: true
+                                 presence:
+                                    type: array
+                                    required: false
+                                    minItems: 1
+                                    items:
+                                       properties:
+                                          address:
+                                             type: string
+                                             required: true
+                                          userAgent:
+                                             type: string
+                                             required: true
+                                          presenceStatus:
+                                             type: string
+                                             required: true
+                                          presenceMessage:
+                                             type: string
+                                             required: false
+                                          location:
+                                             type: object
+                                             required: false
+                                             properties:
+                                                lat:
+                                                   type: number
+                                                   required: true
+                                                lon:
+                                                   type: number
+                                                   required: true
+                                                alt:
+                                                   type: number
+                                                   required: false
+                                                accuracy:
+                                                   type: number
+                                                   required: false
                      example: |
                         {
                            "teamMembers": [
@@ -950,7 +1035,8 @@ documentation:
                                  "icon": null,
                                  "userType": "hablaUser",
                                  "preferences": {
-                                 }
+                                 },
+                                 "role": "admin"
                               },
                               {
                                  "userId": "9dec8947-0381-4809-a053-b56777f782f5",
@@ -960,7 +1046,8 @@ documentation:
                                  "icon": null,
                                  "userType": "hablaUser",
                                  "preferences": {
-                                 }
+                                 },
+                                 "role": "user"
                               }
                            ]
                         }
@@ -1285,6 +1372,44 @@ documentation:
                                  preferences:
                                     type: object
                                     required: true
+                                 role:
+                                    description: User's role related to this organization.  Currently admin | user.
+                                    type: string
+                                    required: true
+                                 presence:
+                                    type: array
+                                    required: false
+                                    minItems: 1
+                                    items:
+                                       properties:
+                                          address:
+                                             type: string
+                                             required: true
+                                          userAgent:
+                                             type: string
+                                             required: true
+                                          presenceStatus:
+                                             type: string
+                                             required: true
+                                          presenceMessage:
+                                             type: string
+                                             required: false
+                                          location:
+                                             type: object
+                                             required: false
+                                             properties:
+                                                lat:
+                                                   type: number
+                                                   required: true
+                                                lon:
+                                                   type: number
+                                                   required: true
+                                                alt:
+                                                   type: number
+                                                   required: false
+                                                accuracy:
+                                                   type: number
+                                                   required: false
                      example: |
                         {
                            "teamRoomMembers": [
@@ -1296,7 +1421,8 @@ documentation:
                                  "icon": null,
                                  "userType": "hablaUser",
                                  "preferences": {
-                                 }
+                                 },
+                                 "role": "admin"
                               },
                               {
                                  "userId": "9dec8947-0381-4809-a053-b56777f782f5",
@@ -1306,7 +1432,8 @@ documentation:
                                  "icon": null,
                                  "userType": "hablaUser",
                                  "preferences": {
-                                 }
+                                 },
+                                 "role": "user"
                               }
                            ]
                         }
@@ -1550,6 +1677,12 @@ documentation:
                                        `messageId` this messages is attached to.  This is for threaded messages support.
                                     type: string
                                     required: false
+                                 path:
+                                    type: string
+                                    required: true
+                                 level:
+                                    type: integer
+                                    required: true
                      example: |
                         {
                            "messages": [
@@ -1558,14 +1691,18 @@ documentation:
                                  "created": "2017-04-12T23:20:50.52Z",
                                  "createdBy": "9dec8947-0381-4809-a053-b56777f782f4",
                                  "messageType": "text",
-                                 "text": "Alright."
+                                 "text": "Alright.",
+                                 "path": "9dec8947-0381-4809-a053-b56777f782f4",
+                                 "level": 0
                               },
                               {
                                  "messageId": "9dec8947-0381-4809-a053-b56777f782f5",
                                  "created": "2017-04-12T23:20:39.13Z",
                                  "createdBy": "9dec8947-0381-4809-a053-b56777f782f5",
                                  "messageType": "text",
-                                 "text": "How's it going?"
+                                 "text": "How's it going?",
+                                 "path": "9dec8947-0381-4809-a053-b56777f782f5",
+                                 "level": 0
                               }
                            ]
                         }
