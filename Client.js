@@ -82,9 +82,7 @@ export default class Messaging {
             if (this.verbose) {
                console.log(`\n\t\t\tMessaging connect_error: ${JSON.stringify(err)}  [${new Date()}]`);
             }
-            if (this.onlineOfflineListeners) {
-               this.onlineOfflineListeners(false);
-            }
+            this._notifyOnlineOfflineListener(false);
          });
          this.socket.on('reconnect_error', (err) => {
             if (this.verbose) {
@@ -175,8 +173,15 @@ export default class Messaging {
       this.socket.send(EventTypes.typing, { conversationId, isTyping });
    }
 
-   location(lat, lon, alt = undefined) {
-      this.socket.send(EventTypes.location, { lat, lon, alt });
+   /**
+    *
+    * @param lat Number
+    * @param lon Number
+    * @param alt Number
+    * @param accuracy Number
+    */
+   location(lat, lon, alt = undefined, accuracy = undefined) {
+      this.socket.send(EventTypes.location, { lat, lon, alt, accuracy });
    }
 
    close() {
