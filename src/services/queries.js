@@ -1,4 +1,5 @@
 import AWS from 'aws-sdk';
+import _ from 'lodash';
 import config from '../config/env';
 
 let _docClient;
@@ -270,7 +271,6 @@ function filteredScanValueIn(req, tableName, attributeName, values) {
    });
 }
 
-
 export function createItem(req, partitionId, tableName, sortKeyName, sortKey, infoName, info) {
    const params = {
       TableName: tableName,
@@ -530,6 +530,105 @@ export function getMessagesByConversationId(req, conversationId) {
 
    const tableName = `${config.tablePrefix}messages`;
    return filteredScanValueIn(req, tableName, 'messageInfo.conversationId', [conversationId]);
+}
+
+function scan(params, maxCount = undefined, currentCount = undefined) {
+   return new Promise((resolve, reject) => {
+      let items;
+      docClient().scan(params).promise()
+         .then((data) => {
+            items = data.Items;
+            if (data.LastEvaluatedKey) {
+               const continueParams = _.clone(params);
+               continueParams.ExclusiveStartKey = data.LastEvaluatedKey;
+               const totalCount = (currentCount || 0) + items.length;
+               if ((typeof maxCount !== 'undefined') && (totalCount < maxCount)) {
+                  return scan(continueParams, maxCount, totalCount);
+               }
+            }
+            return undefined;
+         })
+         .then((moreData) => {
+            if (moreData) {
+               items = [...items, ...moreData.Items];
+            }
+
+            if ((maxCount) && (items.length > maxCount)) {
+               items = items.slice(0, maxCount);
+            }
+
+            resolve(items);
+         })
+         .catch(err => reject(err));
+   });
+}
+
+// filter = { since, until, minLevel, maxLevel, maxCount }
+export function getMessagesByConversationIdFiltered(req, conversationId, filter) {
+   if (conversationId === undefined) {
+      return Promise.reject('conversationId needs to be specified.');
+   }
+
+   const { since, until, minLevel, maxLevel, maxCount } = filter;
+   const tableName = `${config.tablePrefix}messages`;
+   let nIdx = 0;
+   let vIdx = 0;
+
+   // Add 'conversationId' to filter.
+   let filterExpression = '(#n1.#n2 IN (:v1))';
+   const queryNames = {
+      '#n1': 'messageInfo',
+      '#n2': 'conversationId'
+   };
+   nIdx += 2;
+   const queryValues = {
+      ':v1': conversationId
+   };
+   vIdx += 1;
+
+   // Add 'since' to filter.
+   if (since) {
+      nIdx += 1;
+      vIdx += 1;
+      filterExpression += ` AND (#n1.#n${nIdx} >= :v${vIdx})`;
+      queryNames[`#n${nIdx}`] = 'created';
+      queryValues[`:v${vIdx}`] = since;
+   }
+
+   // Add 'until' to filter.
+   if (until) {
+      nIdx += 1;
+      vIdx += 1;
+      filterExpression += ` AND (#n1.#n${nIdx} <= :v${vIdx})`;
+      queryNames[`#n${nIdx}`] = 'created';
+      queryValues[`:v${vIdx}`] = until;
+   }
+
+   // Add 'minLevel' to filter.
+   if (typeof minLevel !== 'undefined') {
+      nIdx += 1;
+      vIdx += 1;
+      filterExpression += ` AND (#n1.#n${nIdx} >= :v${vIdx})`;
+      queryNames[`#n${nIdx}`] = 'level';
+      queryValues[`:v${vIdx}`] = minLevel;
+   }
+
+   // Add 'maxLevel' to filter.
+   if (typeof maxLevel !== 'undefined') {
+      nIdx += 1;
+      vIdx += 1;
+      filterExpression += ` AND (#n1.#n${nIdx} <= :v${vIdx})`;
+      queryNames[`#n${nIdx}`] = 'level';
+      queryValues[`:v${vIdx}`] = maxLevel;
+   }
+
+   const params = {
+      TableName: tableName,
+      FilterExpression: filterExpression,
+      ExpressionAttributeNames: queryNames,
+      ExpressionAttributeValues: queryValues
+   };
+   return scan(params, maxCount);
 }
 
 export function getConversationParticipantsByUserId(req, userId) {

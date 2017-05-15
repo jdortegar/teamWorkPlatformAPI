@@ -23,8 +23,13 @@ export function getConversations(req, res, next) {
 export function getTranscript(req, res, next) {
    const userId = req.user._id;
    const conversationId = req.params.conversationId;
+   const since = req.query.since;
+   const until = req.query.until;
+   const minLevel = (req.query.minLevel) ? parseInt(req.query.minLevel) : undefined;
+   const maxLevel = (req.query.maxLevel) ? parseInt(req.query.maxLevel) : undefined;
+   const maxCount = (req.query.maxCount) ? parseInt(req.query.maxCount) : undefined;
 
-   conversationsSvc.getMessages(req, conversationId, userId)
+   conversationsSvc.getMessages(req, conversationId, userId, { since, until, minLevel, maxLevel, maxCount })
       .then((messages) => {
          res.status(httpStatus.OK).json({ messages: publicMessages(messages) });
       })

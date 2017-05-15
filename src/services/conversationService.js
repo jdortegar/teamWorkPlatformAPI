@@ -9,7 +9,7 @@ import {
    getConversationParticipantsByConversationId,
    getConversationParticipantsByUserId,
    getConversationsByIds,
-   getMessagesByConversationId,
+   getMessagesByConversationIdFiltered,
    getMessageById,
    getUsersByIds
 } from './queries';
@@ -216,7 +216,7 @@ class ConversationService {
     * @param userId Optional userId to return results only if the user is a team room member.
     * @returns {Promise}
     */
-   getMessages(req, conversationId, userId = undefined) {
+   getMessages(req, conversationId, userId = undefined, { since, until, minLevel, maxLevel, maxCount }) {
       return new Promise((resolve, reject) => {
          getConversationsByIds(req, [conversationId])
             .then((conversations) => {
@@ -232,7 +232,7 @@ class ConversationService {
                return undefined;
             })
             .then(() => {
-               return getMessagesByConversationId(req, conversationId);
+               return getMessagesByConversationIdFiltered(req, conversationId, { since, until, minLevel, maxLevel, maxCount });
             })
             .then(messages => this.sortMessages(messages))
             .then(messages => resolve(messages))

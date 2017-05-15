@@ -114,8 +114,10 @@ export default class Messaging {
             const eventType = payload.data[0];
             const event = payload.data[1];
 
-            if (eventType !== 'authenticated' ) {
-               console.log(`\n\t\t\tMessaging received eventType=${eventType}  event=${JSON.stringify(event)}  [${new Date()}]`);
+            if (eventType !== 'authenticated') {
+               if (this.verbose) {
+                  console.log(`\n\t\t\tMessaging received eventType=${eventType}  event=${JSON.stringify(event)}  [${new Date()}]`);
+               }
 
                this._notifyEventListeners(eventType, event);
             }
@@ -194,7 +196,7 @@ export default class Messaging {
 }
 
 function myEventListener(eventType, event) {
-   console.log(`myEventListener(${eventType}, ${JSON.stringify(event)})`);
+   console.log(`\n\t\t\tMessaging received eventType=${eventType}  event=${JSON.stringify(event)}  [${new Date()}]`);
 }
 
 
@@ -202,7 +204,6 @@ function promptCredentials() {
    return new Promise((resolve, reject) => {
       prompt.message = '';
       prompt.start();
-      //prompt.get(['Username', 'Password'], (err, result) => {
       prompt.get({ properties: { Username: { required: true }, Password: { required: true, hidden: true, replace: '*' } } }, (err, result) => {
          if (err) {
             reject(err);
