@@ -532,7 +532,7 @@ export function getMessagesByConversationId(req, conversationId) {
    return filteredScanValueIn(req, tableName, 'messageInfo.conversationId', [conversationId]);
 }
 
-function scan(params, maxCount = undefined, currentCount = undefined) {
+function scan(params) {
    return new Promise((resolve, reject) => {
       let items;
       docClient().scan(params).promise()
@@ -541,10 +541,7 @@ function scan(params, maxCount = undefined, currentCount = undefined) {
             if (data.LastEvaluatedKey) {
                const continueParams = _.clone(params);
                continueParams.ExclusiveStartKey = data.LastEvaluatedKey;
-               const totalCount = (currentCount || 0) + items.length;
-               if ((typeof maxCount !== 'undefined') && (totalCount < maxCount)) {
-                  return scan(continueParams, maxCount, totalCount);
-               }
+               return scan(continueParams);
             }
             return undefined;
          })
@@ -552,18 +549,13 @@ function scan(params, maxCount = undefined, currentCount = undefined) {
             if (moreData) {
                items = [...items, ...moreData.Items];
             }
-
-            if ((maxCount) && (items.length > maxCount)) {
-               items = items.slice(0, maxCount);
-            }
-
             resolve(items);
          })
          .catch(err => reject(err));
    });
 }
 
-// filter = { since, until, minLevel, maxLevel, maxCount }
+// filter = { since, until, minLevel, maxLevel }
 export function getMessagesByConversationIdFiltered(req, conversationId, filter) {
    if (conversationId === undefined) {
       return Promise.reject('conversationId needs to be specified.');
@@ -628,7 +620,7 @@ export function getMessagesByConversationIdFiltered(req, conversationId, filter)
       ExpressionAttributeNames: queryNames,
       ExpressionAttributeValues: queryValues
    };
-   return scan(params, maxCount);
+   return scan(params);
 }
 
 export function getConversationParticipantsByUserId(req, userId) {

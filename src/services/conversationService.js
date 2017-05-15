@@ -232,9 +232,15 @@ class ConversationService {
                return undefined;
             })
             .then(() => {
-               return getMessagesByConversationIdFiltered(req, conversationId, { since, until, minLevel, maxLevel, maxCount });
+               return getMessagesByConversationIdFiltered(req, conversationId, { since, until, minLevel, maxLevel });
             })
             .then(messages => this.sortMessages(messages))
+            .then((messages) => {
+               if ((typeof maxCount !== 'undefined') && (messages.length > maxCount)) {
+                  return messages.slice(messages.length - maxCount, messages.length);
+               }
+               return messages;
+            })
             .then(messages => resolve(messages))
             .catch(err => reject(err));
       });
