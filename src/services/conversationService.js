@@ -112,7 +112,6 @@ class ConversationService {
 
    createConversationNoCheck(req, teamRoomId, conversationInfo, userId, conversationId = undefined) {
       const actualConversationId = conversationId || uuid.v4();
-      req.now = req.now || moment.utc(); // TODO: create middleware.
       const created = req.now.format();
       const conversation = {
          created,
@@ -249,7 +248,6 @@ class ConversationService {
    createMessage(req, conversationId, userId, messageType, text, replyTo) {
       return new Promise((resolve, reject) => {
          const messageId = uuid.v4();
-         req.now = req.now || moment.utc(); // TODO: create middleware.
          const created = req.now.format();
 
          const message = {

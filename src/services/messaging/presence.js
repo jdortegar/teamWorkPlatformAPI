@@ -8,8 +8,6 @@ function hashKey(userId) {
 }
 
 export function getPresence(req, userId) {
-   req.now = req.now || moment.utc(); // TODO: Remove once express has middleware.
-
    return new Promise((resolve, reject) => {
       req.app.locals.redis.zremrangebyscoreAsync(hashKey(userId), 0, req.now.unix())
          .then(() => req.app.locals.redis.zrangebyscoreAsync(hashKey(userId), req.now.unix(), moment(req.now).add(defaultExpirationMinutes, 'minutes').unix()))
@@ -23,8 +21,6 @@ export function getPresence(req, userId) {
 }
 
 export function setPresence(req, userId, presence) {
-   req.now = req.now || moment.utc(); // TODO: Remove once express has middleware.
-
    return new Promise((resolve, reject) => {
       const hash = hashKey(userId);
       const ttl = req.now.add(defaultExpirationMinutes, 'minutes').unix();

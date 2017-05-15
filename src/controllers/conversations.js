@@ -1,5 +1,4 @@
 import httpStatus from 'http-status';
-import moment from 'moment';
 import APIError from '../helpers/APIError';
 import { publicConversations, publicMessage, publicMessages } from '../helpers/publishedVisibility';
 import conversationsSvc from '../services/conversationService';
@@ -48,7 +47,7 @@ export function createMessage(req, res, next) {
    const userId = req.user._id;
    const conversationId = req.params.conversationId;
    const { messageType, text, replyTo } = req.body;
-   req.now = moment.utc(); // TODO: create middleware.
+
    conversationsSvc.createMessage(req, conversationId, userId, messageType, text, replyTo)
       .then((dbMessage) => {
          res.status(httpStatus.CREATED).json({ message: publicMessage(dbMessage) });

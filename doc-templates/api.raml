@@ -1641,30 +1641,31 @@ documentation:
                The transcript messages are returned in `created` descending order.
             queryParameters:
                since:
-                 description: The messages returned are greater than or equal to this value, in RFC339 format.
-                 type: string
-                 required: false
-                 example: "2017-04-12T23:20:50.52Z"
+                  description: The messages returned are greater than or equal to this value, in RFC339 format.
+                  type: string
+                  required: false
+                  example: "2017-04-12T23:20:50.52Z"
                until:
-                 description: The messages returned are less than or equal to this value, in RFC339 format.
-                 type: string
-                 required: false
-                 example: "2017-04-12T23:20:50.52Z"
+                  description: The messages returned are less than or equal to this value, in RFC339 format.
+                  type: string
+                  required: false
+                  example: "2017-04-12T23:20:50.52Z"
                minLevel:
-                 description: The minimum level, inclusive, for messages returned.
-                 type: integer
-                 required: false
-                 minimum: 0
+                  description: The minimum level, inclusive, for messages returned.
+                  type: integer
+                  required: false
+                  minimum: 0
                maxLevel:
-                 description: The maximum level, inclusive, for messages returned.
-                 type: integer
-                 required: false
-                 minimum: 0
+                  description: The maximum level, inclusive, for messages returned.
+                  type: integer
+                  required: false
+                  minimum: 0
                maxCount:
-                 description: The maximum number of messages to return.
-                 type: integer
-                 required: false
-                 minimum: 1
+                  description: |
+                     The maximum number of messages, from the latest, to return.
+                  type: integer
+                  required: false
+                  minimum: 1
             responses:
                200:
                   description: |

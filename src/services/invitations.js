@@ -23,8 +23,6 @@ function toInvitationKey(invitationKey, invitationValue) {
 
 
 export function getRedisInvitations(req, email) {
-   req.now = req.now || moment.utc(); // TODO: Remove once express has middleware.
-
    return new Promise((resolve, reject) => {
       req.app.locals.redis.zremrangebyscoreAsync(hashKey(email), 0, req.now.unix())
          .then(() => req.app.locals.redis.zrangebyscoreAsync(hashKey(email), req.now.unix(), moment(req.now).add(defaultExpirationMinutes, 'minutes').unix()))
@@ -34,8 +32,6 @@ export function getRedisInvitations(req, email) {
 }
 
 function createRedisInvitation(req, email, invitation, expiration) {
-   req.now = req.now || moment.utc(); // TODO: Remove once express has middleware.
-
    return new Promise((resolve, reject) => {
       const hash = hashKey(email);
       const ttl = req.now.add(expiration, 'minutes').unix();

@@ -15,8 +15,9 @@ import bodyParser from 'body-parser';
 import cors from 'cors';
 import express from 'express';
 import expressValidation from 'express-validation';
-import jwt from 'express-jwt';
 import httpStatus from 'http-status';
+import jwt from 'express-jwt';
+import moment from 'moment';
 import morgan from 'morgan';
 import APIError from '../helpers/APIError';
 import config from './env';
@@ -25,7 +26,7 @@ import routes from '../routes';
 const app = express();
 
 // Parse body params and attach them to req.body.
-app.use(bodyParser.json({limit: '100mb'}));
+app.use(bodyParser.json({ limit: '100mb' }));
 app.use(bodyParser.urlencoded({
    extended: true
 }));
@@ -38,6 +39,11 @@ app.use(jwt({
 }).unless({
    path: [/^\/test/, /^\/auth\/login/, /^\/users\/createUser/, /^\/users\/passwordreset/,/^\/users\/registerUser/, /^\/users\/validateEmail/, /^.*\/passwordupdate/]
 }));
+
+app.use((req, res, next) => {
+   req.now = moment.utc();
+   next();
+});
 
 // mount all routes on / path
 app.use('/', routes);
