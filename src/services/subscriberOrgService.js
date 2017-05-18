@@ -4,6 +4,7 @@ import config from '../config/env';
 import { InvitationNotExistError, NoPermissionsError, SubscriberOrgExistsError, SubscriberOrgNotExistError, UserNotExistError } from './errors';
 import { deleteRedisInvitation, InvitationKeys, inviteExistingUsersToSubscriberOrg, inviteExternalUsersToSubscriberOrg } from './invitations';
 import { subscriberAdded, subscriberOrgCreated, subscriberOrgPrivateInfoUpdated, subscriberOrgUpdated } from './messaging';
+import { getPresence } from './messaging/presence';
 import Roles from './roles';
 import teamSvc from './teamService';
 import {
@@ -11,7 +12,6 @@ import {
    getSubscriberOrgsByIds,
    getSubscriberOrgsByName,
    getSubscriberUsersBySubscriberOrgId,
-   getSubscriberUsersByUserIdAndSubscriberOrgId,
    getSubscriberUsersByUserIdAndSubscriberOrgIdAndRole,
    getSubscriberUsersByUserIds,
    getUsersByEmailAddresses,
@@ -170,7 +170,7 @@ class SubscriberOrgService {
     */
    getSubscriberOrgUsers(req, subscriberOrgId, userId = undefined) {
       const userIdsRoles = {};
-
+      let usersWithRoles;
       return new Promise((resolve, reject) => {
          getSubscriberUsersBySubscriberOrgId(req, subscriberOrgId)
             .then((subscriberUsers) => {
@@ -189,10 +189,28 @@ class SubscriberOrgService {
                return getUsersByIds(req, userIds);
             })
             .then((users) => {
-               const usersWithRoles = users.map((user) => {
+               usersWithRoles = users.map((user) => {
                   const ret = _.cloneDeep(user);
                   ret.userInfo.role = userIdsRoles[user.userId];
                   return ret;
+               });
+
+               const presencePromises = [];
+               usersWithRoles.forEach((userWithRoles) => {
+                  presencePromises.push(getPresence(req, userWithRoles.userId));
+               });
+               return Promise.all(presencePromises);
+            })
+            .then((presences) => {
+               const userIdPresences = {};
+               presences.forEach((presence) => {
+                  if ((presence) && (presence.length > 0)) {
+                     userIdPresences[presence[0].userId] = presence;
+                     presence.forEach((p) => { delete p.userId; });
+                  }
+               });
+               usersWithRoles.forEach((userWithRoles) => {
+                  userWithRoles.userInfo.presence = userIdPresences[userWithRoles.userId];
                });
                resolve(usersWithRoles);
             })

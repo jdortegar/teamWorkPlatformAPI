@@ -6,6 +6,7 @@ import SocketIOWildcard from 'socketio-wildcard';
 import config from '../../config/env';
 import app from '../../config/express';
 import conversationSvc from '../conversationService';
+import { setPresence } from './presence';
 import teamRoomSvc from '../teamRoomService';
 import teamSvc from '../teamService';
 import subscriberOrgSvc from '../subscriberOrgService';
@@ -171,7 +172,12 @@ class MessagingService {
       // TODO: expiration?
       // TODO: Delete from redis if (presenceStatus === away).  Store/update, otherwise.  Don't override location if undefined.
       // TODO: presence only for orgs of user.
-      return this._broadcastEvent(req, EventTypes.presenceChanged, { userId, address, userAgent, location, presenceStatus, presenceMessage });
+      const presence = { userId, address, userAgent, location, presenceStatus, presenceMessage };
+      Promise.all([
+         this._broadcastEvent(req, EventTypes.presenceChanged, presence),
+         setPresence(req, userId, presence)
+      ])
+         .catch(err => console.error(err));
    }
 
    _joinCurrentChannels(req, socket, userId) {
@@ -249,13 +255,13 @@ class MessagingService {
             socket.to(channel).emit(eventType, { userId, conversationId, isTyping: event.isTyping });
          }
       } else if (eventType === EventTypes.location) {
-         const { lat, lon, alt } = event;
+         const { lat, lon, alt, accuracy } = event;
          if ((lat) && (lon)) {
             const req = { app, now: moment.utc() };
             const userId = socket.decoded_token._id;
             const address = socket.client.conn.remoteAddress;
             const userAgent = socket.client.request.headers['user-agent'];
-            const location = { lat, lon, alt };
+            const location = { lat, lon, alt, accuracy };
             this._presenceChanged(req, userId, address, userAgent, location, PresenceStatuses.available);
             // broadcast.
          }

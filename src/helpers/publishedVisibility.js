@@ -2,7 +2,7 @@ import _ from 'lodash';
 
 export function privateUser(dbUser) {
    const userId = dbUser.userId;
-   const { emailAddress, firstName, lastName, displayName, country, timeZone, icon, preferences, role } = dbUser.userInfo || dbUser;
+   const { emailAddress, firstName, lastName, displayName, country, timeZone, icon, preferences, role, presence } = dbUser.userInfo || dbUser;
    return {
       userId,
       username: emailAddress,
@@ -15,6 +15,7 @@ export function privateUser(dbUser) {
       icon,
       preferences: _.cloneDeep(preferences),
       role,
+      presence,
       // roleMemberships: dbUser.roleMemberships,
       // defaultPage: dbUser.defaultPage,
       userType: dbUser.userType || 'hablaUser'
@@ -162,7 +163,7 @@ export function publicConversations(dbConversations) {
 
 export function publicMessage(dbMessage) {
    const messageId = dbMessage.messageId;
-   const { conversationId, created, createdBy, messageType, text, replyTo } = dbMessage.messageInfo || dbMessage;
+   const { conversationId, created, createdBy, messageType, text, replyTo, path, level } = dbMessage.messageInfo || dbMessage;
    return {
       messageId,
       conversationId,
@@ -170,7 +171,9 @@ export function publicMessage(dbMessage) {
       createdBy,
       messageType,
       text,
-      replyTo
+      replyTo,
+      path,
+      level
    };
 }
 

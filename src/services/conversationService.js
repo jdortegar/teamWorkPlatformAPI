@@ -9,7 +9,8 @@ import {
    getConversationParticipantsByConversationId,
    getConversationParticipantsByUserId,
    getConversationsByIds,
-   getMessagesByConversationId,
+   getMessagesByConversationIdFiltered,
+   getMessageById,
    getUsersByIds
 } from './queries';
 
@@ -29,6 +30,7 @@ function createMessageInDb(req, partitionId, messageId, message) {
    return docClient.put(params).promise();
 }
 
+const MESSAGE_PATH_SEPARATOR = '##';
 
 class ConversationService {
 
@@ -110,7 +112,6 @@ class ConversationService {
 
    createConversationNoCheck(req, teamRoomId, conversationInfo, userId, conversationId = undefined) {
       const actualConversationId = conversationId || uuid.v4();
-      req.now = req.now || moment.utc(); // TODO: create middleware.
       const created = req.now.format();
       const conversation = {
          created,
@@ -214,7 +215,7 @@ class ConversationService {
     * @param userId Optional userId to return results only if the user is a team room member.
     * @returns {Promise}
     */
-   getMessages(req, conversationId, userId = undefined) {
+   getMessages(req, conversationId, userId = undefined, { since, until, minLevel, maxLevel, maxCount }) {
       return new Promise((resolve, reject) => {
          getConversationsByIds(req, [conversationId])
             .then((conversations) => {
@@ -230,9 +231,15 @@ class ConversationService {
                return undefined;
             })
             .then(() => {
-               return getMessagesByConversationId(req, conversationId);
+               return getMessagesByConversationIdFiltered(req, conversationId, { since, until, minLevel, maxLevel });
             })
             .then(messages => this.sortMessages(messages))
+            .then((messages) => {
+               if ((typeof maxCount !== 'undefined') && (messages.length > maxCount)) {
+                  return messages.slice(messages.length - maxCount, messages.length);
+               }
+               return messages;
+            })
             .then(messages => resolve(messages))
             .catch(err => reject(err));
       });
@@ -241,7 +248,6 @@ class ConversationService {
    createMessage(req, conversationId, userId, messageType, text, replyTo) {
       return new Promise((resolve, reject) => {
          const messageId = uuid.v4();
-         req.now = req.now || moment.utc(); // TODO: create middleware.
          const created = req.now.format();
 
          const message = {
@@ -262,6 +268,22 @@ class ConversationService {
                if (userIds.indexOf(userId) < 0) {
                   throw new NoPermissionsError(conversationId);
                }
+
+               if (message.replyTo) {
+                  return getMessageById(req, message.replyTo);
+               }
+               return undefined;
+            })
+            .then((replyToMessage) => {
+               if (replyToMessage) {
+                  message.level = ((replyToMessage.level) ? replyToMessage.level : 0) + 1;
+                  message.path = (replyToMessage.path) ? replyToMessage.path : '';
+                  message.path = `${message.path}${MESSAGE_PATH_SEPARATOR}${messageId}`;
+               } else {
+                  message.level = 0;
+                  message.path = messageId;
+               }
+
                return createMessageInDb(req, -1, messageId, message);
             })
             .then(() => {

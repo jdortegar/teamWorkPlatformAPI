@@ -5,6 +5,7 @@ import conversationSvc from './conversationService';
 import { InvitationNotExistError, NoPermissionsError, TeamRoomExistsError, TeamRoomNotExistError, UserNotExistError } from './errors';
 import { deleteRedisInvitation, InvitationKeys, inviteExistingUsersToTeamRoom } from './invitations';
 import { teamRoomCreated, teamRoomMemberAdded, teamRoomPrivateInfoUpdated, teamRoomUpdated } from './messaging';
+import { getPresence } from './messaging/presence';
 import {
    createItem,
    getSubscriberOrgsByIds,
@@ -185,6 +186,7 @@ class TeamRoomService {
     */
    getTeamRoomUsers(req, teamRoomId, userId = undefined) {
       const userIdsRoles = {};
+      let usersWithRoles;
 
       return new Promise((resolve, reject) => {
          getTeamRoomMembersByTeamRoomId(req, teamRoomId)
@@ -204,10 +206,28 @@ class TeamRoomService {
                return getUsersByIds(req, userIds);
             })
             .then((users) => {
-               const usersWithRoles = users.map((user) => {
+               usersWithRoles = users.map((user) => {
                   const ret = _.cloneDeep(user);
                   ret.userInfo.role = userIdsRoles[user.userId];
                   return ret;
+               });
+
+               const presencePromises = [];
+               usersWithRoles.forEach((userWithRoles) => {
+                  presencePromises.push(getPresence(req, userWithRoles.userId));
+               });
+               return Promise.all(presencePromises);
+            })
+            .then((presences) => {
+               const userIdPresences = {};
+               presences.forEach((presence) => {
+                  if ((presence) && (presence.length > 0)) {
+                     userIdPresences[presence[0].userId] = presence;
+                     presence.forEach((p) => { delete p.userId; });
+                  }
+               });
+               usersWithRoles.forEach((userWithRoles) => {
+                  userWithRoles.userInfo.presence = userIdPresences[userWithRoles.userId];
                });
                resolve(usersWithRoles);
             })
