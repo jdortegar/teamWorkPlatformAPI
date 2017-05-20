@@ -20,6 +20,16 @@ const config = {
    },
    dynamoDbEndpoint: process.env.DYNAMODB_ENDPOINT || defaultConfig.dynamoDbEndpoint,
 
-   webappBaseUri: process.env.WEBAPP_BASE_URI || defaultConfig.webappBaseUri
+   webappBaseUri: process.env.WEBAPP_BASE_URI || defaultConfig.webappBaseUri,
+
+   /**
+    * 'error', 'warn', 'info', 'verbose', 'debug', 'silly'.
+    */
+   loggerLevel: process.env.LOGGER_LEVEL || defaultConfig.loggerLevel,
+
+   /**
+    * Output logs in JSON (true) or not (false).
+    */
+   loggerJson: process.env.LOGGER_JSON || defaultConfig.loggerJson,
 };
 export default config;

@@ -2,7 +2,7 @@ import express from 'express';
 import validate from 'express-validation';
 import paramValidation from '../config/param-validation';
 import * as users from '../controllers/users';
-import { containsRole,roles } from '../policies';
+// import { containsRole,roles } from '../policies';
 
 const router = express.Router();
 
@@ -13,8 +13,7 @@ router.route('/validateEmail/:rid')
    .get(users.validateEmail);
 
 router.route('/createUser')
-  .post(validate(paramValidation.createUser), users.createUser)
-  .delete(users.del);
+  .post(validate(paramValidation.createUser), users.createUser);
 
 router.route('/updateUser')
    .patch(validate(paramValidation.updateUser), users.updateUser);
@@ -25,8 +24,7 @@ router.route('/updatePublicPreferences/:userId')
 router.route('/getInvitations')
    .get(users.getInvitations);
 
-
-
+/*
 router.route('/:userId')
   .put(users.update);
 
@@ -35,6 +33,6 @@ router.route('/passwordreset')
 
 router.route('/passwordupdate')
   .post(users.updatePassword);
+*/
 
 export default router;
-

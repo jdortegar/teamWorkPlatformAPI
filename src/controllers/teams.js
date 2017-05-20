@@ -1,7 +1,7 @@
 import httpStatus from 'http-status';
 import APIError from '../helpers/APIError';
 import { privateTeam, publicTeams, publicUsers } from '../helpers/publishedVisibility';
-import teamSvc from '../services/teamService';
+import * as teamSvc from '../services/teamService';
 import { InvitationNotExistError, NoPermissionsError, TeamExistsError, TeamNotExistError, UserNotExistError } from '../services/errors';
 
 export function getTeams(req, res, next) {
@@ -13,7 +13,6 @@ export function getTeams(req, res, next) {
          res.status(httpStatus.OK).json({ teams: publicTeams(teams) });
       })
       .catch((err) => {
-         console.error(err);
          next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
       });
 }

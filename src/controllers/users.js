@@ -9,34 +9,31 @@
 //
 //---------------------------------------------------------------------
 
-import crypto from 'crypto';
 import httpStatus from 'http-status';
 import uuid from 'uuid';
-import config from '../config/env';
 import APIError from '../helpers/APIError';
 import * as mailer from '../helpers/mailer';
-import User from '../models/user';
 import { NoPermissionsError, UserNotExistError } from '../services/errors';
-import userService from '../services/userService';
+import * as userSvc from '../services/userService';
 
 /**
 * Create a reservation for a user.
 * A user is not created here.
 * A reservation is ...
 */
-export function createReservation(req, res, next) {
+export function createReservation(req, res) {
    const email = req.body.email || '';
 
    // Add new reservation to cache
 
-   console.log(`createReservation: user ${email}`);
+   req.logger.debug(`createReservation: user ${email}`);
    const rid = uuid.v4(); // get a uid to represent the reservation
-   console.log(`createReservation: new rid: ${rid}`);
-   req.app.locals.redis.set(rid, email, 'EX', 1800, (err, reply) => {
+   req.logger.debug(`createReservation: new rid: ${rid}`);
+   req.app.locals.redis.set(rid, email, 'EX', 1800, (err) => {
       if (err) {
-         console.log('createReservation: hset status - redis error');
+         req.logger.debug('createReservation: hset status - redis error');
       } else {
-         console.log(`createReservation: created reservation for email: ${email}`);
+         req.logger.debug(`createReservation: created reservation for email: ${email}`);
          mailer.sendActivationLink(email, rid).then(() => {
             const response = {
                status: 'SUCCESS',
@@ -46,7 +43,7 @@ export function createReservation(req, res, next) {
          });
       }
    });
-};
+}
 
 /**
  * Endpoint:   /user/validateEmail/:rid
@@ -58,17 +55,16 @@ export function createReservation(req, res, next) {
  * @param res
  * @param next
  */
-export function validateEmail(req, res, next) {
+export function validateEmail(req, res) {
    const rid = req.params.rid || req.body.reservationId || '';
 
    // Find reservation in cache
-   console.log(`find Reservation: id = ${rid}`);
+   req.logger.debug(`find Reservation: id = ${rid}`);
    req.app.locals.redis.get(rid, (err, reply) => {
       if (err) {
-         console.log('validateEmail: get status - redis error');
-      }
-      else if (reply) {
-         console.log(`validateEmail: found reservation for email: ${reply}`);
+         req.logger.debug('validateEmail: get status - redis error');
+      } else if (reply) {
+         req.logger.debug(`validateEmail: found reservation for email: ${reply}`);
          const response = {
             status: 'SUCCESS',
             email: reply
@@ -79,18 +75,17 @@ export function validateEmail(req, res, next) {
          } else {
             res.status(httpStatus.BAD_REQUEST).end();
          }
-      }
-      else {
+      } else {
          const response = {
             status: 'ERR_RESERVATION_NOT_FOUND'
          };
          res.status(httpStatus.NOT_FOUND).json(response);
       }
    });
-};
+}
 
 export function createUser(req, res, next) {
-   userService.createUser(req, req.body)
+   userSvc.createUser(req, req.body)
       .then(() => {
          res.status(httpStatus.CREATED).end();
       })
@@ -106,7 +101,7 @@ export function createUser(req, res, next) {
 export function updateUser(req, res, next) {
    const userId = req.user._id;
 
-   userService.updateUser(req, userId, req.body)
+   userSvc.updateUser(req, userId, req.body)
       .then(() => {
          res.status(httpStatus.NO_CONTENT).end();
       })
@@ -123,7 +118,7 @@ export function updatePublicPreferences(req, res, next) {
    const userId = req.user._id;
    const updateUserId = req.params.userId;
 
-   userService.updateUser(req, updateUserId, req.body, userId)
+   userSvc.updateUser(req, updateUserId, req.body, userId)
       .then(() => {
          res.status(httpStatus.NO_CONTENT).end();
       })
@@ -141,15 +136,13 @@ export function updatePublicPreferences(req, res, next) {
 export function getInvitations(req, res, next) {
    const email = req.user.email;
 
-   userService.getInvitations(req, email)
+   userSvc.getInvitations(req, email)
       .then(invitations => res.status(httpStatus.OK).json({ invitations }))
       .catch(err => next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE)));
 }
 
 
-
-
-
+/*
 export function del(req, res, next) {
   const email = req.body.email || '';
   const uid = req.body.uid || '';
@@ -200,7 +193,6 @@ export function update(req, res, next) {
   const salt = User.generateSalt();
   let toUpdate;
 
-/*
   if (password) {
     toUpdate = {
       salt: salt,
@@ -251,13 +243,11 @@ export function update(req, res, next) {
   } else {
     res.json();
   }
-*/
 }
 
 export function resetPassword(req, res, next) {
 
   const email = req.body.email || '';
-/*
   const db = req.app.locals.db;
   db.collection('users').findOne({
     emailAddress: req.body.email
@@ -268,7 +258,6 @@ export function resetPassword(req, res, next) {
         userId: user._id,
         token: token
       }).then(() => {
-*/
   mailer.sendResetPassword(email, "test");
 
   res.status(httpStatus.OK).json();
@@ -276,7 +265,6 @@ export function resetPassword(req, res, next) {
 }
 
 export function updatePassword(req, res, next) {
-/*
   const db = req.app.locals.db;
   const newPassword = req.body.newPassword;
   const salt = User.generateSalt();
@@ -312,13 +300,11 @@ export function updatePassword(req, res, next) {
       return next(err);
     }
   });
-*/
 }
 
 export function updateAgreement(req, res, next) {
   const agreement = req.body.agreement || false;
 
-/*
   const filter = {
     _id: new ObjectID(req.params.userId)
   };
@@ -343,7 +329,6 @@ export function updateAgreement(req, res, next) {
   }).catch((err) => {
     next(err);
   });
-*/
 }
 
 function generateToken() {
@@ -351,4 +336,4 @@ function generateToken() {
   const ran = Math.random().toString();
   return crypto.createHash('sha1').update(d + ran).digest('hex');
 }
-
+*/

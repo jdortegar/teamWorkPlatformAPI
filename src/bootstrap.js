@@ -1,23 +1,24 @@
 import AWS from 'aws-sdk';
 import bluebird from 'bluebird';
 import redis from 'redis';
-import messagingSvc from './services/messaging/messagingService';
 import config from './config/env';
 import app from './config/express';
+import logger from './logger';
+import messagingSvc from './services/messaging/messagingService';
 
 let redisClient;
 let server;
 
 function startupInfo() {
-   console.log('Habla API Startup');
-   console.log('---------------------------------------------------------');
-   console.log(`AWS Region       : ${config.aws.awsRegion}`);
-   console.log(`DynamoDB Endpoint: ${config.dynamoDbEndpoint}`);
-   console.log(`Table Prefix     : ${config.tablePrefix}`);
-   console.log(`Redis Server     : ${config.cacheServer}`);
-   console.log(`Redis Port       : ${config.cachePort}`);
-   console.log(`NodeJS Port      : ${config.nodePort}`);
-   console.log();
+   logger.info('Habla API Startup');
+   logger.info('---------------------------------------------------------');
+   logger.info(`AWS Region       : ${config.aws.awsRegion}`);
+   logger.info(`DynamoDB Endpoint: ${config.dynamoDbEndpoint}`);
+   logger.info(`Table Prefix     : ${config.tablePrefix}`);
+   logger.info(`Redis Server     : ${config.cacheServer}`);
+   logger.info(`Redis Port       : ${config.cachePort}`);
+   logger.info(`NodeJS Port      : ${config.nodePort}`);
+   logger.info();
 }
 
 
@@ -31,7 +32,7 @@ export function setupDynamoDb() {
       app.locals.AWS = AWS;
       app.locals.db = dynamodb;
 
-      console.log('Connected to DynamoDB.');
+      logger.info('Connected to DynamoDB.');
       resolve(dynamodb);
    });
 }
@@ -49,16 +50,16 @@ export function connectRedis() {
    app.locals.redis = client;
 
    client.on('error', (err) => {
-      console.log(`Redis Client Error ${err}`);
+      logger.error(`Redis Client Error ${err}`);
    });
 
-   console.log('Connected to Redis.');
+   logger.info('Connected to Redis.');
    return Promise.resolve(client);
 }
 
 export function disconnectRedis(client) {
    client.quit();
-   console.log('Disconnected from Redis.');
+   logger.info('Disconnected from Redis.');
    return Promise.resolve();
 }
 
@@ -67,12 +68,12 @@ export function startServer() {
    return new Promise((resolve, reject) => {
       const httpServer = app.listen(config.nodePort, (err) => {
          if (err) {
-            console.err(`Error starting server on port ${config.nodePort}.  ${err}`);
+            logger.error(`Error starting server on port ${config.nodePort}.`, err);
             reject(err);
          } else {
             messagingSvc.init(httpServer);
-            console.log(`Server started on port ${config.nodePort}`);
-            console.log('---------------------------------------------------------');
+            logger.info(`Server started on port ${config.nodePort}`);
+            logger.info('---------------------------------------------------------');
             resolve(httpServer);
          }
       });
@@ -85,7 +86,7 @@ export function stopServer(httpServer) {
          .then(() => {
             return new Promise((resolveHttpServer) => {
                httpServer.close(() => {
-                  console.log('Stopped server.');
+                  logger.info('Stopped server.');
                   resolveHttpServer();
                });
             });
@@ -93,7 +94,7 @@ export function stopServer(httpServer) {
          .catch(() => {
             return new Promise((resolveHttpServer) => {
                httpServer.close(() => {
-                  console.log('Stopped server.');
+                  logger.info('Stopped server.');
                   resolveHttpServer();
                });
             });
@@ -106,10 +107,10 @@ export function stopServer(httpServer) {
 // this function is called when you want the server to die gracefully
 // i.e. wait for existing connections
 function gracefulShutdown() {
-   console.log('Received kill signal, shutting down gracefully.');
+   logger.info('Received kill signal, shutting down gracefully.');
    stopServer(server)
       .then(() => disconnectRedis(redisClient))
-      .catch(err => console.error(err));
+      .catch(err => logger.error(err));
    // server.close(() => {
    //    console.log('Closed out remaining connections.');
    //    redisclient.quit();
@@ -118,7 +119,7 @@ function gracefulShutdown() {
 
    // if after
    setTimeout(() => {
-      console.error('Could not close connections in time, forcefully shutting down');
+      logger.error('Could not close connections in time, forcefully shutting down');
       redisClient.end(true);
       process.exit();
    }, 10 * 1000);
@@ -149,5 +150,5 @@ export default function start() {
          server = httpServer;
          return registerGracefulShutdown();
       })
-      .catch(err => console.error(err));
+      .catch(err => logger.error(err));
 }

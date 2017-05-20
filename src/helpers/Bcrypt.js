@@ -11,7 +11,7 @@ export default class Bcrypt {
       return bcrypt.hashSync(input, this.salt);
    }
 
-   compare(input, hash) {
+   static compare(input, hash) {
       return bcrypt.compareSync(input, hash);
    }
 }

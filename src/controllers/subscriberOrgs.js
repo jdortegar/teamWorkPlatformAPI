@@ -1,7 +1,7 @@
 import httpStatus from 'http-status';
 import APIError from '../helpers/APIError';
 import { privateSubscriberOrg, publicSubscriberOrgs, publicUsers } from '../helpers/publishedVisibility';
-import subscriberOrgSvc from '../services/subscriberOrgService';
+import * as subscriberOrgSvc from '../services/subscriberOrgService';
 import { InvitationNotExistError, NoPermissionsError, SubscriberOrgExistsError, SubscriberOrgNotExistError, UserNotExistError } from '../services/errors';
 
 export function getSubscriberOrgs(req, res, next) {
@@ -12,7 +12,6 @@ export function getSubscriberOrgs(req, res, next) {
          res.status(httpStatus.OK).json({ subscriberOrgs: publicSubscriberOrgs(subscriberOrgs) });
       })
       .catch((err) => {
-         console.error(err);
          next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
       });
 }

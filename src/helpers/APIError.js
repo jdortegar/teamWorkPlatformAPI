@@ -10,18 +10,25 @@
 //---------------------------------------------------------------------
 
 import httpStatus from 'http-status';
-import util from 'util';
+// import util from 'util';
 
 // TODO: convert to "class APIError extends Error..."
-export default function APIError(message, status) {
-  Error.call(this, message);
+// export default function APIError(message, status) {
+//   Error.call(this, message);
+//
+//   this.name = this.constructor.name;
+//   this.message = message;
+//   this.status = status || httpStatus.INTERNAL_SERVER_ERROR;
+//   Error.captureStackTrace(this, this.constructor.name);
+// }
+// util.inherits(APIError, Error);
 
-  this.name = this.constructor.name;
-  this.message = message;
-  this.status = status || httpStatus.INTERNAL_SERVER_ERROR;
-  Error.captureStackTrace(this, this.constructor.name);
+export default class APIError extends Error {
+   status;
 
-   console.error(this);
+   constructor(message, status) {
+      super(message);
+      this.status = status || httpStatus.INTERNAL_SERVER_ERROR;
+      Error.captureStackTrace(this, APIError);
+   }
 }
-util.inherits(APIError, Error);
-

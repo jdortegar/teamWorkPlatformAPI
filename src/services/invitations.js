@@ -1,7 +1,7 @@
 import moment from 'moment';
 import { sendSubscriberOrgInviteToExternalUser, sendSubscriberOrgInviteToExistingUser, sendTeamInviteToExistingUser, sendTeamRoomInviteToExistingUser } from '../helpers/mailer';
 import { userInvited } from './messaging';
-import { createRedisRegistration } from './registrations';
+import createRedisRegistration from './registrations';
 
 export const InvitationKeys = Object.freeze({
    subscriberOrgId: 'subscriberOrgId',
@@ -11,7 +11,7 @@ export const InvitationKeys = Object.freeze({
 });
 
 const defaultExpirationMinutes = 7 * 24 * 60; // 1 week in minutes.
-const defaultExpirationOrgInviteMinutes = defaultExpirationMinutes;
+// const defaultExpirationOrgInviteMinutes = defaultExpirationMinutes;
 
 function hashKey(email) {
    return `${email}#pendingInvites`;
@@ -145,7 +145,7 @@ export function inviteExistingUsersToTeam(req, invitingDbUser, existingDbUsers, 
 }
 
 export function inviteExistingUsersToTeamRoom(req, invitingDbUser, existingDbUsers, subscriberOrg, team, teamRoom) {
-   return new Promise((resolve, reject) => {
+   return new Promise((resolve) => {
       const key = toInvitationKey(InvitationKeys.teamRoomId, teamRoom.teamRoomId);
       const invitation = {
          byUserId: invitingDbUser.userId,
@@ -164,7 +164,14 @@ export function inviteExistingUsersToTeamRoom(req, invitingDbUser, existingDbUse
          const promise = createRedisInvitation(req, dbUser.userInfo.emailAddress, invitation, defaultExpirationMinutes)
             .then(() => {
                return Promise.all([
-                  sendTeamRoomInviteToExistingUser(email, subscriberOrg.subscriberOrgInfo.name, team.teamInfo.name, teamRoom.teamRoomInfo.name, invitingDbUser.userInfo.displayName, key),
+                  sendTeamRoomInviteToExistingUser(
+                     email,
+                     subscriberOrg.subscriberOrgInfo.name,
+                     team.teamInfo.name,
+                     teamRoom.teamRoomInfo.name,
+                     invitingDbUser.userInfo.displayName,
+                     key
+                  ),
                   userInvited(req, dbUser.userId, invitation)
                ]);
             });
@@ -174,7 +181,7 @@ export function inviteExistingUsersToTeamRoom(req, invitingDbUser, existingDbUse
          .then(() => resolve())
          .catch((err) => {
             // For internal invites, continue without failure since they will get the invite anyway.
-            console.error(err);
+            req.error(err);
             resolve();
          });
    });
@@ -183,7 +190,6 @@ export function inviteExistingUsersToTeamRoom(req, invitingDbUser, existingDbUse
 export function inviteExternalUsersToSubscriberOrg(req, invitingDbUser, emails, subscriberOrg) {
    return new Promise((resolve, reject) => {
       const promises = [];
-      const key = toInvitationKey(InvitationKeys.subscriberOrgId, subscriberOrg.subscriberOrgId);
       const invitation = {
          byUserId: invitingDbUser.userId,
          byUserDisplayName: invitingDbUser.userInfo.displayName,

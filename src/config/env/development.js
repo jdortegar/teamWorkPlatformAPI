@@ -13,3 +13,5 @@ export const dynamoDbEndpoint = 'http://localhost:8000';
 
 export const webappBaseUri = 'http://localhost:8080';
 
+export const loggerLevel = 'debug';
+export const loggerJson = false;

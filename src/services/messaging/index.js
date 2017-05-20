@@ -13,7 +13,7 @@ import {
    publicSubscriber,
    publicSubscriberOrg
 } from '../../helpers/publishedVisibility';
-import { _broadcastEvent, _joinChannels, _presenceChanged, ChannelFactory, EventTypes } from './messagingService';
+import { _broadcastEvent, _joinChannels, ChannelFactory, EventTypes } from './messagingService';
 
 // EventType = presence
 
