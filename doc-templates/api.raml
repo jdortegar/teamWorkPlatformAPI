@@ -145,6 +145,17 @@ documentation:
                   UNAUTHORIZED<br />
                   No reason is given for privacy purposes, but could be an unknown username or bad password.
 
+   /logout:
+      get:
+         description: |
+            Logout a user, making the JWT token invalid.
+            This doesn't change the user's presence status, as the websocket still needs to be close, preferably before logout.
+         responses:
+            200:
+               description: |
+                  OK<br />
+                  Always OK, whether a valid JWT exists or not, or any other server failure.
+
 
 /users:
 

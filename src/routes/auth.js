@@ -19,4 +19,7 @@ const router = express.Router();
 router.route('/login')
    .post(validate(paramValidation.login), auth.login);
 
+router.route('/logout')
+   .get(auth.logout);
+
 export default router;

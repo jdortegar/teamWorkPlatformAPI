@@ -17,10 +17,9 @@ import express from 'express';
 import expressValidation from 'express-validation';
 import httpStatus from 'http-status';
 import jwt from 'express-jwt';
-import moment from 'moment';
-import morgan from 'morgan';
-import APIError from '../helpers/APIError';
 import config from './env';
+import APIError from '../helpers/APIError';
+import { middleware as loggerMiddleware, errorMiddleware as loggerErrorMiddleware } from '../logger';
 import routes from '../routes';
 
 const app = express();
@@ -31,24 +30,22 @@ app.use(bodyParser.urlencoded({
    extended: true
 }));
 
-app.use(morgan('dev'));
 app.use(cors());
 
 app.use(jwt({
    secret: config.jwtSecret
 }).unless({
-   path: [/^\/test/, /^\/auth\/login/, /^\/users\/createUser/, /^\/users\/passwordreset/,/^\/users\/registerUser/, /^\/users\/validateEmail/, /^.*\/passwordupdate/]
+   path: [/^\/test/, /^\/auth\/login/, /^\/users\/createUser/, /^\/users\/passwordreset/, /^\/users\/registerUser/, /^\/users\/validateEmail/, /^.*\/passwordupdate/]
 }));
 
-app.use((req, res, next) => {
-   req.now = moment.utc();
-   next();
-});
+app.use(loggerMiddleware);
 
 // mount all routes on / path
 app.use('/', routes);
 
-// if error is not an instanceOf APIError, convert it.
+app.use(loggerErrorMiddleware);
+
+// If error is not an instanceOf APIError, convert it.
 app.use((err, req, res, next) => {
    if (err instanceof expressValidation.ValidationError) {
       const unifiedErrorMessage = err.errors.map((error) => {

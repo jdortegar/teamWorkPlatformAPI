@@ -1,7 +1,7 @@
 import httpStatus from 'http-status';
 import APIError from '../helpers/APIError';
 import { privateTeamRoom, publicTeamRooms, publicUsers } from '../helpers/publishedVisibility';
-import teamRoomSvc from '../services/teamRoomService';
+import * as teamRoomSvc from '../services/teamRoomService';
 import { InvitationNotExistError, NoPermissionsError, TeamRoomExistsError, TeamRoomNotExistError, UserNotExistError } from '../services/errors';
 
 export function getTeamRooms(req, res, next) {
@@ -13,7 +13,6 @@ export function getTeamRooms(req, res, next) {
          res.status(httpStatus.OK).json({ teamRooms: publicTeamRooms(teamRooms) });
       })
       .catch((err) => {
-         console.error(err);
          return next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
       });
 }

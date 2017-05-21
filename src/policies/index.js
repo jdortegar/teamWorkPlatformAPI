@@ -8,7 +8,7 @@
 //  2017-02-02    RLA         Initial module creation
 //
 //---------------------------------------------------------------------
-
+/*
 import httpStatus from 'http-status';
 import APIError from '../helpers/APIError';
 
@@ -49,3 +49,4 @@ export function containsAnyRole(roles) {
       return next(err);
    };
 }
+*/

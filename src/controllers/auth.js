@@ -62,6 +62,13 @@ export function login(req, res, next) {
       });
 }
 
-export function logout(req, res, next) {
-   // TODO:
+export function logout(req, res) {
+   const username = req.user.email;
+
+   req.app.locals.redis.delAsync(username)
+      .then(() => res.status(httpStatus.OK))
+      .catch((err) => {
+         req.logger.error(err);
+         res.status(httpStatus.OK);
+      });
 }

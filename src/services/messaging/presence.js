@@ -30,12 +30,12 @@ export function setPresence(req, userId, presence) {
             const foundPresences = presences.filter((pres) => {
                const presAddress = pres.address;
                const presUserAgent = pres.userAgent;
-               return ((presAddress) && (presAddress === address) && (presUserAgent) && (presUserAgent === userAgent));
+               return ((presAddress === presence.address) && (presUserAgent === presence.userAgent));
             });
 
             // Should be at most 1 presence for address/userAgent combo.
             if (foundPresences.length > 0) {
-               previousLocation = foundPresence[0].location;
+               previousLocation = foundPresences[0].location;
                return req.app.locals.redis.zremAsync(hash, foundPresences[0]);
             }
             return undefined;

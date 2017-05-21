@@ -1,7 +1,7 @@
 import httpStatus from 'http-status';
 import APIError from '../helpers/APIError';
 import { publicConversations, publicMessage, publicMessages } from '../helpers/publishedVisibility';
-import conversationsSvc from '../services/conversationService';
+import * as conversationsSvc from '../services/conversationService';
 import { ConversationNotExistError, NoPermissionsError } from '../services/errors';
 
 
@@ -14,7 +14,6 @@ export function getConversations(req, res, next) {
          res.status(httpStatus.OK).json({ conversations: publicConversations(conversations) });
       })
       .catch((err) => {
-         console.error(err);
          next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
       });
 }
@@ -24,9 +23,9 @@ export function getTranscript(req, res, next) {
    const conversationId = req.params.conversationId;
    const since = req.query.since;
    const until = req.query.until;
-   const minLevel = (req.query.minLevel) ? parseInt(req.query.minLevel) : undefined;
-   const maxLevel = (req.query.maxLevel) ? parseInt(req.query.maxLevel) : undefined;
-   const maxCount = (req.query.maxCount) ? parseInt(req.query.maxCount) : undefined;
+   const minLevel = (req.query.minLevel) ? parseInt(req.query.minLevel, 10) : undefined;
+   const maxLevel = (req.query.maxLevel) ? parseInt(req.query.maxLevel, 10) : undefined;
+   const maxCount = (req.query.maxCount) ? parseInt(req.query.maxCount, 10) : undefined;
 
    conversationsSvc.getMessages(req, conversationId, userId, { since, until, minLevel, maxLevel, maxCount })
       .then((messages) => {

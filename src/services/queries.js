@@ -46,7 +46,6 @@ function removeIntermediateDataType(obj) {
       default:
          ret = {};
          ret[objKey] = removeIntermediateDataType(value);
-         console.log(`objKey=${objKey}, value=${value}, ret[objKey]=${ret[objKey]}`);
          return ret;
    }
 }
@@ -539,7 +538,7 @@ function scan(params) {
          .then((data) => {
             items = data.Items;
             if (data.LastEvaluatedKey) {
-               const continueParams = _.clone(params);
+               const continueParams = _.cloneDeep(params);
                continueParams.ExclusiveStartKey = data.LastEvaluatedKey;
                return scan(continueParams);
             }
@@ -561,7 +560,7 @@ export function getMessagesByConversationIdFiltered(req, conversationId, filter)
       return Promise.reject('conversationId needs to be specified.');
    }
 
-   const { since, until, minLevel, maxLevel, maxCount } = filter;
+   const { since, until, minLevel, maxLevel } = filter;
    const tableName = `${config.tablePrefix}messages`;
    let nIdx = 0;
    let vIdx = 0;
