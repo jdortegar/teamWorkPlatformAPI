@@ -49,7 +49,7 @@ export default class BaseFixture {
                   .then((dbRedisStatuses) => {
                      this.dynamoDb = dbRedisStatuses[0];
                      this.redisClient = dbRedisStatuses[1];
-                     return startServer();
+                     return startServer(this.redisClient);
                   })
                   .then((httpServer) => {
                      this.httpServer = httpServer;
@@ -58,7 +58,7 @@ export default class BaseFixture {
                   .catch(err => reject(err));
             });
          case BaseFixture.TestTypes.ui:
-            return Promise.reject('TODO: tet type ui');
+            return Promise.reject('TODO: test type ui');
          default:
             throw new Error(`Unhandled test type: ${this.testType}`);
       }
@@ -73,8 +73,8 @@ export default class BaseFixture {
             return disconnectRedis(this.redisClient);
          case BaseFixture.TestTypes.server:
             return new Promise((resolve, reject) => {
-               disconnectRedis(this.redisClient)
-                  .then(() => stopServer(this.httpServer))
+               stopServer(this.httpServer)
+                  .then(() => disconnectRedis(this.redisClient))
                   .then(() => resolve())
                   .catch(err => reject(err));
             });

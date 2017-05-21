@@ -8,9 +8,10 @@ import app from '../../config/express';
 import * as conversationSvc from '../conversationService';
 import logger from '../../logger';
 import { setPresence } from './presence';
+import { disconnectFromRedis } from '../../redis-connection';
+import * as subscriberOrgSvc from '../subscriberOrgService';
 import * as teamRoomSvc from '../teamRoomService';
 import * as teamSvc from '../teamService';
-import * as subscriberOrgSvc from '../subscriberOrgService';
 
 
 export const EventTypes = Object.freeze({
@@ -162,10 +163,11 @@ class MessagingService {
    socketsBySocketId = {};
    socketsByUserId = {};
 
-   init(httpServer) {
+   init(httpServer, redisClient) {
       this.httpServer = httpServer;
       this.io = new SocketIO(this.httpServer);
-      const redisAdapter = new SocketIORedisAdapter({ host: config.cacheServer, port: config.cachePort });
+      // const redisAdapter = new SocketIORedisAdapter({ host: config.cacheServer, port: config.cachePort });
+      const redisAdapter = new SocketIORedisAdapter({ pubClient: redisClient.duplicate(), subClient: redisClient.duplicate() });
       this.io.adapter(redisAdapter);
       this.io.use(new SocketIOWildcard());
 
@@ -198,11 +200,20 @@ class MessagingService {
    }
 
    close() {
-      return new Promise((resolve) => {
-         this.io.close(() => {
-            resolve(this.httpServer);
+      if (this.io) {
+         return new Promise((resolve, reject) => {
+            this.io.close(() => {
+               const redisAdapter = this.io.adapter();
+               Promise.all([
+                  disconnectFromRedis(redisAdapter.pubClient),
+                  disconnectFromRedis(redisAdapter.subClient)
+               ])
+                  .then(() => resolve(this.httpServer))
+                  .catch(err => reject(err));
+            });
          });
-      });
+      }
+      return Promise.resolve();
    }
 
 
