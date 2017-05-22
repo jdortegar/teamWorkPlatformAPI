@@ -11,6 +11,7 @@ const config = {
    tablePrefix: process.env.TBL_PREFIX || defaultConfig.tablePrefix,
    cacheServer: process.env.CACHE_SERVER || defaultConfig.cacheServer,
    cachePort: process.env.CACHE_PORT || defaultConfig.cachePort,
+   redisPrefix: defaultConfig.redisPrefix,
    jwtSecret: process.env.JWT_SECRET || defaultConfig.jwtSecret,
    apiEndpoint: process.env.API_ENDPOINT || defaultConfig.apiEndpoint,
    aws: {

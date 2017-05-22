@@ -1,7 +1,5 @@
 var AWS = require('aws-sdk');
-var uuid = require('uuid');
 
-var endpoint =
 AWS.config.update({
    region: 'us-west-2',
    endpoint: 'dynamodb.us-west-2.amazonaws.com'

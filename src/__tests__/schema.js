@@ -1,30 +1,48 @@
-var AWS = require('aws-sdk');
+import AWS from 'aws-sdk';
+import config from '../config/env';
 
 AWS.config.update({
    region: 'us-west-2',
-   endpoint: 'dynamodb.us-west-2.amazonaws.com'
-   // endpoint: 'http://localhost:8000'
+   endpoint: 'http://localhost:8000'
 });
 
-var dynamodb = new AWS.DynamoDB();
+const dynamodb = new AWS.DynamoDB();
 
-var tablePrefix = 'DEV_';
+const tablePrefix = config.tablePrefix;
 
 function createTable(params) {
-   dynamodb.createTable(params, function(err, data) {
-      if (err) {
-         console.error('Unable to create table. Error JSON:', JSON.stringify(err, null, 2));
-      } else {
-         console.log('Created table. Table description JSON:', JSON.stringify(data, null, 2));
-      }
+   return new Promise((resolve, reject) => {
+      dynamodb.createTable(params, function (err, data) {
+         if (err) {
+            console.error('Unable to create table. Error JSON:', JSON.stringify(err, null, 2));
+            reject(err);
+         } else {
+            console.log('Created table. Table description JSON:', JSON.stringify(data, null, 2));
+            resolve();
+         }
+      });
+   });
+}
+
+function deleteTable(tableName) {
+   return new Promise((resolve, reject) => {
+      dynamodb.deleteTable({ TableName: tableName}, function (err, data) {
+         if (err) {
+            console.error('Unable to delete table. Error JSON:', JSON.stringify(err, null, 2));
+            reject(err);
+         } else {
+            console.log('Delete table. Table description JSON:', JSON.stringify(data, null, 2));
+            resolve();
+         }
+      });
    });
 }
 
 
-var usersParams = {
-   TableName : tablePrefix + 'users',
+const usersParams = {
+   TableName: `${tablePrefix}users`,
    KeySchema: [
-      { AttributeName: 'partitionId', KeyType: 'HASH'},  //Partition key
+      { AttributeName: 'partitionId', KeyType: 'HASH' },  //Partition key
       { AttributeName: 'userId', KeyType: 'RANGE' }  //Sort key
    ],
    AttributeDefinitions: [
@@ -37,10 +55,10 @@ var usersParams = {
    }
 };
 
-var subscriberOrgsParams = {
-   TableName : tablePrefix + 'subscriberOrgs',
+const subscriberOrgsParams = {
+   TableName: `${tablePrefix}subscriberOrgs`,
    KeySchema: [
-      { AttributeName: 'partitionId', KeyType: 'HASH'},  //Partition key
+      { AttributeName: 'partitionId', KeyType: 'HASH' },  //Partition key
       { AttributeName: 'subscriberOrgId', KeyType: 'RANGE' }  //Sort key
    ],
    AttributeDefinitions: [
@@ -53,10 +71,10 @@ var subscriberOrgsParams = {
    }
 };
 
-var subscriberUsersParams = {
-   TableName : tablePrefix + 'subscriberUsers',
+const subscriberUsersParams = {
+   TableName: `${tablePrefix}subscriberUsers`,
    KeySchema: [
-      { AttributeName: 'partitionId', KeyType: 'HASH'},  //Partition key
+      { AttributeName: 'partitionId', KeyType: 'HASH' },  //Partition key
       { AttributeName: 'subscriberUserId', KeyType: 'RANGE' }  //Sort key
    ],
    AttributeDefinitions: [
@@ -69,10 +87,10 @@ var subscriberUsersParams = {
    }
 };
 
-var teamsParams = {
-   TableName : tablePrefix + 'teams',
+const teamsParams = {
+   TableName: `${tablePrefix}teams`,
    KeySchema: [
-      { AttributeName: 'partitionId', KeyType: 'HASH'},  //Partition key
+      { AttributeName: 'partitionId', KeyType: 'HASH' },  //Partition key
       { AttributeName: 'teamId', KeyType: 'RANGE' }  //Sort key
    ],
    AttributeDefinitions: [
@@ -85,10 +103,10 @@ var teamsParams = {
    }
 };
 
-var teamMembersParams = {
-   TableName : tablePrefix + 'teamMembers',
+const teamMembersParams = {
+   TableName: `${tablePrefix}teamMembers`,
    KeySchema: [
-      { AttributeName: 'partitionId', KeyType: 'HASH'},  //Partition key
+      { AttributeName: 'partitionId', KeyType: 'HASH' },  //Partition key
       { AttributeName: 'teamMemberId', KeyType: 'RANGE' }  //Sort key
    ],
    AttributeDefinitions: [
@@ -101,10 +119,10 @@ var teamMembersParams = {
    }
 };
 
-var teamRoomsParams = {
-   TableName : tablePrefix + 'teamRooms',
+const teamRoomsParams = {
+   TableName: `${tablePrefix}teamRooms`,
    KeySchema: [
-      { AttributeName: 'partitionId', KeyType: 'HASH'},  //Partition key
+      { AttributeName: 'partitionId', KeyType: 'HASH' },  //Partition key
       { AttributeName: 'teamRoomId', KeyType: 'RANGE' }  //Sort key
    ],
    AttributeDefinitions: [
@@ -117,10 +135,10 @@ var teamRoomsParams = {
    }
 };
 
-var teamRoomMembersParams = {
-   TableName : tablePrefix + 'teamRoomMembers',
+const teamRoomMembersParams = {
+   TableName: `${tablePrefix}teamRoomMembers`,
    KeySchema: [
-      { AttributeName: 'partitionId', KeyType: 'HASH'},  //Partition key
+      { AttributeName: 'partitionId', KeyType: 'HASH' },  //Partition key
       { AttributeName: 'teamRoomMemberId', KeyType: 'RANGE' }  //Sort key
    ],
    AttributeDefinitions: [
@@ -133,10 +151,10 @@ var teamRoomMembersParams = {
    }
 };
 
-var conversationsParams = {
-   TableName : tablePrefix + 'conversations',
+const conversationsParams = {
+   TableName: `${tablePrefix}conversations`,
    KeySchema: [
-      { AttributeName: 'partitionId', KeyType: 'HASH'},  //Partition key
+      { AttributeName: 'partitionId', KeyType: 'HASH' },  //Partition key
       { AttributeName: 'conversationId', KeyType: 'RANGE' }  //Sort key
    ],
    AttributeDefinitions: [
@@ -149,10 +167,10 @@ var conversationsParams = {
    }
 };
 
-var conversationParticipantsParams = {
-   TableName : tablePrefix + 'conversationParticipants',
+const conversationParticipantsParams = {
+   TableName: `${tablePrefix}conversationParticipants`,
    KeySchema: [
-      { AttributeName: 'partitionId', KeyType: 'HASH'},  //Partition key
+      { AttributeName: 'partitionId', KeyType: 'HASH' },  //Partition key
       { AttributeName: 'conversationParticipantId', KeyType: 'RANGE' }  //Sort key
    ],
    AttributeDefinitions: [
@@ -165,10 +183,10 @@ var conversationParticipantsParams = {
    }
 };
 
-var messagesParams = {
-   TableName : tablePrefix + 'messages',
+const messagesParams = {
+   TableName: `${tablePrefix}messages`,
    KeySchema: [
-      { AttributeName: 'partitionId', KeyType: 'HASH'},  //Partition key
+      { AttributeName: 'partitionId', KeyType: 'HASH' },  //Partition key
       { AttributeName: 'messageId', KeyType: 'RANGE' }  //Sort key
    ],
    AttributeDefinitions: [
@@ -181,16 +199,32 @@ var messagesParams = {
    }
 };
 
+export function createAllTables() {
+   return Promise.all([
+      createTable(usersParams),
+      createTable(subscriberOrgsParams),
+      createTable(subscriberUsersParams),
+      createTable(teamsParams),
+      createTable(teamMembersParams),
+      createTable(teamRoomsParams),
+      createTable(teamRoomMembersParams),
+      createTable(conversationsParams),
+      createTable(conversationParticipantsParams),
+      createTable(messagesParams)
+   ]);
+}
 
-
-createTable(usersParams);
-createTable(subscriberOrgsParams);
-createTable(subscriberUsersParams);
-createTable(teamsParams);
-createTable(teamMembersParams);
-createTable(teamRoomsParams);
-createTable(teamRoomMembersParams);
-createTable(conversationsParams);
-createTable(conversationParticipantsParams);
-createTable(messagesParams);
-
+export function deleteAllTables() {
+   return Promise.all([
+      deleteTable(usersParams.TableName),
+      deleteTable(subscriberOrgsParams.TableName),
+      deleteTable(subscriberUsersParams.TableName),
+      deleteTable(teamsParams.TableName),
+      deleteTable(teamMembersParams.TableName),
+      deleteTable(teamRoomsParams.TableName),
+      deleteTable(teamRoomMembersParams.TableName),
+      deleteTable(conversationsParams.TableName),
+      deleteTable(conversationParticipantsParams.TableName),
+      deleteTable(messagesParams.TableName)
+   ]);
+}

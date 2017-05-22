@@ -11,6 +11,7 @@
 
 import httpStatus from 'http-status';
 import uuid from 'uuid';
+import config from '../config/env';
 import APIError from '../helpers/APIError';
 import * as mailer from '../helpers/mailer';
 import { NoPermissionsError, UserNotExistError } from '../services/errors';
@@ -29,7 +30,7 @@ export function createReservation(req, res) {
    req.logger.debug(`createReservation: user ${email}`);
    const rid = uuid.v4(); // get a uid to represent the reservation
    req.logger.debug(`createReservation: new rid: ${rid}`);
-   req.app.locals.redis.set(rid, email, 'EX', 1800, (err) => {
+   req.app.locals.redis.set(`${config.redisPrefix}${rid}`, email, 'EX', 1800, (err) => {
       if (err) {
          req.logger.debug('createReservation: hset status - redis error');
       } else {
@@ -42,6 +43,14 @@ export function createReservation(req, res) {
             res.status(httpStatus.CREATED).json(response);
          });
       }
+   });
+}
+
+export function deleteReservation(req, rid) {
+   return new Promise((resolve, reject) => {
+      req.app.locals.redis.delAsync(`${config.redisPrefix}${rid}`)
+         .then(() => resolve())
+         .catch(err => reject(err));
    });
 }
 
@@ -60,7 +69,7 @@ export function validateEmail(req, res) {
 
    // Find reservation in cache
    req.logger.debug(`find Reservation: id = ${rid}`);
-   req.app.locals.redis.get(rid, (err, reply) => {
+   req.app.locals.redis.get(`${config.redisPrefix}${rid}`, (err, reply) => {
       if (err) {
          req.logger.debug('validateEmail: get status - redis error');
       } else if (reply) {

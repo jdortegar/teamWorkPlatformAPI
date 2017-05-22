@@ -1,5 +1,6 @@
 import moment from 'moment';
 import { sendSubscriberOrgInviteToExternalUser, sendSubscriberOrgInviteToExistingUser, sendTeamInviteToExistingUser, sendTeamRoomInviteToExistingUser } from '../helpers/mailer';
+import config from '../config/env';
 import { userInvited } from './messaging';
 import createRedisRegistration from './registrations';
 
@@ -24,8 +25,14 @@ function toInvitationKey(invitationKey, invitationValue) {
 
 export function getRedisInvitations(req, email) {
    return new Promise((resolve, reject) => {
-      req.app.locals.redis.zremrangebyscoreAsync(hashKey(email), 0, req.now.unix())
-         .then(() => req.app.locals.redis.zrangebyscoreAsync(hashKey(email), req.now.unix(), moment(req.now).add(defaultExpirationMinutes, 'minutes').unix()))
+      req.app.locals.redis.zremrangebyscoreAsync(`${config.redisPrefix}${hashKey(email)}`, 0, req.now.unix())
+         .then(() => {
+            return req.app.locals.redis.zrangebyscoreAsync(
+               `${config.redisPrefix}${hashKey(email)}`,
+               req.now.unix(),
+               moment(req.now).add(defaultExpirationMinutes, 'minutes').unix()
+            );
+         })
          .then(invitations => resolve(invitations))
          .catch(err => reject(err));
    });
@@ -35,8 +42,8 @@ function createRedisInvitation(req, email, invitation, expiration) {
    return new Promise((resolve, reject) => {
       const hash = hashKey(email);
       const ttl = req.now.add(expiration, 'minutes').unix();
-      req.app.locals.redis.zremrangebyscoreAsync(hash, 0, req.now.unix())
-         .then(() => req.app.locals.redis.zaddAsync(hash, ttl, JSON.stringify(invitation)))
+      req.app.locals.redis.zremrangebyscoreAsync(`${config.redisPrefix}${hash}`, 0, req.now.unix())
+         .then(() => req.app.locals.redis.zaddAsync(`${config.redisPrefix}${hash}`, ttl, JSON.stringify(invitation)))
          .then(() => resolve())
          .catch(err => reject(err));
    });
@@ -74,9 +81,9 @@ export function deleteRedisInvitation(req, email, invitationKey, invitationValue
             if (invitation) {
                const hash = hashKey(email);
                if (invitations.length <= 1) {
-                  return req.app.locals.redis.del(hash);
+                  return req.app.locals.redis.del(`${config.redisPrefix}${hash}`);
                }
-               return req.app.locals.redis.zremAsync(hash, invitation);
+               return req.app.locals.redis.zremAsync(`${config.redisPrefix}${hash}`, invitation);
             }
             return undefined;
          })
