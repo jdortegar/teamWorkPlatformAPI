@@ -89,7 +89,8 @@
     "prompt": "^1.0.0",
     "raml2html": "^6.3.0",
     "shx": "^0.2.2",
-    "sinon": "^2.2.0"
+    "sinon": "^2.2.0",
+    "supertest": "^3.0.0"
   },
   "dependencies": {
     "aws-sdk": "^2.54.0",

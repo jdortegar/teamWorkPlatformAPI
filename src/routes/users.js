@@ -1,5 +1,6 @@
 import express from 'express';
 import validate from 'express-validation';
+import config from '../config/env';
 import paramValidation from '../config/param-validation';
 import * as users from '../controllers/users';
 // import { containsRole,roles } from '../policies';
