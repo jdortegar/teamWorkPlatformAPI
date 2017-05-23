@@ -1,10 +1,9 @@
 import AWS from 'aws-sdk';
-import bluebird from 'bluebird';
-import redis from 'redis';
 import config from './config/env';
 import app from './config/express';
 import logger from './logger';
 import messagingSvc from './services/messaging/messagingService';
+import { connectToRedis, disconnectFromRedis } from './redis-connection';
 
 let redisClient;
 let server;
@@ -39,39 +38,42 @@ export function setupDynamoDb() {
 
 
 export function connectRedis() {
-   bluebird.promisifyAll(redis.RedisClient.prototype);
-   bluebird.promisifyAll(redis.Multi.prototype);
-
    const redisConfig = {
       host: config.cacheServer,
       port: config.cachePort
    };
-   const client = redis.createClient(redisConfig);
-   app.locals.redis = client;
 
-   client.on('error', (err) => {
-      logger.error(`Redis Client Error ${err}`);
+   return new Promise((resolve, reject) => {
+      connectToRedis(redisConfig)
+         .then((client) => {
+            app.locals.redis = client;
+            logger.info('Connected to Redis.');
+            resolve(client);
+         })
+         .catch(err => reject(err));
    });
-
-   logger.info('Connected to Redis.');
-   return Promise.resolve(client);
 }
 
 export function disconnectRedis(client) {
-   client.quit();
-   logger.info('Disconnected from Redis.');
-   return Promise.resolve();
+   return new Promise((resolve, reject) => {
+      disconnectFromRedis(client)
+         .then(() => {
+            logger.info('Disconnected from Redis.');
+            resolve();
+         })
+         .catch(err => reject(err));
+   });
 }
 
 
-export function startServer() {
+export function startServer(redisclient) {
    return new Promise((resolve, reject) => {
       const httpServer = app.listen(config.nodePort, (err) => {
          if (err) {
             logger.error(`Error starting server on port ${config.nodePort}.`, err);
             reject(err);
          } else {
-            messagingSvc.init(httpServer);
+            messagingSvc.init(httpServer, redisclient);
             logger.info(`Server started on port ${config.nodePort}`);
             logger.info('---------------------------------------------------------');
             resolve(httpServer);
@@ -104,36 +106,30 @@ export function stopServer(httpServer) {
    });
 }
 
-// this function is called when you want the server to die gracefully
-// i.e. wait for existing connections
+// This function is called when you want the server to die gracefully.
+// i.e. wait for existing connections.
 function gracefulShutdown() {
-   logger.info('Received kill signal, shutting down gracefully.');
-   stopServer(server)
-      .then(() => disconnectRedis(redisClient))
-      .catch(err => logger.error(err));
-   // server.close(() => {
-   //    console.log('Closed out remaining connections.');
-   //    redisclient.quit();
-   //    process.exit();
-   // });
+   logger.info('Received kill signal, shutting down gracefully...');
 
-   // if after
-   setTimeout(() => {
-      logger.error('Could not close connections in time, forcefully shutting down');
-      redisClient.end(true);
+   const kill = setTimeout(() => {
+      logger.error('Could not shutdown in time, forcefully shutting down.');
       process.exit();
    }, 10 * 1000);
+
+   stopServer(server)
+      .then(() => disconnectRedis(redisClient))
+      .then(() => clearTimeout(kill))
+      .catch(err => logger.error(err));
 }
 
 function registerGracefulShutdown() {
    return new Promise((resolve) => {
-      // listen for TERM signal .e.g. kill
+      // Listen for TERM signal .e.g. kill.
       process.on('SIGTERM', gracefulShutdown);
 
-      // listen for INT signal e.g. Ctrl-C
+      // Listen for INT signal e.g. Ctrl-C.
       process.on('SIGINT', gracefulShutdown);
 
-      // console.log('                             registered graceful shutdown ');
       resolve();
    });
 }
@@ -144,7 +140,7 @@ export default function start() {
    Promise.all([setupDynamoDb(), connectRedis()])
       .then((dbAndRedisStatuses) => {
          redisClient = dbAndRedisStatuses[1];
-         return startServer();
+         return startServer(redisClient);
       })
       .then((httpServer) => {
          server = httpServer;

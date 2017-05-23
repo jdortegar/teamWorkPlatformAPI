@@ -121,5 +121,5 @@ export const middleware = [
 
 export const errorMiddleware = (error, req, res, next) => {
    req.logger.error({ error });
-   next();
+   next(error);
 };

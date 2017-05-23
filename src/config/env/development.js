@@ -2,6 +2,7 @@ export const nodePort = 3000;
 export const tablePrefix = 'DEV_';
 export const cacheServer = 'localhost';
 export const cachePort = 6379;
+export const redisPrefix = '';
 export const jwtSecret = '69157cde-e3a7-4079-b79a-95a35d58c6d3';
 export const apiEndpoint = 'http://localhost:3000';
 export const aws = {

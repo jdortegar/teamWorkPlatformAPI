@@ -1,4 +1,6 @@
 import { setupDynamoDb, connectRedis, disconnectRedis, startServer, stopServer } from '../bootstrap';
+import { createAllTables, deleteAllTables } from './schema';
+import app from '../config/express';
 
 export default class BaseFixture {
    static TestTypes = Object.freeze({
@@ -30,12 +32,15 @@ export default class BaseFixture {
          case BaseFixture.TestTypes.db:
             return new Promise((resolve, reject) => {
                Promise.all([
+                  createAllTables(),
                   setupDynamoDb(),
                   connectRedis()
                ])
                   .then((dbRedisStatuses) => {
                      this.dynamoDb = dbRedisStatuses[0];
                      this.redisClient = dbRedisStatuses[1];
+                     app.locals.db = this.dynamodb;
+                     app.locals.redis = this.redisClient;
                      resolve();
                   })
                   .catch(err => reject(err));
@@ -43,13 +48,14 @@ export default class BaseFixture {
          case BaseFixture.TestTypes.server:
             return new Promise((resolve, reject) => {
                Promise.all([
+                  createAllTables(),
                   setupDynamoDb(),
                   connectRedis()
                ])
                   .then((dbRedisStatuses) => {
                      this.dynamoDb = dbRedisStatuses[0];
                      this.redisClient = dbRedisStatuses[1];
-                     return startServer();
+                     return startServer(this.redisClient);
                   })
                   .then((httpServer) => {
                      this.httpServer = httpServer;
@@ -58,7 +64,7 @@ export default class BaseFixture {
                   .catch(err => reject(err));
             });
          case BaseFixture.TestTypes.ui:
-            return Promise.reject('TODO: tet type ui');
+            return Promise.reject('TODO: test type ui');
          default:
             throw new Error(`Unhandled test type: ${this.testType}`);
       }
@@ -70,11 +76,15 @@ export default class BaseFixture {
             // Nothing to setup.
             return Promise.resolve();
          case BaseFixture.TestTypes.db:
-            return disconnectRedis(this.redisClient);
+            return Promise.all([
+               disconnectRedis(this.redisClient),
+               deleteAllTables()
+            ]);
          case BaseFixture.TestTypes.server:
             return new Promise((resolve, reject) => {
-               disconnectRedis(this.redisClient)
-                  .then(() => stopServer(this.httpServer))
+               stopServer(this.httpServer)
+                  .then(() => disconnectRedis(this.redisClient))
+                  .then(() => deleteAllTables())
                   .then(() => resolve())
                   .catch(err => reject(err));
             });

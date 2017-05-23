@@ -12,7 +12,7 @@ function addUserToCache(req, email, uid, status) {
    return new Promise((resolve, reject) => {
       req.logger.debug(`users-create: user ${email} not in cache`);
       req.logger.debug(`users-create: new uuid: ${uid}`);
-      req.app.locals.redis.hmsetAsync(email, 'uid', uid, 'status', status)
+      req.app.locals.redis.hmsetAsync(`${config.redisPrefix}${email}`, 'uid', uid, 'status', status)
          .then((addUserToCacheResponse) => {
             req.logger.debug(`users-create: created redis hash for email: ${email}`);
             resolve(addUserToCacheResponse);
@@ -30,15 +30,15 @@ export function createUser(req, userInfo) {
       const { email } = userInfo;
       const userId = uuid.v4();
       let user;
+      const subscriberOrgId = uuid.v4();
+      const subscriberOrgName = req.body.displayName;
 
       // First, use email addr to see if it's already in redis.
-      req.app.locals.redis.hgetallAsync(email)
+      req.app.locals.redis.hgetallAsync(`${config.redisPrefix}${email}`)
          .then((cachedEmail) => {
             if (cachedEmail === null) {
                // Otherwise, add user to cache add user table.
                const status = 1;
-               const subscriberOrgId = uuid.v4();
-               const subscriberOrgName = req.body.displayName;
 
                const { firstName, lastName, displayName, password, country, timeZone } = userInfo;
                const icon = userInfo.icon || null;
@@ -61,27 +61,27 @@ export function createUser(req, userInfo) {
 
                return Promise.all([
                   addUserToCache(req, email, userId, status),
-                  createItem(req, -1, `${config.tablePrefix}users`, 'userId', userId, 'userInfo', user),
-                  subscriberOrgSvc.createSubscriberOrgUsingBaseName(req, { name: subscriberOrgName }, userId, subscriberOrgId)
+                  createItem(req, -1, `${config.tablePrefix}users`, 'userId', userId, 'userInfo', user)
                ]);
             }
             return undefined;
          })
          .then((cacheAndDbStatuses) => {
             if (cacheAndDbStatuses) {
-               // TODO: Do we need to send them a second email?
-               // mailer.sendActivationLink(email, uid).then(() => {
-               //
-               //   const response = {
-               //     status: 'SUCCESS',
-               //     uuid: uid
-               //   };
-               //   res.json(response);
-               //   res.status(httpStatus.OK).json();
-               //
-               // }); // Needs to be a promise.
+               const dbResponse = cacheAndDbStatuses[1];
+               if ((dbResponse.$response) && (dbResponse.$response.error !== null)) {
+                  throw dbResponse.error;
+               }
 
+               const dbUser = { userId, userInfo: _.cloneDeep(user) };
                user.userId = userId;
+               return subscriberOrgSvc.createSubscriberOrgUsingBaseName(req, { name: subscriberOrgName }, dbUser, subscriberOrgId);
+            }
+
+            return undefined;
+         })
+         .then((createdSubscriberOrg) => {
+            if (createdSubscriberOrg) {
                resolve(user);
                userCreated(req, user);
             } else {

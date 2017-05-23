@@ -74,13 +74,17 @@ export function createSubscriberOrgNoCheck(req, subscriberOrgInfo, user, subscri
    });
 }
 
-export function createSubscriberOrg(req, subscriberOrgInfo, userId, subscriberOrgId = undefined) {
+export function createSubscriberOrg(req, subscriberOrgInfo, userId, subscriberOrgId = undefined, dbUser = undefined) {
    return new Promise((resolve, reject) => {
       // TODO: if (userId), check canCreateSubscriberOrg() -> false, throw NoPermissionsError
-      Promise.all([getSubscriberOrgsByName(req, subscriberOrgInfo.name), getUsersByIds(req, [userId])])
+      const promises = [getSubscriberOrgsByName(req, subscriberOrgInfo.name)];
+      if (userId) {
+         promises.push(getUsersByIds(req, [userId]));
+      }
+      Promise.all(promises)
          .then((promiseResults) => {
             const existingSubscriberOrgs = promiseResults[0];
-            const user = promiseResults[1][0];
+            const user = (promises.length > 1) ? promiseResults[1][0] : dbUser;
 
             if (existingSubscriberOrgs.length > 0) {
                throw new SubscriberOrgExistsError(subscriberOrgInfo.name);
@@ -101,18 +105,18 @@ export function createSubscriberOrg(req, subscriberOrgInfo, userId, subscriberOr
  * @param subscriberOrgName
  * @param appendNumber (optional)
  */
-export function createSubscriberOrgUsingBaseName(req, info, userId, subscriberOrgId = undefined, appendNumber = undefined) {
+export function createSubscriberOrgUsingBaseName(req, info, dbUser, subscriberOrgId = undefined, appendNumber = undefined) {
    const tryInfo = {
       name: info.name + ((appendNumber) ? ` (${appendNumber})` : ''),
       preferences: info.preferences
    };
    return new Promise((resolve, reject) => {
-      createSubscriberOrg(req, tryInfo, userId, subscriberOrgId)
+      createSubscriberOrg(req, tryInfo, undefined, subscriberOrgId, dbUser)
          .then(createdSubscriberOrg => resolve(createdSubscriberOrg))
          .catch((err) => {
             if (err instanceof SubscriberOrgExistsError) {
                const tryNumber = (appendNumber) ? appendNumber + 1 : 1;
-               createSubscriberOrgUsingBaseName(req, info, userId, subscriberOrgId, tryNumber)
+               createSubscriberOrgUsingBaseName(req, info, dbUser, subscriberOrgId, tryNumber)
                   .then(createdSubscriberOrg => resolve(createdSubscriberOrg))
                   .catch(err2 => reject(err2));
             } else {

@@ -21,7 +21,7 @@ export function login(req, res, next) {
    const password = req.body.password || '';
 
    // Retrieve UUID from cache.
-   req.app.locals.redis.hmgetAsync(username, 'uid', 'status')
+   req.app.locals.redis.hmgetAsync(`${config.redisPrefix}${username}`, 'uid', 'status')
       .then((redisResponse) => { // id=redisResponse[0], status=redisResponse[1]
          const userId = redisResponse[0];
          const status = redisResponse[1];
@@ -65,7 +65,7 @@ export function login(req, res, next) {
 export function logout(req, res) {
    const username = req.user.email;
 
-   req.app.locals.redis.delAsync(username)
+   req.app.locals.redis.delAsync(`${config.redisPrefix}${username}`)
       .then(() => res.status(httpStatus.OK))
       .catch((err) => {
          req.logger.error(err);

@@ -1,5 +1,6 @@
 import moment from 'moment';
 import _ from 'lodash';
+import config from '../../config/env';
 
 const defaultExpirationMinutes = 7 * 24 * 60; // 1 week in minutes.
 
@@ -9,8 +10,14 @@ function hashKey(userId) {
 
 export function getPresence(req, userId) {
    return new Promise((resolve, reject) => {
-      req.app.locals.redis.zremrangebyscoreAsync(hashKey(userId), 0, req.now.unix())
-         .then(() => req.app.locals.redis.zrangebyscoreAsync(hashKey(userId), req.now.unix(), moment(req.now).add(defaultExpirationMinutes, 'minutes').unix()))
+      req.app.locals.redis.zremrangebyscoreAsync(`${config.redisPrefix}${hashKey(userId)}`, 0, req.now.unix())
+         .then(() => {
+            return req.app.locals.redis.zrangebyscoreAsync(
+               `${config.redisPrefix}${hashKey(userId)}`,
+               req.now.unix(),
+               moment(req.now).add(defaultExpirationMinutes, 'minutes').unix()
+            );
+         })
          .then((presenceAsStrings) => {
             const presences = [];
             presenceAsStrings.forEach((presenceAsString) => { presences.push(JSON.parse(presenceAsString)); });
@@ -36,14 +43,14 @@ export function setPresence(req, userId, presence) {
             // Should be at most 1 presence for address/userAgent combo.
             if (foundPresences.length > 0) {
                previousLocation = foundPresences[0].location;
-               return req.app.locals.redis.zremAsync(hash, foundPresences[0]);
+               return req.app.locals.redis.zremAsync(`${config.redisPrefix}${hash}`, foundPresences[0]);
             }
             return undefined;
          })
          .then(() => {
             const cachePresence = _.cloneDeep(presence);
             cachePresence.location = cachePresence.location || previousLocation;
-            req.app.locals.redis.zaddAsync(hash, ttl, JSON.stringify(cachePresence));
+            req.app.locals.redis.zaddAsync(`${config.redisPrefix}${hash}`, ttl, JSON.stringify(cachePresence));
          })
          .then(() => resolve())
          .catch(err => reject(err));

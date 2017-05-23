@@ -16,7 +16,7 @@ import conversationsRoutes from './conversations';
 import subscriberOrgRoutes from './subscriberOrgs';
 import teamsRoutes from './teams';
 import teamRoomsRoutes from './teamRooms';
-import userRoutes from './user';
+import userRoutes from './users';
 
 const router = express.Router();
 
