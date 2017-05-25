@@ -25,7 +25,7 @@
     "start": "nodemon $NODE_DEBUG_OPTION src/index.js --exec babel-node",
     "debug": "nodemon src/index.js --exec babel-node --debug",
     "lint": "eslint src",
-    "test": "cross-env NODE_ENV=test jest --runInBand",
+    "test": "cross-env NODE_ENV=test jest --verbose --runInBand",
     "coverage": "cross-env NODE_ENV=test jest --runInBand --silent --coverage",
     "watch:test": "npm run test -- --watch",
     "doc": "esdoc && npm run raml && npm run md",
@@ -123,13 +123,13 @@
   },
   "jest": {
     "testEnvironment": "node",
-    "verbose": true,
     "testMatch": [
       "**/__tests__/**/*spec.js?(x)"
     ],
     "collectCoverageFrom": [
       "src/**/*.js",
-      "!**/__tests__/**"
+      "!**/__tests__/**",
+      "!**/test/**"
     ]
   }
 }
