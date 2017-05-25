@@ -37,8 +37,8 @@ export default class BaseFixture {
                   connectRedis()
                ])
                   .then((dbRedisStatuses) => {
-                     this.dynamoDb = dbRedisStatuses[0];
-                     this.redisClient = dbRedisStatuses[1];
+                     this.dynamoDb = dbRedisStatuses[1];
+                     this.redisClient = dbRedisStatuses[2];
                      app.locals.db = this.dynamodb;
                      app.locals.redis = this.redisClient;
                      resolve();
@@ -53,8 +53,10 @@ export default class BaseFixture {
                   connectRedis()
                ])
                   .then((dbRedisStatuses) => {
-                     this.dynamoDb = dbRedisStatuses[0];
-                     this.redisClient = dbRedisStatuses[1];
+                     this.dynamoDb = dbRedisStatuses[1];
+                     this.redisClient = dbRedisStatuses[2];
+                     app.locals.db = this.dynamodb;
+                     app.locals.redis = this.redisClient;
                      return startServer(this.redisClient);
                   })
                   .then((httpServer) => {

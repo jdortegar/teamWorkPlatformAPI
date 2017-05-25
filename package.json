@@ -25,7 +25,7 @@
     "start": "nodemon $NODE_DEBUG_OPTION src/index.js --exec babel-node",
     "debug": "nodemon src/index.js --exec babel-node --debug",
     "lint": "eslint src",
-    "test": "cross-env NODE_ENV=test jest",
+    "test": "cross-env NODE_ENV=test jest -i",
     "watch:test": "npm run test -- --watch",
     "doc": "esdoc && npm run raml && npm run md",
     "build": "cross-env NODE_ENV=production babel -s true src -d dist",
@@ -42,31 +42,18 @@
     "client:dev": "babel-node $NODE_DEBUG_OPTION Client.js https://habla-fe-api-dev.habla.ai",
     "client:ngrok": "babel-node $NODE_DEBUG_OPTION Client.js https://hablaapi.ngrok.io"
   },
-  "babel": {
-    "presets": [
-      "es2015-node6",
-      "stage-0"
-    ],
-    "env": {
-      "production": {
-        "plugins": [
-          "add-module-exports"
-        ],
-        "presets": [
-          "babili",
-          "es2015",
-          "stage-0"
-        ]
-      }
-    }
-  },
   "devDependencies": {
     "axios": "^0.16.1",
     "babel-cli": "^6.24.1",
     "babel-eslint": "^7.2.3",
     "babel-istanbul": "^0.12.2",
+    "babel-jest": "^20.0.3",
     "babel-node-debug": "^2.0.0",
     "babel-plugin-add-module-exports": "^0.2.1",
+    "babel-plugin-transform-async-to-generator": "^6.24.1",
+    "babel-plugin-transform-class-properties": "^6.24.1",
+    "babel-plugin-transform-es2015-modules-commonjs": "^6.24.1",
+    "babel-plugin-transform-runtime": "^6.23.0",
     "babel-preset-babili": "0.0.12",
     "babel-preset-env": "^1.5.0",
     "babel-preset-es2015": "^6.24.1",
@@ -134,18 +121,16 @@
     "winston": "^2.3.1"
   },
   "jest": {
+    "testEnvironment": "node",
     "verbose": true,
-    "globals": {
-      "__DEV__": true
-    },
     "testMatch": [
       "**/__tests__/**/*spec.js?(x)"
     ],
-    "collectCoverage": true,
-    "coverageReporters": [
-      "text",
-      "lcov",
-      "html"
+    "moduleFileExtensions": [
+      "js"
+    ],
+    "collectCoverageFrom": [
+      "src/**/*.js"
     ]
   }
 }

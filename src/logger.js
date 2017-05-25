@@ -43,7 +43,7 @@ const options = {
       if ((meta) && (meta.error) && (meta.error instanceof Error)) {
          const exceptionMeta = winston.exception.getAllInfo(meta.error);
          const clone = _.clone(meta);
-         clone.error = exceptionMeta.stack;
+         clone.error = exceptionMeta.stack || exceptionMeta.trace;
          return clone;
       }
       return meta;
@@ -120,6 +120,6 @@ export const middleware = [
 ];
 
 export const errorMiddleware = (error, req, res, next) => {
-   req.logger.error({ error });
+   req.logger.error({ error, body: req.body });
    next(error);
 };

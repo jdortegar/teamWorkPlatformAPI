@@ -11,13 +11,19 @@ const dynamodb = new AWS.DynamoDB();
 const tablePrefix = config.tablePrefix;
 
 function createTable(params) {
+   const tableName = params.TableName;
    return new Promise((resolve, reject) => {
       dynamodb.createTable(params, function (err, data) {
          if (err) {
-            console.error('Unable to create table. Error JSON:', JSON.stringify(err, null, 2));
-            reject(err);
+            if (err.code === 'ResourceInUseException') {
+               // console.warn(`Table ${tableName} already exists.`);
+               resolve();
+            } else {
+               console.error(`Unable to create Table ${tableName}. ${JSON.stringify(err, null, 2)}`);
+               reject(err);
+            }
          } else {
-            console.log('Created table. Table description JSON:', JSON.stringify(data, null, 2));
+            // console.log(`Created Table ${tableName}`);
             resolve();
          }
       });
@@ -28,10 +34,15 @@ function deleteTable(tableName) {
    return new Promise((resolve, reject) => {
       dynamodb.deleteTable({ TableName: tableName}, function (err, data) {
          if (err) {
-            console.error('Unable to delete table. Error JSON:', JSON.stringify(err, null, 2));
-            reject(err);
+            if (err.code === 'ResourceNotFoundException') {
+               // console.warn(`Table ${tableName} doesn\'t exist.`);
+               resolve();
+            } else {
+               console.error(`Unable to delete table ${tableName}. Error JSON:', ${JSON.stringify(err, null, 2)}`);
+               reject(err);
+            }
          } else {
-            console.log('Delete table. Table description JSON:', JSON.stringify(data, null, 2));
+            // console.log(`Deleted table ${tableName}.`);
             resolve();
          }
       });

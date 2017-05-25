@@ -43,30 +43,30 @@ app.use(loggerMiddleware);
 // mount all routes on / path
 app.use('/', routes);
 
-app.use(loggerErrorMiddleware);
-
-// If error is not an instanceOf APIError, convert it.
-app.use((err, req, res, next) => {
-   if (err instanceof expressValidation.ValidationError) {
-      const unifiedErrorMessage = err.errors.map((error) => {
-         return error.messages.join('. ');
-      }).join(' and ');
-      const error = new APIError(unifiedErrorMessage, err.status, true);
-      return next(error);
-   } else if (!(err instanceof APIError)) {
-      const apiError = new APIError(err.message, err.status, err.isPublic);
-      return next(apiError);
-   }
-   return next(err);
-});
-
 // Catch 404 and forward to error handler.
 app.use((req, res, next) => {
    const err = new APIError('API not found', httpStatus.NOT_FOUND);
    return next(err);
 });
 
-app.use((err, req, res) => {
+// If error is not an instanceOf APIError, convert it.
+app.use((err, req, res, next) => {
+   let e = err;
+   if (err instanceof expressValidation.ValidationError) {
+      const unifiedErrorMessage = err.errors.map((error) => {
+         return error.messages.join('. ');
+      }).join(' and ');
+      e = new APIError(unifiedErrorMessage, err.status, true);
+   } else if (!(err instanceof APIError)) {
+      e = new APIError(err.message, err.status, err.isPublic);
+   }
+
+   next(e);
+});
+
+app.use(loggerErrorMiddleware);
+
+app.use((err, req, res, next) => { // eslint-disable-line no-unused-vars
    res.status(err.status).json({
       message: err.message
    });
