@@ -177,6 +177,6 @@ export function messageCreated(req, message) {
 
 // EventType = integration
 
-export function boxIntegrationCreated(req, subscriberUser) {
+export function boxIntegrationCreated(req, subscriberUser) { // eslint-disable-line no-unused-vars
    // TODO: send to internal channel only.
 }

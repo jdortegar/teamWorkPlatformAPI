@@ -26,7 +26,25 @@ export function exchangeAuthorizationCodeForAccessToken(authorizationCode) {
 }
 
 /**
- * Example: {"type":"user","id":"1831614173","name":"Anthony Daga","login":"anthony@habla.io","created_at":"2017-06-06T17:10:56-07:00","modified_at":"2017-06-10T13:49:48-07:00","language":"en","timezone":"America/Los_Angeles","space_amount":1000000000000000,"space_used":0,"max_upload_size":5368709120,"status":"active","job_title":"","phone":"6193478347","address":"","avatar_url":"https://app.box.com/api/avatar/large/1831614173"}
+ * Example:
+ * {
+ *    "type": "user",
+ *    "id": "1831614173",
+ *    "name": "Anthony Daga",
+ *    "login": "anthony@habla.io",
+ *    "created_at": "2017-06-06T17:10:56-07:00",
+ *    "modified_at": "2017-06-10T13:49:48-07:00",
+ *    "language": "en",
+ *    "timezone": "America/Los_Angeles",
+ *    "space_amount": 1000000000000000,
+ *    "space_used": 0,
+ *    "max_upload_size": 5368709120,
+ *    "status": "active",
+ *    "job_title": "",
+ *    "phone": "6193478347",
+ *    "address": "",
+ *    "avatar_url": "https://app.box.com/api/avatar/large/1831614173"
+ * }
  *
  * @param userAccessToken
  * @returns {Promise}

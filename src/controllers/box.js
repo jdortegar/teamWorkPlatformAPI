@@ -1,6 +1,7 @@
 import httpStatus from 'http-status';
 import APIError from '../helpers/APIError';
 import * as boxSvc from '../services/boxService';
+import config from '../config/env';
 import { IntegrationAccessError, SubscriberOrgNotExistError } from '../services/errors';
 
 const webappIntegrationUri = `${config.webappBaseUri}/integrations`;
@@ -21,7 +22,7 @@ export function integrateBox(req, res, next) {
       });
 }
 
-export function boxAccess(req, res, next) {
+export function boxAccess(req, res) {
    const userId = req.user._id;
 
    boxSvc.boxAccessResponse(req, userId, req.query)
