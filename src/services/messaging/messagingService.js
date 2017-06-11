@@ -20,26 +20,34 @@ export const EventTypes = Object.freeze({
    userCreated: 'userCreated',
    userUpdated: 'userUpdated',
    userPrivateInfoUpdated: 'userPrivateInfoUpdated',
+
    subscriberOrgCreated: 'subscriberOrgCreated',
    subscriberOrgUpdated: 'subscriberOrgUpdated',
    subscriberOrgPrivateInfoUpdated: 'subscriberOrgPrivateInfoUpdated',
    subscriberAdded: 'subscriberAdded',
    subscriberRemoved: 'subscriberRemoved',
+
    teamCreated: 'teamCreated',
    teamUpdated: 'teamUpdated',
    teamPrivateInfoUpdated: 'teamPrivateInfoUpdated',
    teamMemberAdded: 'teamMemberAdded',
    teamMemberRemoved: 'teamMemberRemoved',
+
    teamRoomCreated: 'teamRoomCreated',
    teamRoomUpdated: 'teamRoomUpdated',
    teamRoomPrivateInfoUpdated: 'teamRoomPrivateInfoUpdated',
    teamRoomMemberAdded: 'teamRoomMemberAdded',
    teamRoomMemberRemoved: 'teamRoomMemberRemoved',
+
    conversationCreated: 'conversationCreated',
    conversationUpdated: 'conversationUpdated',
    messageCreated: 'messageCreated',
+
    typing: 'typing',
    location: 'location',
+
+   boxIntegrationCreated: 'boxIntegrationCreated',
+
    from(value) { return (this[value]); }
 });
 

@@ -173,3 +173,10 @@ export function messageCreated(req, message) {
       ChannelFactory.conversationChannel(message.conversationId)
    ]);
 }
+
+
+// EventType = integration
+
+export function boxIntegrationCreated(req, subscriberUser) {
+   // TODO: send to internal channel only.
+}

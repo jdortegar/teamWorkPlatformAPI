@@ -67,3 +67,10 @@ export class InvitationNotExistError extends Error {
       Error.captureStackTrace(this, InvitationNotExistError);
    }
 }
+
+export class IntegrationAccessError extends Error {
+   constructor(...args) {
+      super(...args);
+      Error.captureStackTrace(this, IntegrationAccessError);
+   }
+}

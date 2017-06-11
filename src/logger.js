@@ -88,11 +88,14 @@ class Wrapper {
    silly(...args) { this.log('silly', args); }
 }
 
-function fillRequest(req) {
+function fillPreAuthRequest(req) {
    req.logger = new Wrapper(req);
    req.cId = shortid.generate();
    req.now = moment.utc(req._startTime);
    req.startUtc = req.now.format();
+}
+
+function fillPostAuthRequest(req) {
    req.userEmail = (req.user) ? req.user.email : 'n/a';
 }
 
@@ -111,13 +114,22 @@ if (json) {
    expressMsg = (colorize) ? chalk.gray(expressMsg) : expressMsg;
    expressOptions.msg = expressMsg;
 }
-export const middleware = [
+
+export const preAuthMiddleware = [
    expressWinston.logger(expressOptions),
    (req, res, next) => {
-      fillRequest(req);
+      fillPreAuthRequest(req);
       next();
    }
 ];
+
+export const postAuthMiddleware = [
+   (req, res, next) => {
+      fillPostAuthRequest(req);
+      next();
+   }
+];
+
 
 export const errorMiddleware = (error, req, res, next) => {
    req.logger.error({ error, body: req.body });

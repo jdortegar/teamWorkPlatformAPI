@@ -1824,3 +1824,34 @@ documentation:
                   description: |
                      FORBIDDEN<br />
                      The user is not allowed to create a message in the specified conversation.
+
+
+/integrations:
+
+   /box:
+
+      /{subscriberOrgId}:
+         uriParameters:
+            subscriberOrgId:
+               description: Box integration, scoped to the logged-in user and provided `subscriberOrgId`.
+         /integrate:
+            get:
+               description: Integrate Box to Habla, scoped to the logged-in user and provided `subscriberOrgId`.
+               responses:
+                  302:
+                     description: |
+                        FOUND<br />
+                        Redirect to Box access approval.
+
+      /access:
+         get:
+            description: Invoked by Box in response to user access response.
+            responses:
+               302:
+                  description: |
+                     FOUND<br />
+                     Redirect to Habla Box integration page.
+                     The query parameter `status` is included, which contains one of the values:<br />
+                     CREATED: Successfully integrated to Box.<br />
+                     NOT_FOUND: The provided `subscriberOrgId` is invalid for the current user.<br />
+                     INTERNAL_SERVER_ERROR: Something bad happened.

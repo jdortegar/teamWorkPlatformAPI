@@ -17,6 +17,7 @@ import subscriberOrgRoutes from './subscriberOrgs';
 import teamsRoutes from './teams';
 import teamRoomsRoutes from './teamRooms';
 import userRoutes from './users';
+import integrationRoutes from './integrations';
 
 const router = express.Router();
 
@@ -38,4 +39,7 @@ router.use('/teams', teamsRoutes);
 router.use('/teamRooms', teamRoomsRoutes);
 router.use('/conversations', conversationsRoutes);
 
+router.use('/integrations', integrationRoutes);
+
 export default router;
+
