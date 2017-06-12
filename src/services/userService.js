@@ -55,6 +55,7 @@ export function createUser(req, userInfo) {
                   country,
                   timeZone,
                   icon,
+                  enabled: true,
                   preferences
                   // ,iconType
                };

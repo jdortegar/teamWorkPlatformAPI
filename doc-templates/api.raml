@@ -125,6 +125,9 @@ documentation:
                            userType:
                               type: string
                               required: true
+                           enabled:
+                              type: boolean
+                              required: true
                            preferences:
                               type: object
                               required: true
@@ -152,6 +155,7 @@ documentation:
                            "timeZone": "America/Los_Angeles",
                            "icon": null,
                            "userType": "hablaUser",
+                           "enabled": true,
                            "preferences": {
                               "iconColor": "red",
                               "private": {
@@ -530,21 +534,30 @@ documentation:
                               name:
                                  type: string
                                  required: true
+                              enabled:
+                                 type: boolean
+                                 required: true
                               preferences:
                                  type: object
                                  required: true
+                                 properties:
+                                    description: Private preferences only available to the organization administrators.
+                                    type: object
+                                    required: false
                   example: |
                      {
                         "subscriberOrgs": [
                            {
                               "subscriberOrgId": "ea794510-cea6-4132-0008-a7ae1d32abb5",
                               "name": "Anthony Daga",
+                              "enabled": true,
                               "preferences": {
                               }
                            },
                            {
                               "subscriberOrgId": "ea794510-cea6-4132-0008-a7ae1d32abb5",
                               "name": "Acme",
+                              "enabled": true,
                               "preferences": {
                               }
                            }
@@ -678,6 +691,9 @@ documentation:
                                  userType:
                                     type: string
                                     required: true
+                                 enabled:
+                                    type: boolean
+                                    required: true
                                  preferences:
                                     type: object
                                     required: true
@@ -729,6 +745,7 @@ documentation:
                                  "displayName": "Anthony Dude Daga",
                                  "icon": null,
                                  "userType": "hablaUser",
+                                 "enabled": true,
                                  "preferences": {
                                  },
                                  "role": "admin",
@@ -747,6 +764,7 @@ documentation:
                                  "displayName": "Jill Goodacre",
                                  "icon": null,
                                  "userType": "hablaUser",
+                                 "enabled": true,
                                  "preferences": {
                                  },
                                  "role": "user"
@@ -868,18 +886,35 @@ documentation:
                               name:
                                  type: string
                                  required: true
+                              enabled:
+                                 type: boolean
+                                 required: true
+                              preferences:
+                                 type: object
+                                 required: true
+                                 properties:
+                                    private:
+                                       description: Private preferences only available to the team administrators.
+                                       type: object
+                                       required: false
                   example: |
                      {
                         "teams": [
                            {
                               "teamId": "9dec8947-0381-4809-a053-b56777f782f4",
                               "subscriberOrgId": "ea794510-cea6-4132-0008-a7ae1d32abb5",
-                              "name": "Posse"
+                              "name": "Posse",
+                              "enabled": true,
+                              "preferences": {
+                              }
                            },
                            {
                               "teamId": "9dec8947-0381-4809-a053-b56777f782f5",
                               "subscriberOrgId": "ea794510-cea6-4132-0008-a7ae1d32abb5",
-                              "name": "Friends"
+                              "name": "Friends",
+                              "enabled": true,
+                              "preferences": {
+                              }
                            }
                         ]
                      }
@@ -908,7 +943,11 @@ documentation:
                            required: false
                example: |
                   {
-                     "name": "My Team"
+                     "name": "My Team",
+                     "preferences": {
+                        "private": {
+                        }
+                     }
                   }
             responses:
                201:
@@ -928,10 +967,7 @@ documentation:
                         {
                            "teamId": "9dec8947-0381-4809-a053-b56777f782f5",
                            "subscriberOrgId": "9dec8947-0381-4809-a053-b56777f782f4",
-                           "name": "My Team",
-                           "preferences": {
-                              "private": {}
-                           }
+                           "name": "My Team"
                         }
                409:
                   description: |
@@ -1028,6 +1064,9 @@ documentation:
                                  userType:
                                     type: string
                                     required: true
+                                 enabled:
+                                    type: boolean
+                                    required: true
                                  preferences:
                                     type: object
                                     required: true
@@ -1079,6 +1118,7 @@ documentation:
                                  "displayName": "Anthony Dude Daga",
                                  "icon": null,
                                  "userType": "hablaUser",
+                                 "enabled": true,
                                  "preferences": {
                                  },
                                  "role": "admin"
@@ -1090,6 +1130,7 @@ documentation:
                                  "displayName": "Jill Goodacre",
                                  "icon": null,
                                  "userType": "hablaUser",
+                                 "enabled": true,
                                  "preferences": {
                                  },
                                  "role": "user"
@@ -1225,6 +1266,17 @@ documentation:
                               active:
                                  type: boolean
                                  required: true
+                              enabled:
+                                 type: boolean
+                                 required: true
+                              preferences:
+                                 type: object
+                                 required: true
+                                 properties:
+                                    private:
+                                       description: Private preferences only available to the team room administrators.
+                                       type: object
+                                       required: false
                   example: |
                      {
                         "teamRooms": [
@@ -1234,7 +1286,10 @@ documentation:
                               "name": "Posse",
                               "purpose": "Place to hang.",
                               "publish": false,
-                              "active": true
+                              "active": true,
+                              "enabled": true,
+                              "preferences: {
+                              }
                            },
                            {
                               "teamRoomId": "9dec8947-0381-4809-a053-b56777f782f5",
@@ -1242,7 +1297,10 @@ documentation:
                               "name": "Friends",
                               "purpose": "My buddies.",
                               "publish": true,
-                              "active": true
+                              "active": true,
+                              "enabled": true,
+                              "preferences: {
+                              }
                            }
                         ]
                      }
@@ -1271,6 +1329,14 @@ documentation:
                   active:
                      type: boolean
                      required: true
+                  preferences:
+                     type: object
+                     required: false
+                     properties:
+                        private:
+                           description: Private preferences only available to the team room administrators.
+                           type: object
+                           required: false
                example: |
                   {
                      "name": "Posse",
@@ -1420,6 +1486,9 @@ documentation:
                                  userType:
                                     type: string
                                     required: true
+                                 enabled:
+                                    type: string
+                                    required: true
                                  preferences:
                                     type: object
                                     required: true
@@ -1471,6 +1540,7 @@ documentation:
                                  "displayName": "Anthony Dude Daga",
                                  "icon": null,
                                  "userType": "hablaUser",
+                                 "enabled": true,
                                  "preferences": {
                                  },
                                  "role": "admin"
@@ -1482,6 +1552,7 @@ documentation:
                                  "displayName": "Jill Goodacre",
                                  "icon": null,
                                  "userType": "hablaUser",
+                                 "enabled": true,
                                  "preferences": {
                                  },
                                  "role": "user"
@@ -1624,6 +1695,9 @@ documentation:
                                        userType:
                                           type: string
                                           required: true
+                                       enabled:
+                                          type: boolean
+                                          required: true
                                        preferences:
                                           type: object
                                           required: true
@@ -1640,6 +1714,7 @@ documentation:
                                     "displayName": "Anthony Dude Daga",
                                     "icon": null,
                                     "userType": "hablaUser",
+                                    "enabled": true,
                                     "preferences": {
                                     }
                                  },
@@ -1650,6 +1725,7 @@ documentation:
                                     "displayName": "Jill Goodacre",
                                     "icon": null,
                                     "userType": "hablaUser",
+                                    "enabled": true,
                                     "preferences": {
                                     }
                                  }
@@ -1666,6 +1742,7 @@ documentation:
                                     "displayName": "Anthony Dude Daga",
                                     "icon": null,
                                     "userType": "hablaUser",
+                                    "enabled": true,
                                     "preferences": {
                                     }
                                  },
@@ -1676,6 +1753,7 @@ documentation:
                                     "displayName": "Jill Goodacre",
                                     "icon": null,
                                     "userType": "hablaUser",
+                                    "enabled": true,
                                     "preferences": {
                                     }
                                  }

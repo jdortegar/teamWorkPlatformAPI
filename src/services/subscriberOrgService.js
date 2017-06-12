@@ -49,6 +49,7 @@ export function createSubscriberOrgNoCheck(req, subscriberOrgInfo, user, subscri
    }
    const subscriberOrg = {
       name: subscriberOrgInfo.name,
+      enabled: true,
       preferences
    };
    const subscriberUserId = uuid.v4();
