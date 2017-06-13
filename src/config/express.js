@@ -37,7 +37,16 @@ app.use(preAuthMiddleware);
 app.use(jwt({
    secret: config.jwtSecret
 }).unless({
-   path: [/^\/test/, /^\/users\/registerUser/, /^\/users\/validateEmail/, /^\/users\/createUser/, /^\/auth\/login/, /^\/integrations\/box\/access/, /^\/users\/passwordreset/,  /^.*\/passwordupdate/]
+   path: [
+      /^\/test/,
+      /^\/users\/registerUser/,
+      /^\/users\/validateEmail/,
+      /^\/users\/createUser/,
+      /^\/auth\/login/,
+      /^\/integrations\/box\/access/,
+      /^\/users\/passwordreset/,
+      /^.*\/passwordupdate/
+   ]
 }));
 
 app.use(postAuthMiddleware);
