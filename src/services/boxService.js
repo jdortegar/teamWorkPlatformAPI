@@ -60,7 +60,7 @@ export function integrateBox(req, userId, subscriberOrgId) {
    });
 }
 
-export function boxAccessResponse(req, userId, { code, state, error, error_description }) {
+export function boxAccessResponse(req, { code, state, error, error_description }) {
    if (error) {
       return Promise.reject(new IntegrationAccessError(`${error}: ${error_description}`)); // eslint-disable-line camelcase
    }
@@ -69,16 +69,14 @@ export function boxAccessResponse(req, userId, { code, state, error, error_descr
 
    return new Promise((resolve, reject) => {
       let integrationInfo;
+      let userId;
       let subscriberOrgId;
       let updateInfo;
 
       deleteRedisBoxIntegrationState(req, state)
          .then((integrationContext) => {
-            const cachedUserId = integrationContext.userId;
+            userId = integrationContext.userId;
             subscriberOrgId = integrationContext.subscriberOrgId;
-            if (cachedUserId !== userId) {
-               throw new IntegrationAccessError('Box integration state not found.');
-            }
 
             return exchangeAuthorizationCodeForAccessToken(authorizationCode);
          })

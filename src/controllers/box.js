@@ -12,7 +12,13 @@ export function integrateBox(req, res, next) {
    const subscriberOrgId = req.params.subscriberOrgId;
 
    boxSvc.integrateBox(req, userId, subscriberOrgId)
-      .then(boxUri => res.redirect(boxUri))
+      .then((boxUri) => {
+         if (req.accepts('application/json')) {
+            res.status(httpStatus.ACCEPTED).json({ location: boxUri });
+         } else {
+            res.redirect(boxUri);
+         }
+      })
       .catch((err) => {
          if (err instanceof SubscriberOrgNotExistError) {
             res.status(httpStatus.NOT_FOUND).end();
@@ -23,19 +29,19 @@ export function integrateBox(req, res, next) {
 }
 
 export function boxAccess(req, res) {
-   const userId = req.user._id;
+   const redirectUri = `${webappIntegrationUri}?integration=box`;
 
-   boxSvc.boxAccessResponse(req, userId, req.query)
+   boxSvc.boxAccessResponse(req, req.query)
       .then(() => {
-         res.redirect(`${webappIntegrationUri}?status=CREATED`);
+         res.redirect(`${redirectUri}&status=CREATED`);
       })
       .catch((err) => {
          if (err instanceof IntegrationAccessError) {
-            res.redirect(`${webappIntegrationUri}?status=FORBIDDEN`);
+            res.redirect(`${redirectUri}&status=FORBIDDEN`);
          } else if (err instanceof SubscriberOrgNotExistError) {
-            res.redirect(`${webappIntegrationUri}?status=NOT_FOUND`);
+            res.redirect(`${redirectUri}&status=NOT_FOUND`);
          } else {
-            res.redirect(`${webappIntegrationUri}?status=INTERNAL_SERVER_ERROR`);
+            res.redirect(`${redirectUri}&status=INTERNAL_SERVER_ERROR`);
          }
       });
 }

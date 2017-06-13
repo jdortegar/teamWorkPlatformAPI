@@ -182,3 +182,16 @@ export function publicMessages(dbMessages) {
       return publicMessage(dbMessage);
    });
 }
+
+export function publicIntegration(integration) {
+   const clone = _.cloneDeep(integration);
+   if (clone.box) {
+      delete clone.box.accessToken;
+      delete clone.box.refreshToken;
+   }
+   return clone;
+}
+
+export function publicIntegrations(integrations) {
+   return integrations.map(integration => publicIntegration(integration));
+}

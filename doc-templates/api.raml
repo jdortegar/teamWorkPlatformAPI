@@ -1951,21 +1951,71 @@ documentation:
 
 /integrations:
 
+   /getIntegrations:
+      get:
+         securedBy: [oauth_2_0]
+         description: Retrieve integrations for the authenticated user, scoped to the `subscriberOrgId` if the query parameter exists.
+         queryParameters:
+            subscriberOrgId:
+               description: Narrow the results to integrations for a subscriber organization.
+               type: string
+               required: false
+               example: /integrations/getIntegrations?subscriberOrgIdId=9dec8947-0381-4809-a053-b56777f782f4
+         responses:
+            200:
+               description: |
+                  OK
+               body:
+                  properties:
+                     integrations:
+                        type: array
+                        required: true
+                        items:
+                           properties:
+                              subscriberOrgId:
+                                 type: string
+                                 required: true
+                              box:
+                                 type: object
+                                 required: false
+                              googleDrive:
+                                 type: object
+                                 required: false
+                  example: |
+                     {
+                        "integrations": [
+                           {
+                              "subscriberOrgId": "18644a74-6fec-4921-af8b-d8286cd5efbb",
+                              "box": {
+                                 "userId": "1831614173",
+                                 "acquiredAtMS": 1497303951792,
+                                 "accessTokenTTLMS": 3971000
+                              }
+                           }
+                        ]
+                     }
+
    /box:
 
-      /{subscriberOrgId}:
-         uriParameters:
-            subscriberOrgId:
-               description: Box integration, scoped to the logged-in user and provided `subscriberOrgId`.
-         /integrate:
-            get:
-               securedBy: [oauth_2_0]
-               description: Integrate Box to Habla, scoped to the logged-in user and provided `subscriberOrgId`.
-               responses:
-                  302:
-                     description: |
-                        FOUND<br />
-                        Redirect to Box access approval.
+      /integrate:
+         /{subscriberOrgId}:
+            uriParameters:
+               subscriberOrgId:
+                  description: Box integration, scoped to the logged-in user and provided `subscriberOrgId`.
+            /integrate:
+               get:
+                  securedBy: [oauth_2_0]
+                  description: Integrate Box to Habla, scoped to the logged-in user and provided `subscriberOrgId`.
+                  responses:
+                     202:
+                        description: |
+                           ACCEPTED<br />
+                           If request header `Accept` contains `application/json`, the body will contain JSON `{ location: ... }`.
+                           Manually redirect the browser to that location.
+                     302:
+                        description: |
+                           FOUND<br />
+                           Redirect to Box access approval.
 
       /access:
          get:
@@ -1975,6 +2025,7 @@ documentation:
                   description: |
                      FOUND<br />
                      Redirect to Habla Box integration page.
+                     The query parameter `integration` is included, with current value: box | googleDrive.
                      The query parameter `status` is included, which contains one of the values:<br />
                      CREATED: Successfully integrated to Box.<br />
                      NOT_FOUND: The provided `subscriberOrgId` is invalid for the current user.<br />
