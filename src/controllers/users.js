@@ -11,6 +11,7 @@
 
 import httpStatus from 'http-status';
 import uuid from 'uuid';
+import app from '../config/express';
 import config from '../config/env';
 import APIError from '../helpers/APIError';
 import * as mailer from '../helpers/mailer';
@@ -46,9 +47,9 @@ export function createReservation(req, res) {
    });
 }
 
-export function deleteReservation(req, rid) {
+export function deleteRedisKey(rid) {
    return new Promise((resolve, reject) => {
-      req.app.locals.redis.delAsync(`${config.redisPrefix}${rid}`)
+      app.locals.redis.delAsync(`${config.redisPrefix}${rid}`)
          .then(() => resolve())
          .catch(err => reject(err));
    });

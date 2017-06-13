@@ -93,41 +93,75 @@ class ObjectExpressions {
    nameCount = 0;
    valueCount = 0;
 
+   dynamoAttributeName;
+   dynamoDoc;
+
    constructor(json) {
-      this.process(json);
+      this.dynamoDoc = this.process(json);
+      if (this.dynamoDoc.M) {
+         this.dynamoAttributeName = Object.keys(this.dynamoDoc.M)[0];
+         this.dynamoDoc = Object.values(this.dynamoDoc.M)[0];
+      }
    }
 
    process(node, variablePath) {
       if ((typeof node === 'object') && (node !== null)) {
+         const currentDynamoNode = { M: {} };
          const objKeys = Object.keys(node);
          objKeys.forEach((objKey) => {
             const variable = `#n${this.nameCount}`;
             this.nameVariables[variable] = objKey;
             this.nameCount += 1;
-            this.process(node[objKey], (variablePath) ? `${variablePath}.${variable}` : variable);
+
+            this.currentParent = this.currentParent || { M: {} };
+            this.currentParent[objKey] = {};
+            this.currentParent = this.currentParent[objKey];
+
+            currentDynamoNode.M[objKey] = this.process(
+               node[objKey],
+               (variablePath) ? `${variablePath}.${variable}` : variable,
+               currentDynamoNode.M
+            );
          });
-      } else {
-         const valueVariable = `:v${this.valueCount}`;
-         this.valueCount += 1;
-
-         if (node === undefined) {
-            this.removes.push(variablePath);
-         } else {
-            let nodeValue;
-            if (node === null) {
-               nodeValue = { NULL: true };
-            } else if (!isNaN(node)) {
-               nodeValue = { N: node };
-            } else if (typeof node === 'string') {
-               nodeValue = { S: node };
-            } else if (typeof node === 'boolean') {
-               nodeValue = { BOOL: node };
-            }
-
-            this.valueVariables[valueVariable] = nodeValue;
-            this.sets[variablePath] = valueVariable;
-         }
+         return currentDynamoNode;
       }
+
+      const valueVariable = `:v${this.valueCount}`;
+      this.valueCount += 1;
+
+      if (node === undefined) {
+         this.removes.push(variablePath);
+         return undefined;
+      }
+
+      let nodeValue;
+      if (node === null) {
+         nodeValue = { NULL: true };
+      } else if (typeof node === 'boolean') {
+         nodeValue = { BOOL: node };
+      } else if (typeof node === 'string') {
+         nodeValue = { S: node };
+      } else if (!isNaN(node)) {
+         nodeValue = { N: node.toString() };
+      }
+
+      this.valueVariables[valueVariable] = nodeValue;
+      this.sets[variablePath] = valueVariable;
+      return nodeValue;
+   }
+
+   paramsForCompleteUpdate(tableName, partitionIdString, sortKeyName, sortKey) {
+      const params = {
+         TableName: tableName,
+         Key: {
+            partitionId: { N: partitionIdString }
+         },
+         UpdateExpression: 'SET #n0=:v0',
+         ExpressionAttributeNames: { '#n0': this.dynamoAttributeName },
+         ExpressionAttributeValues: { ':v0': this.dynamoDoc }
+      };
+      params.Key[sortKeyName] = { S: sortKey };
+      return params;
    }
 
    get FilterExpression() {
@@ -195,6 +229,10 @@ class ObjectExpressions {
    get ExpressionAttributeValues() {
       return this.valueVariables;
    }
+
+   // get ExpressionAttributeValuesAsStrings() {
+   //    return this.valueVariablesAsStrings;
+   // }
 }
 
 function filteredScan(req, tableName, exactMatch) {
@@ -283,6 +321,17 @@ export function createItem(req, partitionId, tableName, sortKeyName, sortKey, in
    return docClient().put(params).promise();
 }
 
+/**
+ * Requires intermediate paths to already exist.
+ *
+ * @param req
+ * @param partitionId
+ * @param tableName
+ * @param sortKeyName
+ * @param sortKey
+ * @param updateInfo
+ * @returns {Promise}
+ */
 export function updateItem(req, partitionId, tableName, sortKeyName, sortKey, updateInfo) {
    const dynamoDb = req.app.locals.db;
    const partitionIdString = ((typeof partitionId === 'string') || (partitionId instanceof String)) ? partitionId : String(partitionId);
@@ -298,6 +347,20 @@ export function updateItem(req, partitionId, tableName, sortKeyName, sortKey, up
       ExpressionAttributeValues: expressions.ExpressionAttributeValues
    };
    params.Key[sortKeyName] = { S: sortKey };
+
+   return new Promise((resolve, reject) => {
+      dynamoDb.updateItem(params).promise()
+         .then(() => resolve())
+         .catch(err => reject(err));
+   });
+}
+
+export function updateItemCompletely(req, partitionId, tableName, sortKeyName, sortKey, updateInfo) {
+   const dynamoDb = req.app.locals.db;
+   const partitionIdString = ((typeof partitionId === 'string') || (partitionId instanceof String)) ? partitionId : String(partitionId);
+   const expressions = new ObjectExpressions(updateInfo);
+
+   const params = expressions.paramsForCompleteUpdate(tableName, partitionIdString, sortKeyName, sortKey);
 
    return new Promise((resolve, reject) => {
       dynamoDb.updateItem(params).promise()
@@ -351,6 +414,15 @@ export function getSubscriberUsersBySubscriberOrgId(req, subscriberOrgId) {
 
    const tableName = `${config.tablePrefix}subscriberUsers`;
    return filteredScanValueIn(req, tableName, 'subscriberUserInfo.subscriberOrgId', [subscriberOrgId]);
+}
+
+export function getSubscriberUsersByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId) {
+   if ((userId === undefined) || (subscriberOrgId === undefined)) {
+      return Promise.reject('userId and subscriberOrgId needs to be specified.');
+   }
+
+   const tableName = `${config.tablePrefix}subscriberUsers`;
+   return filteredScan(req, tableName, { subscriberUserInfo: { userId, subscriberOrgId } });
 }
 
 export function getSubscriberUsersByUserIdAndSubscriberOrgIdAndRole(req, userId, subscriberOrgId, role) {

@@ -32,5 +32,8 @@ const config = {
     * Output logs in JSON (true) or not (false).
     */
    loggerJson: process.env.LOGGER_JSON || defaultConfig.loggerJson,
+
+   boxClientId: process.env.BOX_CLIENT_ID || defaultConfig.boxClientId,
+   boxClientSecret: process.env.BOX_CLIENT_SECRET || defaultConfig.boxClientSecret
 };
 export default config;

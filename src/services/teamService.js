@@ -65,6 +65,7 @@ export function createTeamNoCheck(req, subscriberOrgId, teamInfo, subscriberUser
    const team = {
       subscriberOrgId,
       name: teamInfo.name,
+      enabled: true,
       preferences
    };
    const teamMemberId = uuid.v4();

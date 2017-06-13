@@ -1,8 +1,7 @@
-import moment from 'moment';
 import request from 'supertest';
 import BaseFixture from '../../src/__tests__/BaseFixture';
 import app from '../../src/config/express';
-import { deleteReservation } from '../../src/controllers/users';
+import { deleteRedisKey } from '../../src/controllers/users';
 
 let baseFixture;
 let rid;
@@ -15,12 +14,10 @@ beforeAll(async () => {
 
 afterEach(async () => {
    if (rid) {
-      const req = { app, now: moment.utc() };
-      await deleteReservation(req, rid);
+      await deleteRedisKey(rid);
    }
    if (cachedUserEmail) {
-      const req = { app, now: moment.utc() };
-      await deleteReservation(cachedUserEmail, rid);
+      await deleteRedisKey(cachedUserEmail);
    }
    rid = undefined;
 });
@@ -59,20 +56,20 @@ test('Validate non-existing reservation.', async () => {
    expect(req.status).toBe(404);
 });
 
-test.only('Register and create user.', async () => {
+test('Register and create user.', async () => {
    let req = await request(app).post('/users/registerUser')
       .set('Content-Type', 'application/x-www-form-urlencoded')
-      .send(`email=${encodeURIComponent('test@habla.ai')}`);
+      .send(`email=${encodeURIComponent('marisa.miller@habla.ai')}`);
 
    expect(req.status).toBe(201);
 
    rid = req.body.uuid;
 
    const createUserBody = {
-      firstName: 'Anthony',
-      lastName: 'Daga',
-      displayName: 'Dude',
-      email: 'anthony.daga@habla.ai',
+      firstName: 'Marisa',
+      lastName: 'Miller',
+      displayName: 'Marisa Miller',
+      email: 'marisa.miller@habla.ai',
       password: 'HelloWorld#123',
       country: 'US',
       timeZone: 'America/Los_Angeles',
@@ -91,4 +88,44 @@ test.only('Register and create user.', async () => {
       .send(createUserBody);
 
    expect(req.status).toBe(201);
+});
+
+test('Register duplicate user.', async () => {
+   let req = await request(app).post('/users/registerUser')
+      .set('Content-Type', 'application/x-www-form-urlencoded')
+      .send(`email=${encodeURIComponent('marisa.miller@habla.ai')}`);
+
+   expect(req.status).toBe(201);
+
+   rid = req.body.uuid;
+
+   const createUserBody = {
+      firstName: 'Marisa',
+      lastName: 'Miller',
+      displayName: 'Marisa Miller',
+      email: 'marisa.miller@habla.ai',
+      password: 'HelloWorld#123',
+      country: 'US',
+      timeZone: 'America/Los_Angeles',
+      icon: null,
+      preferences: {
+         iconColor: 'red',
+         private: {
+            lastWindowLocation: '110, 64'
+         }
+      }
+   };
+   cachedUserEmail = createUserBody.email;
+
+   req = await request(app).post('/users/createUser')
+      .set('Content-Type', 'application/json')
+      .send(createUserBody);
+
+   expect(req.status).toBe(201);
+
+   req = await request(app).post('/users/createUser')
+      .set('Content-Type', 'application/json')
+      .send(createUserBody);
+
+   expect(req.status).toBe(403);
 });

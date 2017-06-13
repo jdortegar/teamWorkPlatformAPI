@@ -4,6 +4,27 @@ title: Habla
 version: v0.1.6
 baseUri: https://api.habla.ai
 mediaType:  application/json
+securitySchemes:
+   oauth_2_0:
+      type: OAuth 2.0
+      settings:
+         authorizationUri: https://dev.habla.ai/signin
+         accessTokenUri: https://api.habla.ai/auth/login
+         authorizationGrants: [ implicit ]
+      describedBy:
+         headers:
+            Authorization:
+               description: |
+                  Used to send a valid OAuth 2 access token, the value of which is: Bearer <JWT>
+         responses:
+            401:
+               description: |
+                  UNAUTHORIZED<br />
+                  No reason is given for privacy purposes, but could be an unknown username or bad password.
+            403:
+               description: |
+                  FORBIDDEN<br />
+                  Bad OAuth request (bad JWT format, expired timestamp, etc.).
 
 documentation:
    - title: Overview
@@ -104,6 +125,9 @@ documentation:
                            userType:
                               type: string
                               required: true
+                           enabled:
+                              type: boolean
+                              required: true
                            preferences:
                               type: object
                               required: true
@@ -131,6 +155,7 @@ documentation:
                            "timeZone": "America/Los_Angeles",
                            "icon": null,
                            "userType": "hablaUser",
+                           "enabled": true,
                            "preferences": {
                               "iconColor": "red",
                               "private": {
@@ -321,6 +346,7 @@ documentation:
 
    /updateUser:
       patch:
+         securedBy: [oauth_2_0]
          description: |
             Update a user in Habla.
          body:
@@ -390,6 +416,7 @@ documentation:
             userId:
                description: The `userId` of the user to update preferences of.
          patch:
+            securedBy: [oauth_2_0]
             description: |
                Update a user public preferences.
             body:
@@ -422,6 +449,7 @@ documentation:
 
    /getInvitations:
       get:
+         securedBy: [oauth_2_0]
          description: |
             Retrieve all invitations for the user.
          responses:
@@ -486,6 +514,7 @@ documentation:
 
    /getSubscriberOrgs:
       get:
+         securedBy: [oauth_2_0]
          description: |
             Retrieve the organizations that the authenticated user is privy to.
          responses:
@@ -505,21 +534,30 @@ documentation:
                               name:
                                  type: string
                                  required: true
+                              enabled:
+                                 type: boolean
+                                 required: true
                               preferences:
                                  type: object
                                  required: true
+                                 properties:
+                                    description: Private preferences only available to the organization administrators.
+                                    type: object
+                                    required: false
                   example: |
                      {
                         "subscriberOrgs": [
                            {
                               "subscriberOrgId": "ea794510-cea6-4132-0008-a7ae1d32abb5",
                               "name": "Anthony Daga",
+                              "enabled": true,
                               "preferences": {
                               }
                            },
                            {
                               "subscriberOrgId": "ea794510-cea6-4132-0008-a7ae1d32abb5",
                               "name": "Acme",
+                              "enabled": true,
                               "preferences": {
                               }
                            }
@@ -528,6 +566,7 @@ documentation:
 
    /createSubscriberOrg:
       post:
+         securedBy: [oauth_2_0]
          description: |
             Create a subscriber organization in Habla.
             <br />
@@ -578,6 +617,7 @@ documentation:
             subscriberOrgId:
                description: Subscriber Org ID to update.
          patch:
+            securedBy: [oauth_2_0]
             description: |
                Update a subscriber organization in Habla.
             body:
@@ -617,6 +657,7 @@ documentation:
             subscriberOrgId:
                description: Subscriber Org ID.
          get:
+            securedBy: [oauth_2_0]
             description: |
                Retrieve the subscribers (i.e. users) of an organization given the subscriber org ID.
             responses:
@@ -649,6 +690,9 @@ documentation:
                                     default: nil
                                  userType:
                                     type: string
+                                    required: true
+                                 enabled:
+                                    type: boolean
                                     required: true
                                  preferences:
                                     type: object
@@ -701,6 +745,7 @@ documentation:
                                  "displayName": "Anthony Dude Daga",
                                  "icon": null,
                                  "userType": "hablaUser",
+                                 "enabled": true,
                                  "preferences": {
                                  },
                                  "role": "admin",
@@ -719,6 +764,7 @@ documentation:
                                  "displayName": "Jill Goodacre",
                                  "icon": null,
                                  "userType": "hablaUser",
+                                 "enabled": true,
                                  "preferences": {
                                  },
                                  "role": "user"
@@ -740,6 +786,7 @@ documentation:
             subscriberOrgId:
                description: subscriberOrg ID to invite users to.
          post:
+            securedBy: [oauth_2_0]
             description: |
                Invite a user to the specified subscriberOrg.
                The requesting user must be an admin of the specified subscriberOrg.
@@ -779,6 +826,7 @@ documentation:
             subscriberOrgId:
                description: subscriberOrg ID to accept/decline invite to.
          post:
+            securedBy: [oauth_2_0]
             description: |
                Accept or decline an invite to the specified subscriberOrg.
             body:
@@ -809,6 +857,7 @@ documentation:
 
    /getTeams:
       get:
+         securedBy: [oauth_2_0]
          description: |
             Retrieve the teams that the authenticated user is privy to.
          queryParameters:
@@ -837,18 +886,35 @@ documentation:
                               name:
                                  type: string
                                  required: true
+                              enabled:
+                                 type: boolean
+                                 required: true
+                              preferences:
+                                 type: object
+                                 required: true
+                                 properties:
+                                    private:
+                                       description: Private preferences only available to the team administrators.
+                                       type: object
+                                       required: false
                   example: |
                      {
                         "teams": [
                            {
                               "teamId": "9dec8947-0381-4809-a053-b56777f782f4",
                               "subscriberOrgId": "ea794510-cea6-4132-0008-a7ae1d32abb5",
-                              "name": "Posse"
+                              "name": "Posse",
+                              "enabled": true,
+                              "preferences": {
+                              }
                            },
                            {
                               "teamId": "9dec8947-0381-4809-a053-b56777f782f5",
                               "subscriberOrgId": "ea794510-cea6-4132-0008-a7ae1d32abb5",
-                              "name": "Friends"
+                              "name": "Friends",
+                              "enabled": true,
+                              "preferences": {
+                              }
                            }
                         ]
                      }
@@ -859,6 +925,7 @@ documentation:
             subscriberOrgId:
                description: Subscriber Org ID to create the team under.
          post:
+            securedBy: [oauth_2_0]
             description: |
                Create a team within a subscriber organization in Habla.
             body:
@@ -876,7 +943,11 @@ documentation:
                            required: false
                example: |
                   {
-                     "name": "My Team"
+                     "name": "My Team",
+                     "preferences": {
+                        "private": {
+                        }
+                     }
                   }
             responses:
                201:
@@ -896,10 +967,7 @@ documentation:
                         {
                            "teamId": "9dec8947-0381-4809-a053-b56777f782f5",
                            "subscriberOrgId": "9dec8947-0381-4809-a053-b56777f782f4",
-                           "name": "My Team",
-                           "preferences": {
-                              "private": {}
-                           }
+                           "name": "My Team"
                         }
                409:
                   description: |
@@ -916,6 +984,7 @@ documentation:
             teamId:
                description: Team ID to update.
          patch:
+            securedBy: [oauth_2_0]
             description: |
                Update a team in Habla.
             body:
@@ -961,6 +1030,7 @@ documentation:
             teamId:
                description: Team ID.
          get:
+            securedBy: [oauth_2_0]
             description: |
                Retrieve the members (i.e. users) of a team given the team ID.
             responses:
@@ -993,6 +1063,9 @@ documentation:
                                     default: nil
                                  userType:
                                     type: string
+                                    required: true
+                                 enabled:
+                                    type: boolean
                                     required: true
                                  preferences:
                                     type: object
@@ -1045,6 +1118,7 @@ documentation:
                                  "displayName": "Anthony Dude Daga",
                                  "icon": null,
                                  "userType": "hablaUser",
+                                 "enabled": true,
                                  "preferences": {
                                  },
                                  "role": "admin"
@@ -1056,6 +1130,7 @@ documentation:
                                  "displayName": "Jill Goodacre",
                                  "icon": null,
                                  "userType": "hablaUser",
+                                 "enabled": true,
                                  "preferences": {
                                  },
                                  "role": "user"
@@ -1077,6 +1152,7 @@ documentation:
             teamId:
                description: Team ID to invite users to.
          post:
+            securedBy: [oauth_2_0]
             description: |
                Invite a user to the specified team.
                The requesting user must be an admin of the specified team.
@@ -1115,6 +1191,7 @@ documentation:
             teamId:
                description: Team ID to accept/decline invite to.
          post:
+            securedBy: [oauth_2_0]
             description: |
                Accept or decline an invite to the specified team.
             body:
@@ -1145,6 +1222,7 @@ documentation:
 
    /getTeamRooms:
       get:
+         securedBy: [oauth_2_0]
          description: |
             Retrieve the team rooms that the authenticated user is privy to.
          queryParameters:
@@ -1188,6 +1266,17 @@ documentation:
                               active:
                                  type: boolean
                                  required: true
+                              enabled:
+                                 type: boolean
+                                 required: true
+                              preferences:
+                                 type: object
+                                 required: true
+                                 properties:
+                                    private:
+                                       description: Private preferences only available to the team room administrators.
+                                       type: object
+                                       required: false
                   example: |
                      {
                         "teamRooms": [
@@ -1197,7 +1286,10 @@ documentation:
                               "name": "Posse",
                               "purpose": "Place to hang.",
                               "publish": false,
-                              "active": true
+                              "active": true,
+                              "enabled": true,
+                              "preferences: {
+                              }
                            },
                            {
                               "teamRoomId": "9dec8947-0381-4809-a053-b56777f782f5",
@@ -1205,7 +1297,10 @@ documentation:
                               "name": "Friends",
                               "purpose": "My buddies.",
                               "publish": true,
-                              "active": true
+                              "active": true,
+                              "enabled": true,
+                              "preferences: {
+                              }
                            }
                         ]
                      }
@@ -1216,6 +1311,7 @@ documentation:
             teamId:
                description: Team ID to create the team room under.
          post:
+            securedBy: [oauth_2_0]
             description: |
                Create a team room within a team.
             body:
@@ -1233,6 +1329,14 @@ documentation:
                   active:
                      type: boolean
                      required: true
+                  preferences:
+                     type: object
+                     required: false
+                     properties:
+                        private:
+                           description: Private preferences only available to the team room administrators.
+                           type: object
+                           required: false
                example: |
                   {
                      "name": "Posse",
@@ -1290,6 +1394,7 @@ documentation:
             teamRoomId:
                description: Team room to update.
          patch:
+            securedBy: [oauth_2_0]
             description: |
                Update a team room in Habla.
             body:
@@ -1347,6 +1452,7 @@ documentation:
             teamRoomId:
                description: Team room ID.
          get:
+            securedBy: [oauth_2_0]
             description: |
                Retrieve the members (i.e. users) of a team room given the team room ID.
             responses:
@@ -1378,6 +1484,9 @@ documentation:
                                     required: false
                                     default: nil
                                  userType:
+                                    type: string
+                                    required: true
+                                 enabled:
                                     type: string
                                     required: true
                                  preferences:
@@ -1431,6 +1540,7 @@ documentation:
                                  "displayName": "Anthony Dude Daga",
                                  "icon": null,
                                  "userType": "hablaUser",
+                                 "enabled": true,
                                  "preferences": {
                                  },
                                  "role": "admin"
@@ -1442,6 +1552,7 @@ documentation:
                                  "displayName": "Jill Goodacre",
                                  "icon": null,
                                  "userType": "hablaUser",
+                                 "enabled": true,
                                  "preferences": {
                                  },
                                  "role": "user"
@@ -1463,6 +1574,7 @@ documentation:
             teamRoomId:
                description: Team room ID to invite users to.
          post:
+            securedBy: [oauth_2_0]
             description: |
                Invite a user to the specified team room.
                The requesting user must be an admin of the specified team room.
@@ -1501,6 +1613,7 @@ documentation:
             teamRoomId:
                description: Team room ID to accept/decline invite to.
          post:
+            securedBy: [oauth_2_0]
             description: |
                Accept or decline an invite to the specified team room.
             body:
@@ -1530,6 +1643,7 @@ documentation:
 
    /getConversations:
       get:
+         securedBy: [oauth_2_0]
          description: |
             Retrieve the conversations that the authenticated user is privy to.
             To narrow down the results to conversations of a team room, add the `teamRoomId` query parameter.
@@ -1581,6 +1695,9 @@ documentation:
                                        userType:
                                           type: string
                                           required: true
+                                       enabled:
+                                          type: boolean
+                                          required: true
                                        preferences:
                                           type: object
                                           required: true
@@ -1597,6 +1714,7 @@ documentation:
                                     "displayName": "Anthony Dude Daga",
                                     "icon": null,
                                     "userType": "hablaUser",
+                                    "enabled": true,
                                     "preferences": {
                                     }
                                  },
@@ -1607,6 +1725,7 @@ documentation:
                                     "displayName": "Jill Goodacre",
                                     "icon": null,
                                     "userType": "hablaUser",
+                                    "enabled": true,
                                     "preferences": {
                                     }
                                  }
@@ -1623,6 +1742,7 @@ documentation:
                                     "displayName": "Anthony Dude Daga",
                                     "icon": null,
                                     "userType": "hablaUser",
+                                    "enabled": true,
                                     "preferences": {
                                     }
                                  },
@@ -1633,6 +1753,7 @@ documentation:
                                     "displayName": "Jill Goodacre",
                                     "icon": null,
                                     "userType": "hablaUser",
+                                    "enabled": true,
                                     "preferences": {
                                     }
                                  }
@@ -1647,6 +1768,7 @@ documentation:
             conversationId:
                description: Conversation ID.
          get:
+            securedBy: [oauth_2_0]
             description: |
                Retrieve the transcript for the specified conversation.
                The transcript messages are returned in `created` descending order.
@@ -1759,6 +1881,7 @@ documentation:
             description: Conversation ID for which subsequent operations are scoped.
       /createMessage:
          post:
+            securedBy: [oauth_2_0]
             description: |
                Create a message in a specified conversation.
             body:
@@ -1824,3 +1947,86 @@ documentation:
                   description: |
                      FORBIDDEN<br />
                      The user is not allowed to create a message in the specified conversation.
+
+
+/integrations:
+
+   /getIntegrations:
+      get:
+         securedBy: [oauth_2_0]
+         description: Retrieve integrations for the authenticated user, scoped to the `subscriberOrgId` if the query parameter exists.
+         queryParameters:
+            subscriberOrgId:
+               description: Narrow the results to integrations for a subscriber organization.
+               type: string
+               required: false
+               example: /integrations/getIntegrations?subscriberOrgIdId=9dec8947-0381-4809-a053-b56777f782f4
+         responses:
+            200:
+               description: |
+                  OK
+               body:
+                  properties:
+                     integrations:
+                        type: array
+                        required: true
+                        items:
+                           properties:
+                              subscriberOrgId:
+                                 type: string
+                                 required: true
+                              box:
+                                 type: object
+                                 required: false
+                              googleDrive:
+                                 type: object
+                                 required: false
+                  example: |
+                     {
+                        "integrations": [
+                           {
+                              "subscriberOrgId": "18644a74-6fec-4921-af8b-d8286cd5efbb",
+                              "box": {
+                                 "userId": "1831614173",
+                                 "acquiredAtMS": 1497303951792,
+                                 "accessTokenTTLMS": 3971000
+                              }
+                           }
+                        ]
+                     }
+
+   /box:
+
+      /integrate:
+         /{subscriberOrgId}:
+            uriParameters:
+               subscriberOrgId:
+                  description: Box integration, scoped to the logged-in user and provided `subscriberOrgId`.
+            /integrate:
+               get:
+                  securedBy: [oauth_2_0]
+                  description: Integrate Box to Habla, scoped to the logged-in user and provided `subscriberOrgId`.
+                  responses:
+                     202:
+                        description: |
+                           ACCEPTED<br />
+                           If request header `Accept` contains `application/json`, the body will contain JSON `{ location: ... }`.
+                           Manually redirect the browser to that location.
+                     302:
+                        description: |
+                           FOUND<br />
+                           Redirect to Box access approval.
+
+      /access:
+         get:
+            description: Invoked by Box in response to user access response.
+            responses:
+               302:
+                  description: |
+                     FOUND<br />
+                     Redirect to Habla Box integration page.
+                     The query parameter `integration` is included, with current value: box | googleDrive.
+                     The query parameter `status` is included, which contains one of the values:<br />
+                     CREATED: Successfully integrated to Box.<br />
+                     NOT_FOUND: The provided `subscriberOrgId` is invalid for the current user.<br />
+                     INTERNAL_SERVER_ERROR: Something bad happened.

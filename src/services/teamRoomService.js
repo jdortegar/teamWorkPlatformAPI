@@ -78,6 +78,7 @@ export function createTeamRoomNoCheck(req, teamId, teamRoomInfo, teamMemberId, u
       purpose: teamRoomInfo.purpose,
       publish: teamRoomInfo.publish,
       active: teamRoomInfo.active,
+      enabled: true,
       preferences
    };
    const teamRoomMemberId = uuid.v4();
