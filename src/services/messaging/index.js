@@ -1,3 +1,4 @@
+import _ from 'lodash';
 import {
    privateSubscriberOrg,
    privateTeam,
@@ -13,6 +14,7 @@ import {
    publicSubscriber,
    publicSubscriberOrg
 } from '../../helpers/publishedVisibility';
+import * as internalQueue from './internalQueue';
 import { _broadcastEvent, _joinChannels, ChannelFactory, EventTypes } from './messagingService';
 
 // EventType = presence
@@ -177,6 +179,16 @@ export function messageCreated(req, message) {
 
 // EventType = integration
 
-export function boxIntegrationCreated(req, subscriberUser) { // eslint-disable-line no-unused-vars
-   // TODO: send to internal channel only.
+export function boxIntegrationCreated(req, subscriberUser) {
+   // Send to internal channel only.
+   const event = _.cloneDeep(subscriberUser);
+   delete event.role;
+   internalQueue.sendEvent(req, EventTypes.boxIntegrationCreated, event);
+}
+
+export function googleIntegrationCreated(req, subscriberUser) {
+   // Send to internal channel only.
+   const event = _.cloneDeep(subscriberUser);
+   delete event.role;
+   internalQueue.sendEvent(req, EventTypes.googleIntegrationCreated, event);
 }

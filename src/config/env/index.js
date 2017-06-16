@@ -34,6 +34,10 @@ const config = {
    loggerJson: process.env.LOGGER_JSON || defaultConfig.loggerJson,
 
    boxClientId: process.env.BOX_CLIENT_ID || defaultConfig.boxClientId,
-   boxClientSecret: process.env.BOX_CLIENT_SECRET || defaultConfig.boxClientSecret
+   boxClientSecret: process.env.BOX_CLIENT_SECRET || defaultConfig.boxClientSecret,
+
+   googleClientId: process.env.GOOGLE_CLIENT_ID || defaultConfig.googleClientId,
+   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || defaultConfig.googleClientSecret
 };
 export default config;
+

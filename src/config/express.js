@@ -43,7 +43,7 @@ app.use(jwt({
       /^\/users\/validateEmail/,
       /^\/users\/createUser/,
       /^\/auth\/login/,
-      /^\/integrations\/box\/access/,
+      /^\/integrations\/.*\/access/,
       /^\/users\/passwordreset/,
       /^.*\/passwordupdate/
    ]

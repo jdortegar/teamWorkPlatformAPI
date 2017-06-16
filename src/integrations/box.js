@@ -1,12 +1,29 @@
 import BoxSDK from 'box-node-sdk';
 import config from '../config/env';
 
-export const clientId = config.boxClientId;
+const clientId = config.boxClientId;
 const clientSecret = config.boxClientSecret;
+const redirectUri = `${config.apiEndpoint}/integrations/box/access`;
 
 const sdk = new BoxSDK({ clientID: clientId, clientSecret });
+const accessUri = `https://account.box.com/api/oauth2/authorize?response_type=code&client_id=${clientId}`;
 
 
+export function composeAuthorizationUrl(state) {
+   return `${accessUri}&state=${state}&redirect_uri=${redirectUri}`;
+}
+
+/**
+ * tokenInfo: {
+ *    accessToken: 'ACCESS_TOKEN',
+ *    refreshToken: 'REFRESH_TOKEN',
+ *    acquiredAtMS: 1464129218402,
+ *    accessTokenTTLMS: 3600000,
+ * }
+ *
+ * @param authorizationCode
+ * @returns {Promise}
+ */
 export function exchangeAuthorizationCodeForAccessToken(authorizationCode) {
    return new Promise((resolve, reject) => {
       sdk.getTokensAuthorizationCodeGrant(authorizationCode, null, (error, tokenInfo) => {
@@ -15,12 +32,6 @@ export function exchangeAuthorizationCodeForAccessToken(authorizationCode) {
          } else {
             resolve(tokenInfo);
          }
-         // tokenInfo: {
-         //  accessToken: 'ACCESS_TOKEN',
-         //  refreshToken: 'REFRESH_TOKEN',
-         //  acquiredAtMS: 1464129218402,
-         //  accessTokenTTLMS: 3600000,
-         // }
       });
    });
 }

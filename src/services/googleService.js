@@ -2,17 +2,17 @@ import _ from 'lodash';
 import uuid from 'uuid';
 import config from '../config/env';
 import { IntegrationAccessError, SubscriberOrgNotExistError } from './errors';
-import { composeAuthorizationUrl, exchangeAuthorizationCodeForAccessToken, getUserInfo } from '../integrations/box';
-import { boxIntegrationCreated } from './messaging';
+import { composeAuthorizationUrl, exchangeAuthorizationCodeForAccessToken, getUserInfo } from '../integrations/google';
+import { googleIntegrationCreated } from './messaging';
 import { getSubscriberUsersByUserIdAndSubscriberOrgId, updateItemCompletely } from './queries';
 
 const defaultExpiration = 30 * 60; // 30 minutes.
 
 function hashKey(state) {
-   return `${state}#boxIntegrationState`;
+   return `${state}#googleIntegrationState`;
 }
 
-function createRedisBoxIntegrationState(req, userId, subscriberOrgId) {
+function createRedisGoogleIntegrationState(req, userId, subscriberOrgId) {
    return new Promise((resolve, reject) => {
       const state = uuid.v4();
       req.app.locals.redis.hmsetAsync(hashKey(state), 'userId', userId, 'subscriberOrgId', subscriberOrgId, 'EX', defaultExpiration)
@@ -21,7 +21,7 @@ function createRedisBoxIntegrationState(req, userId, subscriberOrgId) {
    });
 }
 
-function deleteRedisBoxIntegrationState(req, state) {
+function deleteRedisGoogleIntegrationState(req, state) {
    return new Promise((resolve, reject) => {
       let userId;
       let subscriberOrgId;
@@ -44,7 +44,7 @@ function deleteRedisBoxIntegrationState(req, state) {
 }
 
 
-export function integrateBox(req, userId, subscriberOrgId) {
+export function integrateGoogle(req, userId, subscriberOrgId) {
    return new Promise((resolve, reject) => {
       getSubscriberUsersByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId)
          .then((subscriberUsers) => {
@@ -52,19 +52,19 @@ export function integrateBox(req, userId, subscriberOrgId) {
                throw new SubscriberOrgNotExistError(subscriberOrgId);
             }
 
-            return createRedisBoxIntegrationState(req, userId, subscriberOrgId);
+            return createRedisGoogleIntegrationState(req, userId, subscriberOrgId);
          })
          .then((state) => {
-            const boxUri = composeAuthorizationUrl(state);
-            resolve(boxUri);
+            const googleUri = composeAuthorizationUrl(state);
+            resolve(googleUri);
          })
          .catch(err => reject(err));
    });
 }
 
-export function boxAccessResponse(req, { code, state, error, error_description }) {
+export function googleAccessResponse(req, { code, state, error }) {
    if (error) {
-      return Promise.reject(new IntegrationAccessError(`${error}: ${error_description}`)); // eslint-disable-line camelcase
+      return Promise.reject(new IntegrationAccessError(error));
    }
 
    const authorizationCode = code;
@@ -75,7 +75,7 @@ export function boxAccessResponse(req, { code, state, error, error_description }
       let subscriberOrgId;
       let updateInfo;
 
-      deleteRedisBoxIntegrationState(req, state)
+      deleteRedisGoogleIntegrationState(req, state)
          .then((integrationContext) => {
             userId = integrationContext.userId;
             subscriberOrgId = integrationContext.subscriberOrgId;
@@ -83,11 +83,11 @@ export function boxAccessResponse(req, { code, state, error, error_description }
             return exchangeAuthorizationCodeForAccessToken(authorizationCode);
          })
          .then((tokenInfo) => {
-            req.logger.debug(`Box access info for userId=${userId}/subscriberOrgId=${subscriberOrgId} = ${JSON.stringify(tokenInfo)}`);
+            req.logger.debug(`Google access info for userId=${userId}/subscriberOrgId=${subscriberOrgId} = ${JSON.stringify(tokenInfo)}`);
             integrationInfo = tokenInfo;
             return Promise.all([
                getSubscriberUsersByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId),
-               getUserInfo(integrationInfo.accessToken)
+               getUserInfo(integrationInfo.access_token)
             ]);
          })
          .then((promiseResults) => {
@@ -100,24 +100,23 @@ export function boxAccessResponse(req, { code, state, error, error_description }
             const { subscriberUserId } = subscriberUsers[0];
             integrationInfo.userId = userInfo.id;
             integrationInfo.expired = false;
-            const boxInfo = {
-               box: integrationInfo
+            const googleInfo = {
+               google: integrationInfo
             };
-            updateInfo = _.merge(subscriberUsers[0].subscriberUserInfo, { integrations: boxInfo });
+            updateInfo = _.merge(subscriberUsers[0].subscriberUserInfo, { integrations: googleInfo });
 
             return updateItemCompletely(req, -1, `${config.tablePrefix}subscriberUsers`, 'subscriberUserId', subscriberUserId, { subscriberUserInfo: updateInfo });
          })
          .then(() => {
-            // Only have box integration info.
+            // Only have google integration info.
             const event = {
                userId: { updateInfo },
                subscriberOrgId: { updateInfo },
                integrations: {
-                  google: updateInfo.integrations.box
+                  google: updateInfo.integrations.google
                }
             };
-
-            boxIntegrationCreated(req, event);
+            googleIntegrationCreated(req, event);
             resolve();
          })
          .catch(err => reject(err));

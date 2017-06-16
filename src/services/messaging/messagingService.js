@@ -47,6 +47,7 @@ export const EventTypes = Object.freeze({
    location: 'location',
 
    boxIntegrationCreated: 'boxIntegrationCreated',
+   googleIntegrationCreated: 'googleIntegrationCreated',
 
    from(value) { return (this[value]); }
 });

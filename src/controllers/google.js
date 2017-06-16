@@ -1,22 +1,21 @@
 import httpStatus from 'http-status';
 import config from '../config/env';
 import APIError from '../helpers/APIError';
-import * as boxSvc from '../services/boxService';
+import * as googleSvc from '../services/googleService';
 import { IntegrationAccessError, SubscriberOrgNotExistError } from '../services/errors';
 
 const webappIntegrationUri = `${config.webappBaseUri}/integrations`;
 
-// ex. https://hablaapi.ngrok.io/integrations/box/integrate/:subscriberOrgId
-export function integrateBox(req, res, next) {
+export function integrateGoogle(req, res, next) {
    const userId = req.user._id;
    const subscriberOrgId = req.params.subscriberOrgId;
 
-   boxSvc.integrateBox(req, userId, subscriberOrgId)
-      .then((boxUri) => {
+   googleSvc.integrateGoogle(req, userId, subscriberOrgId)
+      .then((googleUri) => {
          if (req.accepts('application/json')) {
-            res.status(httpStatus.ACCEPTED).json({ location: boxUri });
+            res.status(httpStatus.ACCEPTED).json({ location: googleUri });
          } else {
-            res.redirect(boxUri);
+            res.redirect(googleUri);
          }
       })
       .catch((err) => {
@@ -28,10 +27,10 @@ export function integrateBox(req, res, next) {
       });
 }
 
-export function boxAccess(req, res) {
-   const redirectUri = `${webappIntegrationUri}?integration=box`;
+export function googleAccess(req, res) {
+   const redirectUri = `${webappIntegrationUri}?integration=google`;
 
-   boxSvc.boxAccessResponse(req, req.query)
+   googleSvc.googleAccessResponse(req, req.query)
       .then(() => {
          res.redirect(`${redirectUri}&status=CREATED`);
       })
