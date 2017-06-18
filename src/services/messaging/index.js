@@ -1,9 +1,11 @@
+import _ from 'lodash';
 import {
    privateSubscriberOrg,
    privateTeam,
    privateTeamRoom,
    privateUser,
    publicConversation,
+   publicIntegration,
    publicTeam,
    publicTeamMember,
    publicTeamRoom,
@@ -13,6 +15,7 @@ import {
    publicSubscriber,
    publicSubscriberOrg
 } from '../../helpers/publishedVisibility';
+import * as internalQueue from './internalQueue';
 import { _broadcastEvent, _joinChannels, ChannelFactory, EventTypes } from './messagingService';
 
 // EventType = presence
@@ -177,6 +180,46 @@ export function messageCreated(req, message) {
 
 // EventType = integration
 
-export function boxIntegrationCreated(req, subscriberUser) { // eslint-disable-line no-unused-vars
-   // TODO: send to internal channel only.
+export function boxIntegrationCreated(req, subscriberUser) {
+   // Send to internal channel.
+   const event = _.cloneDeep(subscriberUser);
+   delete event.role;
+   internalQueue.sendEvent(req, EventTypes.boxIntegrationCreated, event);
+
+   return _broadcastEvent(req, EventTypes.boxIntegrationCreated, publicIntegration(subscriberUser), [
+      ChannelFactory.personalChannel(subscriberUser.userId)
+   ]);
+}
+
+export function boxIntegrationExpired(req, subscriberUser) {
+   return _broadcastEvent(req, EventTypes.boxIntegrationExpired, publicIntegration(subscriberUser), [
+      ChannelFactory.personalChannel(subscriberUser.userId)
+   ]);
+}
+
+export function boxWebhookEvent(req, body) {
+   // Send to internal channel.
+   internalQueue.sendEvent(req, EventTypes.boxWebhookEvent, body);
+}
+
+export function googleIntegrationCreated(req, subscriberUser) {
+   // Send to internal channel.
+   const event = _.cloneDeep(subscriberUser);
+   delete event.role;
+   internalQueue.sendEvent(req, EventTypes.googleIntegrationCreated, event);
+
+   return _broadcastEvent(req, EventTypes.googleIntegrationCreated, publicIntegration(subscriberUser), [
+      ChannelFactory.personalChannel(subscriberUser.userId)
+   ]);
+}
+
+export function googleIntegrationExpired(req, subscriberUser) {
+   return _broadcastEvent(req, EventTypes.googleIntegrationExpired, publicIntegration(subscriberUser), [
+      ChannelFactory.personalChannel(subscriberUser.userId)
+   ]);
+}
+
+export function googleWebhookEvent(req, body) {
+   // Send to internal channel.
+   internalQueue.sendEvent(req, EventTypes.googleWebhookEvent, body);
 }

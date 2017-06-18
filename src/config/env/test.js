@@ -20,4 +20,10 @@ export const loggerJson = false;
 
 export const boxClientId = 'l2jb56htf6cc5h1f6sp10qeoc4l81wqi';
 export const boxClientSecret = 'KC1z0xleyvc4Qy6B91DuYC1HPrfG92tI';
+export const boxWebhooksPrimaryKey = '9itYJpL8fp27HPiWguSGYpBmusVKwSgz';
+export const boxWebhooksSecondaryKey = 'UsmcEmGsgaWPu7IDPyLQpoTkQDbAGmVP';
+
+export const googleClientId = '56229434385-er6slkc68oaklfs58oi5ej2fbbjabpc7.apps.googleusercontent.com';
+export const googleClientSecret = 'tQ-XvOvgGmAAJfjMWjH4Ai1T';
+export const googleChannelKey = '9itYJpL8fp27HPiWguSGYpBmusVKwSgz';
 

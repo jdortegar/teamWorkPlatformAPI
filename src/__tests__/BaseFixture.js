@@ -57,7 +57,8 @@ export default class BaseFixture {
                      this.redisClient = dbRedisStatuses[2];
                      app.locals.db = this.dynamodb;
                      app.locals.redis = this.redisClient;
-                     return startServer(this.redisClient);
+                     const handleInternalEvents = false;
+                     return startServer(this.redisClient, handleInternalEvents);
                   })
                   .then((httpServer) => {
                      this.httpServer = httpServer;
