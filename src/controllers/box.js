@@ -45,3 +45,16 @@ export function boxAccess(req, res) {
          }
       });
 }
+
+export function boxWebhooks(req, res) {
+   boxSvc.webhookEvent(req)
+      .then(() => res.status(httpStatus.ACCEPTED).end())
+      .catch((err) => {
+         req.logger.error(err);
+         if (err instanceof IntegrationAccessError) {
+            res.status(httpStatus.FORBIDDEN).end();
+         } else {
+            res.status(httpStatus.INTERNAL_SERVER_ERROR).end();
+         }
+      });
+}

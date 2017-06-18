@@ -1,8 +1,12 @@
 import app from '../../config/express';
+import { boxIntegrationExpired, googleIntegrationExpired } from './index';
 import logger from '../../logger';
 
 const outgoingIntegrationQueue = 'integration#ai';
 const incomingIntegrationQueue = 'integration#api';
+
+let listen = false;
+let stoppedCallback;
 
 export function sendEvent(req, eventType, event) { // eslint-disable-line import/prefer-default-export
    const redisClient = app.locals.redis;
@@ -20,15 +24,38 @@ export function sendEvent(req, eventType, event) { // eslint-disable-line import
 
 export function listenForInternalEvents() {
    const redisClient = app.locals.redis;
-   redisClient.brpop(incomingIntegrationQueue, 0, (err, response) => {
+   redisClient.brpop(incomingIntegrationQueue, 5, (err, response) => {
       if (err) {
          logger.error('Integration event error', err);
       } else if (response) {
-         // TODO: If expired Oauth 2 access token, ask for another.
          logger.info('Integration event received.', event);
+
+         // TODO: If expired Oauth 2 access token, ask for another, email and event: boxIntegrationExpired, googleIntegrationExpired.
       } else {
-         logger.debug('No integration event received.');
+         logger.silly('No integration event received.');
       }
-      //listenForInternalEvents();
+
+      if (listen) {
+         listenForInternalEvents();
+      } else if (stoppedCallback) {
+         logger.info('Stopped listening for internal events.');
+         stoppedCallback();
+      }
    });
+
+   if (listen === false) {
+      logger.info('Listening for internal events.');
+      listen = true;
+   }
+}
+
+export function stopListeningForInternalEvents() {
+   if (listen) {
+      return new Promise((resolve) => {
+         stoppedCallback = resolve;
+         listen = false;
+      });
+   }
+
+   return Promise.resolve();
 }

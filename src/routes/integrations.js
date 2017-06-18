@@ -15,6 +15,9 @@ router.route('/box/integrate/:subscriberOrgId')
 router.route('/box/access')
    .get(box.boxAccess);
 
+router.route('/box/webhooks')
+   .post(box.boxWebhooks);
+
 
 router.route('/google/integrate/:subscriberOrgId')
    .get(google.integrateGoogle);
@@ -22,5 +25,7 @@ router.route('/google/integrate/:subscriberOrgId')
 router.route('/google/access')
    .get(google.googleAccess);
 
-export default router;
+router.route('/google/webhooks')
+   .post(google.googleWebhooks);
 
+export default router;

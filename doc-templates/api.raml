@@ -1989,7 +1989,8 @@ documentation:
                               "box": {
                                  "userId": "1831614173",
                                  "acquiredAtMS": 1497303951792,
-                                 "accessTokenTTLMS": 3971000
+                                 "accessTokenTTLMS": 3971000,
+                                 "expired": false
                               }
                            }
                         ]
@@ -2002,20 +2003,23 @@ documentation:
             uriParameters:
                subscriberOrgId:
                   description: Box integration, scoped to the logged-in user and provided `subscriberOrgId`.
-            /integrate:
-               get:
-                  securedBy: [oauth_2_0]
-                  description: Integrate Box to Habla, scoped to the logged-in user and provided `subscriberOrgId`.
-                  responses:
-                     202:
-                        description: |
-                           ACCEPTED<br />
-                           If request header `Accept` contains `application/json`, the body will contain JSON `{ location: ... }`.
-                           Manually redirect the browser to that location.
-                     302:
-                        description: |
-                           FOUND<br />
-                           Redirect to Box access approval.
+            get:
+               securedBy: [oauth_2_0]
+               description: Integrate Box to Habla, scoped to the logged-in user and provided `subscriberOrgId`.
+               responses:
+                  202:
+                     description: |
+                        ACCEPTED<br />
+                        If request header `Accept` contains `application/json`, the body will contain JSON `{ location: ... }`.
+                        Manually redirect the browser to that location.
+                     example: |
+                        {
+                          "location": "https://account.box.com/api/oauth2/authorize?response_type=code&client_id=l2jb56htf6cc5h1f6sp10qeoc4l81wqi&state=90680482-9013-4b56-a451-bf0f617340c3&redirect_uri=https://hablaapi.ngrok.io/integrations/box/access"
+                        }
+                  302:
+                     description: |
+                        FOUND<br />
+                        Redirect to Box access approval.
 
       /access:
          get:
@@ -2025,8 +2029,79 @@ documentation:
                   description: |
                      FOUND<br />
                      Redirect to Habla Box integration page.
-                     The query parameter `integration` is included, with current value: box | googleDrive.
+                     The query parameter `integration` is included, with current value: box | google.
                      The query parameter `status` is included, which contains one of the values:<br />
                      CREATED: Successfully integrated to Box.<br />
                      NOT_FOUND: The provided `subscriberOrgId` is invalid for the current user.<br />
                      INTERNAL_SERVER_ERROR: Something bad happened.
+
+      /webhooks:
+         post:
+            description: Invoked by Box for webhook events.
+            headers:
+               Box-*:
+                  description: Used to validate a Box message.
+            responses:
+               202:
+                  description: |
+                     ACCEPTED<br />
+                     Habla accepted the webhook event and forwarded it to AI.
+               403:
+                  description |
+                     FORBIDDEN<br />
+                     The signature of the message is invalid, and therefore not accepted by Habla.
+
+   /google:
+
+      /integrate:
+         /{subscriberOrgId}:
+            uriParameters:
+               subscriberOrgId:
+                  description: Google integration, scoped to the logged-in user and provided `subscriberOrgId`.
+            get:
+               securedBy: [oauth_2_0]
+               description: Integrate Google to Habla, scoped to the logged-in user and provided `subscriberOrgId`.
+               responses:
+                  202:
+                     description: |
+                        ACCEPTED<br />
+                        If request header `Accept` contains `application/json`, the body will contain JSON `{ location: ... }`.
+                        Manually redirect the browser to that location.
+                     example: |
+                        {
+                          "location": "https://accounts.google.com/o/oauth2/auth?access_type=offline&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile&state=d0f38ff7-7923-4d69-bcc0-2ad756beddfa&response_type=code&client_id=56229434385-jd5j5ea7a9n973b53dsn918t1u0t2u6l.apps.googleusercontent.com&redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fintegrations%2Fgoogle%2Faccess"
+                        }
+                  302:
+                     description: |
+                        FOUND<br />
+                        Redirect to Google access approval.
+
+      /access:
+         get:
+            description: Invoked by Google in response to user access response.
+            responses:
+               302:
+                  description: |
+                     FOUND<br />
+                     Redirect to Habla Google integration page.
+                     The query parameter `integration` is included, with current value: box | google.
+                     The query parameter `status` is included, which contains one of the values:<br />
+                     CREATED: Successfully integrated to Google.<br />
+                     NOT_FOUND: The provided `subscriberOrgId` is invalid for the current user.<br />
+                     INTERNAL_SERVER_ERROR: Something bad happened.
+
+      /webhooks:
+         post:
+            description: Invoked by Google for webhook events.
+            headers:
+               X-Goog-Channel-Token:
+                  description: Specifies an arbitrary string value to use as a channel token, to verify the message as coming from Google.
+            responses:
+               202:
+                  description: |
+                     ACCEPTED<br />
+                     Habla accepted the webhook event and forwarded it to AI.
+               403:
+                  description |
+                     FORBIDDEN<br />
+                     The signature of the message is invalid, and therefore not accepted by Habla.

@@ -2,8 +2,8 @@ import _ from 'lodash';
 import uuid from 'uuid';
 import config from '../config/env';
 import { IntegrationAccessError, SubscriberOrgNotExistError } from './errors';
-import { composeAuthorizationUrl, exchangeAuthorizationCodeForAccessToken, getUserInfo } from '../integrations/box';
-import { boxIntegrationCreated } from './messaging';
+import { composeAuthorizationUrl, exchangeAuthorizationCodeForAccessToken, getUserInfo, validateWebhookMessage } from '../integrations/box';
+import { boxIntegrationCreated, boxWebhookEvent } from './messaging';
 import { getSubscriberUsersByUserIdAndSubscriberOrgId, updateItemCompletely } from './queries';
 
 const defaultExpiration = 30 * 60; // 30 minutes.
@@ -122,4 +122,10 @@ export function boxAccessResponse(req, { code, state, error, error_description }
          })
          .catch(err => reject(err));
    });
+}
+
+export function webhookEvent(req) {
+   validateWebhookMessage(req);
+   boxWebhookEvent(req, req.body);
+   return Promise.resolve();
 }

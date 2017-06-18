@@ -2,8 +2,8 @@ import _ from 'lodash';
 import uuid from 'uuid';
 import config from '../config/env';
 import { IntegrationAccessError, SubscriberOrgNotExistError } from './errors';
-import { composeAuthorizationUrl, exchangeAuthorizationCodeForAccessToken, getUserInfo } from '../integrations/google';
-import { googleIntegrationCreated } from './messaging';
+import { composeAuthorizationUrl, exchangeAuthorizationCodeForAccessToken, getUserInfo, validateWebhookMessage } from '../integrations/google';
+import { googleIntegrationCreated, googleWebhookEvent } from './messaging';
 import { getSubscriberUsersByUserIdAndSubscriberOrgId, updateItemCompletely } from './queries';
 
 const defaultExpiration = 30 * 60; // 30 minutes.
@@ -121,4 +121,10 @@ export function googleAccessResponse(req, { code, state, error }) {
          })
          .catch(err => reject(err));
    });
+}
+
+export function webhookEvent(req) {
+   validateWebhookMessage(req);
+   googleWebhookEvent(req, req.body);
+   return Promise.resolve();
 }

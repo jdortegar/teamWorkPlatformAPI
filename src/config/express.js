@@ -19,6 +19,7 @@ import httpStatus from 'http-status';
 import jwt, { UnauthorizedError } from 'express-jwt';
 import config from './env';
 import APIError from '../helpers/APIError';
+import { googleSiteVerification } from '../integrations/google';
 import { errorMiddleware as loggerErrorMiddleware, preAuthMiddleware, postAuthMiddleware } from '../logger';
 import routes from '../routes';
 
@@ -34,6 +35,8 @@ app.use(cors());
 
 app.use(preAuthMiddleware);
 
+app.use(googleSiteVerification);
+
 app.use(jwt({
    secret: config.jwtSecret
 }).unless({
@@ -44,6 +47,7 @@ app.use(jwt({
       /^\/users\/createUser/,
       /^\/auth\/login/,
       /^\/integrations\/.*\/access/,
+      /^\/integrations\/.*\/webhooks/,
       /^\/users\/passwordreset/,
       /^.*\/passwordupdate/
    ]

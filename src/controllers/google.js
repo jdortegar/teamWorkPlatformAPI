@@ -44,3 +44,16 @@ export function googleAccess(req, res) {
          }
       });
 }
+
+export function googleWebhooks(req, res) {
+   googleSvc.webhookEvent(req)
+      .then(() => res.status(httpStatus.ACCEPTED).end())
+      .catch((err) => {
+         req.logger.error(err);
+         if (err instanceof IntegrationAccessError) {
+            res.status(httpStatus.FORBIDDEN).end();
+         } else {
+            res.status(httpStatus.INTERNAL_SERVER_ERROR).end();
+         }
+      });
+}

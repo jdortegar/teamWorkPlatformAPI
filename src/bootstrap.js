@@ -3,6 +3,7 @@ import config from './config/env';
 import app from './config/express';
 import logger from './logger';
 import messagingSvc from './services/messaging/messagingService';
+import { listenForInternalEvents, stopListeningForInternalEvents } from './services/messaging/internalQueue';
 import { connectToRedis, disconnectFromRedis } from './redis-connection';
 
 let redisClient;
@@ -66,7 +67,7 @@ export function disconnectRedis(client) {
 }
 
 
-export function startServer(redisclient) {
+export function startServer(redisclient, handleInternalEvents = true) {
    return new Promise((resolve, reject) => {
       const httpServer = app.listen(config.nodePort, (err) => {
          if (err) {
@@ -74,6 +75,9 @@ export function startServer(redisclient) {
             reject(err);
          } else {
             messagingSvc.init(httpServer, redisclient);
+            if (handleInternalEvents) {
+               listenForInternalEvents();
+            }
             logger.info(`Server started on port ${config.nodePort}`);
             logger.info('---------------------------------------------------------');
             resolve(httpServer);
@@ -84,7 +88,8 @@ export function startServer(redisclient) {
 
 export function stopServer(httpServer) {
    return new Promise((resolve, reject) => {
-      messagingSvc.close()
+      stopListeningForInternalEvents()
+         .then(() => messagingSvc.close())
          .then(() => {
             return new Promise((resolveHttpServer) => {
                httpServer.close(() => {
@@ -114,7 +119,7 @@ function gracefulShutdown() {
    const kill = setTimeout(() => {
       logger.error('Could not shutdown in time, forcefully shutting down.');
       process.exit();
-   }, 10 * 1000);
+   }, 10 * 1000); // Force shutdown in 10 seconds.
 
    stopServer(server)
       .then(() => disconnectRedis(redisClient))

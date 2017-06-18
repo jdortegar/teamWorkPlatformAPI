@@ -1,9 +1,11 @@
 import google from 'googleapis';
 import config from '../config/env';
+import { IntegrationAccessError } from '../services/errors';
 
 const clientId = config.googleClientId;
 const clientSecret = config.googleClientSecret;
 const redirectUri = `${config.apiEndpoint}/integrations/google/access`;
+const googleChannelKey = config.googleChannelKey;
 
 const scopes = [
    'https://www.googleapis.com/auth/userinfo.profile',
@@ -69,4 +71,19 @@ export function getUserInfo(userAccessToken) {
          }
       });
    });
+}
+
+export function googleSiteVerification(req, res, next) {
+   if (req.url.match(/^\/google.*.html$/)) {
+      const googleUrl = req.url.substring(1);
+      res.send(`google-site-verification: ${googleUrl}`);
+   } else {
+      next();
+   }
+}
+
+export function validateWebhookMessage(req) {
+   if (req.get('X-Goog-Channel-Token') !== googleChannelKey) {
+      throw new IntegrationAccessError('Invalid Google webhook message.');
+   }
 }

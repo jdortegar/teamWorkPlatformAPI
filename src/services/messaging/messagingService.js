@@ -47,7 +47,11 @@ export const EventTypes = Object.freeze({
    location: 'location',
 
    boxIntegrationCreated: 'boxIntegrationCreated',
+   boxIntegrationExpired: 'boxIntegrationExpired',
+   boxWebhookEvent: 'boxWebhookEvent',
    googleIntegrationCreated: 'googleIntegrationCreated',
+   googleIntegrationExpired: 'googleIntegrationCreated',
+   googleWebhookEvent: 'googleWebhookEvent',
 
    from(value) { return (this[value]); }
 });
