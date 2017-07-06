@@ -22,7 +22,7 @@
     "test"
   ],
   "scripts": {
-    "start": "nodemon $NODE_DEBUG_OPTION src/index.js --exec babel-node",
+    "start": "node $NODE_DEBUG_OPTION src/index.js --exec babel-node",
     "debug": "nodemon src/index.js --exec babel-node --debug",
     "lint": "eslint src",
     "test": "cross-env NODE_ENV=test jest --verbose --runInBand",
