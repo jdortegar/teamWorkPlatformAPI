@@ -22,7 +22,7 @@
     "test"
   ],
   "scripts": {
-    "start": "node $NODE_DEBUG_OPTION src/index.js --exec babel-node",
+    "start": "nodemon $NODE_DEBUG_OPTION src/index.js --exec babel-node",
     "debug": "nodemon src/index.js --exec babel-node --debug",
     "lint": "eslint src",
     "test": "cross-env NODE_ENV=test jest --verbose --runInBand",
@@ -30,7 +30,7 @@
     "watch:test": "npm run test -- --watch",
     "doc": "esdoc && npm run raml && npm run md",
     "build": "cross-env NODE_ENV=production babel -s true src -d dist",
-    "start:prod": "cross-env NODE_ENV=production babel -s true src -d dist && node dist",
+    "start:prod": "cross-env babel -s true src -d dist && node dist",
     "start:prod:prebuilt": "cross-env NODE_ENV=production node dist",
     "monitor": "nodejs-dashboard -- node -r nodejs-dashboard dist",
     "clean": "shx rm -rf dist coverage doc",
