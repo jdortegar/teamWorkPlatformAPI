@@ -4,7 +4,7 @@
     ["transform-async-to-generator"],
     ["babel-plugin-transform-class-properties"],
     ["transform-runtime", {
-      "polyfill": false,
+      "polyfill": true,
       "regenerator": true
     }]
   ],
