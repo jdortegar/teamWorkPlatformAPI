@@ -15,6 +15,7 @@ import config from '../config/env';
 import APIError from '../helpers/APIError';
 import { privateUser } from '../helpers/publishedVisibility';
 import { getAuthData, passwordMatch } from '../models/user';
+import * as userSvc from '../services/userService';
 
 export function login(req, res, next) {
    const username = req.body.username || '';
@@ -38,17 +39,25 @@ export function login(req, res, next) {
             };
             return docClient.get(params).promise();
          }
-         return undefined;
+
+         // User not in cache.  Check DB.
+         return userSvc.getUserByEmail(req, username, true);
       })
       .then((dbData) => {
          if (dbData) {
-            const user = dbData.Item.userInfo;
-            user.userId = dbData.Item.userId;
+            let user;
+            if (dbData.Item) {
+               user = dbData.Item.userInfo;
+               user.userId = dbData.Item.userId;
+            } else {
+               user = dbData.userInfo;
+               user.userId = dbData.userId;
+            }
 
-            if (passwordMatch(user, password)) {
+            if ((user) && (passwordMatch(user, password))) {
                res.status(httpStatus.OK).json({
                   status: 'SUCCESS',
-                  token: jwt.sign(getAuthData(user, dbData.Item.userId), config.jwtSecret),
+                  token: jwt.sign(getAuthData(user, user.userId), config.jwtSecret),
                   user: privateUser(user),
                   websocketUrl: config.apiEndpoint
                });

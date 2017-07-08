@@ -5,10 +5,10 @@ import { NoPermissionsError, UserNotExistError } from './errors';
 import { getRedisInvitations } from './invitations';
 import { userCreated, userUpdated } from './messaging';
 import * as subscriberOrgSvc from './subscriberOrgService';
-import { createItem, getUsersByIds, updateItem } from './queries';
+import { createItem, getUsersByIds, getUsersByEmailAddresses, updateItem } from './queries';
 import { hashPassword } from '../models/user';
 
-function addUserToCache(req, email, uid, status) {
+export function addUserToCache(req, email, uid, status) {
    return new Promise((resolve, reject) => {
       req.logger.debug(`users-create: user ${email} not in cache`);
       req.logger.debug(`users-create: new uuid: ${uid}`);
@@ -24,6 +24,26 @@ function addUserToCache(req, email, uid, status) {
    });
 }
 
+
+export function getUserByEmail(req, email, cache = false) {
+   return new Promise((resolve, reject) => {
+      let dbUser;
+      getUsersByEmailAddresses(req, [email])
+         .then((users) => {
+            if (users.length > 0) {
+               dbUser = users[0];
+               if (cache) {
+                  const status = 1;
+                  addUserToCache(req, email, dbUser.userId, status)
+                     .catch(err => req.logger.error(err));
+               }
+            }
+            return undefined;
+         })
+         .then(() => resolve(dbUser))
+         .catch(err => reject(err));
+   });
+}
 
 export function createUser(req, userInfo) {
    return new Promise((resolve, reject) => {
