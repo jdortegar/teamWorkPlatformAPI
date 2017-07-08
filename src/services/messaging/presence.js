@@ -9,22 +9,23 @@ function hashKey(userId) {
 }
 
 export function getPresence(req, userId) {
-   return new Promise((resolve, reject) => {
-      req.app.locals.redis.zremrangebyscoreAsync(`${config.redisPrefix}${hashKey(userId)}`, 0, req.now.unix())
-         .then(() => {
-            return req.app.locals.redis.zrangebyscoreAsync(
-               `${config.redisPrefix}${hashKey(userId)}`,
-               req.now.unix(),
-               moment(req.now).add(defaultExpirationMinutes, 'minutes').unix()
-            );
-         })
-         .then((presenceAsStrings) => {
-            const presences = [];
-            presenceAsStrings.forEach((presenceAsString) => { presences.push(JSON.parse(presenceAsString)); });
-            resolve(presences);
-         })
-         .catch(err => reject(err));
-   });
+   return Promise.resolve([]);
+   // return new Promise((resolve, reject) => {
+   //    req.app.locals.redis.zremrangebyscoreAsync(`${config.redisPrefix}${hashKey(userId)}`, 0, req.now.unix())
+   //       .then(() => {
+   //          return req.app.locals.redis.zrangebyscoreAsync(
+   //             `${config.redisPrefix}${hashKey(userId)}`,
+   //             req.now.unix(),
+   //             moment(req.now).add(defaultExpirationMinutes, 'minutes').unix()
+   //          );
+   //       })
+   //       .then((presenceAsStrings) => {
+   //          const presences = [];
+   //          presenceAsStrings.forEach((presenceAsString) => { presences.push(JSON.parse(presenceAsString)); });
+   //          resolve(presences);
+   //       })
+   //       .catch(err => reject(err));
+   // });
 }
 
 export function setPresence(req, userId, presence) {
