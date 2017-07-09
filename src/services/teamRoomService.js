@@ -148,7 +148,7 @@ export function updateTeamRoom(req, teamRoomId, updateInfo, userId) {
             }
 
             dbTeamRoom = teamRooms[0];
-            return getTeamMembersByTeamIdAndUserIdAndRole(req, dbTeamRoom.teamRoomId, userId, Roles.admin);
+            return getTeamRoomMembersByTeamRoomIdAndUserIdAndRole(req, dbTeamRoom.teamRoomId, userId, Roles.admin);
          })
          .then((teamMembers) => {
             if (teamMembers.length === 0) {
