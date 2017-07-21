@@ -118,7 +118,7 @@ export function boxAccessResponse(req, { code, state, error, error_description }
             };
 
             boxIntegrationCreated(req, event);
-            resolve();
+            resolve(subscriberOrgId);
          })
          .catch(err => reject(err));
    });

@@ -10,6 +10,7 @@ import {
    getConversationParticipantsByConversationId,
    getConversationParticipantsByUserId,
    getConversationsByIds,
+   getConversationsByTeamRoomId,
    getMessagesByConversationIdFiltered,
    getMessageById,
    getUsersByIds
@@ -144,6 +145,38 @@ export function createConversationNoCheck(req, teamRoomId, conversationInfo, use
 
             resolve(conversation);
          })
+         .catch(err => reject(err));
+   });
+}
+
+export function addUserToConversation(req, user, conversationId) {
+   const conversationParticipantId = uuid.v4();
+   const conversationParticipant = {
+      conversationId,
+      userId: user.userId
+   };
+
+   return createItem(
+      req,
+      -1,
+      `${config.tablePrefix}conversationParticipants`,
+      'conversationParticipantId',
+      conversationParticipantId,
+      'conversationParticipantInfo',
+      conversationParticipant
+   );
+}
+
+export function addUserToConversationByTeamId(req, user, teamRoomId) {
+   return new Promise((resolve, reject) => {
+      getConversationsByTeamRoomId(req, teamRoomId)
+         .then((conversations) => {
+            if (conversations.length > 0) {
+               return addUserToConversation(req, user, conversations[0].conversationId);
+            }
+            return undefined;
+         })
+         .then(() => resolve())
          .catch(err => reject(err));
    });
 }

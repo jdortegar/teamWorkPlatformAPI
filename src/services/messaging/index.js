@@ -17,6 +17,7 @@ import {
 } from '../../helpers/publishedVisibility';
 import * as internalQueue from './internalQueue';
 import { _broadcastEvent, _joinChannels, ChannelFactory, EventTypes } from './messagingService';
+import Roles from '../roles';
 
 // EventType = presence
 
@@ -79,10 +80,16 @@ export function subscriberOrgPrivateInfoUpdated(req, subscriberOrg) {
    ]);
 }
 
-export function subscriberAdded(req, subscriberOrgId, user) {
-   return _broadcastEvent(req, EventTypes.subscriberAdded, publicSubscriber(subscriberOrgId, user), [
-      ChannelFactory.subscriberOrgChannel(subscriberOrgId)
-   ]);
+export function subscriberAdded(req, subscriberOrgId, user, role = Roles.user) {
+   const subscriberOrgChannel = ChannelFactory.subscriberOrgChannel(subscriberOrgId);
+   const channels = [ChannelFactory.subscriberOrgChannel(subscriberOrgId)];
+   if (role === Roles.admin) {
+      channels.push(ChannelFactory.subscriberOrgAdminChannel(subscriberOrgId));
+   }
+
+   return _joinChannels(req, user.userId, channels)
+      .then(() => _broadcastEvent(req, EventTypes.subscriberAdded, publicSubscriber(subscriberOrgId, user), [subscriberOrgChannel]))
+      .catch(err => req.logger.error(err));
 }
 
 
@@ -111,10 +118,16 @@ export function teamPrivateInfoUpdated(req, team) {
    ]);
 }
 
-export function teamMemberAdded(req, teamId, user) {
-   return _broadcastEvent(req, EventTypes.teamMemberAdded, publicTeamMember(teamId, user), [
-      ChannelFactory.subscriberOrgChannel(teamId)
-   ]);
+export function teamMemberAdded(req, teamId, user, role = Roles.user) {
+   const teamChannel = ChannelFactory.teamChannel(teamId);
+   const channels = [teamChannel];
+   if (role === Roles.admin) {
+      channels.push(ChannelFactory.teamAdminChannel(teamId));
+   }
+
+   return _joinChannels(req, user.userId, channels)
+      .then(() => _broadcastEvent(req, EventTypes.teamMemberAdded, publicTeamMember(teamId, user), [teamChannel]))
+      .catch(err => req.logger.error(err));
 }
 
 
@@ -143,10 +156,16 @@ export function teamRoomPrivateInfoUpdated(req, teamRoom) {
    ]);
 }
 
-export function teamRoomMemberAdded(req, teamRoomId, user) {
-   return _broadcastEvent(req, EventTypes.teamRoomMemberAdded, publicTeamRoomMember(teamRoomId, user), [
-      ChannelFactory.subscriberOrgChannel(teamRoomId)
-   ]);
+export function teamRoomMemberAdded(req, teamRoomId, user, role = Roles.user) {
+   const teamRoomChannel = ChannelFactory.teamRoomChannel(teamRoomId);
+   const channels = [teamRoomChannel];
+   if (role === Roles.admin) {
+      channels.push(ChannelFactory.teamRoomAdminChannel(teamRoomId));
+   }
+
+   return _joinChannels(req, user.userId, channels)
+      .then(() => _broadcastEvent(req, EventTypes.teamRoomMemberAdded, publicTeamRoomMember(teamRoomId, user), [teamRoomChannel]))
+      .catch(err => req.logger.error(err));
 }
 
 

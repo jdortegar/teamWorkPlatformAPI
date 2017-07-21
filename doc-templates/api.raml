@@ -172,6 +172,7 @@ documentation:
 
    /logout:
       get:
+         securedBy: [oauth_2_0]
          description: |
             Logout a user, making the JWT token invalid.
             This doesn't change the user's presence status, as the websocket still needs to be close, preferably before logout.
@@ -1960,7 +1961,7 @@ documentation:
                description: Narrow the results to integrations for a subscriber organization.
                type: string
                required: false
-               example: /integrations/getIntegrations?subscriberOrgIdId=9dec8947-0381-4809-a053-b56777f782f4
+               example: /integrations/getIntegrations?subscriberOrgId=9dec8947-0381-4809-a053-b56777f782f4
          responses:
             200:
                description: |

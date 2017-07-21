@@ -117,7 +117,7 @@ export function googleAccessResponse(req, { code, state, error }) {
                }
             };
             googleIntegrationCreated(req, event);
-            resolve();
+            resolve(subscriberOrgId);
          })
          .catch(err => reject(err));
    });

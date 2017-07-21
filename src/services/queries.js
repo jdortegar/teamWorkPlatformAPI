@@ -584,6 +584,15 @@ export function getConversationsByIds(req, conversationIds) {
    return batchGetItemBySortKey(req, tableName, 'conversationId', conversationIds);
 }
 
+export function getConversationsByTeamRoomId(req, teamRoomId) {
+   if (teamRoomId === undefined) {
+      return Promise.reject('teamRoomId needs to be specified.');
+   }
+
+   const tableName = `${config.tablePrefix}conversations`;
+   return filteredScan(req, tableName, { conversationInfo: { teamRoomId } });
+}
+
 
 export function getMessageById(req, messageId) {
    if (messageId === undefined) {
