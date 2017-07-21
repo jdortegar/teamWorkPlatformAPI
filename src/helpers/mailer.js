@@ -32,7 +32,7 @@ function sendMail(mailOptions) {
 //       html: `
 //          <style type="text/css">.centerImage{text-align:center;display:block;}</style>
 //          <img src="https://static.wixstatic.com/media/ac0e25_95ce977831a9430989f049b46928fda6~mv2.jpg/v1/fill/w_247,h_244,al_c,q_80,usm_0.66_1.00_0.01/ac0e25_95ce977831a9430989f049b46928fda6~mv2.jpg" height="100" width="100" class="centerImage" />
-//          <br>Thank you for using Habla.  Please click on this <a href="http://habla.io">link</a> to reset your Habla password.
+//          <br>Thank you for using Habla AI.  Please click on this <a href="http://habla.io">link</a> to reset your Habla password.
 //       `
 //    });
 // }
@@ -42,8 +42,9 @@ export function sendActivationLink(email, rid) {
       <h1>
          <img src="https://static.wixstatic.com/media/ac0e25_95ce977831a9430989f049b46928fda6~mv2.jpg/v1/fill/w_247,h_244,al_c,q_80,usm_0.66_1.00_0.01/ac0e25_95ce977831a9430989f049b46928fda6~mv2.jpg" height="100" width="100" align="middle" />
       </h1>
-      <br>
-      Thank you for registering for Habla.  Please click on this <a href="${config.webappBaseUri}/signup/${rid}">link</a> to activate your account.
+      <br>Thank you for registering for Habla AI.<br>
+      <br>If reading this from a web browser, please <a href="${config.webappBaseUri}/signup/${rid}">click here</a> to activate your account.<br>
+      <br>If reading this from an iOS device, please <a href="hablaai://signup/${rid}">click here</a> to activate your account.
    `;
    return sendMail({
       from: 'habla-mailer-dev@habla.ai',
@@ -56,8 +57,9 @@ export function sendActivationLink(email, rid) {
 export function sendSubscriberOrgInviteToExternalUser(email, subscriberOrgName, byUserDisplayName, rid) {
    const html = `
       <h1><img src="https://static.wixstatic.com/media/ac0e25_95ce977831a9430989f049b46928fda6~mv2.jpg/v1/fill/w_247,h_244,al_c,q_80,usm_0.66_1.00_0.01/ac0e25_95ce977831a9430989f049b46928fda6~mv2.jpg" height="100" width="100" align="middle"></h1>
-      <br>
-      ${byUserDisplayName} has invited you to "${subscriberOrgName}" in Habla.  Please click on this <a href="${config.webappBaseUri}/signup/${rid}">link</a> to activate your account and join them.
+      <br>${byUserDisplayName} has invited you to "${subscriberOrgName}" in Habla AI.<br>
+      <br>If reading this from a web browser, please <a href="${config.webappBaseUri}/signup/${rid}">click here</a> to activate your account and join them.<br>
+      <br>If reading this from an iOS device, please <a href="hablaai://signup/${rid}">click here</a> to activate your account and join them.
    `;
    return sendMail({
       from: 'habla-mailer-dev@habla.ai',
@@ -70,8 +72,9 @@ export function sendSubscriberOrgInviteToExternalUser(email, subscriberOrgName, 
 export function sendSubscriberOrgInviteToExistingUser(email, subscriberOrgName, byUserDisplayName, key) {
    const html = `
       <h1><img src="https://static.wixstatic.com/media/ac0e25_95ce977831a9430989f049b46928fda6~mv2.jpg/v1/fill/w_247,h_244,al_c,q_80,usm_0.66_1.00_0.01/ac0e25_95ce977831a9430989f049b46928fda6~mv2.jpg" height="100" width="100" align="middle"></h1>
-      <br>
-      ${byUserDisplayName} has invited you to "${subscriberOrgName}" in Habla.  Please click on this <a href="${config.webappBaseUri}/acceptinvitation/?${key}">link</a> to join them.
+      <br>${byUserDisplayName} has invited you to "${subscriberOrgName}" on Habla AI.<br>
+      <br>If reading this from a web browser, please <a href="${config.webappBaseUri}/acceptinvitation/?${key}">click here</a> to join them.<br>
+      <br>If reading this from an iOS device, please <a href="hablaai://acceptinvitation/?${key}">click here</a> to join them.
    `;
    return sendMail({
       from: 'habla-mailer-dev@habla.ai',
@@ -84,13 +87,14 @@ export function sendSubscriberOrgInviteToExistingUser(email, subscriberOrgName, 
 export function sendTeamInviteToExistingUser(email, subscriberOrgName, teamName, byUserDisplayName, key) {
    const html = `
       <h1><img src="https://static.wixstatic.com/media/ac0e25_95ce977831a9430989f049b46928fda6~mv2.jpg/v1/fill/w_247,h_244,al_c,q_80,usm_0.66_1.00_0.01/ac0e25_95ce977831a9430989f049b46928fda6~mv2.jpg" height="100" width="100" align="middle"></h1>
-      <br>
-      ${byUserDisplayName} has invited you to team "${teamName}" of "${subscriberOrgName}" in Habla.  Please click on this <a href="${config.webappBaseUri}/acceptinvitation/?${key}">link</a> to join them.
+      <br>${byUserDisplayName} has invited you to team "${teamName}" of "${subscriberOrgName}" in Habla AI.<br>
+      <br>If reading this from a web browser, please <a href="${config.webappBaseUri}/acceptinvitation/?${key}">click here</a> to join them.<br>
+      <br>If reading this from an iOS device, please <a href="hablaai://acceptinvitation/?${key}">click here</a> to join them.
    `;
    return sendMail({
       from: 'habla-mailer-dev@habla.ai',
       to: email,
-      subject: `Invitation to join "${teamName}" of "${subscriberOrgName}" on Habla.ai`,
+      subject: `Invitation to join "${teamName}" of "${subscriberOrgName}" on Habla AI`,
       html
    });
 }
@@ -98,8 +102,10 @@ export function sendTeamInviteToExistingUser(email, subscriberOrgName, teamName,
 export function sendTeamRoomInviteToExistingUser(email, subscriberOrgName, teamName, teamRoomName, byUserDisplayName, key) {
    const html = `
       <h1><img src="https://static.wixstatic.com/media/ac0e25_95ce977831a9430989f049b46928fda6~mv2.jpg/v1/fill/w_247,h_244,al_c,q_80,usm_0.66_1.00_0.01/ac0e25_95ce977831a9430989f049b46928fda6~mv2.jpg" height="100" width="100" align="middle"></h1>
-      <br>
-      ${byUserDisplayName} has invited you to team room "${teamRoomName}" of "${subscriberOrgName}" in Habla.  Please click on this <a href="${config.webappBaseUri}/acceptinvitation/?${key}">link</a> to join them.
+      <br>${byUserDisplayName} has invited you to team room "${teamRoomName}" of "${subscriberOrgName}" in Habla AI.<br>
+      <br>Please click on this <a href="${config.webappBaseUri}/acceptinvitation/?${key}">link</a> to join them.<br>
+      <br>If reading this from a web browser, please <a href="${config.webappBaseUri}/acceptinvitation/?${key}">click here</a> to join them.<br>
+      <br>If reading this from an iOS device, please <a href="hablaai://acceptinvitation/?${key}">click here</a> to join them.      
    `;
    return sendMail({
       from: 'habla-mailer-dev@habla.ai',
