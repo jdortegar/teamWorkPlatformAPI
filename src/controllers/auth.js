@@ -72,12 +72,7 @@ export function login(req, res, next) {
 }
 
 export function logout(req, res) {
-   const username = req.user.email;
-
-   req.app.locals.redis.delAsync(`${config.redisPrefix}${username}`)
-      .then(() => res.status(httpStatus.OK))
-      .catch((err) => {
-         req.logger.error(err);
-         res.status(httpStatus.OK);
-      });
+   const username = req.user.email; // eslint-disable-line no-unused-vars
+   // Nothing to do, for now.
+   res.status(httpStatus.OK);
 }

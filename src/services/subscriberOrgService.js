@@ -55,19 +55,20 @@ export function createSubscriberOrgNoCheck(req, subscriberOrgInfo, user, subscri
    const subscriberUserId = uuid.v4();
 
    return new Promise((resolve, reject) => {
+      const role = Roles.admin;
       createItem(req, -1, `${config.tablePrefix}subscriberOrgs`, 'subscriberOrgId', actualSubscriberOrgId, 'subscriberOrgInfo', subscriberOrg)
          .then(() => {
             const subscriberUser = {
                userId: user.userId,
                subscriberOrgId: actualSubscriberOrgId,
-               role: Roles.admin
+               role
             };
             return createItem(req, -1, `${config.tablePrefix}subscriberUsers`, 'subscriberUserId', subscriberUserId, 'subscriberUserInfo', subscriberUser);
          })
          .then(() => {
             subscriberOrg.subscriberOrgId = actualSubscriberOrgId;
             subscriberOrgCreated(req, subscriberOrg, user.userId);
-            subscriberAdded(req, actualSubscriberOrgId, user);
+            subscriberAdded(req, actualSubscriberOrgId, user, role);
             return teamSvc.createTeamNoCheck(req, actualSubscriberOrgId, { name: 'All' }, subscriberUserId, user);
          })
          .then(() => resolve(subscriberOrg))
@@ -324,13 +325,13 @@ export function inviteSubscribers(req, subscriberOrgId, subscriberUserIdEmails, 
 
 function addUserToSubscriberOrg(req, user, subscriberOrgId, role) {
    return new Promise((resolve, reject) => {
+      const subscriberUserId = uuid.v4();
       getSubscriberOrgsByIds(req, [subscriberOrgId])
          .then((subscriberOrgs) => {
             if (subscriberOrgs.length === 0) {
                throw new SubscriberOrgNotExistError(subscriberOrgId);
             }
 
-            const subscriberUserId = uuid.v4();
             const subscriberUser = {
                userId: user.userId,
                subscriberOrgId,
@@ -339,9 +340,9 @@ function addUserToSubscriberOrg(req, user, subscriberOrgId, role) {
             return createItem(req, -1, `${config.tablePrefix}subscriberUsers`, 'subscriberUserId', subscriberUserId, 'subscriberUserInfo', subscriberUser);
          })
          .then(() => {
-            subscriberAdded(req, subscriberOrgId, user);
-            resolve();
+            subscriberAdded(req, subscriberOrgId, user, role);
          })
+         .then(() => resolve(subscriberUserId))
          .catch(err => reject(err));
    });
 }
@@ -361,12 +362,13 @@ export function replyToInvite(req, subscriberOrgId, accept, userId) {
          .then((invitation) => {
             if (invitation) {
                if (accept) {
-                  return addUserToSubscriberOrg(req, user, subscriberOrgId, Roles.admin);
+                  return addUserToSubscriberOrg(req, user, subscriberOrgId, Roles.user);
                }
                return undefined;
             }
             throw new InvitationNotExistError(subscriberOrgId);
          })
+         .then(subscriberUserId => teamSvc.addUserToTeamByName(req, user, subscriberOrgId, subscriberUserId, 'All', Roles.user, 'All Lobby'))
          .then(() => resolve())
          .catch(err => reject(err));
    });

@@ -84,20 +84,21 @@ export function createTeamRoomNoCheck(req, teamId, teamRoomInfo, teamMemberId, u
    const teamRoomMemberId = uuid.v4();
 
    return new Promise((resolve, reject) => {
+      const role = Roles.admin;
       createItem(req, -1, `${config.tablePrefix}teamRooms`, 'teamRoomId', actualTeamRoomId, 'teamRoomInfo', teamRoom)
          .then(() => {
             const teamRoomMember = {
                teamMemberId,
                teamRoomId: actualTeamRoomId,
                userId: user.userId,
-               role: Roles.admin
+               role
             };
             return createItem(req, -1, `${config.tablePrefix}teamRoomMembers`, 'teamRoomMemberId', teamRoomMemberId, 'teamRoomMemberInfo', teamRoomMember);
          })
          .then(() => {
             teamRoom.teamRoomId = actualTeamRoomId;
             teamRoomCreated(req, teamRoom, user.userId);
-            teamRoomMemberAdded(req, actualTeamRoomId, user);
+            teamRoomMemberAdded(req, actualTeamRoomId, user, role);
 
             const conversation = {};
             return conversationSvc.createConversationNoCheck(req, actualTeamRoomId, conversation, user.userId);
@@ -322,7 +323,7 @@ export function inviteMembers(req, teamRoomId, userIds, userId) {
    });
 }
 
-function addUserToTeamRoom(req, user, teamRoomId, role) {
+export function addUserToTeamRoom(req, user, teamMemberId, teamRoomId, role) {
    return new Promise((resolve, reject) => {
       getTeamRoomsByIds(req, [teamRoomId])
          .then((teamRooms) => {
@@ -332,16 +333,33 @@ function addUserToTeamRoom(req, user, teamRoomId, role) {
 
             const teamRoomMemberId = uuid.v4();
             const teamRoomMember = {
-               userId: user.userId,
+               teamMemberId,
                teamRoomId,
+               userId: user.userId,
                role
             };
             return createItem(req, -1, `${config.tablePrefix}teamRoomMembers`, 'teamRoomMemberId', teamRoomMemberId, 'teamRoomMemberInfo', teamRoomMember);
          })
          .then(() => {
-            teamRoomMemberAdded(req, teamRoomId, user);
-            resolve();
+            teamRoomMemberAdded(req, teamRoomId, user, role);
+            return conversationSvc.addUserToConversationByTeamId(req, user, teamRoomId);
          })
+         .then(() => resolve())
+         .catch(err => reject(err));
+   });
+}
+
+export function addUserToTeamRoomByName(req, user, teamId, teamMemberId, teamRoomName, role) {
+   return new Promise((resolve, reject) => {
+      getTeamRoomsByTeamIdAndName(req, teamId, teamRoomName)
+         .then((teamRooms) => {
+            if (teamRooms.length > 0) {
+               const teamRoomId = teamRooms[0].teamRoomId;
+               return addUserToTeamRoom(req, user, teamMemberId, teamRoomId, role);
+            }
+            return undefined;
+         })
+         .then(() => resolve())
          .catch(err => reject(err));
    });
 }
@@ -361,7 +379,7 @@ export function replyToInvite(req, teamRoomId, accept, userId) {
          .then((invitation) => {
             if (invitation) {
                if (accept) {
-                  return addUserToTeamRoom(req, user, teamRoomId);
+                  return addUserToTeamRoom(req, user, teamRoomId, Roles.user);
                }
                return undefined;
             }

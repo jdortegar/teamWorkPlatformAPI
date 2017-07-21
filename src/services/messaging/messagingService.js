@@ -8,10 +8,13 @@ import app from '../../config/express';
 import * as conversationSvc from '../conversationService';
 import logger from '../../logger';
 import { setPresence } from './presence';
+import {
+   getSubscriberUsersByUserIds,
+   getTeamMembersByUserIds,
+   getTeamRoomMembersByUserIds
+} from '../queries';
 import { disconnectFromRedis } from '../../redis-connection';
-import * as subscriberOrgSvc from '../subscriberOrgService';
-import * as teamRoomSvc from '../teamRoomService';
-import * as teamSvc from '../teamService';
+import Roles from '../Roles';
 
 
 export const EventTypes = Object.freeze({
@@ -110,47 +113,58 @@ function joinCurrentChannels(req, socket, userId) {
    socket.join(personalChannel);
    logger.debug(`MessagingService: userId=${userId} joining ${personalChannel}`);
 
-   subscriberOrgSvc.getUserSubscriberOrgs(req, userId)
-      .then((subscriberOrgs) => {
-         const subscriberOrgIds = subscriberOrgs.map(subscriberOrg => subscriberOrg.subscriberOrgId);
-         subscriberOrgIds.forEach((subscriberOrgId) => {
+   // Get subscribers/members instead of subscriberOrgs/teams/teamRooms, as we need the role also.
+
+   getSubscriberUsersByUserIds(req, [userId])
+      .then((subscribers) => {
+         subscribers.forEach((subscriber) => {
+            const { subscriberOrgId, role } = subscriber.subscriberUserInfo;
+
             const subscriberOrgChannel = ChannelFactory.subscriberOrgChannel(subscriberOrgId);
             socket.join(subscriberOrgChannel);
             logger.debug(`MessagingService: userId=${userId} joining ${subscriberOrgChannel}`);
 
-            const subscriberOrgPrivateChannel = ChannelFactory.subscriberOrgAdminChannel(subscriberOrgId);
-            socket.join(subscriberOrgPrivateChannel);
-            logger.debug(`MessagingService: userId=${userId} joining ${subscriberOrgPrivateChannel}`);
+            if (role === Roles.admin) {
+               const subscriberOrgPrivateChannel = ChannelFactory.subscriberOrgAdminChannel(subscriberOrgId);
+               socket.join(subscriberOrgPrivateChannel);
+               logger.debug(`MessagingService: userId=${userId} joining ${subscriberOrgPrivateChannel}`);
+            }
          });
       })
       .catch(err => logger.error(err));
 
-   teamSvc.getUserTeams(req, userId)
-      .then((teams) => {
-         const teamIds = teams.map(team => team.teamId);
-         teamIds.forEach((teamId) => {
+   getTeamMembersByUserIds(req, [userId])
+      .then((teamMembers) => {
+         teamMembers.forEach((teamMember) => {
+            const { teamId, role } = teamMember.teamMemberInfo;
+
             const teamChannel = ChannelFactory.teamChannel(teamId);
             socket.join(teamChannel);
             logger.debug(`MessagingService: userId=${userId} joining ${teamChannel}`);
 
-            const teamPrivateChannel = ChannelFactory.teamAdminChannel(teamId);
-            socket.join(teamPrivateChannel);
-            logger.debug(`MessagingService: userId=${userId} joining ${teamPrivateChannel}`);
+            if (role === Roles.admin) {
+               const teamPrivateChannel = ChannelFactory.teamAdminChannel(teamId);
+               socket.join(teamPrivateChannel);
+               logger.debug(`MessagingService: userId=${userId} joining ${teamPrivateChannel}`);
+            }
          });
       })
       .catch(err => logger.error(err));
 
-   teamRoomSvc.getUserTeamRooms(req, userId)
-      .then((teamRooms) => {
-         const teamRoomIds = teamRooms.map(teamRoom => teamRoom.teamRoomId);
-         teamRoomIds.forEach((teamRoomId) => {
+   getTeamRoomMembersByUserIds(req, [userId])
+      .then((teamRoomMembers) => {
+         teamRoomMembers.forEach((teamRoomMember) => {
+            const { teamRoomId, role } = teamRoomMember.teamRoomMemberInfo;
+
             const teamRoomChannel = ChannelFactory.teamRoomChannel(teamRoomId);
             socket.join(teamRoomChannel);
             logger.debug(`MessagingService: userId=${userId} joining ${teamRoomChannel}`);
 
-            const teamRoomPrivateChannel = ChannelFactory.teamRoomAdminChannel(teamRoomId);
-            socket.join(teamRoomPrivateChannel);
-            logger.debug(`MessagingService: userId=${userId} joining ${teamRoomPrivateChannel}`);
+            if (role === Roles.admin) {
+               const teamRoomPrivateChannel = ChannelFactory.teamRoomAdminChannel(teamRoomId);
+               socket.join(teamRoomPrivateChannel);
+               logger.debug(`MessagingService: userId=${userId} joining ${teamRoomPrivateChannel}`);
+            }
          });
       })
       .catch(err => logger.error(err));
@@ -382,7 +396,7 @@ export function _broadcastEvent(req, eventType, event, channels = undefined) {
 }
 
 export function _joinChannels(req, userId, channels) {
-   messagingService._joinChannels(req, userId, channels);
+   return messagingService._joinChannels(req, userId, channels);
 }
 
 export function _leaveChannels(req, userId, channels) {

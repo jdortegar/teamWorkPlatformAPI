@@ -33,7 +33,10 @@ export function getRedisInvitations(req, email) {
                moment(req.now).add(defaultExpirationMinutes, 'minutes').unix()
             );
          })
-         .then(invitations => resolve(invitations))
+         .then((invitations) => {
+            const invitationsAsObjects = (invitations) ? invitations.map(invitation => JSON.parse(invitation)) : null;
+            resolve(invitationsAsObjects);
+         })
          .catch(err => reject(err));
    });
 }
@@ -58,7 +61,7 @@ export function deleteRedisInvitation(req, email, invitationKey, invitationValue
                return undefined;
             }
 
-            invitation = invitations.filter((invite) => {
+            const filteredInvitations = invitations.filter((invite) => {
                let inviteFound = false;
                const inviteValue = invite[invitationKey];
                if ((inviteValue) && (inviteValue === invitationValue)) {
@@ -78,13 +81,15 @@ export function deleteRedisInvitation(req, email, invitationKey, invitationValue
                return inviteFound;
             });
 
-            if (invitation) {
+            if (filteredInvitations.length > 0) {
+               invitation = filteredInvitations[0];
                const hash = hashKey(email);
                if (invitations.length <= 1) {
                   return req.app.locals.redis.del(`${config.redisPrefix}${hash}`);
                }
                return req.app.locals.redis.zremAsync(`${config.redisPrefix}${hash}`, invitation);
             }
+
             return undefined;
          })
          .then(() => resolve(invitation))

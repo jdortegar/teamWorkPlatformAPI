@@ -71,20 +71,21 @@ export function createTeamNoCheck(req, subscriberOrgId, teamInfo, subscriberUser
    const teamMemberId = uuid.v4();
 
    return new Promise((resolve, reject) => {
+      const role = Roles.admin;
       createItem(req, -1, `${config.tablePrefix}teams`, 'teamId', actualTeamId, 'teamInfo', team)
          .then(() => {
             const teamMember = {
                subscriberUserId,
                teamId: actualTeamId,
                userId: user.userId,
-               role: Roles.admin
+               role
             };
             return createItem(req, -1, `${config.tablePrefix}teamMembers`, 'teamMemberId', teamMemberId, 'teamMemberInfo', teamMember);
          })
          .then(() => {
             team.teamId = actualTeamId;
             teamCreated(req, team, user.userId);
-            teamMemberAdded(req, actualTeamId, user);
+            teamMemberAdded(req, actualTeamId, user, role);
 
             const teamRoom = {
                name: `${team.name} Lobby`,
@@ -302,26 +303,49 @@ export function inviteMembers(req, teamId, userIds, userId) {
    });
 }
 
-function _addUserToTeam(req, user, teamId, role) {
+export function addUserToTeam(req, user, subscriberUserId, teamId, role) {
    return new Promise((resolve, reject) => {
+      const teamMemberId = uuid.v4();
       getTeamsByIds(req, [teamId])
          .then((teams) => {
             if (teams.length === 0) {
                throw new TeamNotExistError(teamId);
             }
 
-            const teamMemberId = uuid.v4();
             const teamMember = {
-               userId: user.userId,
+               subscriberUserId,
                teamId,
+               userId: user.userId,
                role
             };
             return createItem(req, -1, `${config.tablePrefix}teamMembers`, 'teamMemberId', teamMemberId, 'teamMemberInfo', teamMember);
          })
          .then(() => {
-            teamMemberAdded(req, teamId, user);
-            resolve();
+            teamMemberAdded(req, teamId, user, role);
+            resolve(teamMemberId);
          })
+         .catch(err => reject(err));
+   });
+}
+
+export function addUserToTeamByName(req, user, subscriberOrgId, subscriberUserId, teamName, role, teamRoomName = undefined) {
+   return new Promise((resolve, reject) => {
+      let teamId;
+      getTeamBySubscriberOrgIdAndName(req, subscriberOrgId, teamName)
+         .then((teams) => {
+            if (teams.length > 0) {
+               teamId = teams[0].teamId;
+               return addUserToTeam(req, user, subscriberUserId, teamId, role);
+            }
+            return undefined;
+         })
+         .then((teamMemberId) => {
+            if (teamRoomName) {
+               return teamRoomSvc.addUserToTeamRoomByName(req, user, teamId, teamMemberId, teamRoomName, role);
+            }
+            return undefined;
+         })
+         .then(() => resolve())
          .catch(err => reject(err));
    });
 }
@@ -341,7 +365,7 @@ export function replyToInvite(req, teamId, accept, userId) {
          .then((invitation) => {
             if (invitation) {
                if (accept) {
-                  return _addUserToTeam(req, user, teamId);
+                  return addUserToTeam(req, user, teamId, Roles.user);
                }
                return undefined;
             }
