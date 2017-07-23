@@ -95,7 +95,7 @@ export function createTeamNoCheck(req, subscriberOrgId, teamInfo, subscriberUser
                purpose: undefined,
                publish: true,
                active: true,
-               primary: teamInfo.primary || false,
+               primary: true,
             };
             return teamRoomSvc.createTeamRoomNoCheck(req, actualTeamId, teamRoom, teamMemberId, user);
          })
