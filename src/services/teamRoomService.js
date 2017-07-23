@@ -12,6 +12,7 @@ import {
    getSubscriberUsersByUserIds,
    getTeamsByIds,
    getTeamMembersBySubscriberUserIds,
+   getTeamMembersByUserIdAndTeamId,
    getTeamMembersByTeamIdAndUserIdAndRole,
    getTeamRoomMembersByTeamMemberIds,
    getTeamRoomMembersByTeamRoomId,
@@ -24,6 +25,7 @@ import {
 } from './queries';
 import Roles from './roles';
 
+export const defaultTeamRoomName = 'Lobby';
 
 export function getUserTeamRooms(req, userId, { teamId, subscriberOrgId } = {}) {
    const filterSubscriberOrgId = (teamId) ? undefined : subscriberOrgId;
@@ -78,7 +80,7 @@ export function createTeamRoomNoCheck(req, teamId, teamRoomInfo, teamMemberId, u
       purpose: teamRoomInfo.purpose,
       publish: teamRoomInfo.publish,
       active: teamRoomInfo.active,
-      enabled: true,
+      primary: teamRoomInfo.primary || false,
       preferences
    };
    const teamRoomMemberId = uuid.v4();
@@ -342,7 +344,7 @@ export function addUserToTeamRoom(req, user, teamMemberId, teamRoomId, role) {
          })
          .then(() => {
             teamRoomMemberAdded(req, teamRoomId, user, role);
-            return conversationSvc.addUserToConversationByTeamId(req, user, teamRoomId);
+            return conversationSvc.addUserToConversationByTeamRoomId(req, user, teamRoomId);
          })
          .then(() => resolve())
          .catch(err => reject(err));
@@ -379,11 +381,19 @@ export function replyToInvite(req, teamRoomId, accept, userId) {
          .then((invitation) => {
             if (invitation) {
                if (accept) {
-                  return addUserToTeamRoom(req, user, teamRoomId, Roles.user);
+                  const { teamId } = invitation;
+                  return getTeamMembersByUserIdAndTeamId(req, userId, teamId);
                }
                return undefined;
             }
             throw new InvitationNotExistError(teamRoomId);
+         })
+         .then((teamMembers) => {
+            if ((teamMembers) && (teamMembers.length > 0)) {
+               const { teamMemberId } = teamMembers[0];
+               return addUserToTeamRoom(req, user, teamMemberId, teamRoomId, Roles.user);
+            }
+            return undefined;
          })
          .then(() => resolve())
          .catch(err => reject(err));

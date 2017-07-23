@@ -2,7 +2,7 @@ import _ from 'lodash';
 
 export function privateUser(dbUser) {
    const userId = dbUser.userId;
-   const { emailAddress, firstName, lastName, displayName, country, timeZone, icon, preferences, role, presence } = dbUser.userInfo || dbUser;
+   const { emailAddress, firstName, lastName, displayName, country, timeZone, icon, enabled, preferences, role, presence } = dbUser.userInfo || dbUser;
    return {
       userId,
       username: emailAddress,
@@ -13,6 +13,7 @@ export function privateUser(dbUser) {
       country,
       timeZone,
       icon,
+      enabled,
       preferences: _.cloneDeep(preferences),
       role,
       presence,
@@ -44,10 +45,11 @@ export function publicUsers(dbUsers) {
 
 export function privateSubscriberOrg(dbSubscriberOrg) {
    const subscriberOrgId = dbSubscriberOrg.subscriberOrgId;
-   const { name, preferences } = dbSubscriberOrg.subscriberOrgInfo || dbSubscriberOrg;
+   const { name, enabled, preferences } = dbSubscriberOrg.subscriberOrgInfo || dbSubscriberOrg;
    return {
       subscriberOrgId,
       name,
+      enabled,
       preferences: _.cloneDeep(preferences)
    };
 }
@@ -76,11 +78,13 @@ export function publicSubscriber(subscriberOrgId, dbUser) {
 
 export function privateTeam(dbTeam) {
    const teamId = dbTeam.teamId;
-   const { subscriberOrgId, name, preferences } = dbTeam.teamInfo || dbTeam;
+   const { subscriberOrgId, name, active, primary, preferences } = dbTeam.teamInfo || dbTeam;
    return {
       teamId,
       subscriberOrgId,
       name,
+      active,
+      primary,
       preferences: _.cloneDeep(preferences)
    };
 }
@@ -109,7 +113,7 @@ export function publicTeamMember(teamId, dbUser) {
 
 export function privateTeamRoom(dbTeamRoom) {
    const teamRoomId = dbTeamRoom.teamRoomId;
-   const { teamId, name, purpose, publish, active, preferences } = dbTeamRoom.teamRoomInfo || dbTeamRoom;
+   const { teamId, name, purpose, publish, active, primary, preferences } = dbTeamRoom.teamRoomInfo || dbTeamRoom;
    return {
       teamRoomId,
       teamId,
@@ -117,6 +121,7 @@ export function privateTeamRoom(dbTeamRoom) {
       purpose,
       publish,
       active,
+      primary,
       preferences: _.cloneDeep(preferences)
    };
 }

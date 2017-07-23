@@ -37,15 +37,15 @@ app.use(preAuthMiddleware);
 
 app.use(googleSiteVerification);
 
-app.use(jwt({
-   secret: config.jwtSecret
-}).unless({
+export const jwtMiddleware = jwt({ secret: config.jwtSecret });
+app.use(jwtMiddleware.unless({
    path: [
       /^\/test/,
       /^\/users\/registerUser/,
       /^\/users\/validateEmail/,
       /^\/users\/createUser/,
       /^\/auth\/login/,
+      /^\/auth\/logout/,
       /^\/integrations\/.*\/access/,
       /^\/integrations\/.*\/webhooks/,
       /^\/users\/passwordreset/,

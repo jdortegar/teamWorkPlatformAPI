@@ -10,6 +10,7 @@ import * as teamRoomSvc from './teamRoomService';
 import {
    createItem,
    getSubscriberOrgsByIds,
+   getSubscriberUsersByUserIdAndSubscriberOrgId,
    getSubscriberUsersByUserIdAndSubscriberOrgIdAndRole,
    getSubscriberUsersByUserIds,
    getTeamMembersByUserIds,
@@ -22,6 +23,7 @@ import {
    updateItem
 } from './queries';
 
+export const defaultTeamName = 'All';
 
 export function getUserTeams(req, userId, subscriberOrgId = undefined) {
    return new Promise((resolve, reject) => {
@@ -65,7 +67,8 @@ export function createTeamNoCheck(req, subscriberOrgId, teamInfo, subscriberUser
    const team = {
       subscriberOrgId,
       name: teamInfo.name,
-      enabled: true,
+      active: true,
+      primary: teamInfo.primary || false,
       preferences
    };
    const teamMemberId = uuid.v4();
@@ -88,10 +91,11 @@ export function createTeamNoCheck(req, subscriberOrgId, teamInfo, subscriberUser
             teamMemberAdded(req, actualTeamId, user, role);
 
             const teamRoom = {
-               name: `${team.name} Lobby`,
+               name: teamRoomSvc.defaultTeamRoomName,
                purpose: undefined,
                publish: true,
-               active: true
+               active: true,
+               primary: teamInfo.primary || false,
             };
             return teamRoomSvc.createTeamRoomNoCheck(req, actualTeamId, teamRoom, teamMemberId, user);
          })
@@ -322,8 +326,9 @@ export function addUserToTeam(req, user, subscriberUserId, teamId, role) {
          })
          .then(() => {
             teamMemberAdded(req, teamId, user, role);
-            resolve(teamMemberId);
+            return teamRoomSvc.addUserToTeamRoomByName(req, user, teamId, teamMemberId, teamRoomSvc.defaultTeamRoomName, Roles.user);
          })
+         .then(() => resolve(teamMemberId))
          .catch(err => reject(err));
    });
 }
@@ -336,12 +341,6 @@ export function addUserToTeamByName(req, user, subscriberOrgId, subscriberUserId
             if (teams.length > 0) {
                teamId = teams[0].teamId;
                return addUserToTeam(req, user, subscriberUserId, teamId, role);
-            }
-            return undefined;
-         })
-         .then((teamMemberId) => {
-            if (teamRoomName) {
-               return teamRoomSvc.addUserToTeamRoomByName(req, user, teamId, teamMemberId, teamRoomName, role);
             }
             return undefined;
          })
@@ -365,11 +364,19 @@ export function replyToInvite(req, teamId, accept, userId) {
          .then((invitation) => {
             if (invitation) {
                if (accept) {
-                  return addUserToTeam(req, user, teamId, Roles.user);
+                  const { subscriberOrgId } = invitation;
+                  return getSubscriberUsersByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId);
                }
                return undefined;
             }
             throw new InvitationNotExistError(teamId);
+         })
+         .then((subscriberUsers) => {
+            if ((subscriberUsers) && (subscriberUsers.length > 0)) {
+               const { subscriberUserId } = subscriberUsers[0];
+               return addUserToTeam(req, user, subscriberUserId, teamId, Roles.user);
+            }
+            return undefined;
          })
          .then(() => resolve())
          .catch(err => reject(err));

@@ -167,7 +167,7 @@ export function addUserToConversation(req, user, conversationId) {
    );
 }
 
-export function addUserToConversationByTeamId(req, user, teamRoomId) {
+export function addUserToConversationByTeamRoomId(req, user, teamRoomId) {
    return new Promise((resolve, reject) => {
       getConversationsByTeamRoomId(req, teamRoomId)
          .then((conversations) => {

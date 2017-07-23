@@ -12,6 +12,7 @@
 import httpStatus from 'http-status';
 import jwt from 'jsonwebtoken';
 import config from '../config/env';
+import { jwtMiddleware } from '../config/express';
 import APIError from '../helpers/APIError';
 import { privateUser } from '../helpers/publishedVisibility';
 import { getAuthData, passwordMatch } from '../models/user';
@@ -72,7 +73,10 @@ export function login(req, res, next) {
 }
 
 export function logout(req, res) {
-   const username = req.user.email; // eslint-disable-line no-unused-vars
-   // Nothing to do, for now.
-   res.status(httpStatus.OK);
+   jwtMiddleware(req, res, () => {
+      const username = (req.user) ? req.user.email : undefined; // eslint-disable-line no-unused-vars
+      // Nothing to do, for now.
+   });
+
+   res.status(httpStatus.OK).end();
 }

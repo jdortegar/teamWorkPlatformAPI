@@ -102,6 +102,9 @@ documentation:
                            email:
                               type: string
                               required: true
+                           active:
+                              type: boolean
+                              required: true
                            firstName:
                               type: string
                               required: true
@@ -148,6 +151,7 @@ documentation:
                            "userId": "9dec8947-0381-4809-a053-b56777f782f4",
                            "username": "anthony@habla.io",
                            "email": "anthony@habla.io",
+                           "active": true,
                            "firstName": "Anthony",
                            "lastName": "Daga",
                            "displayName": "Anthony Dude Daga",
@@ -354,25 +358,25 @@ documentation:
             properties:
                firstName:
                   type: string
-                  required: true
+                  required: false
                   example: Anthony
                lastName:
                   type: string
-                  required: true
+                  required: false
                   example: Daga
                displayName:
                   type: string
-                  required: true
+                  required: false
                   example: Dude
                country:
                   description: |
                      [ISO 3166-2](https://en.wikipedia.org/wiki/ISO_3166-2) representation.
                   type: string
-                  required: true
+                  required: false
                   example: US
                timeZone:
                   type: string
-                  required: true
+                  required: false
                   example: America/Los_Angeles
                icon:
                   description: The user's avatar, base64 of image.
@@ -598,10 +602,14 @@ documentation:
                         type: string
                         required: true
                         example: 9dec8947-0381-4809-a053-b56777f782f4
+                     enabled:
+                        type: boolean
+                        required: true
                   example: |
                      {
                        "subscriberOrgId": "9dec8947-0381-4809-a053-b56777f782f4",
-                       "name": "Acme"
+                       "name": "Acme",
+                       "enabled": true
                      }
             409:
                description: |
@@ -887,7 +895,10 @@ documentation:
                               name:
                                  type: string
                                  required: true
-                              enabled:
+                              active:
+                                 type: boolean
+                                 required: true
+                              primary:
                                  type: boolean
                                  required: true
                               preferences:
@@ -905,7 +916,8 @@ documentation:
                               "teamId": "9dec8947-0381-4809-a053-b56777f782f4",
                               "subscriberOrgId": "ea794510-cea6-4132-0008-a7ae1d32abb5",
                               "name": "Posse",
-                              "enabled": true,
+                              "active": true,
+                              "primary": false,
                               "preferences": {
                               }
                            },
@@ -913,7 +925,8 @@ documentation:
                               "teamId": "9dec8947-0381-4809-a053-b56777f782f5",
                               "subscriberOrgId": "ea794510-cea6-4132-0008-a7ae1d32abb5",
                               "name": "Friends",
-                              "enabled": true,
+                              "active": true,
+                              "primary": false,
                               "preferences": {
                               }
                            }
@@ -992,6 +1005,9 @@ documentation:
                properties:
                   name:
                      type: string
+                     required: false
+                  active:
+                     type: boolean
                      required: false
                   preferences:
                      type: object
@@ -1267,6 +1283,9 @@ documentation:
                               active:
                                  type: boolean
                                  required: true
+                              primary:
+                                 type: boolean
+                                 required: true
                               enabled:
                                  type: boolean
                                  required: true
@@ -1288,7 +1307,7 @@ documentation:
                               "purpose": "Place to hang.",
                               "publish": false,
                               "active": true,
-                              "enabled": true,
+                              "primary": false,
                               "preferences: {
                               }
                            },
@@ -1299,7 +1318,7 @@ documentation:
                               "purpose": "My buddies.",
                               "publish": true,
                               "active": true,
-                              "enabled": true,
+                              "primary": true,
                               "preferences: {
                               }
                            }
@@ -1402,17 +1421,17 @@ documentation:
                properties:
                   name:
                      type: string
-                     required: true
+                     required: false
                   purpose:
                      type: string | nil
                      required: false
                      default: nil
                   publish:
                      type: boolean
-                     required: true
+                     required: false
                   active:
                      type: boolean
-                     required: true
+                     required: false
                   preferences:
                      type: object
                      required: false

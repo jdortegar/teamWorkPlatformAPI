@@ -6,6 +6,7 @@ import { getRedisInvitations } from './invitations';
 import { userCreated, userUpdated } from './messaging';
 import * as subscriberOrgSvc from './subscriberOrgService';
 import { createItem, getUsersByIds, getUsersByEmailAddresses, updateItem } from './queries';
+import { getRandomColor } from './util';
 import { hashPassword } from '../models/user';
 
 export function addUserToCache(req, email, uid, status) {
@@ -66,6 +67,7 @@ export function createUser(req, userInfo) {
                if (preferences.private === undefined) {
                   preferences.private = {};
                }
+               preferences.iconColor = preferences.iconColor || getRandomColor();
                user = {
                   emailAddress: email,
                   firstName,

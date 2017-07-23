@@ -482,6 +482,15 @@ export function getTeamMembersByTeamIdAndUserIdAndRole(req, teamId, userId, role
    return filteredScan(req, tableName, { teamMemberInfo: { teamId, userId, role } });
 }
 
+export function getTeamMembersByUserIdAndTeamId(req, userId, teamId) {
+   if ((userId === undefined) || (teamId === undefined)) {
+      return Promise.reject('userId and teamId needs to be specified.');
+   }
+
+   const tableName = `${config.tablePrefix}teamMembers`;
+   return filteredScan(req, tableName, { teamMemberInfo: { userId, teamId } });
+}
+
 export function getTeamMembersBySubscriberUserIds(req, subscriberUserIds) {
    if (subscriberUserIds === undefined) {
       return Promise.reject('subscriberUserIds needs to be specified.');

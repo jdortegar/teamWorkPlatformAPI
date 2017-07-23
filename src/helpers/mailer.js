@@ -43,7 +43,7 @@ export function sendActivationLink(email, rid) {
          <img src="https://static.wixstatic.com/media/ac0e25_95ce977831a9430989f049b46928fda6~mv2.jpg/v1/fill/w_247,h_244,al_c,q_80,usm_0.66_1.00_0.01/ac0e25_95ce977831a9430989f049b46928fda6~mv2.jpg" height="100" width="100" align="middle" />
       </h1>
       <br>Thank you for registering for Habla AI.<br>
-      <br>If reading this from a web browser, please <a href="${config.webappBaseUri}/signup/${rid}">click here</a> to activate your account.<br>
+      <br>If reading this from a web browser, please <a href="${config.webappBaseUri}/verifyAccount/${rid}">click here</a> to activate your account.<br>
       <br>If reading this from an iOS device, please <a href="hablaai://signup/${rid}">click here</a> to activate your account.
    `;
    return sendMail({

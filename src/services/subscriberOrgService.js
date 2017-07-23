@@ -7,6 +7,7 @@ import { subscriberAdded, subscriberOrgCreated, subscriberOrgPrivateInfoUpdated,
 import { getPresence } from './messaging/presence';
 import Roles from './roles';
 import * as teamSvc from './teamService';
+import * as teamRoomSvc from './teamRoomService';
 import {
    createItem,
    getSubscriberOrgsByIds,
@@ -18,6 +19,7 @@ import {
    getUsersByIds,
    updateItem
 } from './queries';
+import { getRandomColor } from './util';
 
 
 export function getUserSubscriberOrgs(req, userId) {
@@ -47,6 +49,7 @@ export function createSubscriberOrgNoCheck(req, subscriberOrgInfo, user, subscri
    if (preferences.private === undefined) {
       preferences.private = {};
    }
+   preferences.iconColor = preferences.iconColor || getRandomColor();
    const subscriberOrg = {
       name: subscriberOrgInfo.name,
       enabled: true,
@@ -69,7 +72,7 @@ export function createSubscriberOrgNoCheck(req, subscriberOrgInfo, user, subscri
             subscriberOrg.subscriberOrgId = actualSubscriberOrgId;
             subscriberOrgCreated(req, subscriberOrg, user.userId);
             subscriberAdded(req, actualSubscriberOrgId, user, role);
-            return teamSvc.createTeamNoCheck(req, actualSubscriberOrgId, { name: 'All' }, subscriberUserId, user);
+            return teamSvc.createTeamNoCheck(req, actualSubscriberOrgId, { name: teamSvc.defaultTeamName, primary: true }, subscriberUserId, user);
          })
          .then(() => resolve(subscriberOrg))
          .catch(err => reject(err));
@@ -341,6 +344,7 @@ function addUserToSubscriberOrg(req, user, subscriberOrgId, role) {
          })
          .then(() => {
             subscriberAdded(req, subscriberOrgId, user, role);
+            return teamSvc.addUserToTeamByName(req, user, subscriberOrgId, subscriberUserId, teamSvc.defaultTeamName, Roles.user, teamRoomSvc.defaultTeamRoomName);
          })
          .then(() => resolve(subscriberUserId))
          .catch(err => reject(err));
@@ -368,7 +372,6 @@ export function replyToInvite(req, subscriberOrgId, accept, userId) {
             }
             throw new InvitationNotExistError(subscriberOrgId);
          })
-         .then(subscriberUserId => teamSvc.addUserToTeamByName(req, user, subscriberOrgId, subscriberUserId, 'All', Roles.user, 'All Lobby'))
          .then(() => resolve())
          .catch(err => reject(err));
    });

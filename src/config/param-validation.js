@@ -24,6 +24,7 @@ const validationSchemas = {
    },
    updateUser: {
       body: {
+         active: Joi.boolean(),
          firstName: Joi.string().min(1),
          lastName: Joi.string().min(1),
          displayName: Joi.string().min(1),
@@ -87,6 +88,7 @@ const validationSchemas = {
    updateTeam: {
       body: {
          name: Joi.string().min(1),
+         active: Joi.boolean(),
          preferences: Joi.object().keys({
             private: Joi.object()
          })
