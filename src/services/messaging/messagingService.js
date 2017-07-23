@@ -14,7 +14,7 @@ import {
    getTeamRoomMembersByUserIds
 } from '../queries';
 import { disconnectFromRedis } from '../../redis-connection';
-import Roles from '../Roles';
+import Roles from '../roles';
 
 
 export const EventTypes = Object.freeze({
