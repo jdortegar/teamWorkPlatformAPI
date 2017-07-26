@@ -4,7 +4,7 @@ import APIError from '../helpers/APIError';
 import * as googleSvc from '../services/googleService';
 import { IntegrationAccessError, SubscriberOrgNotExistError } from '../services/errors';
 
-const webappIntegrationUri = `${config.webappBaseUri}/integrations`;
+const webappIntegrationUri = `${config.webappBaseUri}/app/integrations`;
 
 export function integrateGoogle(req, res, next) {
    const userId = req.user._id;
@@ -28,19 +28,19 @@ export function integrateGoogle(req, res, next) {
 }
 
 export function googleAccess(req, res) {
-   const redirectUri = `${webappIntegrationUri}?integration=google`;
+   const redirectUri = `${webappIntegrationUri}`;
 
    googleSvc.googleAccessResponse(req, req.query)
-      .then(() => {
-         res.redirect(`${redirectUri}&status=CREATED`);
+      .then((subscriberOrgId) => {
+         res.redirect(`${redirectUri}/${subscriberOrgId}?integration=google&status=CREATED`);
       })
       .catch((err) => {
          if (err instanceof IntegrationAccessError) {
-            res.redirect(`${redirectUri}&status=FORBIDDEN`);
+            res.redirect(`${redirectUri}/subscriberOrgId?integration=google&status=FORBIDDEN`);
          } else if (err instanceof SubscriberOrgNotExistError) {
-            res.redirect(`${redirectUri}&status=NOT_FOUND`);
+            res.redirect(`${redirectUri}/subscriberOrgId?integration=google&status=NOT_FOUND`);
          } else {
-            res.redirect(`${redirectUri}&status=INTERNAL_SERVER_ERROR`);
+            res.redirect(`${redirectUri}/subscriberOrgId?integration=google&status=INTERNAL_SERVER_ERROR`);
          }
       });
 }

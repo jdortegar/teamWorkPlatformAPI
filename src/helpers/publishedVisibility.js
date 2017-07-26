@@ -196,9 +196,9 @@ export function publicIntegration(integration) {
    }
    if (clone.google) {
       delete clone.google.access_token;
-      delete clone.box.refresh_token;
-      delete clone.box.id_token;
-      delete clone.box.token_type;
+      delete clone.google.refresh_token;
+      delete clone.google.id_token;
+      delete clone.google.token_type;
    }
    return clone;
 }
