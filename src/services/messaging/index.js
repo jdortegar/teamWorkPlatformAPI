@@ -49,7 +49,7 @@ export function userPrivateInfoUpdated(req, user) {
 }
 
 export function userInvited(req, userId, invitation) {
-   return _broadcastEvent(req, userId, invitation, [
+   return _broadcastEvent(req, EventTypes.userInvited, invitation, [
       ChannelFactory.personalChannel(userId)
    ]);
 }
