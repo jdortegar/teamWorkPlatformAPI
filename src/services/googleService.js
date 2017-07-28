@@ -87,27 +87,36 @@ export function googleAccessResponse(req, { code, state, error }) {
             integrationInfo = tokenInfo;
             return Promise.all([
                getSubscriberUsersByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId),
-               getUserInfo(integrationInfo.access_token)
+               getUserInfo(req, integrationInfo.access_token)
             ]);
          })
          .then((promiseResults) => {
+            req.logger.info('AD: 100');
             const subscriberUsers = promiseResults[0];
+            req.logger.info('AD: 101');
             const userInfo = promiseResults[1];
+            req.logger.info('AD: 102');
             if (subscriberUsers.length === 0) {
+               req.logger.info('AD: 103');
                throw new SubscriberOrgNotExistError(subscriberOrgId);
             }
+            req.logger.info('AD: 104');
 
             const { subscriberUserId } = subscriberUsers[0];
+            req.logger.info('AD: 105');
             integrationInfo.userId = userInfo.id;
             integrationInfo.expired = false;
             const googleInfo = {
                google: integrationInfo
             };
+            req.logger.info('AD: 106');
             updateInfo = _.merge(subscriberUsers[0].subscriberUserInfo, { integrations: googleInfo });
 
+            req.logger.info('AD: 107');
             return updateItemCompletely(req, -1, `${config.tablePrefix}subscriberUsers`, 'subscriberUserId', subscriberUserId, { subscriberUserInfo: updateInfo });
          })
          .then(() => {
+            req.logger.info('AD: 108');
             // Only have google integration info.
             const event = {
                userId: { updateInfo },
@@ -116,9 +125,30 @@ export function googleAccessResponse(req, { code, state, error }) {
                   google: updateInfo.integrations.google
                }
             };
+            req.logger.info('AD: 109');
             googleIntegrationCreated(req, event);
+            req.logger.info('AD: 110');
             resolve(subscriberOrgId);
          })
+         .catch(err => { req.logger.error(`AD: 100 err=${err}`); reject(err); });
+   });
+}
+
+export function revokeGoogle(req, userId, subscriberOrgId) {
+   return new Promise((resolve, reject) => {
+      getSubscriberUsersByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId)
+         .then((subscriberUsers) => {
+            if (subscriberUsers.length === 0) {
+               throw new SubscriberOrgNotExistError(subscriberOrgId);
+            }
+
+            const { subscriberUserId } = subscriberUsers[0];
+            const subscriberUserInfo = _.cloneDeep(subscriberUsers[0].subscriberUserInfo);
+            subscriberUserInfo.google = { revoked: true };
+
+            return updateItemCompletely(req, -1, `${config.tablePrefix}subscriberUsers`, 'subscriberUserId', subscriberUserId, { subscriberUserInfo });
+         })
+         .then(() => resolve())
          .catch(err => reject(err));
    });
 }

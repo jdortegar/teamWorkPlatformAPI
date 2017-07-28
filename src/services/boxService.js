@@ -87,7 +87,7 @@ export function boxAccessResponse(req, { code, state, error, error_description }
             integrationInfo = tokenInfo;
             return Promise.all([
                getSubscriberUsersByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId),
-               getUserInfo(integrationInfo.accessToken)
+               getUserInfo(req, integrationInfo.accessToken)
             ]);
          })
          .then((promiseResults) => {
@@ -120,6 +120,25 @@ export function boxAccessResponse(req, { code, state, error, error_description }
             boxIntegrationCreated(req, event);
             resolve(subscriberOrgId);
          })
+         .catch(err => reject(err));
+   });
+}
+
+export function revokeBox(req, userId, subscriberOrgId) {
+   return new Promise((resolve, reject) => {
+      getSubscriberUsersByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId)
+         .then((subscriberUsers) => {
+            if (subscriberUsers.length === 0) {
+               throw new SubscriberOrgNotExistError(subscriberOrgId);
+            }
+
+            const { subscriberUserId } = subscriberUsers[0];
+            const subscriberUserInfo = _.cloneDeep(subscriberUsers[0].subscriberUserInfo);
+            subscriberUserInfo.box = { revoked: true };
+
+            return updateItemCompletely(req, -1, `${config.tablePrefix}subscriberUsers`, 'subscriberUserId', subscriberUserId, { subscriberUserInfo });
+         })
+         .then(() => resolve())
          .catch(err => reject(err));
    });
 }

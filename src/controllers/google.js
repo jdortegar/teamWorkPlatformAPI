@@ -45,6 +45,23 @@ export function googleAccess(req, res) {
       });
 }
 
+export function revokeGoogle(req, res, next) {
+   const userId = req.user._id;
+   const subscriberOrgId = req.params.subscriberOrgId;
+
+   googleSvc.revokeGoogle(req, userId, subscriberOrgId)
+      .then(() => {
+         res.status(httpStatus.OK).end();
+      })
+      .catch((err) => {
+         if (err instanceof SubscriberOrgNotExistError) {
+            res.status(httpStatus.NOT_FOUND).end();
+         } else {
+            next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
+         }
+      });
+}
+
 export function googleWebhooks(req, res) {
    googleSvc.webhookEvent(req)
       .then(() => res.status(httpStatus.ACCEPTED).end())

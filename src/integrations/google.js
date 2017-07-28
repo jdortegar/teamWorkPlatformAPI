@@ -54,22 +54,30 @@ export function exchangeAuthorizationCodeForAccessToken(authorizationCode) {
    });
 }
 
-export function getUserInfo(userAccessToken) {
+export function getUserInfo(req, userAccessToken) {
    return new Promise((resolve, reject) => {
+      req.logger.info('AD: 10');
       const plus = google.plus('v1');
+      req.logger.info('AD: 11');
       const client = new OAuth2(
          clientId,
          clientSecret,
          redirectUri
       );
+      req.logger.info(`AD: 12: client=${client}`);
       client.setCredentials({ access_token: userAccessToken });
+      req.logger.info('AD: 13');
       plus.people.get({ userId: 'me', auth: client }, (err, response) => {
+         req.logger.info(`AD: 14, err=${err}`);
          if (err) {
+            req.logger.info('AD: 15');
             reject(err);
          } else {
+            req.logger.info('AD: 16');
             resolve(response);
          }
       });
+      req.logger.info('AD: 17');
    });
 }
 

@@ -63,7 +63,7 @@ export function exchangeAuthorizationCodeForAccessToken(authorizationCode) {
  * @param userAccessToken
  * @returns {Promise}
  */
-export function getUserInfo(userAccessToken) {
+export function getUserInfo(req, userAccessToken) {
    return new Promise((resolve, reject) => {
       const client = sdk.getBasicClient(userAccessToken);
       client.users.get(client.CURRENT_USER_ID, null, (err, currentUser) => {
