@@ -145,7 +145,7 @@ export default function start() {
    Promise.all([setupDynamoDb(), connectRedis()])
       .then((dbAndRedisStatuses) => {
          redisClient = dbAndRedisStatuses[1];
-         return startServer(redisClient);
+         return startServer(redisClient, false);
       })
       .then((httpServer) => {
          server = httpServer;

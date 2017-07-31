@@ -6,7 +6,6 @@ import shortid from 'shortid';
 import winston from 'winston';
 import config from './config/env';
 
-// TODO: from config
 const level = config.loggerLevel;
 const json = config.loggerJson;
 

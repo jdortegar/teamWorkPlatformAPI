@@ -203,8 +203,9 @@ export function boxIntegrationCreated(req, subscriberUser) {
    // Send to internal channel.
    const event = _.cloneDeep(subscriberUser);
    delete event.role;
-   internalQueue.sendEvent(req, EventTypes.boxIntegrationCreated, publicIntegration(event));
+   internalQueue.sendEvent(req, EventTypes.boxIntegrationCreated, event);
 
+   //TODO:
    return _broadcastEvent(req, EventTypes.boxIntegrationCreated, publicIntegration(subscriberUser), [
       ChannelFactory.personalChannel(subscriberUser.userId)
    ]);
@@ -225,8 +226,9 @@ export function googleIntegrationCreated(req, subscriberUser) {
    // Send to internal channel.
    const event = _.cloneDeep(subscriberUser);
    delete event.role;
-   internalQueue.sendEvent(req, EventTypes.googleIntegrationCreated, publicIntegration(event));
+   internalQueue.sendEvent(req, EventTypes.googleIntegrationCreated, event);
 
+   //TODO:
    return _broadcastEvent(req, EventTypes.googleIntegrationCreated, publicIntegration(subscriberUser), [
       ChannelFactory.personalChannel(subscriberUser.userId)
    ]);
