@@ -15,6 +15,9 @@ router.route('/box/integrate/:subscriberOrgId')
 router.route('/box/access')
    .get(box.boxAccess);
 
+router.route('/box/revoke/:subscriberOrgId')
+   .get(box.revokeBox);
+
 router.route('/box/webhooks')
    .post(box.boxWebhooks);
 
@@ -24,6 +27,9 @@ router.route('/google/integrate/:subscriberOrgId')
 
 router.route('/google/access')
    .get(google.googleAccess);
+
+router.route('/google/revoke/:subscriberOrgId')
+   .get(google.revokeGoogle);
 
 router.route('/google/webhooks')
    .post(google.googleWebhooks);

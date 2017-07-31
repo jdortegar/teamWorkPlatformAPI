@@ -46,6 +46,23 @@ export function boxAccess(req, res) {
       });
 }
 
+export function revokeBox(req, res, next) {
+   const userId = req.user._id;
+   const subscriberOrgId = req.params.subscriberOrgId;
+
+   boxSvc.revokeBox(req, userId, subscriberOrgId)
+      .then(() => {
+         res.status(httpStatus.OK).end();
+      })
+      .catch((err) => {
+         if (err instanceof SubscriberOrgNotExistError) {
+            res.status(httpStatus.NOT_FOUND).end();
+         } else {
+            next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
+         }
+      });
+}
+
 export function boxWebhooks(req, res) {
    boxSvc.webhookEvent(req)
       .then(() => res.status(httpStatus.ACCEPTED).end())

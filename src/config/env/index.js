@@ -39,8 +39,7 @@ const config = {
    boxWebhooksSecondaryKey: process.env.BOX_WEBHOOKS_SECONDARY_KEY || defaultConfig.boxWebhooksSecondaryKey,
 
    googleClientId: process.env.GOOGLE_CLIENT_ID || defaultConfig.googleClientId,
-   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || defaultConfig.googleClientSecret,
-   googleChannelKey: process.env.GOOGLE_CHANNEL_KEY || defaultConfig.googleChannelKey
+   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || defaultConfig.googleClientSecret
 };
 export default config;
 
