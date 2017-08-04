@@ -76,6 +76,18 @@ export function getUserInfo(req, userAccessToken) {
    });
 }
 
+export function revokeIntegration(req, userAccessToken) {
+   return new Promise((resolve, reject) => {
+      sdk.revokeTokens(userAccessToken, (err) => {
+         if (err) {
+            reject(new IntegrationAccessError(`Failed to revoke box integration: ${err}`));
+         } else {
+            resolve();
+         }
+      });
+   });
+}
+
 export function validateWebhookMessage(req) {
    if (BoxSDK.validateWebhookMessage(req.body, req.headers, primaryKey, secondaryKey) === false) {
       throw new IntegrationAccessError('Invalid Box webhook message.');

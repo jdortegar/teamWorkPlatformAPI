@@ -38,8 +38,6 @@ export function googleAccess(req, res) {
          res.redirect(`${redirectUri}?integration=google&status=CREATED`);
       })
       .catch((err) => {
-         //res.redirect(`${redirectUri}?integration=google&status=CREATED`);
-         /* TODO: */
          if (err instanceof IntegrationAccessError) {
             res.redirect(`${redirectUri}?integration=google&status=FORBIDDEN`);
          } else if (err instanceof SubscriberOrgNotExistError) {
