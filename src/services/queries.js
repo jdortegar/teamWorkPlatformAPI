@@ -417,9 +417,7 @@ export function getSubscriberUsersBySubscriberOrgId(req, subscriberOrgId) {
 }
 
 export function getSubscriberUsersByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId) {
-   req.logger.info('AD: 1');
    if ((userId === undefined) || (subscriberOrgId === undefined)) {
-      req.logger.info('AD: 2');
       return Promise.reject('userId and subscriberOrgId needs to be specified.');
    }
    req.logger.info(`AD: 3, userId=${userId}, subscriberOrgId=${subscriberOrgId}`);

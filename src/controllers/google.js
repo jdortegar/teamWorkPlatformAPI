@@ -61,6 +61,8 @@ export function revokeGoogle(req, res, next) {
       .catch((err) => {
          if (err instanceof SubscriberOrgNotExistError) {
             res.status(httpStatus.NOT_FOUND).end();
+         } else if (err instanceof IntegrationAccessError) {
+            res.status(httpStatus.GONE).end();
          } else {
             next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
          }

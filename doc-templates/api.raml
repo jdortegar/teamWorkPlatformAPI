@@ -2110,6 +2110,30 @@ documentation:
                      NOT_FOUND: The provided `subscriberOrgId` is invalid for the current user.<br />
                      INTERNAL_SERVER_ERROR: Something bad happened.
 
+      /revoke:
+         /{subscriberOrgId}:
+            uriParameters:
+               subscriberOrgId:
+                  description: Google integration, scoped to the logged-in user and provided `subscriberOrgId`.
+            get:
+               securedBy: [oauth_2_0]
+               description: Revoke Google access from Habla, scoped to the logged-in user and provided `subscriberOrgId`.
+               responses:
+                  200:
+                     description: |
+                        OK<br />
+                        The integration was revoked successfully, which includes clearing data in the DB as well as notifying Google of revocation.
+                  410:
+                     description: |
+                        GONE<br />
+                        Clearing integration data from the DB was successful, but the remote call to Google failed.
+                        This can mean either the existing access token is no longer valid, or Google isn't aware of this Habla integration.
+                        Either way, Habla no longer has access to the user's data, but having the user check on the Google end might be a good idea.
+                  404:
+                     description: |
+                        NOT_FOUND<br />
+                        Invalid subscriberOrgId.
+
       /webhooks:
          post:
             description: Invoked by Google for webhook events.

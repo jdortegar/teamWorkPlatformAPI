@@ -1,3 +1,4 @@
+import axios from 'axios';
 import google from 'googleapis';
 import config from '../config/env';
 import { IntegrationAccessError } from '../services/errors';
@@ -56,28 +57,36 @@ export function exchangeAuthorizationCodeForAccessToken(authorizationCode) {
 
 export function getUserInfo(req, userAccessToken) {
    return new Promise((resolve, reject) => {
-      req.logger.info('AD: 10');
       const plus = google.plus('v1');
-      req.logger.info('AD: 11');
       const client = new OAuth2(
          clientId,
          clientSecret,
          redirectUri
       );
-      req.logger.info(`AD: 12: client=${client}`);
       client.setCredentials({ access_token: userAccessToken });
-      req.logger.info('AD: 13');
       plus.people.get({ userId: 'me', auth: client }, (err, response) => {
-         req.logger.info(`AD: 14, err=${err}`);
          if (err) {
-            req.logger.info('AD: 15');
             reject(err);
          } else {
-            req.logger.info('AD: 16');
             resolve(response);
          }
       });
-      req.logger.info('AD: 17');
+   });
+}
+
+export function revokeIntegration(req, userAccessToken) {
+   return new Promise((resolve, reject) => {
+      axios.get(`https://accounts.google.com/o/oauth2/revoke?token=${userAccessToken}`)
+         .then((response) => {
+            if (response.status === 200) {
+               resolve();
+            } else {
+               reject(new IntegrationAccessError('Failed to revoke google integration.'));
+            }
+         })
+         .catch((err) => {
+            reject(new IntegrationAccessError(`Failed to revoke google integration: ${err}`));
+         });
    });
 }
 

@@ -36,6 +36,7 @@
     "clean": "shx rm -rf dist coverage doc",
     "pristine": "npm run clean && shx rm -rf node_modules",
     "raml": "shx mkdir -p doc && raml2html doc-templates/api.raml > doc/api.html",
+    "md:socketio": "marked -i doc-templates/socketio.md > doc/socketio.html",
     "md": "npm run md:users && npm run md:auth",
     "md:users": "shx mkdir -p doc/api && shx cat doc-templates/api/md-pre.html > doc/api/users.html && marked -i doc-templates/api/users.md >> doc/api/users.html && shx cat doc-templates/api/md-post.html >> doc/api/users.html",
     "md:auth": "shx mkdir -p doc/api && shx cat doc-templates/api/md-pre.html > doc/api/auth.html && marked -i doc-templates/api/auth.md >> doc/api/auth.html && shx cat doc-templates/api/md-post.html >> doc/api/auth.html",
@@ -44,7 +45,6 @@
     "client:ngrok": "babel-node $NODE_DEBUG_OPTION Client.js https://hablaapi.ngrok.io"
   },
   "devDependencies": {
-    "axios": "^0.16.1",
     "babel-cli": "^6.24.1",
     "babel-eslint": "^7.2.3",
     "babel-istanbul": "^0.12.2",
@@ -76,6 +76,7 @@
   },
   "dependencies": {
     "aws-sdk": "^2.54.0",
+    "axios": "^0.16.1",
     "babel-cli": "^6.24.1",
     "babel-eslint": "^7.2.3",
     "babel-istanbul": "^0.12.2",
