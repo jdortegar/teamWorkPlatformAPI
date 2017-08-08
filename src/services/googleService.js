@@ -3,7 +3,7 @@ import uuid from 'uuid';
 import config from '../config/env';
 import { IntegrationAccessError, SubscriberOrgNotExistError } from './errors';
 import { composeAuthorizationUrl, exchangeAuthorizationCodeForAccessToken, getUserInfo, revokeIntegration, validateWebhookMessage } from '../integrations/google';
-import { googleIntegrationCreated, googleWebhookEvent } from './messaging';
+import { googleIntegrationCreated, googleIntegrationRevoked, googleWebhookEvent } from './messaging';
 import { getSubscriberUsersByUserIdAndSubscriberOrgId, updateItemCompletely } from './queries';
 
 const defaultExpiration = 30 * 60; // 30 minutes.
@@ -125,6 +125,7 @@ export function googleAccessResponse(req, { code, state, error }) {
 
 export function revokeGoogle(req, userId, subscriberOrgId) {
    return new Promise((resolve, reject) => {
+      let subscriberUserInfo;
       getSubscriberUsersByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId)
          .then((subscriberUsers) => {
             if (subscriberUsers.length === 0) {
@@ -132,7 +133,7 @@ export function revokeGoogle(req, userId, subscriberOrgId) {
             }
 
             const subscriberUserId = subscriberUsers[0].subscriberUserId;
-            const subscriberUserInfo = _.cloneDeep(subscriberUsers[0].subscriberUserInfo);
+            subscriberUserInfo = _.cloneDeep(subscriberUsers[0].subscriberUserInfo);
             const userAccessToken = ((subscriberUserInfo.integrations) && (subscriberUserInfo.integrations.google)) ? subscriberUserInfo.integrations.google.access_token : undefined;
             subscriberUserInfo.google = { revoked: true };
 
@@ -143,7 +144,10 @@ export function revokeGoogle(req, userId, subscriberOrgId) {
             }
             return Promise.all(promises);
          })
-         .then(() => resolve())
+         .then(() => {
+            resolve();
+            googleIntegrationRevoked(req, subscriberUserInfo);
+         })
          .catch(err => reject(err));
    });
 }
