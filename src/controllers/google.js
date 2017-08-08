@@ -38,8 +38,6 @@ export function googleAccess(req, res) {
          res.redirect(`${redirectUri}?integration=google&status=CREATED`);
       })
       .catch((err) => {
-         //res.redirect(`${redirectUri}?integration=google&status=CREATED`);
-         /* TODO: */
          if (err instanceof IntegrationAccessError) {
             res.redirect(`${redirectUri}?integration=google&status=FORBIDDEN`);
          } else if (err instanceof SubscriberOrgNotExistError) {
@@ -61,6 +59,8 @@ export function revokeGoogle(req, res, next) {
       .catch((err) => {
          if (err instanceof SubscriberOrgNotExistError) {
             res.status(httpStatus.NOT_FOUND).end();
+         } else if (err instanceof IntegrationAccessError) {
+            res.status(httpStatus.GONE).end();
          } else {
             next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
          }

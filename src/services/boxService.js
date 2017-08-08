@@ -2,7 +2,7 @@ import _ from 'lodash';
 import uuid from 'uuid';
 import config from '../config/env';
 import { IntegrationAccessError, SubscriberOrgNotExistError } from './errors';
-import { composeAuthorizationUrl, exchangeAuthorizationCodeForAccessToken, getUserInfo, validateWebhookMessage } from '../integrations/box';
+import { composeAuthorizationUrl, exchangeAuthorizationCodeForAccessToken, getUserInfo, revokeIntegration, validateWebhookMessage } from '../integrations/box';
 import { boxIntegrationCreated, boxWebhookEvent } from './messaging';
 import { getSubscriberUsersByUserIdAndSubscriberOrgId, updateItemCompletely } from './queries';
 
@@ -134,9 +134,15 @@ export function revokeBox(req, userId, subscriberOrgId) {
 
             const { subscriberUserId } = subscriberUsers[0];
             const subscriberUserInfo = _.cloneDeep(subscriberUsers[0].subscriberUserInfo);
+            const userAccessToken = ((subscriberUserInfo.integrations) && (subscriberUserInfo.integrations.box)) ? subscriberUserInfo.integrations.box.accessToken : undefined;
             subscriberUserInfo.box = { revoked: true };
 
-            return updateItemCompletely(req, -1, `${config.tablePrefix}subscriberUsers`, 'subscriberUserId', subscriberUserId, { subscriberUserInfo });
+            const promises = [updateItemCompletely(req, -1, `${config.tablePrefix}subscriberUsers`, 'subscriberUserId', subscriberUserId, { subscriberUserInfo })];
+
+            if (userAccessToken) {
+               promises.push(revokeIntegration(req, userAccessToken));
+            }
+            return Promise.all(promises);
          })
          .then(() => resolve())
          .catch(err => reject(err));

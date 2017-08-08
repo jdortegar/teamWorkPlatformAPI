@@ -2,7 +2,7 @@ import _ from 'lodash';
 import uuid from 'uuid';
 import config from '../config/env';
 import { IntegrationAccessError, SubscriberOrgNotExistError } from './errors';
-import { composeAuthorizationUrl, exchangeAuthorizationCodeForAccessToken, getUserInfo, validateWebhookMessage } from '../integrations/google';
+import { composeAuthorizationUrl, exchangeAuthorizationCodeForAccessToken, getUserInfo, revokeIntegration, validateWebhookMessage } from '../integrations/google';
 import { googleIntegrationCreated, googleWebhookEvent } from './messaging';
 import { getSubscriberUsersByUserIdAndSubscriberOrgId, updateItemCompletely } from './queries';
 
@@ -91,32 +91,23 @@ export function googleAccessResponse(req, { code, state, error }) {
             ]);
          })
          .then((promiseResults) => {
-            req.logger.info('AD: 100');
             const subscriberUsers = promiseResults[0];
-            req.logger.info('AD: 101');
             const userInfo = promiseResults[1];
-            req.logger.info('AD: 102');
             if (subscriberUsers.length === 0) {
-               req.logger.info('AD: 103');
                throw new SubscriberOrgNotExistError(subscriberOrgId);
             }
-            req.logger.info('AD: 104');
 
             const { subscriberUserId } = subscriberUsers[0];
-            req.logger.info('AD: 105');
             integrationInfo.userId = userInfo.id;
             integrationInfo.expired = false;
             const googleInfo = {
                google: integrationInfo
             };
-            req.logger.info('AD: 106');
             updateInfo = _.merge(subscriberUsers[0].subscriberUserInfo, { integrations: googleInfo });
 
-            req.logger.info('AD: 107');
             return updateItemCompletely(req, -1, `${config.tablePrefix}subscriberUsers`, 'subscriberUserId', subscriberUserId, { subscriberUserInfo: updateInfo });
          })
          .then(() => {
-            req.logger.info('AD: 108');
             // Only have google integration info.
             const event = {
                userId: { updateInfo },
@@ -125,12 +116,10 @@ export function googleAccessResponse(req, { code, state, error }) {
                   google: updateInfo.integrations.google
                }
             };
-            req.logger.info('AD: 109');
             googleIntegrationCreated(req, event);
-            req.logger.info('AD: 110');
             resolve(subscriberOrgId);
          })
-         .catch(err => { req.logger.error(`AD: 100 err=${err}`); reject(err); });
+         .catch(err => reject(err));
    });
 }
 
@@ -142,11 +131,17 @@ export function revokeGoogle(req, userId, subscriberOrgId) {
                throw new SubscriberOrgNotExistError(subscriberOrgId);
             }
 
-            const { subscriberUserId } = subscriberUsers[0];
+            const subscriberUserId = subscriberUsers[0].subscriberUserId;
             const subscriberUserInfo = _.cloneDeep(subscriberUsers[0].subscriberUserInfo);
+            const userAccessToken = ((subscriberUserInfo.integrations) && (subscriberUserInfo.integrations.google)) ? subscriberUserInfo.integrations.google.access_token : undefined;
             subscriberUserInfo.google = { revoked: true };
 
-            return updateItemCompletely(req, -1, `${config.tablePrefix}subscriberUsers`, 'subscriberUserId', subscriberUserId, { subscriberUserInfo });
+            const promises = [updateItemCompletely(req, -1, `${config.tablePrefix}subscriberUsers`, 'subscriberUserId', subscriberUserId, { subscriberUserInfo })];
+
+            if (userAccessToken) {
+               promises.push(revokeIntegration(req, userAccessToken));
+            }
+            return Promise.all(promises);
          })
          .then(() => resolve())
          .catch(err => reject(err));
