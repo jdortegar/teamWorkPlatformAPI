@@ -89,7 +89,9 @@ export function createTeamRoomNoCheck(req, teamId, teamRoomInfo, teamMemberId, u
       publish: teamRoomInfo.publish,
       active: teamRoomInfo.active,
       primary: teamRoomInfo.primary || false,
-      preferences
+      preferences,
+      created: req.now.format(),
+      lastModified: req.now.format()
    };
    const teamRoomMemberId = uuid.v4();
 
@@ -101,7 +103,9 @@ export function createTeamRoomNoCheck(req, teamId, teamRoomInfo, teamMemberId, u
                teamMemberId,
                teamRoomId: actualTeamRoomId,
                userId: user.userId,
-               role
+               role,
+               created: req.now.format(),
+               lastModified: req.now.format()
             };
             return createItem(req, -1, `${config.tablePrefix}teamRoomMembers`, 'teamRoomMemberId', teamRoomMemberId, 'teamRoomMemberInfo', teamRoomMember);
          })
@@ -151,6 +155,8 @@ export function createTeamRoom(req, teamId, teamRoomInfo, userId, teamRoomId = u
 
 export function updateTeamRoom(req, teamRoomId, updateInfo, userId) {
    return new Promise((resolve, reject) => {
+      const timestampedUpdateInfo = _.cloneDeep(updateInfo);
+      timestampedUpdateInfo.lastModified = req.now.format();
       let dbTeamRoom;
       getTeamRoomsByIds(req, [teamRoomId])
          .then((teamRooms) => {
@@ -170,13 +176,13 @@ export function updateTeamRoom(req, teamRoomId, updateInfo, userId) {
                throw new CannotDeactivateError(teamRoomId);
             }
 
-            return updateItem(req, -1, `${config.tablePrefix}teamRooms`, 'teamRoomId', teamRoomId, { teamRoomInfo: updateInfo });
+            return updateItem(req, -1, `${config.tablePrefix}teamRooms`, 'teamRoomId', teamRoomId, { teamRoomInfo: timestampedUpdateInfo });
          })
          .then(() => {
             resolve();
 
             const teamRoom = dbTeamRoom.teamRoomInfo;
-            _.merge(teamRoom, updateInfo); // Eventual consistency, so might be old.
+            _.merge(teamRoom, timestampedUpdateInfo); // Eventual consistency, so might be old.
             teamRoom.teamRoomId = teamRoomId;
             teamRoomUpdated(req, teamRoom);
             if ((updateInfo.preferences) && (updateInfo.preferences.private)) {
@@ -350,7 +356,9 @@ export function addUserToTeamRoom(req, user, teamMemberId, teamRoomId, role) {
                teamMemberId,
                teamRoomId,
                userId: user.userId,
-               role
+               role,
+               created: req.now.format(),
+               lastModified: req.now.format()
             };
             return createItem(req, -1, `${config.tablePrefix}teamRoomMembers`, 'teamRoomMemberId', teamRoomMemberId, 'teamRoomMemberInfo', teamRoomMember);
          })

@@ -115,10 +115,10 @@ export function getConversations(req, userId, teamRoomId = undefined) {
 
 export function createConversationNoCheck(req, teamRoomId, conversationInfo, userId, conversationId = undefined) {
    const actualConversationId = conversationId || uuid.v4();
-   const created = req.now.format();
    const conversation = {
-      created,
-      teamRoomId
+      teamRoomId,
+      created: req.now.format(),
+      lastModified: req.now.format()
    };
    const conversationParticipantId = uuid.v4();
 
@@ -127,7 +127,9 @@ export function createConversationNoCheck(req, teamRoomId, conversationInfo, use
          .then(() => {
             const conversationParticipant = {
                conversationId: actualConversationId,
-               userId
+               userId,
+               created: req.now.format(),
+               lastModified: req.now.format()
             };
             return createItem(
                req,
@@ -136,7 +138,7 @@ export function createConversationNoCheck(req, teamRoomId, conversationInfo, use
                'conversationParticipantId',
                conversationParticipantId,
                'conversationParticipantInfo',
-               conversationParticipant
+               conversationParticipant,
             );
          })
          .then(() => {
@@ -153,7 +155,9 @@ export function addUserToConversation(req, user, conversationId) {
    const conversationParticipantId = uuid.v4();
    const conversationParticipant = {
       conversationId,
-      userId: user.userId
+      userId: user.userId,
+      created: req.now.format(),
+      lastModified: req.now.format()
    };
 
    return createItem(
@@ -295,15 +299,15 @@ export function getMessages(req, conversationId, userId = undefined, { since, un
 export function createMessage(req, conversationId, userId, messageType, text, replyTo) {
    return new Promise((resolve, reject) => {
       const messageId = uuid.v4();
-      const created = req.now.format();
 
       const message = {
          conversationId,
-         created,
          createdBy: userId,
          messageType,
          text,
-         replyTo
+         replyTo,
+         created: req.now.format(),
+         lastModified: req.now.format()
       };
       getConversationParticipantsByConversationId(req, conversationId)
          .then((participants) => {

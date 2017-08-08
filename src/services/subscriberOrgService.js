@@ -7,7 +7,6 @@ import { subscriberAdded, subscriberOrgCreated, subscriberOrgPrivateInfoUpdated,
 import { getPresence } from './messaging/presence';
 import Roles from './roles';
 import * as teamSvc from './teamService';
-import * as teamRoomSvc from './teamRoomService';
 import {
    createItem,
    getSubscriberOrgsByIds,
@@ -53,7 +52,9 @@ export function createSubscriberOrgNoCheck(req, subscriberOrgInfo, user, subscri
    const subscriberOrg = {
       name: subscriberOrgInfo.name,
       enabled: true,
-      preferences
+      preferences,
+      created: req.now.format(),
+      lastModified: req.now.format()
    };
    const subscriberUserId = uuid.v4();
 
@@ -64,7 +65,9 @@ export function createSubscriberOrgNoCheck(req, subscriberOrgInfo, user, subscri
             const subscriberUser = {
                userId: user.userId,
                subscriberOrgId: actualSubscriberOrgId,
-               role
+               role,
+               created: req.now.format(),
+               lastModified: req.now.format()
             };
             return createItem(req, -1, `${config.tablePrefix}subscriberUsers`, 'subscriberUserId', subscriberUserId, 'subscriberUserInfo', subscriberUser);
          })
@@ -133,6 +136,8 @@ export function createSubscriberOrgUsingBaseName(req, info, dbUser, subscriberOr
 
 export function updateSubscriberOrg(req, subscriberOrgId, updateInfo, userId) {
    return new Promise((resolve, reject) => {
+      const timestampedUpdateInfo = _.cloneDeep(updateInfo);
+      timestampedUpdateInfo.lastModified = req.now.format();
       let dbSubscriberOrg;
       getSubscriberOrgsByIds(req, [subscriberOrgId])
          .then((subscriberOrgs) => {
@@ -140,6 +145,7 @@ export function updateSubscriberOrg(req, subscriberOrgId, updateInfo, userId) {
                throw new SubscriberOrgNotExistError(subscriberOrgId);
             }
 
+            dbSubscriberOrg = subscriberOrgs[0];
             return getSubscriberUsersByUserIdAndSubscriberOrgIdAndRole(req, userId, subscriberOrgId, Roles.admin);
          })
          .then((subscriberUsers) => {
@@ -147,13 +153,13 @@ export function updateSubscriberOrg(req, subscriberOrgId, updateInfo, userId) {
                throw new NoPermissionsError(subscriberOrgId);
             }
 
-            return updateItem(req, -1, `${config.tablePrefix}subscriberOrgs`, 'subscriberOrgId', subscriberOrgId, { subscriberOrgInfo: updateInfo });
+            return updateItem(req, -1, `${config.tablePrefix}subscriberOrgs`, 'subscriberOrgId', subscriberOrgId, { subscriberOrgInfo: timestampedUpdateInfo });
          })
          .then(() => {
             resolve();
 
             const subscriberOrg = dbSubscriberOrg.subscriberOrgInfo;
-            _.merge(subscriberOrg, updateInfo); // Eventual consistency, so might be old.
+            _.merge(subscriberOrg, timestampedUpdateInfo); // Eventual consistency, so might be old.
             subscriberOrg.subscriberOrgId = subscriberOrgId;
             subscriberOrgUpdated(req, subscriberOrg);
             if ((updateInfo.preferences) && (updateInfo.preferences.private)) {
@@ -338,7 +344,9 @@ function addUserToSubscriberOrg(req, user, subscriberOrgId, role) {
             const subscriberUser = {
                userId: user.userId,
                subscriberOrgId,
-               role
+               role,
+               created: req.now.format(),
+               lastModified: req.now.format()
             };
             return createItem(req, -1, `${config.tablePrefix}subscriberUsers`, 'subscriberUserId', subscriberUserId, 'subscriberUserInfo', subscriberUser);
          })

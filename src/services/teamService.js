@@ -77,7 +77,9 @@ export function createTeamNoCheck(req, subscriberOrgId, teamInfo, subscriberUser
       name: teamInfo.name,
       active: true,
       primary: teamInfo.primary || false,
-      preferences
+      preferences,
+      created: req.now.format(),
+      lastModified: req.now.format()
    };
    const teamMemberId = uuid.v4();
 
@@ -89,7 +91,9 @@ export function createTeamNoCheck(req, subscriberOrgId, teamInfo, subscriberUser
                subscriberUserId,
                teamId: actualTeamId,
                userId: user.userId,
-               role
+               role,
+               created: req.now.format(),
+               lastModified: req.now.format()
             };
             return createItem(req, -1, `${config.tablePrefix}teamMembers`, 'teamMemberId', teamMemberId, 'teamMemberInfo', teamMember);
          })
@@ -145,6 +149,8 @@ export function createTeam(req, subscriberOrgId, teamInfo, userId, teamId = unde
 
 export function updateTeam(req, teamId, updateInfo, userId) {
    return new Promise((resolve, reject) => {
+      const timestampedUpdateInfo = _.cloneDeep(updateInfo);
+      timestampedUpdateInfo.lastModified = req.now.format();
       let dbTeam;
       getTeamsByIds(req, [teamId])
          .then((teams) => {
@@ -164,13 +170,13 @@ export function updateTeam(req, teamId, updateInfo, userId) {
                throw new CannotDeactivateError(teamId);
             }
 
-            return updateItem(req, -1, `${config.tablePrefix}teams`, 'teamId', teamId, { teamInfo: updateInfo });
+            return updateItem(req, -1, `${config.tablePrefix}teams`, 'teamId', teamId, { teamInfo: timestampedUpdateInfo });
          })
          .then(() => {
             resolve();
 
             const team = dbTeam.teamInfo;
-            _.merge(team, updateInfo); // Eventual consistency, so might be old.
+            _.merge(team, timestampedUpdateInfo); // Eventual consistency, so might be old.
             team.teamId = teamId;
             teamUpdated(req, team);
             if ((updateInfo.preferences) && (updateInfo.preferences.private)) {
@@ -332,7 +338,9 @@ export function addUserToTeam(req, user, subscriberUserId, teamId, role) {
                subscriberUserId,
                teamId,
                userId: user.userId,
-               role
+               role,
+               created: req.now.format(),
+               lastModified: req.now.format()
             };
             return createItem(req, -1, `${config.tablePrefix}teamMembers`, 'teamMemberId', teamMemberId, 'teamMemberInfo', teamMember);
          })

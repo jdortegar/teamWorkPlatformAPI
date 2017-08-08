@@ -78,8 +78,9 @@ export function createUser(req, userInfo) {
                   timeZone,
                   icon,
                   enabled: true,
-                  preferences
-                  // ,iconType
+                  preferences,
+                  created: req.now.format(),
+                  lastModified: req.now.format()
                };
 
                return Promise.all([
@@ -123,6 +124,8 @@ export function createUser(req, userInfo) {
 export function updateUser(req, userId, updateInfo, requestorUserId = undefined) { // eslint-disable-line no-unused-vars
    // TODO: if (requestorUserId) check if allowed, throw NoPermissionsError if not.
    return new Promise((resolve, reject) => {
+      const timestampedUpdateInfo = updateInfo;
+      timestampedUpdateInfo.lastModified = req.now.format();
       let user;
       getUsersByIds(req, [userId])
          .then((dbUsers) => {
@@ -131,12 +134,12 @@ export function updateUser(req, userId, updateInfo, requestorUserId = undefined)
             }
 
             user = dbUsers[0].userInfo;
-            return updateItem(req, -1, `${config.tablePrefix}users`, 'userId', userId, { userInfo: updateInfo });
+            return updateItem(req, -1, `${config.tablePrefix}users`, 'userId', userId, { userInfo: timestampedUpdateInfo });
          })
          .then(() => {
             resolve();
 
-            _.merge(user, updateInfo);
+            _.merge(user, timestampedUpdateInfo);
             user.userId = userId;
             userUpdated(req, user);
          })
