@@ -3,7 +3,7 @@ import uuid from 'uuid';
 import config from '../config/env';
 import { IntegrationAccessError, SubscriberOrgNotExistError } from './errors';
 import { composeAuthorizationUrl, exchangeAuthorizationCodeForAccessToken, getUserInfo, revokeIntegration, validateWebhookMessage } from '../integrations/box';
-import { boxIntegrationCreated, boxWebhookEvent } from './messaging';
+import { boxIntegrationCreated, boxIntegrationRevoked, boxWebhookEvent } from './messaging';
 import { getSubscriberUsersByUserIdAndSubscriberOrgId, updateItemCompletely } from './queries';
 
 const defaultExpiration = 30 * 60; // 30 minutes.
@@ -126,6 +126,7 @@ export function boxAccessResponse(req, { code, state, error, error_description }
 
 export function revokeBox(req, userId, subscriberOrgId) {
    return new Promise((resolve, reject) => {
+      let subscriberUserInfo;
       getSubscriberUsersByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId)
          .then((subscriberUsers) => {
             if (subscriberUsers.length === 0) {
@@ -133,7 +134,7 @@ export function revokeBox(req, userId, subscriberOrgId) {
             }
 
             const { subscriberUserId } = subscriberUsers[0];
-            const subscriberUserInfo = _.cloneDeep(subscriberUsers[0].subscriberUserInfo);
+            subscriberUserInfo = _.cloneDeep(subscriberUsers[0].subscriberUserInfo);
             const userAccessToken = ((subscriberUserInfo.integrations) && (subscriberUserInfo.integrations.box)) ? subscriberUserInfo.integrations.box.accessToken : undefined;
             subscriberUserInfo.box = { revoked: true };
 
@@ -144,7 +145,10 @@ export function revokeBox(req, userId, subscriberOrgId) {
             }
             return Promise.all(promises);
          })
-         .then(() => resolve())
+         .then(() => {
+            resolve();
+            boxIntegrationRevoked(req, subscriberUserInfo);
+         })
          .catch(err => reject(err));
    });
 }

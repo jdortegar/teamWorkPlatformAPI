@@ -31,12 +31,14 @@ import Roles from '../roles';
 // EventType = user
 
 export function userCreated(req, user) {
-   return _broadcastEvent(req, EventTypes.userCreated, publicUser(user), [
-      ChannelFactory.publicChannel()
-   ]);
+   // No need to broadcast this, since the user is by themselves at this point, and not logged-in.
+   // return _broadcastEvent(req, EventTypes.userCreated, publicUser(user), [
+   //    ChannelFactory.publicChannel()
+   // ]);
 }
 
 export function userUpdated(req, user) {
+   // TODO: should only be broadcast to subscribersOrgs of the user.
    return _broadcastEvent(req, EventTypes.userUpdated, publicUser(user), [
       ChannelFactory.publicChannel()
    ]);
@@ -205,7 +207,6 @@ export function boxIntegrationCreated(req, subscriberUser) {
    delete event.role;
    internalQueue.sendEvent(req, EventTypes.boxIntegrationCreated, event);
 
-   //TODO:
    return _broadcastEvent(req, EventTypes.boxIntegrationCreated, publicIntegration(subscriberUser), [
       ChannelFactory.personalChannel(subscriberUser.userId)
    ]);
@@ -213,6 +214,12 @@ export function boxIntegrationCreated(req, subscriberUser) {
 
 export function boxIntegrationExpired(req, subscriberUser) {
    return _broadcastEvent(req, EventTypes.boxIntegrationExpired, publicIntegration(subscriberUser), [
+      ChannelFactory.personalChannel(subscriberUser.userId)
+   ]);
+}
+
+export function boxIntegrationRevoked(req, subscriberUser) {
+   return _broadcastEvent(req, EventTypes.boxIntegrationRevoked, publicIntegration(subscriberUser), [
       ChannelFactory.personalChannel(subscriberUser.userId)
    ]);
 }
@@ -236,6 +243,12 @@ export function googleIntegrationCreated(req, subscriberUser) {
 
 export function googleIntegrationExpired(req, subscriberUser) {
    return _broadcastEvent(req, EventTypes.googleIntegrationExpired, publicIntegration(subscriberUser), [
+      ChannelFactory.personalChannel(subscriberUser.userId)
+   ]);
+}
+
+export function googleIntegrationRevoked(req, subscriberUser) {
+   return _broadcastEvent(req, EventTypes.googleIntegrationRevoked, publicIntegration(subscriberUser), [
       ChannelFactory.personalChannel(subscriberUser.userId)
    ]);
 }
