@@ -473,6 +473,15 @@ export function getTeamBySubscriberOrgIdAndName(req, subscriberOrgId, name) {
    return filteredScan(req, tableName, { teamInfo: { subscriberOrgId, name } });
 }
 
+export function getTeamBySubscriberOrgIdAndPrimary(req, subscriberOrgId, primary) {
+   if ((subscriberOrgId === undefined) || (primary === undefined)) {
+      return Promise.reject('subscriberOrgId and primary needs to be specified.');
+   }
+
+   const tableName = `${config.tablePrefix}teams`;
+   return filteredScan(req, tableName, { teamInfo: { subscriberOrgId, primary } });
+}
+
 
 export function getTeamMembersByTeamIdAndUserIdAndRole(req, teamId, userId, role) {
    if ((teamId === undefined) || (userId === undefined) || (role === undefined)) {
@@ -582,6 +591,15 @@ export function getTeamRoomsByTeamIdAndName(req, teamId, name) {
 
    const tableName = `${config.tablePrefix}teamRooms`;
    return filteredScan(req, tableName, { teamRoomInfo: { teamId, name } });
+}
+
+export function getTeamRoomsByTeamIdAndPrimary(req, teamId, primary) {
+   if ((teamId === undefined) || (primary === undefined)) {
+      return Promise.reject('teamId and primary needs to be specified.');
+   }
+
+   const tableName = `${config.tablePrefix}teamRooms`;
+   return filteredScan(req, tableName, { teamRoomInfo: { teamId, primary } });
 }
 
 

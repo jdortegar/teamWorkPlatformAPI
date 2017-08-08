@@ -344,7 +344,7 @@ function addUserToSubscriberOrg(req, user, subscriberOrgId, role) {
          })
          .then(() => {
             subscriberAdded(req, subscriberOrgId, user, role);
-            return teamSvc.addUserToTeamByName(req, user, subscriberOrgId, subscriberUserId, teamSvc.defaultTeamName, Roles.user, teamRoomSvc.defaultTeamRoomName);
+            return teamSvc.addUserToPrimaryTeam(req, user, subscriberOrgId, subscriberUserId, Roles.user);
          })
          .then(() => resolve(subscriberUserId))
          .catch(err => reject(err));

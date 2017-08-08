@@ -2,7 +2,14 @@ import _ from 'lodash';
 import uuid from 'uuid';
 import config from '../config/env';
 import * as conversationSvc from './conversationService';
-import { InvitationNotExistError, NoPermissionsError, TeamRoomExistsError, TeamRoomNotExistError, UserNotExistError } from './errors';
+import {
+   CannotDeactivateError,
+   InvitationNotExistError,
+   NoPermissionsError,
+   TeamRoomExistsError,
+   TeamRoomNotExistError,
+   UserNotExistError
+} from './errors';
 import { deleteRedisInvitation, InvitationKeys, inviteExistingUsersToTeamRoom } from './invitations';
 import { teamRoomCreated, teamRoomMemberAdded, teamRoomPrivateInfoUpdated, teamRoomUpdated } from './messaging';
 import { getPresence } from './messaging/presence';
@@ -20,6 +27,7 @@ import {
    getTeamRoomMembersByUserIds,
    getTeamRoomsByIds,
    getTeamRoomsByTeamIdAndName,
+   getTeamRoomsByTeamIdAndPrimary,
    getUsersByIds,
    updateItem
 } from './queries';
@@ -156,6 +164,10 @@ export function updateTeamRoom(req, teamRoomId, updateInfo, userId) {
          .then((teamMembers) => {
             if (teamMembers.length === 0) {
                throw new NoPermissionsError(teamRoomId);
+            }
+
+            if ((dbTeamRoom.teamRoomInfo.primary) && (updateInfo.active === false)) {
+               throw new CannotDeactivateError(teamRoomId);
             }
 
             return updateItem(req, -1, `${config.tablePrefix}teamRooms`, 'teamRoomId', teamRoomId, { teamRoomInfo: updateInfo });
@@ -351,9 +363,9 @@ export function addUserToTeamRoom(req, user, teamMemberId, teamRoomId, role) {
    });
 }
 
-export function addUserToTeamRoomByName(req, user, teamId, teamMemberId, teamRoomName, role) {
+export function addUserToPrimaryTeamRoom(req, user, teamId, teamMemberId, role) {
    return new Promise((resolve, reject) => {
-      getTeamRoomsByTeamIdAndName(req, teamId, teamRoomName)
+      getTeamRoomsByTeamIdAndPrimary(req, teamId, true)
          .then((teamRooms) => {
             if (teamRooms.length > 0) {
                const teamRoomId = teamRooms[0].teamRoomId;

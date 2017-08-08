@@ -1,7 +1,14 @@
 import _ from 'lodash';
 import uuid from 'uuid';
 import config from '../config/env';
-import { InvitationNotExistError, NoPermissionsError, TeamExistsError, TeamNotExistError, UserNotExistError } from './errors';
+import {
+   CannotDeactivateError,
+   InvitationNotExistError,
+   NoPermissionsError,
+   TeamExistsError,
+   TeamNotExistError,
+   UserNotExistError
+} from './errors';
 import { deleteRedisInvitation, InvitationKeys, inviteExistingUsersToTeam } from './invitations';
 import { teamCreated, teamMemberAdded, teamPrivateInfoUpdated, teamUpdated } from './messaging';
 import { getPresence } from './messaging/presence';
@@ -19,6 +26,7 @@ import {
    getTeamMembersByTeamId,
    getTeamsByIds,
    getTeamBySubscriberOrgIdAndName,
+   getTeamBySubscriberOrgIdAndPrimary,
    getUsersByIds,
    updateItem
 } from './queries';
@@ -150,6 +158,10 @@ export function updateTeam(req, teamId, updateInfo, userId) {
          .then((teamMembers) => {
             if (teamMembers.length === 0) {
                throw new NoPermissionsError(teamId);
+            }
+
+            if ((dbTeam.teamInfo.primary) && (updateInfo.active === false)) {
+               throw new CannotDeactivateError(teamId);
             }
 
             return updateItem(req, -1, `${config.tablePrefix}teams`, 'teamId', teamId, { teamInfo: updateInfo });
@@ -326,17 +338,17 @@ export function addUserToTeam(req, user, subscriberUserId, teamId, role) {
          })
          .then(() => {
             teamMemberAdded(req, teamId, user, role);
-            return teamRoomSvc.addUserToTeamRoomByName(req, user, teamId, teamMemberId, teamRoomSvc.defaultTeamRoomName, Roles.user);
+            return teamRoomSvc.addUserToPrimaryTeamRoom(req, user, teamId, teamMemberId, Roles.user);
          })
          .then(() => resolve(teamMemberId))
          .catch(err => reject(err));
    });
 }
 
-export function addUserToTeamByName(req, user, subscriberOrgId, subscriberUserId, teamName, role, teamRoomName = undefined) {
+export function addUserToPrimaryTeam(req, user, subscriberOrgId, subscriberUserId, role) {
    return new Promise((resolve, reject) => {
       let teamId;
-      getTeamBySubscriberOrgIdAndName(req, subscriberOrgId, teamName)
+      getTeamBySubscriberOrgIdAndPrimary(req, subscriberOrgId, true)
          .then((teams) => {
             if (teams.length > 0) {
                teamId = teams[0].teamId;
