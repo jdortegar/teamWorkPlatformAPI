@@ -2,7 +2,14 @@ import httpStatus from 'http-status';
 import APIError from '../helpers/APIError';
 import { privateTeam, publicTeams, publicUsers } from '../helpers/publishedVisibility';
 import * as teamSvc from '../services/teamService';
-import { InvitationNotExistError, NoPermissionsError, TeamExistsError, TeamNotExistError, UserNotExistError } from '../services/errors';
+import {
+   CannotDeactivateError,
+   InvitationNotExistError,
+   NoPermissionsError,
+   TeamExistsError,
+   TeamNotExistError,
+   UserNotExistError
+} from '../services/errors';
 
 export function getTeams(req, res, next) {
    const userId = req.user._id;
@@ -48,6 +55,8 @@ export function updateTeam(req, res, next) {
             res.status(httpStatus.NOT_FOUND).end();
          } else if (err instanceof NoPermissionsError) {
             res.status(httpStatus.FORBIDDEN).end();
+         } else if (err instanceof CannotDeactivateError) {
+            res.status(httpStatus.CONFLICT).end();
          } else {
             next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE));
          }

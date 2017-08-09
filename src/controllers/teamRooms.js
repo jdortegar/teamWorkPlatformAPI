@@ -2,7 +2,14 @@ import httpStatus from 'http-status';
 import APIError from '../helpers/APIError';
 import { privateTeamRoom, publicTeamRooms, publicUsers } from '../helpers/publishedVisibility';
 import * as teamRoomSvc from '../services/teamRoomService';
-import { InvitationNotExistError, NoPermissionsError, TeamRoomExistsError, TeamRoomNotExistError, UserNotExistError } from '../services/errors';
+import {
+   CannotDeactivateError,
+   InvitationNotExistError,
+   NoPermissionsError,
+   TeamRoomExistsError,
+   TeamRoomNotExistError,
+   UserNotExistError
+} from '../services/errors';
 
 export function getTeamRooms(req, res, next) {
    const userId = req.user._id;
@@ -48,6 +55,8 @@ export function updateTeamRoom(req, res, next) {
             res.status(httpStatus.NOT_FOUND).end();
          } else if (err instanceof NoPermissionsError) {
             res.status(httpStatus.FORBIDDEN).end();
+         } else if (err instanceof CannotDeactivateError) {
+            res.status(httpStatus.CONFLICT).end();
          } else {
             next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE));
          }

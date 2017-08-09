@@ -2,7 +2,14 @@ import _ from 'lodash';
 import uuid from 'uuid';
 import config from '../config/env';
 import * as conversationSvc from './conversationService';
-import { InvitationNotExistError, NoPermissionsError, TeamRoomExistsError, TeamRoomNotExistError, UserNotExistError } from './errors';
+import {
+   CannotDeactivateError,
+   InvitationNotExistError,
+   NoPermissionsError,
+   TeamRoomExistsError,
+   TeamRoomNotExistError,
+   UserNotExistError
+} from './errors';
 import { deleteRedisInvitation, InvitationKeys, inviteExistingUsersToTeamRoom } from './invitations';
 import { teamRoomCreated, teamRoomMemberAdded, teamRoomPrivateInfoUpdated, teamRoomUpdated } from './messaging';
 import { getPresence } from './messaging/presence';
@@ -20,6 +27,7 @@ import {
    getTeamRoomMembersByUserIds,
    getTeamRoomsByIds,
    getTeamRoomsByTeamIdAndName,
+   getTeamRoomsByTeamIdAndPrimary,
    getUsersByIds,
    updateItem
 } from './queries';
@@ -81,7 +89,9 @@ export function createTeamRoomNoCheck(req, teamId, teamRoomInfo, teamMemberId, u
       publish: teamRoomInfo.publish,
       active: teamRoomInfo.active,
       primary: teamRoomInfo.primary || false,
-      preferences
+      preferences,
+      created: req.now.format(),
+      lastModified: req.now.format()
    };
    const teamRoomMemberId = uuid.v4();
 
@@ -93,7 +103,9 @@ export function createTeamRoomNoCheck(req, teamId, teamRoomInfo, teamMemberId, u
                teamMemberId,
                teamRoomId: actualTeamRoomId,
                userId: user.userId,
-               role
+               role,
+               created: req.now.format(),
+               lastModified: req.now.format()
             };
             return createItem(req, -1, `${config.tablePrefix}teamRoomMembers`, 'teamRoomMemberId', teamRoomMemberId, 'teamRoomMemberInfo', teamRoomMember);
          })
@@ -143,6 +155,8 @@ export function createTeamRoom(req, teamId, teamRoomInfo, userId, teamRoomId = u
 
 export function updateTeamRoom(req, teamRoomId, updateInfo, userId) {
    return new Promise((resolve, reject) => {
+      const timestampedUpdateInfo = _.cloneDeep(updateInfo);
+      timestampedUpdateInfo.lastModified = req.now.format();
       let dbTeamRoom;
       getTeamRoomsByIds(req, [teamRoomId])
          .then((teamRooms) => {
@@ -158,13 +172,17 @@ export function updateTeamRoom(req, teamRoomId, updateInfo, userId) {
                throw new NoPermissionsError(teamRoomId);
             }
 
-            return updateItem(req, -1, `${config.tablePrefix}teamRooms`, 'teamRoomId', teamRoomId, { teamRoomInfo: updateInfo });
+            if ((dbTeamRoom.teamRoomInfo.primary) && (updateInfo.active === false)) {
+               throw new CannotDeactivateError(teamRoomId);
+            }
+
+            return updateItem(req, -1, `${config.tablePrefix}teamRooms`, 'teamRoomId', teamRoomId, { teamRoomInfo: timestampedUpdateInfo });
          })
          .then(() => {
             resolve();
 
             const teamRoom = dbTeamRoom.teamRoomInfo;
-            _.merge(teamRoom, updateInfo); // Eventual consistency, so might be old.
+            _.merge(teamRoom, timestampedUpdateInfo); // Eventual consistency, so might be old.
             teamRoom.teamRoomId = teamRoomId;
             teamRoomUpdated(req, teamRoom);
             if ((updateInfo.preferences) && (updateInfo.preferences.private)) {
@@ -338,7 +356,9 @@ export function addUserToTeamRoom(req, user, teamMemberId, teamRoomId, role) {
                teamMemberId,
                teamRoomId,
                userId: user.userId,
-               role
+               role,
+               created: req.now.format(),
+               lastModified: req.now.format()
             };
             return createItem(req, -1, `${config.tablePrefix}teamRoomMembers`, 'teamRoomMemberId', teamRoomMemberId, 'teamRoomMemberInfo', teamRoomMember);
          })
@@ -351,9 +371,9 @@ export function addUserToTeamRoom(req, user, teamMemberId, teamRoomId, role) {
    });
 }
 
-export function addUserToTeamRoomByName(req, user, teamId, teamMemberId, teamRoomName, role) {
+export function addUserToPrimaryTeamRoom(req, user, teamId, teamMemberId, role) {
    return new Promise((resolve, reject) => {
-      getTeamRoomsByTeamIdAndName(req, teamId, teamRoomName)
+      getTeamRoomsByTeamIdAndPrimary(req, teamId, true)
          .then((teamRooms) => {
             if (teamRooms.length > 0) {
                const teamRoomId = teamRooms[0].teamRoomId;

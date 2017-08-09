@@ -899,6 +899,7 @@ documentation:
                                  type: boolean
                                  required: true
                               primary:
+                                 description: Primary teams can't be directly inactive (i.e. active can't be false if this is true).
                                  type: boolean
                                  required: true
                               preferences:
@@ -1007,6 +1008,7 @@ documentation:
                      type: string
                      required: false
                   active:
+                     description: If updating a primary team, deactivation is not allowed and will result in a 409 return code.
                      type: boolean
                      required: false
                   preferences:
@@ -1032,6 +1034,10 @@ documentation:
                   description: |
                      NO_CONTENT<br />
                      The team was updated successfully.
+               409:
+                  description: |
+                     CONFLICT<br />
+                     A primary team cannot be deactivated.
                404:
                   description: |
                      NOT_FOUND<br />
@@ -1284,6 +1290,7 @@ documentation:
                                  type: boolean
                                  required: true
                               primary:
+                                 description: Primary team rooms can't be directly inactive (i.e. active can't be false if this is true).
                                  type: boolean
                                  required: true
                               enabled:
@@ -1430,6 +1437,7 @@ documentation:
                      type: boolean
                      required: false
                   active:
+                     description: If updating a primary team room, deactivation is not allowed and will result in a 409 return code.
                      type: boolean
                      required: false
                   preferences:
@@ -1457,6 +1465,10 @@ documentation:
                   description: |
                      NO_CONTENT<br />
                      The team was updated successfully.
+               409:
+                  description: |
+                     CONFLICT<br />
+                     A primary team room cannot be deactivated.
                404:
                   description: |
                      NOT_FOUND<br />

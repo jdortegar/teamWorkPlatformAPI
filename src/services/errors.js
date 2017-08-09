@@ -54,6 +54,13 @@ export class TeamRoomNotExistError extends Error {
    }
 }
 
+export class CannotDeactivateError extends Error {
+   constructor(...args) {
+      super(...args);
+      Error.captureStackTrace(this, CannotDeactivateError);
+   }
+}
+
 export class ConversationNotExistError extends Error {
    constructor(...args) {
       super(...args);
