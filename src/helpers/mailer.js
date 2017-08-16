@@ -44,7 +44,7 @@ export function sendActivationLink(email, rid) {
       </h1>
       <br>Thank you for registering for Habla AI.<br>
       <br>If reading this from a web browser, please <a href="${config.webappBaseUri}/verifyAccount/${rid}">click here</a> to activate your account.<br>
-      <br>If reading this from an iOS device, please <a href="hablaai://signup/${rid}">click here</a> to activate your account.
+      <br>If reading this from an iOS device, please tap on the following link to activate your account:  hablaai://signup/${rid}
    `;
    return sendMail({
       from: 'habla-mailer-dev@habla.ai',
@@ -59,7 +59,7 @@ export function sendSubscriberOrgInviteToExternalUser(email, subscriberOrgName, 
       <h1><img src="https://static.wixstatic.com/media/ac0e25_95ce977831a9430989f049b46928fda6~mv2.jpg/v1/fill/w_247,h_244,al_c,q_80,usm_0.66_1.00_0.01/ac0e25_95ce977831a9430989f049b46928fda6~mv2.jpg" height="100" width="100" align="middle"></h1>
       <br>${byUserDisplayName} has invited you to "${subscriberOrgName}" in Habla AI.<br>
       <br>If reading this from a web browser, please <a href="${config.webappBaseUri}/signup/${rid}">click here</a> to activate your account and join them.<br>
-      <br>If reading this from an iOS device, please <a href="hablaai://signup/${rid}">click here</a> to activate your account and join them.
+      <br>If reading this from an iOS device, please tap on the following link to activate your account and join them:  hablaai://signup/${rid}
    `;
    return sendMail({
       from: 'habla-mailer-dev@habla.ai',
@@ -74,7 +74,7 @@ export function sendSubscriberOrgInviteToExistingUser(email, subscriberOrgName, 
       <h1><img src="https://static.wixstatic.com/media/ac0e25_95ce977831a9430989f049b46928fda6~mv2.jpg/v1/fill/w_247,h_244,al_c,q_80,usm_0.66_1.00_0.01/ac0e25_95ce977831a9430989f049b46928fda6~mv2.jpg" height="100" width="100" align="middle"></h1>
       <br>${byUserDisplayName} has invited you to "${subscriberOrgName}" on Habla AI.<br>
       <br>If reading this from a web browser, please <a href="${config.webappBaseUri}/acceptinvitation/?${key}">click here</a> to join them.<br>
-      <br>If reading this from an iOS device, please <a href="hablaai://acceptinvitation/?${key}">click here</a> to join them.
+      <br>If reading this from an iOS device, please tap on the following link to join them:  hablaai://acceptinvitation/?${key}
    `;
    return sendMail({
       from: 'habla-mailer-dev@habla.ai',
@@ -89,8 +89,8 @@ export function sendTeamInviteToExistingUser(email, subscriberOrgName, teamName,
       <h1><img src="https://static.wixstatic.com/media/ac0e25_95ce977831a9430989f049b46928fda6~mv2.jpg/v1/fill/w_247,h_244,al_c,q_80,usm_0.66_1.00_0.01/ac0e25_95ce977831a9430989f049b46928fda6~mv2.jpg" height="100" width="100" align="middle"></h1>
       <br>${byUserDisplayName} has invited you to team "${teamName}" of "${subscriberOrgName}" in Habla AI.<br>
       <br>If reading this from a web browser, please <a href="${config.webappBaseUri}/acceptinvitation/?${key}">click here</a> to join them.<br>
-      <br>If reading this from an iOS device, please <a href="hablaai://acceptinvitation/?${key}">click here</a> to join them.
-   `;
+      <br>If reading this from an iOS device, please tap on the following link to join them:  hablaai://acceptinvitation/?${key}
+      `;
    return sendMail({
       from: 'habla-mailer-dev@habla.ai',
       to: email,
@@ -105,8 +105,8 @@ export function sendTeamRoomInviteToExistingUser(email, subscriberOrgName, teamN
       <br>${byUserDisplayName} has invited you to team room "${teamRoomName}" of "${subscriberOrgName}" in Habla AI.<br>
       <br>Please click on this <a href="${config.webappBaseUri}/acceptinvitation/?${key}">link</a> to join them.<br>
       <br>If reading this from a web browser, please <a href="${config.webappBaseUri}/acceptinvitation/?${key}">click here</a> to join them.<br>
-      <br>If reading this from an iOS device, please <a href="hablaai://acceptinvitation/?${key}">click here</a> to join them.      
-   `;
+      <br>If reading this from an iOS device, please tap on the following link to join them:  hablaai://acceptinvitation/?${key}
+      `;
    return sendMail({
       from: 'habla-mailer-dev@habla.ai',
       to: email,
