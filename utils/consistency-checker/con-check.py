@@ -16,6 +16,11 @@ tblTeams = dynamodb.Table('BETA_teams')
 tblTeamRooms = dynamodb.Table('BETA_teamRooms')
 tblConversations = dynamodb.Table('BETA_conversations')
 
+tblSubscriberUsers = dynamodb.Table('BETA_subscriberUsers')
+tblTeamMembers = dynamodb.Table('BETA_teamMembers')
+tblTeamRoomMembers = dynamodb.Table('BETA_teamRoomMembers')
+tblConversationParticipants = dynamodb.Table('BETA_conversationParticipants')
+
 qryOrgs = tblOrgs.scan(
         FilterExpression=Attr('subscriberOrgInfo.enabled').eq(True)
         )
@@ -42,16 +47,59 @@ for org in orgs:
         defTeamName = team['teamInfo']['name']
         print('TEAM:', defTeamId, defTeamName)
         
-        #and use the defTeamId to find the default teamRoom
-        qryDefTeamRoom = tblTeamRooms.scan(
-                FilterExpression=Attr('teamRoomInfo.teamId').eq(defTeamId) &
-                    Attr('teamRoomInfo.primary').eq(True) &
-                    Attr('teamRoomInfo.active').eq(True)
-                )
-        teamRooms = qryDefTeamRoom['Items']   
+    #and use the defTeamId to find the default teamRoom
+    qryDefTeamRoom = tblTeamRooms.scan(
+            FilterExpression=Attr('teamRoomInfo.teamId').eq(defTeamId) &
+                Attr('teamRoomInfo.primary').eq(True) &
+                Attr('teamRoomInfo.active').eq(True)
+            )
+    teamRooms = qryDefTeamRoom['Items']   
+    
+    #print(defTeamRoom)
+    for teamRoom in teamRooms:
+        defTeamRoomId = teamRoom['teamRoomId']
+        defTeamRoomName = teamRoom['teamRoomInfo']['name']
+        print('TEAMROOM:', defTeamRoomId, defTeamRoomName)
+            
+    #now check each subscriberUser
+    qryOrgUsers = tblSubscriberUsers.scan(
+            FilterExpression=Attr('subscriberUserInfo.subscriberOrgId').eq(orgId)
+            )
+    orgUsers = qryOrgUsers['Items']      
+    
+    for user in orgUsers:
+        curSubUserId = user['subscriberUserId']
+        curUserId = user['subscriberUserInfo']['userId']
         
-        #print(defTeamRoom)
-        for teamRoom in teamRooms:
-            defTeamRoomId = teamRoom['teamRoomId']
-            defTeamRoomName = teamRoom['teamRoomInfo']['name']
-            print('TEAMROOM:', defTeamRoomId, defTeamRoomName)
+        print('SUBSCRIBERUSER:', curSubUserId, curUserId)
+        
+        #check to see if they are in the default team in teamMembers
+        qryTeamMembers = tblTeamMembers.scan(
+                FilterExpression=Attr('teamMemberInfo.teamId').eq(defTeamId) &
+                    Attr('teamMemberInfo.subscriberUserId').eq(curSubUserId)
+                )
+        teamMembers = qryTeamMembers['Items']
+
+        if (len(teamMembers) > 0 ):
+            print('Team Member Found!')
+        else:
+            print('Team Member Not Found!')
+          
+        #check to see if in teamRoomMembers
+         #check to see if they are in the default team in teamMembers
+        qryTeamRoomMembers = tblTeamRoomMembers.scan(
+                FilterExpression=Attr('teamRoomMemberInfo.teamRoomId').eq(defTeamRoomId) &
+                    Attr('teamRoomMemberInfo.userId').eq(curUserId)
+                )
+        teamRoomMembers = qryTeamRoomMembers['Items']
+
+        if (len(teamRoomMembers) > 0 ):
+            print('TeamRoom Member Found!')
+        else:
+            print('TeamRoom Member Not Found!')       
+        
+        #check to see if in conversationParticipants
+        
+        
+        
+            
