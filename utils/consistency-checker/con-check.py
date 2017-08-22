@@ -26,7 +26,7 @@ for org in orgs:
     #first, get the orgId
     orgId = org['subscriberOrgId']
     orgName = org['subscriberOrgInfo']['name']
-    print(orgId, orgName)
+    print('ORG:', orgId, orgName)
     
     #now, use the orgId to find the default team
     qryDefTeam = tblTeams.scan(
@@ -37,8 +37,10 @@ for org in orgs:
     teams = qryDefTeam['Items']
     
     for team in teams:
-        print(team)
+        #print(team)
         defTeamId = team['teamId']
+        defTeamName = team['teamInfo']['name']
+        print('TEAM:', defTeamId, defTeamName)
         
         #and use the defTeamId to find the default teamRoom
         qryDefTeamRoom = tblTeamRooms.scan(
@@ -46,5 +48,10 @@ for org in orgs:
                     Attr('teamRoomInfo.primary').eq(True) &
                     Attr('teamRoomInfo.active').eq(True)
                 )
-        defTeamRoom = qryDefTeamRoom['Items']   
-        print(defTeamRoom)
+        teamRooms = qryDefTeamRoom['Items']   
+        
+        #print(defTeamRoom)
+        for teamRoom in teamRooms:
+            defTeamRoomId = teamRoom['teamRoomId']
+            defTeamRoomName = teamRoom['teamRoomInfo']['name']
+            print('TEAMROOM:', defTeamRoomId, defTeamRoomName)
