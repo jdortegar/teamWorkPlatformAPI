@@ -86,7 +86,6 @@ for org in orgs:
             print('Team Member Not Found!')
           
         #check to see if in teamRoomMembers
-         #check to see if they are in the default team in teamMembers
         qryTeamRoomMembers = tblTeamRoomMembers.scan(
                 FilterExpression=Attr('teamRoomMemberInfo.teamRoomId').eq(defTeamRoomId) &
                     Attr('teamRoomMemberInfo.userId').eq(curUserId)
@@ -98,8 +97,33 @@ for org in orgs:
         else:
             print('TeamRoom Member Not Found!')       
         
-        #check to see if in conversationParticipants
         
+        #now get the default conversation for the teamRoom
+        qryConversations = tblConversations.scan(
+                FilterExpression=Attr('conversationInfo.teamRoomId').eq(defTeamRoomId)
+                )
+        conversations = qryConversations['Items']
+
+        if (len(conversations) > 0 ):
+            print('Conversation Found!')
+            for conversation in conversations:
+                convId = conversation['conversationId']
+        else:
+            print('Conversation Not Found!')       
+        
+        
+        #check to see if in conversationParticipants
+
+        qryConversationParticipants = tblConversationParticipants.scan(
+                FilterExpression=Attr('conversationParticipantInfo.conversationId').eq(convId) &
+                    Attr('conversationParticipantInfo.userId').eq(curUserId)
+                )
+        conversationParticipants = qryConversationParticipants['Items']
+
+        if (len(conversationParticipants) > 0 ):
+            print('ConversationParticipant Found!')
+        else:
+            print('ConversationParticipant Not Found!')          
         
         
             
