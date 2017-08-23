@@ -7,19 +7,24 @@ This is a temporary script file.
 
 import boto3
 from boto3.dynamodb.conditions import Key, Attr
+import uuid
+import json
+
+
+tblPrefix = 'BETA_'
 
 
 dynamodb = boto3.resource('dynamodb')
 
-tblOrgs = dynamodb.Table('BETA_subscriberOrgs')
-tblTeams = dynamodb.Table('BETA_teams')
-tblTeamRooms = dynamodb.Table('BETA_teamRooms')
-tblConversations = dynamodb.Table('BETA_conversations')
+tblOrgs = dynamodb.Table(tblPrefix+'subscriberOrgs')
+tblTeams = dynamodb.Table(tblPrefix+'teams')
+tblTeamRooms = dynamodb.Table(tblPrefix+'teamRooms')
+tblConversations = dynamodb.Table(tblPrefix+'conversations')
 
-tblSubscriberUsers = dynamodb.Table('BETA_subscriberUsers')
-tblTeamMembers = dynamodb.Table('BETA_teamMembers')
-tblTeamRoomMembers = dynamodb.Table('BETA_teamRoomMembers')
-tblConversationParticipants = dynamodb.Table('BETA_conversationParticipants')
+tblSubscriberUsers = dynamodb.Table(tblPrefix+'subscriberUsers')
+tblTeamMembers = dynamodb.Table(tblPrefix+'teamMembers')
+tblTeamRoomMembers = dynamodb.Table(tblPrefix+'teamRoomMembers')
+tblConversationParticipants = dynamodb.Table(tblPrefix+'conversationParticipants')
 
 qryOrgs = tblOrgs.scan(
         FilterExpression=Attr('subscriberOrgInfo.enabled').eq(True)
@@ -82,9 +87,42 @@ for org in orgs:
 
         if (len(teamMembers) > 0 ):
             print('Team Member Found!')
+            
+            for member in teamMembers:
+                teamMemberId = member['teamMemberId']
         else:
             print('Team Member Not Found!')
-          
+            #need to create a teamMembers record
+#            {
+#              "partitionId": -1,
+#              "teamMemberId": "18f23d87-732d-4f6f-8a12-713fba9eca63",
+#              "teamMemberInfo": {
+#                "role": "user",
+#                "subscriberUserId": "7a5ad7ea-ed8a-4f7c-a516-6183dde1c895",
+#                "teamId": "68ea4bb7-9a8a-4b75-a605-50398c25bbde",
+#                "userId": "da4e627e-606f-495e-aba3-053358b5c523"
+#              }
+#            }
+            #first, create the teamMemberInfo record
+            teamMemberId = uuid.uuid1()
+            
+            teamMemberInfo = {
+                        "role" : "user",
+                        "subscriberUserId" : curSubUserId,
+                        "teamId" : defTeamId,
+                        "userId" : curUserId
+                    }
+            
+            teamMember = {
+                        "partitionId" : -1,
+                        "teamMemberId" : str(teamMemberId),
+                        "teamMemberInfo" : teamMemberInfo
+                    }
+            
+            print('New Team Member:', teamMember)
+            tblTeamMembers.put_item (
+                    Item = teamMember)
+            
         #check to see if in teamRoomMembers
         qryTeamRoomMembers = tblTeamRoomMembers.scan(
                 FilterExpression=Attr('teamRoomMemberInfo.teamRoomId').eq(defTeamRoomId) &
@@ -95,9 +133,40 @@ for org in orgs:
         if (len(teamRoomMembers) > 0 ):
             print('TeamRoom Member Found!')
         else:
-            print('TeamRoom Member Not Found!')       
-        
-        
+            print('TeamRoom Member Not Found!')   
+            #need to create the teamRoomMemberInfo record            
+#            {
+#              "partitionId": -1,
+#              "teamRoomMemberId": "0b6ce7dc-3405-4a78-a269-6d55842742c3",
+#              "teamRoomMemberInfo": {
+#                "role": "admin",
+#                "teamMemberId": "253479d4-bb3f-4d46-92bd-d9c2585575fa",
+#                "teamRoomId": "e1c85c3f-1a22-4c96-a6f8-0cb5a6054822",
+#                "userId": "60076e82-e048-4374-aec2-c30c7ae9197e"
+#              }
+#            }
+            
+            teamRoomMemberId = uuid.uuid1()
+            
+            teamRoomMemberInfo = {
+                    "role" : "user", 
+                    "teamMemberId" : str(teamMemberId),
+                    "teamRoomId" : defTeamRoomId,
+                    "userId" : curUserId
+                    
+                    }
+            
+            teamRoomMember = {
+                    "partitionId" : -1,
+                    "teamRoomMemberId" : str(teamRoomMemberId),
+                    "teamRoomMemberInfo" : teamRoomMemberInfo
+                    }
+            
+            print('New TeamRoomMember: ', teamRoomMember)
+            tblTeamRoomMembers.put_item (
+                    Item=teamRoomMember
+                    )
+            
         #now get the default conversation for the teamRoom
         qryConversations = tblConversations.scan(
                 FilterExpression=Attr('conversationInfo.teamRoomId').eq(defTeamRoomId)
@@ -109,8 +178,7 @@ for org in orgs:
             for conversation in conversations:
                 convId = conversation['conversationId']
         else:
-            print('Conversation Not Found!')       
-        
+            print('Conversation Not Found!')             
         
         #check to see if in conversationParticipants
 
@@ -124,6 +192,29 @@ for org in orgs:
             print('ConversationParticipant Found!')
         else:
             print('ConversationParticipant Not Found!')          
-        
-        
+#            {
+#              "conversationParticipantId": "1c78ffb9-f5f7-4e68-afe6-bbcfb02f1dd3",
+#              "conversationParticipantInfo": {
+#                "conversationId": "86ef27e6-bc8f-4602-87de-a46885c8d7fa",
+#                "userId": "c06a4153-79cd-4d65-b752-a4510fe035ca"
+#              },
+#              "partitionId": -1
+#            }        
+            conversationParticipantId = uuid.uuid1()
+            
+            conversationParticipantInfo = {
+                    "conversationId" : convId,
+                    "userId" : curUserId
+                    }
+            
+            conversationParticipant = {
+                    "partitionId" : -1,
+                    "conversationParticipantId" : str(conversationParticipantId),
+                    "conversationParticipantInfo" : conversationParticipantInfo
+                    }
+            
+            print('New ConversationParticipant: ', conversationParticipant)
+            tblConversationParticipants.put_item(
+                Item=conversationParticipant
+                )
             
