@@ -2,7 +2,7 @@ import _ from 'lodash';
 
 export function privateUser(dbUser) {
    const userId = dbUser.userId;
-   const { emailAddress, firstName, lastName, displayName, country, timeZone, icon, enabled, preferences, role, presence } = dbUser.userInfo || dbUser;
+   const { emailAddress, firstName, lastName, displayName, country, timeZone, icon, enabled, preferences, created, lastModified, role, presence } = dbUser.userInfo || dbUser;
    return {
       userId,
       username: emailAddress,
@@ -15,6 +15,8 @@ export function privateUser(dbUser) {
       icon,
       enabled,
       preferences: _.cloneDeep(preferences),
+      created,
+      lastModified,
       role,
       presence,
       // roleMemberships: dbUser.roleMemberships,
@@ -45,12 +47,14 @@ export function publicUsers(dbUsers) {
 
 export function privateSubscriberOrg(dbSubscriberOrg) {
    const subscriberOrgId = dbSubscriberOrg.subscriberOrgId;
-   const { name, enabled, preferences } = dbSubscriberOrg.subscriberOrgInfo || dbSubscriberOrg;
+   const { name, enabled, preferences, created, lastModified } = dbSubscriberOrg.subscriberOrgInfo || dbSubscriberOrg;
    return {
       subscriberOrgId,
       name,
       enabled,
-      preferences: _.cloneDeep(preferences)
+      preferences: _.cloneDeep(preferences),
+      created,
+      lastModified
    };
 }
 
@@ -78,14 +82,16 @@ export function publicSubscriber(subscriberOrgId, dbUser) {
 
 export function privateTeam(dbTeam) {
    const teamId = dbTeam.teamId;
-   const { subscriberOrgId, name, active, primary, preferences } = dbTeam.teamInfo || dbTeam;
+   const { subscriberOrgId, name, active, primary, preferences, created, lastModified } = dbTeam.teamInfo || dbTeam;
    return {
       teamId,
       subscriberOrgId,
       name,
       active,
       primary,
-      preferences: _.cloneDeep(preferences)
+      preferences: _.cloneDeep(preferences),
+      created,
+      lastModified
    };
 }
 
@@ -113,7 +119,7 @@ export function publicTeamMember(teamId, dbUser) {
 
 export function privateTeamRoom(dbTeamRoom) {
    const teamRoomId = dbTeamRoom.teamRoomId;
-   const { teamId, name, purpose, publish, active, primary, preferences } = dbTeamRoom.teamRoomInfo || dbTeamRoom;
+   const { teamId, name, purpose, publish, active, primary, preferences, created, lastModified } = dbTeamRoom.teamRoomInfo || dbTeamRoom;
    return {
       teamRoomId,
       teamId,
@@ -122,7 +128,9 @@ export function privateTeamRoom(dbTeamRoom) {
       publish,
       active,
       primary,
-      preferences: _.cloneDeep(preferences)
+      preferences: _.cloneDeep(preferences),
+      created,
+      lastModified
    };
 }
 
@@ -150,12 +158,14 @@ export function publicTeamRoomMember(teamRoomId, dbUser) {
 
 export function publicConversation(dbConversation) {
    const conversationId = dbConversation.conversationId;
-   const { teamRoomId } = dbConversation.conversationInfo || dbConversation;
+   const { teamRoomId, created, lastModified } = dbConversation.conversationInfo || dbConversation;
    const participants = (dbConversation.participants) ? publicUsers(dbConversation.participants) : undefined;
    return {
       conversationId,
       teamRoomId,
-      participants
+      participants,
+      created,
+      lastModified
    };
 }
 
@@ -168,17 +178,18 @@ export function publicConversations(dbConversations) {
 
 export function publicMessage(dbMessage) {
    const messageId = dbMessage.messageId;
-   const { conversationId, created, createdBy, messageType, text, replyTo, path, level } = dbMessage.messageInfo || dbMessage;
+   const { conversationId, createdBy, messageType, text, replyTo, path, level, created, lastModified } = dbMessage.messageInfo || dbMessage;
    return {
       messageId,
       conversationId,
-      created,
       createdBy,
       messageType,
       text,
       replyTo,
       path,
-      level
+      level,
+      created,
+      lastModified
    };
 }
 

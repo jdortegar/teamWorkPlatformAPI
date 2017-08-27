@@ -196,6 +196,7 @@ class MessagingService {
       const redisAdapter = new SocketIORedisAdapter({ pubClient: redisClient.duplicate(), subClient: redisClient.duplicate() });
       this.io.adapter(redisAdapter);
       this.io.use(new SocketIOWildcard());
+      this.io.set('origins', '*'); // This should match cors setting in express.js.  Should be a variable.
 
       // Set socket.io listeners.
       this.io

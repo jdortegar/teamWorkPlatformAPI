@@ -31,7 +31,7 @@ app.use(bodyParser.urlencoded({
    extended: true
 }));
 
-app.use(cors());
+app.use(cors({ origin: '*' })); // This should match origins setting in messagingService.js.  Should be a variable.
 
 app.use(preAuthMiddleware);
 
