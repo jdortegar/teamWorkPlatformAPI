@@ -872,6 +872,10 @@ documentation:
                   description: |
                      FORBIDDEN<br />
                      The user doesn't have permissions to invite users to this subscriberOrg.
+               405:
+                  description: |
+                     METHOD_NOT_ALLOWED<br />
+                     Invitations can't be sent out for a disabled subscriberOrg.
 
    /replyToInvite:
       /{subscriberOrgId}:
@@ -899,7 +903,7 @@ documentation:
                404:
                   description: |
                      NOT_FOUND<br />
-                     The invitation or subscriberOrg was not found.
+                     The invitation or subscriberOrg was not found, or the invitation expired.
                403:
                   description: |
                      FORBIDDEN<br />
@@ -1046,6 +1050,14 @@ documentation:
                   description: |
                      FORBIDDEN<br />
                      The user is not allowed to create a team within the specified subscriber organization.
+               404:
+                  description: |
+                     NOT_FOUND<br />
+                     The subscriberOrg is invalid.
+               405:
+                                 description: |
+                                    METHOD_NOT_ALLOWED<br />
+                                    Invitations can't be sent out for an inactive team.
 
    /updateTeam:
       /{teamId}:
@@ -1261,6 +1273,10 @@ documentation:
                   description: |
                      FORBIDDEN<br />
                      The user doesn't have permissions to invite users to this team.
+               405:
+                  description: |
+                     METHOD_NOT_ALLOWED<br />
+                     Invitations can't be sent out for an inactive team.
 
    /replyToInvite:
       /{teamId}:
@@ -1288,7 +1304,7 @@ documentation:
                404:
                   description: |
                      NOT_FOUND<br />
-                     The invitation or team was not found.
+                     The invitation or team was not found, or the invitation expired.
                403:
                   description: |
                      FORBIDDEN<br />
@@ -1702,6 +1718,10 @@ documentation:
                   description: |
                      FORBIDDEN<br />
                      The user doesn't have permissions to invite users to this team room.
+               405:
+                  description: |
+                     METHOD_NOT_ALLOWED<br />
+                     Invitations can't be sent out for an inactive team room.
 
    /replyToInvite:
       /{teamRoomId}:
@@ -1729,7 +1749,7 @@ documentation:
                404:
                   description: |
                      NOT_FOUND<br />
-                     The invitation or team room was not found.
+                     The invitation or team room was not found, or the invitation expired.
                403:
                   description: |
                      FORBIDDEN<br />
@@ -2058,6 +2078,10 @@ documentation:
                   description: |
                      FORBIDDEN<br />
                      The user is not allowed to create a message in the specified conversation.
+               405:
+                  description: |
+                     METHOD_NOT_ALLOWED<br />
+                     Messages can't be posted to an inactive conversation.
 
 
 /integrations:

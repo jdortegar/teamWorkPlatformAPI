@@ -4,7 +4,7 @@ function getRandomIntInclusive(min, max) {
    return Math.floor(Math.random() * ((maxNew - minNew) + 1)) + minNew;
 }
 
-export function getRandomColor() {
+export function getRandomColor() { // eslint-disable-line import/prefer-default-export
    const randR = getRandomIntInclusive(1, 20) * 10;
    const randG = getRandomIntInclusive(1, 20) * 10;
    const randB = getRandomIntInclusive(1, 20) * 10;

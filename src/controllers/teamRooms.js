@@ -4,8 +4,11 @@ import { privateTeamRoom, publicTeamRooms, publicUsers } from '../helpers/publis
 import * as teamRoomSvc from '../services/teamRoomService';
 import {
    CannotDeactivateError,
+   CannotInviteError,
    InvitationNotExistError,
    NoPermissionsError,
+   NotActiveError,
+   TeamNotExistError,
    TeamRoomExistsError,
    TeamRoomNotExistError,
    UserNotExistError
@@ -37,6 +40,10 @@ export function createTeamRoom(req, res, next) {
             res.status(httpStatus.CONFLICT).json({ status: 'EXISTS' });
          } else if (err instanceof NoPermissionsError) {
             res.status(httpStatus.FORBIDDEN).end();
+         } else if (err instanceof TeamNotExistError) {
+            res.status(httpStatus.NOT_FOUND).end();
+         } else if (err instanceof NotActiveError) {
+            res.status(httpStatus.METHOD_NOT_ALLOWED).end();
          } else {
             next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
          }
@@ -95,6 +102,8 @@ export function inviteMembers(req, res, next) {
             res.status(httpStatus.NOT_FOUND).end();
          } else if (err instanceof NoPermissionsError) {
             res.status(httpStatus.FORBIDDEN).end();
+         } else if (err instanceof CannotInviteError) {
+            res.status(httpStatus.METHOD_NOT_ALLOWED).end();
          } else {
             next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
          }

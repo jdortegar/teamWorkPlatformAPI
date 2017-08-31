@@ -134,7 +134,8 @@ export function revokeGoogle(req, userId, subscriberOrgId) {
 
             const subscriberUserId = subscriberUsers[0].subscriberUserId;
             subscriberUserInfo = _.cloneDeep(subscriberUsers[0].subscriberUserInfo);
-            const userAccessToken = ((subscriberUserInfo.integrations) && (subscriberUserInfo.integrations.google)) ? subscriberUserInfo.integrations.google.access_token : undefined;
+            const userAccessToken = ((subscriberUserInfo.integrations) && (subscriberUserInfo.integrations.google))
+               ? subscriberUserInfo.integrations.google.access_token : undefined;
             subscriberUserInfo.google = { revoked: true };
 
             const promises = [updateItemCompletely(req, -1, `${config.tablePrefix}subscriberUsers`, 'subscriberUserId', subscriberUserId, { subscriberUserInfo })];

@@ -2,7 +2,7 @@ import httpStatus from 'http-status';
 import APIError from '../helpers/APIError';
 import { publicConversations, publicMessage, publicMessages } from '../helpers/publishedVisibility';
 import * as conversationsSvc from '../services/conversationService';
-import { ConversationNotExistError, NoPermissionsError } from '../services/errors';
+import { ConversationNotActiveError, ConversationNotExistError, NoPermissionsError } from '../services/errors';
 
 
 export function getConversations(req, res, next) {
@@ -56,6 +56,8 @@ export function createMessage(req, res, next) {
             res.status(httpStatus.NOT_FOUND).end();
          } else if (err instanceof NoPermissionsError) {
             res.status(httpStatus.FORBIDDEN).end();
+         } else if (err instanceof ConversationNotActiveError) {
+            res.status(httpStatus.METHOD_NOT_ALLOWED).end();
          } else {
             next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE));
          }

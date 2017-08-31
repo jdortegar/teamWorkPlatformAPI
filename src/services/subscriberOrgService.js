@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import uuid from 'uuid';
 import config from '../config/env';
-import { InvitationNotExistError, NoPermissionsError, SubscriberOrgExistsError, SubscriberOrgNotExistError, UserNotExistError } from './errors';
+import { CannotInviteError, InvitationNotExistError, NoPermissionsError, SubscriberOrgExistsError, SubscriberOrgNotExistError, UserNotExistError } from './errors';
 import { deleteRedisInvitation, InvitationKeys, inviteExistingUsersToSubscriberOrg, inviteExternalUsersToSubscriberOrg } from './invitations';
 import { subscriberAdded, subscriberOrgCreated, subscriberOrgPrivateInfoUpdated, subscriberOrgUpdated } from './messaging';
 import { getPresence } from './messaging/presence';
@@ -159,11 +159,17 @@ export function updateSubscriberOrg(req, subscriberOrgId, updateInfo, userId) {
             resolve();
 
             const subscriberOrg = dbSubscriberOrg.subscriberOrgInfo;
+            const previousEnabled = subscriberOrg.enabled;
             _.merge(subscriberOrg, timestampedUpdateInfo); // Eventual consistency, so might be old.
             subscriberOrg.subscriberOrgId = subscriberOrgId;
             subscriberOrgUpdated(req, subscriberOrg);
             if ((updateInfo.preferences) && (updateInfo.preferences.private)) {
                subscriberOrgPrivateInfoUpdated(req, subscriberOrg);
+            }
+
+            if (('enabled' in updateInfo) && (previousEnabled !== updateInfo.enabled)) {
+               // Enable/disable children.
+               teamSvc.setTeamsOfSubscriberOrgActive(req, subscriberOrgId, updateInfo.enabled);
             }
          })
          .catch(err => reject(err));
@@ -260,6 +266,10 @@ export function inviteSubscribers(req, subscriberOrgId, subscriberUserIdEmails, 
 
             if (subscriberUsers.length === 0) {
                throw new NoPermissionsError(subscriberOrgId);
+            }
+
+            if (('enabled' in subscriberOrg.subscriberOrgInfo) && (subscriberOrg.subscriberOrgInfo.enabled === false)) {
+               throw new CannotInviteError(subscriberOrgId);
             }
 
             subscriberUserIdEmails.forEach((userIdOrEmail) => {
@@ -362,17 +372,26 @@ function addUserToSubscriberOrg(req, user, subscriberOrgId, role) {
 export function replyToInvite(req, subscriberOrgId, accept, userId) {
    return new Promise((resolve, reject) => {
       let user;
-      getUsersByIds(req, [userId])
-         .then((users) => {
+      let subscriberOrg;
+      Promise.all([getUsersByIds(req, [userId]), getSubscriberOrgsByIds(req, [subscriberOrgId])])
+         .then((promiseResults) => {
+            const users = promiseResults[0];
+            const subscriberOrgs = promiseResults[1];
+
             if (users.length === 0) {
                throw new UserNotExistError();
             }
-
             user = users[0];
+
+            if (subscriberOrgs.length === 0) {
+               throw new SubscriberOrgNotExistError(subscriberOrgId);
+            }
+            subscriberOrg = subscriberOrgs[0];
+
             return deleteRedisInvitation(req, user.userInfo.emailAddress, InvitationKeys.subscriberOrgId, subscriberOrgId);
          })
          .then((invitation) => {
-            if (invitation) {
+            if ((invitation) && (subscriberOrg.subscriberOrgInfo.enabled === true)) {
                if (accept) {
                   return addUserToSubscriberOrg(req, user, subscriberOrgId, Roles.user);
                }

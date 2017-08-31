@@ -4,8 +4,11 @@ import config from '../config/env';
 import * as conversationSvc from './conversationService';
 import {
    CannotDeactivateError,
+   CannotInviteError,
    InvitationNotExistError,
    NoPermissionsError,
+   NotActiveError,
+   TeamNotExistError,
    TeamRoomExistsError,
    TeamRoomNotExistError,
    UserNotExistError
@@ -26,6 +29,7 @@ import {
    getTeamRoomMembersByTeamRoomIdAndUserIdAndRole,
    getTeamRoomMembersByUserIds,
    getTeamRoomsByIds,
+   getTeamRoomsByTeamId,
    getTeamRoomsByTeamIdAndName,
    getTeamRoomsByTeamIdAndPrimary,
    getUsersByIds,
@@ -68,6 +72,7 @@ export function getUserTeamRooms(req, userId, { teamId, subscriberOrgId } = {}) 
             teamRooms.forEach((teamRoom) => {
                const teamRoomClone = JSON.parse(JSON.stringify(teamRoom));
                delete teamRoomClone.partitionId;
+               teamRoomClone.active = ((teamRoomClone.teamActive) && (teamRoomClone.teamActive === false)) ? false : teamRoomClone.active;
                retTeamRooms.push(teamRoomClone);
             });
             resolve(retTeamRooms);
@@ -84,6 +89,7 @@ export function createTeamRoomNoCheck(req, teamId, teamRoomInfo, teamMemberId, u
    }
    const teamRoom = {
       teamId,
+      teamActive: true,
       name: teamRoomInfo.name,
       purpose: teamRoomInfo.purpose,
       publish: teamRoomInfo.publish,
@@ -126,9 +132,19 @@ export function createTeamRoom(req, teamId, teamRoomInfo, userId, teamRoomId = u
    return new Promise((resolve, reject) => {
       let teamMemberId;
 
-      // TODO: if (userId), check canCreateTeamRoom() -> false, throw NoPermissionsError
-      getTeamMembersByTeamIdAndUserIdAndRole(req, teamId, userId, Roles.admin)
-         .then((teamMembers) => {
+      Promise.all([getTeamsByIds(req, [teamId]), getTeamMembersByTeamIdAndUserIdAndRole(req, teamId, userId, Roles.admin)])
+         .then((promiseResults) => {
+            const teams = promiseResults[0];
+            const teamMembers = promiseResults[1];
+
+            if (teams.length === 0) {
+               throw new TeamNotExistError(teamId);
+            }
+            const team = teams[0];
+            if ((('subscriberOrgEnabled' in team) && (team.subscriberOrgEnabled === false)) || (team.active === false)) {
+               throw new NotActiveError(teamId);
+            }
+
             if (teamMembers.length === 0) {
                throw new NoPermissionsError(teamId);
             }
@@ -182,11 +198,17 @@ export function updateTeamRoom(req, teamRoomId, updateInfo, userId) {
             resolve();
 
             const teamRoom = dbTeamRoom.teamRoomInfo;
+            const previousActive = teamRoom.active;
             _.merge(teamRoom, timestampedUpdateInfo); // Eventual consistency, so might be old.
             teamRoom.teamRoomId = teamRoomId;
             teamRoomUpdated(req, teamRoom);
             if ((updateInfo.preferences) && (updateInfo.preferences.private)) {
                teamRoomPrivateInfoUpdated(req, teamRoom);
+            }
+
+            if (('active' in updateInfo) && (previousActive !== updateInfo.active)) {
+               // Enable/disable children. Um, no children for this.
+               conversationSvc.setConversationsOfTeamRoomActive(req, teamRoomId, updateInfo.active);
             }
          })
          .catch((err) => {
@@ -196,6 +218,38 @@ export function updateTeamRoom(req, teamRoomId, updateInfo, userId) {
                reject(err);
             }
          });
+   });
+}
+
+export function setTeamRoomsOfTeamActive(req, teamId, active) {
+   return new Promise((resolve, reject) => {
+      const teamRooms = [];
+      getTeamRoomsByTeamId(req, teamId)
+         .then((dbTeamRooms) => {
+            const updateTeamRooms = [];
+            dbTeamRooms.forEach((dbTeamRoom) => {
+               const { teamRoomInfo } = dbTeamRoom;
+               teamRoomInfo.teamActive = active;
+               updateTeamRooms.push(updateItem(req, -1, `${config.tablePrefix}teamRooms`, 'teamRoomId', dbTeamRoom.teamRoomId, { teamRoomInfo: { teamActive: active } }));
+               teamRooms.push(_.merge({ teamRoomId: dbTeamRoom.teamRoomId }, teamRoomInfo));
+            });
+            return Promise.all(updateTeamRooms);
+         })
+         .then(() => {
+            const updateConversations = [];
+            teamRooms.forEach((teamRoom) => {
+               updateConversations.push(conversationSvc.setConversationsOfTeamRoomActive(req, teamRoom.teamRoomId, active));
+            });
+            return Promise.all(updateConversations);
+         })
+         .then(() => {
+            resolve();
+
+            teamRooms.forEach((teamRoom) => {
+               teamRoomUpdated(req, teamRoom);
+            });
+         })
+         .catch(err => reject(err));
    });
 }
 
@@ -289,6 +343,10 @@ export function inviteMembers(req, teamRoomId, userIds, userId) {
 
             if (teamRoomMembers.length === 0) {
                throw new NoPermissionsError(teamRoomId);
+            }
+
+            if ((('teamActive' in teamRoom.teamRoomInfo) && (teamRoom.teamRoomInfo.teamActive === false)) || (teamRoom.teamRoomInfo.active === false)) {
+               throw new CannotInviteError(teamRoomId);
             }
 
             return getTeamsByIds(req, [teamRoom.teamRoomInfo.teamId]);
@@ -389,18 +447,27 @@ export function addUserToPrimaryTeamRoom(req, user, teamId, teamMemberId, role) 
 export function replyToInvite(req, teamRoomId, accept, userId) {
    return new Promise((resolve, reject) => {
       let user;
-      getUsersByIds(req, [userId])
-         .then((users) => {
+      let teamRoom;
+      Promise.all([getUsersByIds(req, [userId]), getTeamRoomsByIds(req, [teamRoomId])])
+         .then((promiseResults) => {
+            const users = promiseResults[0];
+            const teamRooms = promiseResults[1];
+
             if (users.length === 0) {
                throw new UserNotExistError();
             }
-
             user = users[0];
+
+            if (teamRooms.length === 0) {
+               throw new TeamRoomNotExistError(teamRoomId);
+            }
+            teamRoom = teamRooms[0];
+
             return deleteRedisInvitation(req, user.userInfo.emailAddress, InvitationKeys.teamRoomId, teamRoomId);
          })
          .then((invitation) => {
-            if (invitation) {
-               if (accept) {
+            if ((invitation) && ((!('teamActive' in teamRoom.teamRoomInfo)) || (teamRoom.teamRoomInfo.teamActive))) {
+               if ((teamRoom.teamRoomInfo.active) && (accept)) {
                   const { teamId } = invitation;
                   return getTeamMembersByUserIdAndTeamId(req, userId, teamId);
                }

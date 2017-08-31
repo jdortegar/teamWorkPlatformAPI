@@ -30,7 +30,7 @@ import Roles from '../roles';
 
 // EventType = user
 
-export function userCreated(req, user) {
+export function userCreated(req, user) { // eslint-disable-line no-unused-vars
    // No need to broadcast this, since the user is by themselves at this point, and not logged-in.
    // return _broadcastEvent(req, EventTypes.userCreated, publicUser(user), [
    //    ChannelFactory.publicChannel()
@@ -235,7 +235,6 @@ export function googleIntegrationCreated(req, subscriberUser) {
    delete event.role;
    internalQueue.sendEvent(req, EventTypes.googleIntegrationCreated, event);
 
-   //TODO:
    return _broadcastEvent(req, EventTypes.googleIntegrationCreated, publicIntegration(subscriberUser), [
       ChannelFactory.personalChannel(subscriberUser.userId)
    ]);

@@ -2,7 +2,7 @@ import httpStatus from 'http-status';
 import APIError from '../helpers/APIError';
 import { privateSubscriberOrg, publicSubscriberOrgs, publicUsers } from '../helpers/publishedVisibility';
 import * as subscriberOrgSvc from '../services/subscriberOrgService';
-import { InvitationNotExistError, NoPermissionsError, SubscriberOrgExistsError, SubscriberOrgNotExistError, UserNotExistError } from '../services/errors';
+import { CannotInviteError, InvitationNotExistError, NoPermissionsError, SubscriberOrgExistsError, SubscriberOrgNotExistError, UserNotExistError } from '../services/errors';
 
 export function getSubscriberOrgs(req, res, next) {
    const userId = req.user._id;
@@ -84,6 +84,8 @@ export function inviteSubscribers(req, res, next) {
             res.status(httpStatus.NOT_FOUND).end();
          } else if (err instanceof NoPermissionsError) {
             res.status(httpStatus.FORBIDDEN).end();
+         } else if (err instanceof CannotInviteError) {
+            res.status(httpStatus.METHOD_NOT_ALLOWED).end();
          } else {
             next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
          }

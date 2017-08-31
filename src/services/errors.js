@@ -68,10 +68,24 @@ export class ConversationNotExistError extends Error {
    }
 }
 
+export class NotActiveError extends Error {
+   constructor(...args) {
+      super(...args);
+      Error.captureStackTrace(this, NotActiveError);
+   }
+}
+
 export class InvitationNotExistError extends Error {
    constructor(...args) {
       super(...args);
       Error.captureStackTrace(this, InvitationNotExistError);
+   }
+}
+
+export class CannotInviteError extends Error {
+   constructor(...args) {
+      super(...args);
+      Error.captureStackTrace(this, CannotInviteError);
    }
 }
 
