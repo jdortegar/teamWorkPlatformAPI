@@ -4,8 +4,11 @@ import { privateTeam, publicTeams, publicUsers } from '../helpers/publishedVisib
 import * as teamSvc from '../services/teamService';
 import {
    CannotDeactivateError,
+   CannotInviteError,
    InvitationNotExistError,
    NoPermissionsError,
+   NotActiveError,
+   SubscriberOrgNotExistError,
    TeamExistsError,
    TeamNotExistError,
    UserNotExistError
@@ -37,6 +40,10 @@ export function createTeam(req, res, next) {
             res.status(httpStatus.CONFLICT).json({ status: 'EXISTS' });
          } else if (err instanceof NoPermissionsError) {
             res.status(httpStatus.FORBIDDEN).end();
+         } else if (err instanceof SubscriberOrgNotExistError) {
+            res.status(httpStatus.NOT_FOUND).end();
+         } else if (err instanceof NotActiveError) {
+            res.status(httpStatus.METHOD_NOT_ALLOWED).end();
          } else {
             next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
          }
@@ -95,6 +102,8 @@ export function inviteMembers(req, res, next) {
             res.status(httpStatus.NOT_FOUND).end();
          } else if (err instanceof NoPermissionsError) {
             res.status(httpStatus.FORBIDDEN).end();
+         } else if (err instanceof CannotInviteError) {
+            res.status(httpStatus.METHOD_NOT_ALLOWED).end();
          } else {
             next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
          }

@@ -2,9 +2,9 @@ import _ from 'lodash';
 import moment from 'moment';
 import uuid from 'uuid';
 import config from '../config/env';
-import { conversationCreated, messageCreated } from './messaging';
+import { conversationCreated, conversationUpdated, messageCreated } from './messaging';
 import * as teamRoomSvc from './teamRoomService';
-import { ConversationNotExistError, NoPermissionsError } from './errors';
+import { ConversationNotExistError, NoPermissionsError, NotActiveError } from './errors';
 import {
    createItem,
    getConversationParticipantsByConversationId,
@@ -13,7 +13,8 @@ import {
    getConversationsByTeamRoomId,
    getMessagesByConversationIdFiltered,
    getMessageById,
-   getUsersByIds
+   getUsersByIds,
+   updateItem
 } from './queries';
 
 function createMessageInDb(req, partitionId, messageId, message) {
@@ -117,6 +118,7 @@ export function createConversationNoCheck(req, teamRoomId, conversationInfo, use
    const actualConversationId = conversationId || uuid.v4();
    const conversation = {
       teamRoomId,
+      active: true,
       created: req.now.format(),
       lastModified: req.now.format()
    };
@@ -146,6 +148,34 @@ export function createConversationNoCheck(req, teamRoomId, conversationInfo, use
             conversationCreated(req, conversation, userId);
 
             resolve(conversation);
+         })
+         .catch(err => reject(err));
+   });
+}
+
+export function setConversationsOfTeamRoomActive(req, teamRoomId, active) {
+   return new Promise((resolve, reject) => {
+      const conversations = [];
+      getConversationsByTeamRoomId(req, teamRoomId)
+         .then((dbConversations) => {
+            const updateConversations = [];
+            dbConversations.forEach((dbConversation) => {
+               const { conversationInfo } = dbConversation;
+               conversationInfo.active = active;
+               updateConversations.push(updateItem(req, -1, `${config.tablePrefix}conversations`, 'conversationId', dbConversation.conversationId, { conversationInfo: { active } }));
+               conversations.push(_.merge({ conversationId: dbConversation.conversationId }, conversationInfo));
+            });
+            return Promise.all(updateConversations);
+         })
+         .then(() => {
+            // TODO: Reconfigure socket.io channels.
+         })
+         .then(() => {
+            resolve();
+
+            conversations.forEach((conversation) => {
+               conversationUpdated(req, conversation);
+            });
          })
          .catch(err => reject(err));
    });
@@ -309,10 +339,18 @@ export function createMessage(req, conversationId, userId, messageType, text, re
          created: req.now.format(),
          lastModified: req.now.format()
       };
-      getConversationParticipantsByConversationId(req, conversationId)
-         .then((participants) => {
-            if (participants.length === 0) {
+      Promise.all([getConversationsByIds(req, [conversationId]), getConversationParticipantsByConversationId(req, conversationId)])
+         .then((promiseResults) => {
+            const conversations = promiseResults[0];
+            const participants = promiseResults[1];
+
+            if ((conversations.length === 0) || (participants.length === 0)) {
                throw new ConversationNotExistError(conversationId);
+            }
+            const conversation = conversations[0];
+
+            if (('active' in conversation.conversationInfo) || (conversation.conversationInfo.active === false)) {
+               throw new NotActiveError(conversationId);
             }
 
             const userIds = participants.map(participant => participant.conversationParticipantInfo.userId);

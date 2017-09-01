@@ -1,0 +1,3151 @@
+{
+   "openapi": "3.0.0",
+   "info": {
+      "title": "Habla",
+      "version": "v0.1.6"
+   },
+   "servers": [
+      {
+         "url": "https://api.habla.ai/"
+      }
+   ],
+   "paths": {
+      "/auth/login": {
+         "post": {
+            "responses": {
+               "200": {
+                  "description": "OK<br />\nThe token is the JWT used in authenticated API calls requiring security.\n",
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "title": "application/json",
+                           "example": "{\n   \"status\": \"SUCCESS\",\n   \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFudGhvbnlAaGFibGEuaW8iLCJpYXQiOjE0OTE0MjgzMTN9.pWU5yv5JvNMe6Tm1o7oKlI6cHmcmJZP5m20n-UXJzc0\",\n   \"user\": {\n      \"userId\": \"9dec8947-0381-4809-a053-b56777f782f4\",\n      \"username\": \"anthony@habla.io\",\n      \"email\": \"anthony@habla.io\",\n      \"active\": true,\n      \"firstName\": \"Anthony\",\n      \"lastName\": \"Daga\",\n      \"displayName\": \"Anthony Dude Daga\",\n      \"country\": \"US\",\n      \"timeZone\": \"America/Los_Angeles\",\n      \"icon\": null,\n      \"userType\": \"hablaUser\",\n      \"enabled\": true,\n      \"preferences\": {\n         \"iconColor\": \"red\",\n         \"private\": {\n            \"lastWindowLocation\": \"110, 64\"\n         }\n      },\n      \"created\": \"2017-08-17T00:59:49Z\",\n      \"lastModified: \"2017-08-17T00:59:49Z\"\n   },\n   \"websocketUrl\": \"http://localhost:3000\"\n}\n",
+                           "type": "object",
+                           "properties": {
+                              "status": {
+                                 "title": "status",
+                                 "type": "string"
+                              },
+                              "token": {
+                                 "title": "token",
+                                 "type": "string"
+                              },
+                              "user": {
+                                 "title": "user",
+                                 "type": "object",
+                                 "properties": {
+                                    "userId": {
+                                       "title": "userId",
+                                       "type": "string"
+                                    },
+                                    "username": {
+                                       "title": "username",
+                                       "type": "string"
+                                    },
+                                    "email": {
+                                       "title": "email",
+                                       "type": "string"
+                                    },
+                                    "active": {
+                                       "title": "active",
+                                       "type": "boolean"
+                                    },
+                                    "firstName": {
+                                       "title": "firstName",
+                                       "type": "string"
+                                    },
+                                    "lastName": {
+                                       "title": "lastName",
+                                       "type": "string"
+                                    },
+                                    "displayName": {
+                                       "title": "displayName",
+                                       "type": "string"
+                                    },
+                                    "country": {
+                                       "title": "country",
+                                       "type": "string"
+                                    },
+                                    "timeZone": {
+                                       "title": "timeZone",
+                                       "type": "string"
+                                    },
+                                    "icon": {
+                                       "title": "icon",
+                                       "default": "nil",
+                                       "description": "Base64 representation.",
+                                       "type": "object"
+                                    },
+                                    "userType": {
+                                       "title": "userType",
+                                       "type": "string"
+                                    },
+                                    "enabled": {
+                                       "title": "enabled",
+                                       "type": "boolean"
+                                    },
+                                    "preferences": {
+                                       "title": "preferences",
+                                       "type": "object",
+                                       "properties": {
+                                          "private": {
+                                             "title": "private",
+                                             "description": "Private preferences only available to the user.",
+                                             "type": "object"
+                                          }
+                                       },
+                                       "required": [
+                                          "private"
+                                       ]
+                                    },
+                                    "created": {
+                                       "title": "created",
+                                       "type": "string",
+                                       "format": "date-time"
+                                    },
+                                    "lastModified": {
+                                       "title": "lastModified",
+                                       "type": "string",
+                                       "format": "date-time"
+                                    }
+                                 },
+                                 "required": [
+                                    "userId",
+                                    "username",
+                                    "email",
+                                    "active",
+                                    "firstName",
+                                    "lastName",
+                                    "displayName",
+                                    "country",
+                                    "timeZone",
+                                    "userType",
+                                    "enabled",
+                                    "preferences",
+                                    "created",
+                                    "lastModified"
+                                 ]
+                              },
+                              "websocketUrl": {
+                                 "title": "websocketUrl",
+                                 "description": "URL for socket.io connection.",
+                                 "type": "string"
+                              }
+                           },
+                           "required": [
+                              "status",
+                              "token",
+                              "user",
+                              "websocketUrl"
+                           ]
+                        }
+                     }
+                  }
+               },
+               "401": {
+                  "description": "UNAUTHORIZED<br />\nNo reason is given for privacy purposes, but could be an unknown username or bad password.\n"
+               }
+            },
+            "description": "Login to Habla API, receiving a JWT token for use in authenticated requests.\n<br /><br />\nReturns a valid [JWT token](http://jwt.io), along with public user details if successful (200-OK).\nThis token must be stored for future API requests.\n<br /><br />\nA token will expire after a customer-specified session timeout (1 hour by default).\nA logout function may be implemented client-side that destroys the token in the client framework; however, the token will remain active until its expiry time has been exceeded.\nFor this reason, it is recommended that the token be stored in a secure cookie on web clients or some secure storage mechanism for other applications.\n<br /><br />\nFor security reasons, separate messages will not be provided for user not found versus authentication failure.\nThis is to prevent information leakage to malicious users.\n",
+            "operationId": "POST_auth-login",
+            "requestBody": {
+               "content": {
+                  "application/x-www-form-urlencoded": {
+                     "schema": {
+                        "title": "application/x-www-form-urlencoded",
+                        "type": "object",
+                        "properties": {
+                           "username": {
+                              "title": "username",
+                              "description": "The user name to authenticate.",
+                              "example": "anthony.daga%40habla.ai",
+                              "type": "string"
+                           },
+                           "pasword": {
+                              "title": "pasword",
+                              "description": "The password to authenticate.",
+                              "example": "HelloWorld#123",
+                              "type": "string"
+                           }
+                        },
+                        "required": [
+                           "username",
+                           "pasword"
+                        ]
+                     }
+                  }
+               },
+               "required": true
+            }
+         }
+      },
+      "/auth/logout": {
+         "get": {
+            "responses": {
+               "200": {
+                  "description": "OK<br />\nAlways OK, whether a valid JWT exists or not, or any other server failure.\n"
+               }
+            },
+            "description": "Logout a user, making the JWT token invalid.\nThis doesn't change the user's presence status, as the websocket still needs to be close, preferably before logout.\n",
+            "operationId": "GET_auth-logout",
+            "security": [
+               {
+                  "oauth_2_0": []
+               }
+            ]
+         }
+      },
+      "/users/registerUser": {
+         "post": {
+            "responses": {
+               "201": {
+                  "description": "CREATED<br />\nThe uuid is the Reservation ID (rid).\nTODO: Was 200 OK.\n",
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "title": "application/json",
+                           "example": {
+                              "status": "SUCCESS",
+                              "uuid": "9dec8947-0381-4809-a053-b56777f782f4"
+                           },
+                           "type": "object",
+                           "properties": {
+                              "status": {
+                                 "title": "status",
+                                 "example": "SUCCESS",
+                                 "type": "string"
+                              },
+                              "uuid": {
+                                 "title": "uuid",
+                                 "example": "9dec8947-0381-4809-a053-b56777f782f4",
+                                 "type": "string"
+                              }
+                           },
+                           "required": [
+                              "status",
+                              "uuid"
+                           ]
+                        }
+                     }
+                  }
+               },
+               "400": {
+                  "description": "BAD_REQUEST<br />\nNo reason is given for privacy purposes, but could be an unknown username or bad password.\n"
+               }
+            },
+            "description": "If a user submits a registration for a valid email address (formatted correctly), the service responds with a 200-OK status and a payload.  The payload includes a uuid field, which contains the reservation-id for the user.  The reservation-id is used by the validateEmail endpoint to mitigate hacking risks, and locates the associated email address in the Redis cache.  This registration is stored in cache for a defined time-to-live (TTL).  If the user does not respond to the email and complete registration prior to expiration of the registration, they must register again.\n<br /><br />\nA reservation is a uniquely generated key used in the process of securely registering a new user.\nIt is used in initial communication through email, web, and mobile clients.\nThere can be multiple reservations for a user/email concurrently existing, as actual registered user uniqueness is enforced later in the process when the user is actually created in the system.\nThe default expiration of a reservation is 30 minutes, after which it is cleared from cache and no longer valid.\n",
+            "operationId": "POST_users-registerUser",
+            "requestBody": {
+               "content": {
+                  "application/x-www-form-urlencoded": {
+                     "schema": {
+                        "title": "application/x-www-form-urlencoded",
+                        "type": "object",
+                        "properties": {
+                           "email": {
+                              "title": "email",
+                              "description": "The email address to register.\nShould be validated client-side prior to invocation to ensure that a properly formatted email address has been provided by the calling application.\n",
+                              "example": "anthony.daga%40habla.ai",
+                              "type": "string"
+                           }
+                        },
+                        "required": [
+                           "email"
+                        ]
+                     }
+                  }
+               },
+               "required": true
+            }
+         }
+      },
+      "/users/validateEmail/{rid}": {
+         "get": {
+            "responses": {
+               "200": {
+                  "description": "OK<br />\nThe uuid is the Reservation ID (rid).\n",
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "title": "application/json",
+                           "example": {
+                              "status": "SUCCESS",
+                              "email": "anthony.daga%40habla.ai"
+                           },
+                           "type": "object",
+                           "properties": {
+                              "status": {
+                                 "title": "status",
+                                 "example": "SUCCESS",
+                                 "type": "string"
+                              },
+                              "email": {
+                                 "title": "email",
+                                 "example": "anthony.daga%40habla.ai",
+                                 "type": "string"
+                              }
+                           },
+                           "required": [
+                              "status",
+                              "email"
+                           ]
+                        }
+                     }
+                  }
+               },
+               "404": {
+                  "description": "NOT_FOUND<br />\nThe Reservation ID either does not exist or is no longer valid (i.e. expired).\n"
+               }
+            },
+            "description": "Retrieve the email address associated with a Reservation ID (`rid`).\n<br /><br />\nThe reservation should have been previously created from the `POST /users/registerUser` endpoint, and is valid until expired.\nUse this method to obtain the email address associated with a rid, typically for display purposes.\n",
+            "operationId": "GET_users-validateEmail-rid"
+         },
+         "parameters": [
+            {
+               "name": "rid",
+               "in": "path",
+               "required": true,
+               "schema": {
+                  "type": "string"
+               },
+               "description": "Reservation ID (rid)."
+            }
+         ]
+      },
+      "/users/createUser": {
+         "post": {
+            "responses": {
+               "201": {
+                  "description": "CREATED\n<br />TODO: Was 200 OK.\n"
+               },
+               "403": {
+                  "description": "FORBIDDEN<br />\nThe user (specifically email) is already registered.\n"
+               }
+            },
+            "description": "Create a user in Habla.\n<br /><br />\nTODO: Was /users.\n",
+            "operationId": "POST_users-createUser",
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "example": "{\n   \"firstName\": \"Anthony\",\n   \"lastName\": \"Daga\",\n   \"displayName\": \"Dude\",\n   \"email\": \"anthony.daga@habla.ai\",\n   \"password\": \"HelloWorld#123\",\n   \"country\": \"US\",\n   \"timeZone\": \"America/Los_Angeles\",\n   \"icon\": null,\n   \"preferences\": {\n      \"iconColor\": \"red\",\n      \"private\": {\n         \"lastWindowLocation\": \"110, 64\"\n      }\n   },\n   \"created\": \"2017-08-17T00:59:49Z\",\n   \"lastModified: \"2017-08-17T00:59:49Z\"\n}\n",
+                     "schema": {
+                        "title": "application/json",
+                        "type": "object",
+                        "properties": {
+                           "firstName": {
+                              "title": "firstName",
+                              "example": "Anthony",
+                              "type": "string"
+                           },
+                           "lastName": {
+                              "title": "lastName",
+                              "example": "Daga",
+                              "type": "string"
+                           },
+                           "displayName": {
+                              "title": "displayName",
+                              "example": "Dude",
+                              "type": "string"
+                           },
+                           "email": {
+                              "title": "email",
+                              "example": "anthony.daga@habla.ai",
+                              "type": "string"
+                           },
+                           "password": {
+                              "title": "password",
+                              "description": "Clear text password.",
+                              "example": "HelloWorld#123",
+                              "type": "string"
+                           },
+                           "country": {
+                              "title": "country",
+                              "description": "[ISO 3166-2](https://en.wikipedia.org/wiki/ISO_3166-2) representation.\n",
+                              "example": "US",
+                              "type": "string"
+                           },
+                           "timeZone": {
+                              "title": "timeZone",
+                              "example": "America/Los_Angeles",
+                              "type": "string"
+                           },
+                           "icon": {
+                              "title": "icon",
+                              "default": "nil",
+                              "description": "The user's avatar, base64 of image.",
+                              "type": "object"
+                           },
+                           "preferences": {
+                              "title": "preferences",
+                              "type": "object",
+                              "properties": {
+                                 "private": {
+                                    "title": "private",
+                                    "description": "Private preferences only available to the user.",
+                                    "type": "object"
+                                 }
+                              }
+                           },
+                           "created": {
+                              "title": "created",
+                              "type": "string",
+                              "format": "date-time"
+                           },
+                           "lastModified": {
+                              "title": "lastModified",
+                              "type": "string",
+                              "format": "date-time"
+                           }
+                        },
+                        "required": [
+                           "firstName",
+                           "lastName",
+                           "displayName",
+                           "email",
+                           "password",
+                           "country",
+                           "timeZone",
+                           "created",
+                           "lastModified"
+                        ]
+                     }
+                  }
+               },
+               "required": true
+            }
+         }
+      },
+      "/users/updateUser": {
+         "patch": {
+            "responses": {
+               "204": {
+                  "description": "NO_CONTENT<br />\nThe user was updated successfully.\n"
+               },
+               "404": {
+                  "description": "NOT_FOUND<br />\nThe user was not found.\n"
+               }
+            },
+            "description": "Update a user in Habla.\n",
+            "operationId": "PATCH_users-updateUser",
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "example": "{\n   \"firstName\": \"Anthony\",\n   \"lastName\": \"Daga\",\n   \"displayName\": \"Dude\",\n   \"country\": \"US\",\n   \"timeZone\": \"America/Los_Angeles\",\n   \"icon\": null,\n   \"preferences\": {\n      \"iconColor\": \"red\",\n      \"private\": {\n         \"lastWindowLocation\": \"110, 64\"\n      }\n   },\n   \"created\": \"2017-08-17T00:59:49Z\",\n   \"lastModified: \"2017-08-17T00:59:49Z\"\n}\n",
+                     "schema": {
+                        "title": "application/json",
+                        "type": "object",
+                        "properties": {
+                           "firstName": {
+                              "title": "firstName",
+                              "example": "Anthony",
+                              "type": "string"
+                           },
+                           "lastName": {
+                              "title": "lastName",
+                              "example": "Daga",
+                              "type": "string"
+                           },
+                           "displayName": {
+                              "title": "displayName",
+                              "example": "Dude",
+                              "type": "string"
+                           },
+                           "country": {
+                              "title": "country",
+                              "description": "[ISO 3166-2](https://en.wikipedia.org/wiki/ISO_3166-2) representation.\n",
+                              "example": "US",
+                              "type": "string"
+                           },
+                           "timeZone": {
+                              "title": "timeZone",
+                              "example": "America/Los_Angeles",
+                              "type": "string"
+                           },
+                           "icon": {
+                              "title": "icon",
+                              "description": "The user's avatar, base64 of image.",
+                              "type": "object"
+                           },
+                           "preferences": {
+                              "title": "preferences",
+                              "type": "object",
+                              "properties": {
+                                 "private": {
+                                    "title": "private",
+                                    "description": "Private preferences only available to the user.",
+                                    "type": "object"
+                                 }
+                              }
+                           },
+                           "created": {
+                              "title": "created",
+                              "type": "string",
+                              "format": "date-time"
+                           },
+                           "lastModified": {
+                              "title": "lastModified",
+                              "type": "string",
+                              "format": "date-time"
+                           }
+                        },
+                        "required": [
+                           "created",
+                           "lastModified"
+                        ]
+                     }
+                  }
+               },
+               "required": true
+            },
+            "security": [
+               {
+                  "oauth_2_0": []
+               }
+            ]
+         }
+      },
+      "/users/updatePublicPreferences/{userId}": {
+         "patch": {
+            "responses": {
+               "204": {
+                  "description": "NO_CONTENT<br />\nThe user was updated successfully.\n"
+               },
+               "403": {
+                  "description": "FORBIDDEN<br />\nThe user is not allowed to create an organization.\n"
+               },
+               "404": {
+                  "description": "NOT_FOUND<br />\nThe user was not found.\n"
+               }
+            },
+            "description": "Update a user public preferences.\n",
+            "operationId": "PATCH_users-updatePublicPreferences-userId",
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "example": {
+                        "preferences": {
+                           "iconColor": "red"
+                        }
+                     },
+                     "schema": {
+                        "title": "application/json",
+                        "type": "object",
+                        "properties": {
+                           "preferences": {
+                              "title": "preferences",
+                              "description": "Any properties tied to this user, to be shared typically by clients (ex. mobile, web).\nThe property `private` is reserved and not to be used as the name of a property.\n",
+                              "type": "object"
+                           }
+                        },
+                        "required": [
+                           "preferences"
+                        ]
+                     }
+                  }
+               },
+               "required": true
+            },
+            "security": [
+               {
+                  "oauth_2_0": []
+               }
+            ]
+         },
+         "parameters": [
+            {
+               "name": "userId",
+               "in": "path",
+               "required": true,
+               "schema": {
+                  "type": "string"
+               },
+               "description": "The `userId` of the user to update preferences of."
+            }
+         ]
+      },
+      "/users/getInvitations": {
+         "get": {
+            "responses": {
+               "200": {
+                  "description": "OK\n",
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "title": "application/json",
+                           "example": {
+                              "invitations": [
+                                 {
+                                    "byUserId": "ea794510-cea6-4132-0008-a7ae1d32abb1",
+                                    "byUserDisplayName": "Anthony Daga",
+                                    "subscriberOrgId": "ea794510-cea6-4132-0008-a7ae1d32abb2",
+                                    "subscriberOrgName": "Acme"
+                                 },
+                                 {
+                                    "byUserId": "ea794510-cea6-4132-0008-a7ae1d32abb1",
+                                    "byUserDisplayName": "Anthony Daga",
+                                    "subscriberOrgId": "ea794510-cea6-4132-0008-a7ae1d32abb2",
+                                    "subscriberOrgName": "Acme",
+                                    "teamId": "ea794510-cea6-4132-0008-a7ae1d32abb3",
+                                    "teamName": "All",
+                                    "teamRoomId": "ea794510-cea6-4132-0008-a7ae1d32abb4",
+                                    "teamRoomName": "Lobby"
+                                 }
+                              ]
+                           },
+                           "type": "object",
+                           "properties": {
+                              "invitations": {
+                                 "title": "invitations",
+                                 "type": "array",
+                                 "items": {
+                                    "title": "items",
+                                    "type": "object",
+                                    "properties": {
+                                       "byUserId": {
+                                          "title": "byUserId",
+                                          "type": "string"
+                                       },
+                                       "byUserDisplayName": {
+                                          "title": "byUserDisplayName",
+                                          "type": "string"
+                                       },
+                                       "subscriberOrgId": {
+                                          "title": "subscriberOrgId",
+                                          "type": "string"
+                                       },
+                                       "subscriberOrgName": {
+                                          "title": "subscriberOrgName",
+                                          "type": "string"
+                                       },
+                                       "teamId": {
+                                          "title": "teamId",
+                                          "type": "string"
+                                       },
+                                       "teamName": {
+                                          "title": "teamName",
+                                          "type": "string"
+                                       },
+                                       "teamRoomId": {
+                                          "title": "teamRoomId",
+                                          "type": "string"
+                                       },
+                                       "teamRoomName": {
+                                          "title": "teamRoomName",
+                                          "type": "string"
+                                       }
+                                    },
+                                    "required": [
+                                       "byUserId",
+                                       "byUserDisplayName",
+                                       "subscriberOrgId",
+                                       "subscriberOrgName"
+                                    ]
+                                 }
+                              }
+                           },
+                           "required": [
+                              "invitations"
+                           ]
+                        }
+                     }
+                  }
+               }
+            },
+            "description": "Retrieve all invitations for the user.\n",
+            "operationId": "GET_users-getInvitations",
+            "security": [
+               {
+                  "oauth_2_0": []
+               }
+            ]
+         }
+      },
+      "/subscriberOrgs/getSubscriberOrgs": {
+         "get": {
+            "responses": {
+               "200": {
+                  "description": "OK\n",
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "title": "application/json",
+                           "example": "{\n   \"subscriberOrgs\": [\n      {\n         \"subscriberOrgId\": \"ea794510-cea6-4132-0008-a7ae1d32abb5\",\n         \"name\": \"Anthony Daga\",\n         \"enabled\": true,\n         \"preferences\": {\n         },\n         \"created\": \"2017-08-17T00:59:49Z\",\n         \"lastModified: \"2017-08-17T00:59:49Z\"\n      },\n      {\n         \"subscriberOrgId\": \"ea794510-cea6-4132-0008-a7ae1d32abb5\",\n         \"name\": \"Acme\",\n         \"enabled\": true,\n         \"preferences\": {\n         },\n         \"created\": \"2017-08-17T00:59:49Z\",\n         \"lastModified: \"2017-08-17T00:59:49Z\"\n      }\n   ]\n}\n",
+                           "type": "object",
+                           "properties": {
+                              "subscriberOrgs": {
+                                 "title": "subscriberOrgs",
+                                 "type": "array",
+                                 "items": {
+                                    "title": "items",
+                                    "type": "object",
+                                    "properties": {
+                                       "subscriberOrgId": {
+                                          "title": "subscriberOrgId",
+                                          "type": "string"
+                                       },
+                                       "name": {
+                                          "title": "name",
+                                          "type": "string"
+                                       },
+                                       "enabled": {
+                                          "title": "enabled",
+                                          "type": "boolean"
+                                       },
+                                       "preferences": {
+                                          "title": "preferences",
+                                          "type": "object",
+                                          "properties": {
+                                             "description": {
+                                                "title": "description",
+                                                "$ref": "#/components/schemas/Private preferences only available to the organization administrators."
+                                             },
+                                             "type": {
+                                                "title": "type",
+                                                "type": "object"
+                                             },
+                                             "required": {
+                                                "title": "required",
+                                                "type": "string"
+                                             }
+                                          },
+                                          "required": [
+                                             "description",
+                                             "type",
+                                             "required"
+                                          ]
+                                       },
+                                       "created": {
+                                          "title": "created",
+                                          "type": "string",
+                                          "format": "date-time"
+                                       },
+                                       "lastModified": {
+                                          "title": "lastModified",
+                                          "type": "string",
+                                          "format": "date-time"
+                                       }
+                                    },
+                                    "required": [
+                                       "subscriberOrgId",
+                                       "name",
+                                       "enabled",
+                                       "preferences",
+                                       "created",
+                                       "lastModified"
+                                    ]
+                                 }
+                              }
+                           },
+                           "required": [
+                              "subscriberOrgs"
+                           ]
+                        }
+                     }
+                  }
+               }
+            },
+            "description": "Retrieve the organizations that the authenticated user is privy to.\n",
+            "operationId": "GET_subscriberOrgs-getSubscriberOrgs",
+            "security": [
+               {
+                  "oauth_2_0": []
+               }
+            ]
+         }
+      },
+      "/subscriberOrgs/createSubscriberOrg": {
+         "post": {
+            "responses": {
+               "201": {
+                  "description": "CREATED",
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "title": "application/json",
+                           "example": {
+                              "subscriberOrgId": "9dec8947-0381-4809-a053-b56777f782f4",
+                              "name": "Acme",
+                              "enabled": true
+                           },
+                           "type": "object",
+                           "properties": {
+                              "subscriberOrgId": {
+                                 "title": "subscriberOrgId",
+                                 "example": "9dec8947-0381-4809-a053-b56777f782f4",
+                                 "type": "string"
+                              },
+                              "enabled": {
+                                 "title": "enabled",
+                                 "type": "boolean"
+                              }
+                           },
+                           "required": [
+                              "subscriberOrgId",
+                              "enabled"
+                           ]
+                        }
+                     }
+                  }
+               },
+               "403": {
+                  "description": "FORBIDDEN<br />\nThe user is not allowed to create an organization.\n"
+               },
+               "409": {
+                  "description": "CONFLICT<br />\nA subscriber org by the requested name already exists.\n"
+               }
+            },
+            "description": "Create a subscriber organization in Habla.\n<br />\nTODO: Assign to userId or email.\n",
+            "operationId": "POST_subscriberOrgs-createSubscriberOrg",
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "example": {
+                        "name": "My Org"
+                     },
+                     "schema": {
+                        "title": "application/json",
+                        "type": "object",
+                        "properties": {
+                           "name": {
+                              "title": "name",
+                              "type": "string"
+                           },
+                           "preferences": {
+                              "title": "preferences",
+                              "type": "object",
+                              "properties": {
+                                 "private": {
+                                    "title": "private",
+                                    "description": "Private preferences only available to the organization administrators.",
+                                    "type": "object"
+                                 }
+                              }
+                           }
+                        },
+                        "required": [
+                           "name"
+                        ]
+                     }
+                  }
+               },
+               "required": true
+            },
+            "security": [
+               {
+                  "oauth_2_0": []
+               }
+            ]
+         }
+      },
+      "/subscriberOrgs/updateSubscriberOrg/{subscriberOrgId}": {
+         "patch": {
+            "responses": {
+               "204": {
+                  "description": "NO_CONTENT<br />\nThe subscriberOrg was updated successfully.\n"
+               },
+               "403": {
+                  "description": "FORBIDDEN<br />\nThe user is not allowed to update the specified organization.\n"
+               },
+               "404": {
+                  "description": "NOT_FOUND<br />\nThe `subscriberOrg` with the specified ID was not found.\n"
+               }
+            },
+            "description": "Update a subscriber organization in Habla.\n",
+            "operationId": "PATCH_subscriberOrgs-updateSubscriberOrg-subscriberOrgId",
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "example": {
+                        "name": "My Org"
+                     },
+                     "schema": {
+                        "title": "application/json",
+                        "type": "object",
+                        "properties": {
+                           "name": {
+                              "title": "name",
+                              "type": "string"
+                           },
+                           "preferences": {
+                              "title": "preferences",
+                              "type": "object",
+                              "properties": {
+                                 "private": {
+                                    "title": "private",
+                                    "description": "Private preferences only available to the organization administrators.",
+                                    "type": "object"
+                                 }
+                              }
+                           }
+                        }
+                     }
+                  }
+               },
+               "required": true
+            },
+            "security": [
+               {
+                  "oauth_2_0": []
+               }
+            ]
+         },
+         "parameters": [
+            {
+               "name": "subscriberOrgId",
+               "in": "path",
+               "required": true,
+               "schema": {
+                  "type": "string"
+               },
+               "description": "Subscriber Org ID to update."
+            }
+         ]
+      },
+      "/subscriberOrgs/getSubscribers/{subscriberOrgId}": {
+         "get": {
+            "responses": {
+               "200": {
+                  "description": "OK\n",
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "title": "application/json",
+                           "example": "{\n   \"subscribers\": [\n      {\n         \"userId\": \"9dec8947-0381-4809-a053-b56777f782f4\",\n         \"firstName\": \"Anthony\",\n         \"lastName\": \"Daga\",\n         \"displayName\": \"Anthony Dude Daga\",\n         \"icon\": null,\n         \"userType\": \"hablaUser\",\n         \"enabled\": true,\n         \"preferences\": {\n         },\n         \"created\": \"2017-08-17T00:59:49Z\",\n         \"lastModified: \"2017-08-17T00:59:49Z\".\n         \"role\": \"admin\",\n         \"presence\": [\n            {\n               \"address\": \"::ffff:127.0.0.1\",\n               \"userAgent\": \"node-XMLHttpRequest\",\n               \"presenceStatus\": \"available\"\n            }\n         ]\n      },\n      {\n         \"userId\": \"9dec8947-0381-4809-a053-b56777f782f5\",\n         \"firstName\": \"Jill\",\n         \"lastName\": \"Goodacre\",\n         \"displayName\": \"Jill Goodacre\",\n         \"icon\": null,\n         \"userType\": \"hablaUser\",\n         \"enabled\": true,\n         \"preferences\": {\n         },\n         \"created\": \"2017-08-17T00:59:49Z\",\n         \"lastModified: \"2017-08-17T00:59:49Z\".\n         \"role\": \"user\"\n      }\n   ]\n}\n",
+                           "type": "object",
+                           "properties": {
+                              "subscribers": {
+                                 "title": "subscribers",
+                                 "type": "array",
+                                 "items": {
+                                    "title": "items",
+                                    "type": "object",
+                                    "properties": {
+                                       "userId": {
+                                          "title": "userId",
+                                          "type": "string"
+                                       },
+                                       "firstName": {
+                                          "title": "firstName",
+                                          "type": "string"
+                                       },
+                                       "lastName": {
+                                          "title": "lastName",
+                                          "type": "string"
+                                       },
+                                       "displayName": {
+                                          "title": "displayName",
+                                          "type": "string"
+                                       },
+                                       "icon": {
+                                          "title": "icon",
+                                          "default": "nil",
+                                          "description": "Base64 representation.",
+                                          "type": "object"
+                                       },
+                                       "userType": {
+                                          "title": "userType",
+                                          "type": "string"
+                                       },
+                                       "enabled": {
+                                          "title": "enabled",
+                                          "type": "boolean"
+                                       },
+                                       "preferences": {
+                                          "title": "preferences",
+                                          "type": "object"
+                                       },
+                                       "created": {
+                                          "title": "created",
+                                          "type": "string",
+                                          "format": "date-time"
+                                       },
+                                       "lastModified": {
+                                          "title": "lastModified",
+                                          "type": "string",
+                                          "format": "date-time"
+                                       },
+                                       "role": {
+                                          "title": "role",
+                                          "description": "User's role related to this organization.  Currently admin | user.",
+                                          "type": "string"
+                                       },
+                                       "presence": {
+                                          "title": "presence",
+                                          "minItems": 1,
+                                          "type": "array",
+                                          "items": {
+                                             "title": "items",
+                                             "type": "object",
+                                             "properties": {
+                                                "address": {
+                                                   "title": "address",
+                                                   "type": "string"
+                                                },
+                                                "userAgent": {
+                                                   "title": "userAgent",
+                                                   "type": "string"
+                                                },
+                                                "presenceStatus": {
+                                                   "title": "presenceStatus",
+                                                   "type": "string"
+                                                },
+                                                "presenceMessage": {
+                                                   "title": "presenceMessage",
+                                                   "type": "string"
+                                                },
+                                                "location": {
+                                                   "title": "location",
+                                                   "type": "object",
+                                                   "properties": {
+                                                      "lat": {
+                                                         "title": "lat",
+                                                         "type": "number"
+                                                      },
+                                                      "lon": {
+                                                         "title": "lon",
+                                                         "type": "number"
+                                                      },
+                                                      "alt": {
+                                                         "title": "alt",
+                                                         "type": "number"
+                                                      },
+                                                      "accuracy": {
+                                                         "title": "accuracy",
+                                                         "type": "number"
+                                                      }
+                                                   },
+                                                   "required": [
+                                                      "lat",
+                                                      "lon"
+                                                   ]
+                                                }
+                                             },
+                                             "required": [
+                                                "address",
+                                                "userAgent",
+                                                "presenceStatus"
+                                             ]
+                                          }
+                                       }
+                                    },
+                                    "required": [
+                                       "userId",
+                                       "firstName",
+                                       "lastName",
+                                       "displayName",
+                                       "userType",
+                                       "enabled",
+                                       "preferences",
+                                       "created",
+                                       "lastModified",
+                                       "role"
+                                    ]
+                                 }
+                              }
+                           },
+                           "required": [
+                              "subscribers"
+                           ]
+                        }
+                     }
+                  }
+               },
+               "403": {
+                  "description": "FORBIDDEN<br />\nThe user doesn't have permissions to view this subscriber organization.\n"
+               },
+               "404": {
+                  "description": "NOT_FOUND<br />\nThe subscriber organization with the given `subscriberOrgId` doesn't exist.\n"
+               }
+            },
+            "description": "Retrieve the subscribers (i.e. users) of an organization given the subscriber org ID.\n",
+            "operationId": "GET_subscriberOrgs-getSubscribers-subscriberOrgId",
+            "security": [
+               {
+                  "oauth_2_0": []
+               }
+            ]
+         },
+         "parameters": [
+            {
+               "name": "subscriberOrgId",
+               "in": "path",
+               "required": true,
+               "schema": {
+                  "type": "string"
+               },
+               "description": "Subscriber Org ID."
+            }
+         ]
+      },
+      "/subscriberOrgs/inviteSubscribers/{subscriberOrgId}": {
+         "post": {
+            "responses": {
+               "202": {
+                  "description": "ACCEPTED<br />\nThe specified users have been invited and pending acceptance.\n"
+               },
+               "403": {
+                  "description": "FORBIDDEN<br />\nThe user doesn't have permissions to invite users to this subscriberOrg.\n"
+               },
+               "404": {
+                  "description": "NOT_FOUND<br />\nThe subscriberOrg with the given `subscriberOrgId` doesn't exist, or any specified userIds don't exist.\n"
+               }
+            },
+            "description": "Invite a user to the specified subscriberOrg.\nThe requesting user must be an admin of the specified subscriberOrg.\n",
+            "operationId": "POST_subscriberOrgs-inviteSubscribers-subscriberOrgId",
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "example": {
+                        "userIdOrEmails": [
+                           "9dec8947-0381-4809-a053-b56777f782f4",
+                           "anthony@habla.ai"
+                        ]
+                     },
+                     "schema": {
+                        "title": "application/json",
+                        "type": "object",
+                        "properties": {
+                           "userIdOrEmails": {
+                              "title": "userIdOrEmails",
+                              "minItems": 1,
+                              "type": "array",
+                              "items": {
+                                 "title": "items",
+                                 "type": "string"
+                              }
+                           }
+                        },
+                        "required": [
+                           "userIdOrEmails"
+                        ]
+                     }
+                  }
+               },
+               "required": true
+            },
+            "security": [
+               {
+                  "oauth_2_0": []
+               }
+            ]
+         },
+         "parameters": [
+            {
+               "name": "subscriberOrgId",
+               "in": "path",
+               "required": true,
+               "schema": {
+                  "type": "string"
+               },
+               "description": "subscriberOrg ID to invite users to."
+            }
+         ]
+      },
+      "/subscriberOrgs/replyToInvite/{subscriberOrgId}": {
+         "post": {
+            "responses": {
+               "200": {
+                  "description": "OK<br />\nThe specified users has been added as a subscriber to the subscriberOrg.\n"
+               },
+               "403": {
+                  "description": "FORBIDDEN<br />\nThe user doesn't have permissions to reply to the invite.\n"
+               },
+               "404": {
+                  "description": "NOT_FOUND<br />\nThe invitation or subscriberOrg was not found.\n"
+               }
+            },
+            "description": "Accept or decline an invite to the specified subscriberOrg.\n",
+            "operationId": "POST_subscriberOrgs-replyToInvite-subscriberOrgId",
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "example": {
+                        "accept": true
+                     },
+                     "schema": {
+                        "title": "application/json",
+                        "type": "object",
+                        "properties": {
+                           "accept": {
+                              "title": "accept",
+                              "type": "boolean"
+                           }
+                        },
+                        "required": [
+                           "accept"
+                        ]
+                     }
+                  }
+               },
+               "required": true
+            },
+            "security": [
+               {
+                  "oauth_2_0": []
+               }
+            ]
+         },
+         "parameters": [
+            {
+               "name": "subscriberOrgId",
+               "in": "path",
+               "required": true,
+               "schema": {
+                  "type": "string"
+               },
+               "description": "subscriberOrg ID to accept/decline invite to."
+            }
+         ]
+      },
+      "/teams/getTeams": {
+         "get": {
+            "responses": {
+               "200": {
+                  "description": "OK\n",
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "title": "application/json",
+                           "example": "{\n   \"teams\": [\n      {\n         \"teamId\": \"9dec8947-0381-4809-a053-b56777f782f4\",\n         \"subscriberOrgId\": \"ea794510-cea6-4132-0008-a7ae1d32abb5\",\n         \"name\": \"Posse\",\n         \"active\": true,\n         \"primary\": false,\n         \"preferences\": {\n         },\n         \"created\": \"2017-08-17T00:59:49Z\",\n         \"lastModified: \"2017-08-17T00:59:49Z\"\n      },\n      {\n         \"teamId\": \"9dec8947-0381-4809-a053-b56777f782f5\",\n         \"subscriberOrgId\": \"ea794510-cea6-4132-0008-a7ae1d32abb5\",\n         \"name\": \"Friends\",\n         \"active\": true,\n         \"primary\": false,\n         \"preferences\": {\n         },\n         \"created\": \"2017-08-17T00:59:49Z\",\n         \"lastModified: \"2017-08-17T00:59:49Z\"\n      }\n   ]\n}\n",
+                           "type": "object",
+                           "properties": {
+                              "teams": {
+                                 "title": "teams",
+                                 "type": "array",
+                                 "items": {
+                                    "title": "items",
+                                    "type": "object",
+                                    "properties": {
+                                       "teamId": {
+                                          "title": "teamId",
+                                          "type": "string"
+                                       },
+                                       "subscriberOrgId": {
+                                          "title": "subscriberOrgId",
+                                          "type": "string"
+                                       },
+                                       "name": {
+                                          "title": "name",
+                                          "type": "string"
+                                       },
+                                       "active": {
+                                          "title": "active",
+                                          "type": "boolean"
+                                       },
+                                       "primary": {
+                                          "title": "primary",
+                                          "description": "Primary teams can't be directly inactive (i.e. active can't be false if this is true).",
+                                          "type": "boolean"
+                                       },
+                                       "preferences": {
+                                          "title": "preferences",
+                                          "type": "object",
+                                          "properties": {
+                                             "private": {
+                                                "title": "private",
+                                                "description": "Private preferences only available to the team administrators.",
+                                                "type": "object"
+                                             }
+                                          }
+                                       },
+                                       "created": {
+                                          "title": "created",
+                                          "type": "string",
+                                          "format": "date-time"
+                                       },
+                                       "lastModified": {
+                                          "title": "lastModified",
+                                          "type": "string",
+                                          "format": "date-time"
+                                       }
+                                    },
+                                    "required": [
+                                       "teamId",
+                                       "subscriberOrgId",
+                                       "name",
+                                       "active",
+                                       "primary",
+                                       "preferences",
+                                       "created",
+                                       "lastModified"
+                                    ]
+                                 }
+                              }
+                           },
+                           "required": [
+                              "teams"
+                           ]
+                        }
+                     }
+                  }
+               }
+            },
+            "description": "Retrieve the teams that the authenticated user is privy to.\n",
+            "operationId": "GET_teams-getTeams",
+            "parameters": [
+               {
+                  "name": "subscriberOrgId",
+                  "in": "query",
+                  "description": "Narrow the results to teams of a subscriber organization.",
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "security": [
+               {
+                  "oauth_2_0": []
+               }
+            ]
+         }
+      },
+      "/teams/createTeam/{subscriberOrgId}": {
+         "post": {
+            "responses": {
+               "201": {
+                  "description": "CREATED",
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "title": "application/json",
+                           "example": {
+                              "teamId": "9dec8947-0381-4809-a053-b56777f782f5",
+                              "subscriberOrgId": "9dec8947-0381-4809-a053-b56777f782f4",
+                              "name": "My Team"
+                           },
+                           "type": "object",
+                           "properties": {
+                              "teamId": {
+                                 "title": "teamId",
+                                 "type": "string"
+                              },
+                              "subscriberOrgId": {
+                                 "title": "subscriberOrgId",
+                                 "type": "string"
+                              },
+                              "name": {
+                                 "title": "name",
+                                 "type": "string"
+                              }
+                           },
+                           "required": [
+                              "teamId",
+                              "subscriberOrgId",
+                              "name"
+                           ]
+                        }
+                     }
+                  }
+               },
+               "403": {
+                  "description": "FORBIDDEN<br />\nThe user is not allowed to create a team within the specified subscriber organization.\n"
+               },
+               "409": {
+                  "description": "CONFLICT<br />\nA team with the specified `name` within the specified subscriber organization (i.e. `subscriberOrgId`) already exists.\n"
+               }
+            },
+            "description": "Create a team within a subscriber organization in Habla.\n",
+            "operationId": "POST_teams-createTeam-subscriberOrgId",
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "example": {
+                        "name": "My Team",
+                        "preferences": {
+                           "private": {}
+                        }
+                     },
+                     "schema": {
+                        "title": "application/json",
+                        "type": "object",
+                        "properties": {
+                           "name": {
+                              "title": "name",
+                              "type": "string"
+                           },
+                           "preferences": {
+                              "title": "preferences",
+                              "type": "object",
+                              "properties": {
+                                 "private": {
+                                    "title": "private",
+                                    "description": "Private preferences only available to the team administrators.",
+                                    "type": "object"
+                                 }
+                              }
+                           }
+                        },
+                        "required": [
+                           "name"
+                        ]
+                     }
+                  }
+               },
+               "required": true
+            },
+            "security": [
+               {
+                  "oauth_2_0": []
+               }
+            ]
+         },
+         "parameters": [
+            {
+               "name": "subscriberOrgId",
+               "in": "path",
+               "required": true,
+               "schema": {
+                  "type": "string"
+               },
+               "description": "Subscriber Org ID to create the team under."
+            }
+         ]
+      },
+      "/teams/updateTeam/{teamId}": {
+         "patch": {
+            "responses": {
+               "204": {
+                  "description": "NO_CONTENT<br />\nThe team was updated successfully.\n"
+               },
+               "403": {
+                  "description": "FORBIDDEN<br />\nThe user is not allowed to update the specified team.\n"
+               },
+               "404": {
+                  "description": "NOT_FOUND<br />\nThe `team` with the specified ID was not found.\n"
+               },
+               "409": {
+                  "description": "CONFLICT<br />\nA primary team cannot be deactivated.\n"
+               }
+            },
+            "description": "Update a team in Habla.\n",
+            "operationId": "PATCH_teams-updateTeam-teamId",
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "example": {
+                        "name": "My Org",
+                        "preferences": {
+                           "abc": "def",
+                           "private": {
+                              "xyz": "123"
+                           }
+                        }
+                     },
+                     "schema": {
+                        "title": "application/json",
+                        "type": "object",
+                        "properties": {
+                           "name": {
+                              "title": "name",
+                              "type": "string"
+                           },
+                           "active": {
+                              "title": "active",
+                              "description": "If updating a primary team, deactivation is not allowed and will result in a 409 return code.",
+                              "type": "boolean"
+                           },
+                           "preferences": {
+                              "title": "preferences",
+                              "type": "object",
+                              "properties": {
+                                 "private": {
+                                    "title": "private",
+                                    "description": "Private preferences only available to the team administrators.",
+                                    "type": "object"
+                                 }
+                              }
+                           }
+                        }
+                     }
+                  }
+               },
+               "required": true
+            },
+            "security": [
+               {
+                  "oauth_2_0": []
+               }
+            ]
+         },
+         "parameters": [
+            {
+               "name": "teamId",
+               "in": "path",
+               "required": true,
+               "schema": {
+                  "type": "string"
+               },
+               "description": "Team ID to update."
+            }
+         ]
+      },
+      "/teams/getMembers/{teamId}": {
+         "get": {
+            "responses": {
+               "200": {
+                  "description": "OK\n",
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "title": "application/json",
+                           "example": {
+                              "teamMembers": [
+                                 {
+                                    "userId": "9dec8947-0381-4809-a053-b56777f782f4",
+                                    "firstName": "Anthony",
+                                    "lastName": "Daga",
+                                    "displayName": "Anthony Dude Daga",
+                                    "icon": null,
+                                    "userType": "hablaUser",
+                                    "enabled": true,
+                                    "preferences": {},
+                                    "role": "admin"
+                                 },
+                                 {
+                                    "userId": "9dec8947-0381-4809-a053-b56777f782f5",
+                                    "firstName": "Jill",
+                                    "lastName": "Goodacre",
+                                    "displayName": "Jill Goodacre",
+                                    "icon": null,
+                                    "userType": "hablaUser",
+                                    "enabled": true,
+                                    "preferences": {},
+                                    "role": "user"
+                                 }
+                              ]
+                           },
+                           "type": "object",
+                           "properties": {
+                              "teamMembers": {
+                                 "title": "teamMembers",
+                                 "type": "array",
+                                 "items": {
+                                    "title": "items",
+                                    "type": "object",
+                                    "properties": {
+                                       "userId": {
+                                          "title": "userId",
+                                          "type": "string"
+                                       },
+                                       "firstName": {
+                                          "title": "firstName",
+                                          "type": "string"
+                                       },
+                                       "lastName": {
+                                          "title": "lastName",
+                                          "type": "string"
+                                       },
+                                       "displayName": {
+                                          "title": "displayName",
+                                          "type": "string"
+                                       },
+                                       "icon": {
+                                          "title": "icon",
+                                          "default": "nil",
+                                          "description": "Base64 representation.",
+                                          "type": "object"
+                                       },
+                                       "userType": {
+                                          "title": "userType",
+                                          "type": "string"
+                                       },
+                                       "enabled": {
+                                          "title": "enabled",
+                                          "type": "boolean"
+                                       },
+                                       "preferences": {
+                                          "title": "preferences",
+                                          "type": "object"
+                                       },
+                                       "role": {
+                                          "title": "role",
+                                          "description": "User's role related to this organization.  Currently admin | user.",
+                                          "type": "string"
+                                       },
+                                       "presence": {
+                                          "title": "presence",
+                                          "minItems": 1,
+                                          "type": "array",
+                                          "items": {
+                                             "title": "items",
+                                             "type": "object",
+                                             "properties": {
+                                                "address": {
+                                                   "title": "address",
+                                                   "type": "string"
+                                                },
+                                                "userAgent": {
+                                                   "title": "userAgent",
+                                                   "type": "string"
+                                                },
+                                                "presenceStatus": {
+                                                   "title": "presenceStatus",
+                                                   "type": "string"
+                                                },
+                                                "presenceMessage": {
+                                                   "title": "presenceMessage",
+                                                   "type": "string"
+                                                },
+                                                "location": {
+                                                   "title": "location",
+                                                   "type": "object",
+                                                   "properties": {
+                                                      "lat": {
+                                                         "title": "lat",
+                                                         "type": "number"
+                                                      },
+                                                      "lon": {
+                                                         "title": "lon",
+                                                         "type": "number"
+                                                      },
+                                                      "alt": {
+                                                         "title": "alt",
+                                                         "type": "number"
+                                                      },
+                                                      "accuracy": {
+                                                         "title": "accuracy",
+                                                         "type": "number"
+                                                      }
+                                                   },
+                                                   "required": [
+                                                      "lat",
+                                                      "lon"
+                                                   ]
+                                                }
+                                             },
+                                             "required": [
+                                                "address",
+                                                "userAgent",
+                                                "presenceStatus"
+                                             ]
+                                          }
+                                       }
+                                    },
+                                    "required": [
+                                       "userId",
+                                       "firstName",
+                                       "lastName",
+                                       "displayName",
+                                       "userType",
+                                       "enabled",
+                                       "preferences",
+                                       "role"
+                                    ]
+                                 }
+                              }
+                           },
+                           "required": [
+                              "teamMembers"
+                           ]
+                        }
+                     }
+                  }
+               },
+               "403": {
+                  "description": "FORBIDDEN<br />\nThe user doesn't have permissions to view this team.\n"
+               },
+               "404": {
+                  "description": "NOT_FOUND<br />\nThe team with the given `teamId` doesn't exist.\n"
+               }
+            },
+            "description": "Retrieve the members (i.e. users) of a team given the team ID.\n",
+            "operationId": "GET_teams-getMembers-teamId",
+            "security": [
+               {
+                  "oauth_2_0": []
+               }
+            ]
+         },
+         "parameters": [
+            {
+               "name": "teamId",
+               "in": "path",
+               "required": true,
+               "schema": {
+                  "type": "string"
+               },
+               "description": "Team ID."
+            }
+         ]
+      },
+      "/teams/inviteMembers/{teamId}": {
+         "post": {
+            "responses": {
+               "202": {
+                  "description": "ACCEPTED<br />\nThe specified users have been invited and pending acceptance.\n"
+               },
+               "403": {
+                  "description": "FORBIDDEN<br />\nThe user doesn't have permissions to invite users to this team.\n"
+               },
+               "404": {
+                  "description": "NOT_FOUND<br />\nThe team with the given `teamId` doesn't exist, or invitee userId doesn't exist.\n"
+               }
+            },
+            "description": "Invite a user to the specified team.\nThe requesting user must be an admin of the specified team.\n",
+            "operationId": "POST_teams-inviteMembers-teamId",
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "example": {
+                        "userIds": [
+                           "9dec8947-0381-4809-a053-b56777f782f4"
+                        ]
+                     },
+                     "schema": {
+                        "title": "application/json",
+                        "type": "object",
+                        "properties": {
+                           "userIds": {
+                              "title": "userIds",
+                              "minItems": 1,
+                              "type": "array",
+                              "items": {
+                                 "title": "items",
+                                 "type": "string"
+                              }
+                           }
+                        },
+                        "required": [
+                           "userIds"
+                        ]
+                     }
+                  }
+               },
+               "required": true
+            },
+            "security": [
+               {
+                  "oauth_2_0": []
+               }
+            ]
+         },
+         "parameters": [
+            {
+               "name": "teamId",
+               "in": "path",
+               "required": true,
+               "schema": {
+                  "type": "string"
+               },
+               "description": "Team ID to invite users to."
+            }
+         ]
+      },
+      "/teams/replyToInvite/{teamId}": {
+         "post": {
+            "responses": {
+               "200": {
+                  "description": "OK<br />\nThe specified users has been added as a member to the team.\n"
+               },
+               "403": {
+                  "description": "FORBIDDEN<br />\nThe user doesn't have permissions to reply to the invite.\n"
+               },
+               "404": {
+                  "description": "NOT_FOUND<br />\nThe invitation or team was not found.\n"
+               }
+            },
+            "description": "Accept or decline an invite to the specified team.\n",
+            "operationId": "POST_teams-replyToInvite-teamId",
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "example": {
+                        "accept": true
+                     },
+                     "schema": {
+                        "title": "application/json",
+                        "type": "object",
+                        "properties": {
+                           "accept": {
+                              "title": "accept",
+                              "type": "boolean"
+                           }
+                        },
+                        "required": [
+                           "accept"
+                        ]
+                     }
+                  }
+               },
+               "required": true
+            },
+            "security": [
+               {
+                  "oauth_2_0": []
+               }
+            ]
+         },
+         "parameters": [
+            {
+               "name": "teamId",
+               "in": "path",
+               "required": true,
+               "schema": {
+                  "type": "string"
+               },
+               "description": "Team ID to accept/decline invite to."
+            }
+         ]
+      },
+      "/teamRooms/getTeamRooms": {
+         "get": {
+            "responses": {
+               "200": {
+                  "description": "OK\n",
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "title": "application/json",
+                           "example": "{\n   \"teamRooms\": [\n      {\n         \"teamRoomId\": \"9dec8947-0381-4809-a053-b56777f782f4\",\n         \"teamId\": \"ea794510-cea6-4132-0008-a7ae1d32abb5\",\n         \"name\": \"Posse\",\n         \"purpose\": \"Place to hang.\",\n         \"publish\": false,\n         \"active\": true,\n         \"primary\": false,\n         \"preferences: {\n         },\n         \"created\": \"2017-08-17T00:59:49Z\",\n         \"lastModified: \"2017-08-17T00:59:49Z\"\n      },\n      {\n         \"teamRoomId\": \"9dec8947-0381-4809-a053-b56777f782f5\",\n         \"teamId\": \"ea794510-cea6-4132-0008-a7ae1d32abb5\",\n         \"name\": \"Friends\",\n         \"purpose\": \"My buddies.\",\n         \"publish\": true,\n         \"active\": true,\n         \"primary\": true,\n         \"preferences: {\n         },\n         \"created\": \"2017-08-17T00:59:49Z\",\n         \"lastModified: \"2017-08-17T00:59:49Z\"\n      }\n   ]\n}\n",
+                           "type": "object",
+                           "properties": {
+                              "teamRooms": {
+                                 "title": "teamRooms",
+                                 "type": "array",
+                                 "items": {
+                                    "title": "items",
+                                    "type": "object",
+                                    "properties": {
+                                       "teamRoomId": {
+                                          "title": "teamRoomId",
+                                          "type": "string"
+                                       },
+                                       "teamId": {
+                                          "title": "teamId",
+                                          "type": "string"
+                                       },
+                                       "name": {
+                                          "title": "name",
+                                          "type": "string"
+                                       },
+                                       "purpose": {
+                                          "title": "purpose",
+                                          "default": "nil",
+                                          "type": "object"
+                                       },
+                                       "publish": {
+                                          "title": "publish",
+                                          "type": "boolean"
+                                       },
+                                       "active": {
+                                          "title": "active",
+                                          "type": "boolean"
+                                       },
+                                       "primary": {
+                                          "title": "primary",
+                                          "description": "Primary team rooms can't be directly inactive (i.e. active can't be false if this is true).",
+                                          "type": "boolean"
+                                       },
+                                       "enabled": {
+                                          "title": "enabled",
+                                          "type": "boolean"
+                                       },
+                                       "preferences": {
+                                          "title": "preferences",
+                                          "type": "object",
+                                          "properties": {
+                                             "private": {
+                                                "title": "private",
+                                                "description": "Private preferences only available to the team room administrators.",
+                                                "type": "object"
+                                             }
+                                          }
+                                       },
+                                       "created": {
+                                          "title": "created",
+                                          "type": "string",
+                                          "format": "date-time"
+                                       },
+                                       "lastModified": {
+                                          "title": "lastModified",
+                                          "type": "string",
+                                          "format": "date-time"
+                                       }
+                                    },
+                                    "required": [
+                                       "teamRoomId",
+                                       "teamId",
+                                       "name",
+                                       "publish",
+                                       "active",
+                                       "primary",
+                                       "enabled",
+                                       "preferences",
+                                       "created",
+                                       "lastModified"
+                                    ]
+                                 }
+                              }
+                           },
+                           "required": [
+                              "teamRooms"
+                           ]
+                        }
+                     }
+                  }
+               }
+            },
+            "description": "Retrieve the team rooms that the authenticated user is privy to.\n",
+            "operationId": "GET_teamRooms-getTeamRooms",
+            "parameters": [
+               {
+                  "name": "teamId",
+                  "in": "query",
+                  "description": "Narrow the results to team rooms of a team.",
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "name": "subscriberOrgId",
+                  "in": "query",
+                  "description": "Narrow the results to team rooms within a subscriberOrg.  If teamId is specified, this is ignored.",
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "security": [
+               {
+                  "oauth_2_0": []
+               }
+            ]
+         }
+      },
+      "/teamRooms/createTeamRoom/{teamId}": {
+         "post": {
+            "responses": {
+               "201": {
+                  "description": "CREATED",
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "title": "application/json",
+                           "example": {
+                              "teamRoomId": "9dec8947-0381-4809-a053-b56777f782f4",
+                              "teamId": "9dec8947-0381-4809-a053-b56777f782f5",
+                              "name": "Posse",
+                              "purpose": "Place to hang.",
+                              "publish": false,
+                              "active": true
+                           },
+                           "type": "object",
+                           "properties": {
+                              "teamRoomId": {
+                                 "title": "teamRoomId",
+                                 "example": "9dec8947-0381-4809-a053-b56777f782f4",
+                                 "type": "string"
+                              },
+                              "teamId": {
+                                 "title": "teamId",
+                                 "example": "9dec8947-0381-4809-a053-b56777f782f5",
+                                 "type": "string"
+                              },
+                              "name": {
+                                 "title": "name",
+                                 "type": "string"
+                              },
+                              "purpose": {
+                                 "title": "purpose",
+                                 "default": "nil",
+                                 "type": "object"
+                              },
+                              "publish": {
+                                 "title": "publish",
+                                 "type": "boolean"
+                              },
+                              "active": {
+                                 "title": "active",
+                                 "type": "boolean"
+                              }
+                           },
+                           "required": [
+                              "teamRoomId",
+                              "teamId",
+                              "name",
+                              "publish",
+                              "active"
+                           ]
+                        }
+                     }
+                  }
+               },
+               "403": {
+                  "description": "FORBIDDEN<br />\nThe user is not allowed to create a team room within the specified team.\n"
+               },
+               "409": {
+                  "description": "CONFLICT<br />\nA team room by the requested name already exists under the team.\n"
+               }
+            },
+            "description": "Create a team room within a team.\n",
+            "operationId": "POST_teamRooms-createTeamRoom-teamId",
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "example": {
+                        "name": "Posse",
+                        "purpose": "Place to hang.",
+                        "publish": false,
+                        "active": true
+                     },
+                     "schema": {
+                        "title": "application/json",
+                        "type": "object",
+                        "properties": {
+                           "name": {
+                              "title": "name",
+                              "type": "string"
+                           },
+                           "purpose": {
+                              "title": "purpose",
+                              "default": "nil",
+                              "type": "object"
+                           },
+                           "publish": {
+                              "title": "publish",
+                              "type": "boolean"
+                           },
+                           "active": {
+                              "title": "active",
+                              "type": "boolean"
+                           },
+                           "preferences": {
+                              "title": "preferences",
+                              "type": "object",
+                              "properties": {
+                                 "private": {
+                                    "title": "private",
+                                    "description": "Private preferences only available to the team room administrators.",
+                                    "type": "object"
+                                 }
+                              }
+                           }
+                        },
+                        "required": [
+                           "name",
+                           "publish",
+                           "active"
+                        ]
+                     }
+                  }
+               },
+               "required": true
+            },
+            "security": [
+               {
+                  "oauth_2_0": []
+               }
+            ]
+         },
+         "parameters": [
+            {
+               "name": "teamId",
+               "in": "path",
+               "required": true,
+               "schema": {
+                  "type": "string"
+               },
+               "description": "Team ID to create the team room under."
+            }
+         ]
+      },
+      "/teamRooms/updateTeamRoom/{teamRoomId}": {
+         "patch": {
+            "responses": {
+               "204": {
+                  "description": "NO_CONTENT<br />\nThe team was updated successfully.\n"
+               },
+               "403": {
+                  "description": "FORBIDDEN<br />\nThe user is not allowed to update the specified team.\n"
+               },
+               "404": {
+                  "description": "NOT_FOUND<br />\nThe `team` with the specified ID was not found.\n"
+               },
+               "409": {
+                  "description": "CONFLICT<br />\nA primary team room cannot be deactivated.\n"
+               }
+            },
+            "description": "Update a team room in Habla.\n",
+            "operationId": "PATCH_teamRooms-updateTeamRoom-teamRoomId",
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "example": {
+                        "name": "My Org",
+                        "publish": true,
+                        "active": false,
+                        "preferences": {
+                           "abc": "def",
+                           "private": {
+                              "xyz": "123"
+                           }
+                        }
+                     },
+                     "schema": {
+                        "title": "application/json",
+                        "type": "object",
+                        "properties": {
+                           "name": {
+                              "title": "name",
+                              "type": "string"
+                           },
+                           "purpose": {
+                              "title": "purpose",
+                              "default": "nil",
+                              "type": "object"
+                           },
+                           "publish": {
+                              "title": "publish",
+                              "type": "boolean"
+                           },
+                           "active": {
+                              "title": "active",
+                              "description": "If updating a primary team room, deactivation is not allowed and will result in a 409 return code.",
+                              "type": "boolean"
+                           },
+                           "preferences": {
+                              "title": "preferences",
+                              "type": "object",
+                              "properties": {
+                                 "private": {
+                                    "title": "private",
+                                    "description": "Private preferences only available to the team administrators.",
+                                    "type": "object"
+                                 }
+                              }
+                           }
+                        }
+                     }
+                  }
+               },
+               "required": true
+            },
+            "security": [
+               {
+                  "oauth_2_0": []
+               }
+            ]
+         },
+         "parameters": [
+            {
+               "name": "teamRoomId",
+               "in": "path",
+               "required": true,
+               "schema": {
+                  "type": "string"
+               },
+               "description": "Team room to update."
+            }
+         ]
+      },
+      "/teamRooms/getMembers/{teamRoomId}": {
+         "get": {
+            "responses": {
+               "200": {
+                  "description": "OK\n",
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "title": "application/json",
+                           "example": {
+                              "teamRoomMembers": [
+                                 {
+                                    "userId": "9dec8947-0381-4809-a053-b56777f782f4",
+                                    "firstName": "Anthony",
+                                    "lastName": "Daga",
+                                    "displayName": "Anthony Dude Daga",
+                                    "icon": null,
+                                    "userType": "hablaUser",
+                                    "enabled": true,
+                                    "preferences": {},
+                                    "role": "admin"
+                                 },
+                                 {
+                                    "userId": "9dec8947-0381-4809-a053-b56777f782f5",
+                                    "firstName": "Jill",
+                                    "lastName": "Goodacre",
+                                    "displayName": "Jill Goodacre",
+                                    "icon": null,
+                                    "userType": "hablaUser",
+                                    "enabled": true,
+                                    "preferences": {},
+                                    "role": "user"
+                                 }
+                              ]
+                           },
+                           "type": "object",
+                           "properties": {
+                              "teamRoomMembers": {
+                                 "title": "teamRoomMembers",
+                                 "type": "array",
+                                 "items": {
+                                    "title": "items",
+                                    "type": "object",
+                                    "properties": {
+                                       "userId": {
+                                          "title": "userId",
+                                          "type": "string"
+                                       },
+                                       "firstName": {
+                                          "title": "firstName",
+                                          "type": "string"
+                                       },
+                                       "lastName": {
+                                          "title": "lastName",
+                                          "type": "string"
+                                       },
+                                       "displayName": {
+                                          "title": "displayName",
+                                          "type": "string"
+                                       },
+                                       "icon": {
+                                          "title": "icon",
+                                          "default": "nil",
+                                          "description": "Base64 representation.",
+                                          "type": "object"
+                                       },
+                                       "userType": {
+                                          "title": "userType",
+                                          "type": "string"
+                                       },
+                                       "enabled": {
+                                          "title": "enabled",
+                                          "type": "string"
+                                       },
+                                       "preferences": {
+                                          "title": "preferences",
+                                          "type": "object"
+                                       },
+                                       "role": {
+                                          "title": "role",
+                                          "description": "User's role related to this organization.  Currently admin | user.",
+                                          "type": "string"
+                                       },
+                                       "presence": {
+                                          "title": "presence",
+                                          "minItems": 1,
+                                          "type": "array",
+                                          "items": {
+                                             "title": "items",
+                                             "type": "object",
+                                             "properties": {
+                                                "address": {
+                                                   "title": "address",
+                                                   "type": "string"
+                                                },
+                                                "userAgent": {
+                                                   "title": "userAgent",
+                                                   "type": "string"
+                                                },
+                                                "presenceStatus": {
+                                                   "title": "presenceStatus",
+                                                   "type": "string"
+                                                },
+                                                "presenceMessage": {
+                                                   "title": "presenceMessage",
+                                                   "type": "string"
+                                                },
+                                                "location": {
+                                                   "title": "location",
+                                                   "type": "object",
+                                                   "properties": {
+                                                      "lat": {
+                                                         "title": "lat",
+                                                         "type": "number"
+                                                      },
+                                                      "lon": {
+                                                         "title": "lon",
+                                                         "type": "number"
+                                                      },
+                                                      "alt": {
+                                                         "title": "alt",
+                                                         "type": "number"
+                                                      },
+                                                      "accuracy": {
+                                                         "title": "accuracy",
+                                                         "type": "number"
+                                                      }
+                                                   },
+                                                   "required": [
+                                                      "lat",
+                                                      "lon"
+                                                   ]
+                                                }
+                                             },
+                                             "required": [
+                                                "address",
+                                                "userAgent",
+                                                "presenceStatus"
+                                             ]
+                                          }
+                                       }
+                                    },
+                                    "required": [
+                                       "userId",
+                                       "firstName",
+                                       "lastName",
+                                       "displayName",
+                                       "userType",
+                                       "enabled",
+                                       "preferences",
+                                       "role"
+                                    ]
+                                 }
+                              }
+                           },
+                           "required": [
+                              "teamRoomMembers"
+                           ]
+                        }
+                     }
+                  }
+               },
+               "403": {
+                  "description": "FORBIDDEN<br />\nThe user doesn't have permissions to view this team room.\n"
+               },
+               "404": {
+                  "description": "NOT_FOUND<br />\nThe team room with the given `teamRoomId` doesn't exist.\n"
+               }
+            },
+            "description": "Retrieve the members (i.e. users) of a team room given the team room ID.\n",
+            "operationId": "GET_teamRooms-getMembers-teamRoomId",
+            "security": [
+               {
+                  "oauth_2_0": []
+               }
+            ]
+         },
+         "parameters": [
+            {
+               "name": "teamRoomId",
+               "in": "path",
+               "required": true,
+               "schema": {
+                  "type": "string"
+               },
+               "description": "Team room ID."
+            }
+         ]
+      },
+      "/teamRooms/inviteMembers/{teamRoomId}": {
+         "post": {
+            "responses": {
+               "202": {
+                  "description": "ACCEPTED<br />\nThe specified users have been invited and pending acceptance.\n"
+               },
+               "403": {
+                  "description": "FORBIDDEN<br />\nThe user doesn't have permissions to invite users to this team room.\n"
+               },
+               "404": {
+                  "description": "NOT_FOUND<br />\nThe team room with the given `teamRoomId` doesn't exist, or invitee userId doesn't exist.\n"
+               }
+            },
+            "description": "Invite a user to the specified team room.\nThe requesting user must be an admin of the specified team room.\n",
+            "operationId": "POST_teamRooms-inviteMembers-teamRoomId",
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "example": {
+                        "userIds": [
+                           "9dec8947-0381-4809-a053-b56777f782f4"
+                        ]
+                     },
+                     "schema": {
+                        "title": "application/json",
+                        "type": "object",
+                        "properties": {
+                           "userIds": {
+                              "title": "userIds",
+                              "minItems": 1,
+                              "type": "array",
+                              "items": {
+                                 "title": "items",
+                                 "type": "string"
+                              }
+                           }
+                        },
+                        "required": [
+                           "userIds"
+                        ]
+                     }
+                  }
+               },
+               "required": true
+            },
+            "security": [
+               {
+                  "oauth_2_0": []
+               }
+            ]
+         },
+         "parameters": [
+            {
+               "name": "teamRoomId",
+               "in": "path",
+               "required": true,
+               "schema": {
+                  "type": "string"
+               },
+               "description": "Team room ID to invite users to."
+            }
+         ]
+      },
+      "/teamRooms/replyToInvite/{teamRoomId}": {
+         "post": {
+            "responses": {
+               "200": {
+                  "description": "OK<br />\nThe specified users has been added as a member to the team room.\n"
+               },
+               "403": {
+                  "description": "FORBIDDEN<br />\nThe user doesn't have permissions to reply to the invite.\n"
+               },
+               "404": {
+                  "description": "NOT_FOUND<br />\nThe invitation or team room was not found.\n"
+               }
+            },
+            "description": "Accept or decline an invite to the specified team room.\n",
+            "operationId": "POST_teamRooms-replyToInvite-teamRoomId",
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "example": {
+                        "accept": true
+                     },
+                     "schema": {
+                        "title": "application/json",
+                        "type": "object",
+                        "properties": {
+                           "accept": {
+                              "title": "accept",
+                              "type": "boolean"
+                           }
+                        },
+                        "required": [
+                           "accept"
+                        ]
+                     }
+                  }
+               },
+               "required": true
+            },
+            "security": [
+               {
+                  "oauth_2_0": []
+               }
+            ]
+         },
+         "parameters": [
+            {
+               "name": "teamRoomId",
+               "in": "path",
+               "required": true,
+               "schema": {
+                  "type": "string"
+               },
+               "description": "Team room ID to accept/decline invite to."
+            }
+         ]
+      },
+      "/conversations/getConversations": {
+         "get": {
+            "responses": {
+               "200": {
+                  "description": "OK\n",
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "title": "application/json",
+                           "example": "{\n   \"conversations\": [\n      {\n         \"conversationId\": \"9dec8947-0381-4809-a053-b56777f782f4\",\n         \"participants\": [\n            {\n               \"userId\": \"9dec8947-0381-4809-a053-b56777f782f4\",\n               \"firstName\": \"Anthony\",\n               \"lastName\": \"Daga\",\n               \"displayName\": \"Anthony Dude Daga\",\n               \"icon\": null,\n               \"userType\": \"hablaUser\",\n               \"enabled\": true,\n               \"preferences\": {\n               }\n            },\n            {\n               \"userId\": \"9dec8947-0381-4809-a053-b56777f782f5\",\n               \"firstName\": \"Jill\",\n               \"lastName\": \"Goodacre\",\n               \"displayName\": \"Jill Goodacre\",\n               \"icon\": null,\n               \"userType\": \"hablaUser\",\n               \"enabled\": true,\n               \"preferences\": {\n               }\n            }\n         ],\n         \"created\": \"2017-08-17T00:59:49Z\",\n         \"lastModified: \"2017-08-17T00:59:49Z\"\n      },\n      {\n         \"conversationId\": \"9dec8947-0381-4809-a053-b56777f782f5\",\n         \"teamRoomId\": \"9dec8947-0381-4809-a053-b56777f782f6\",\n         \"participants\": [\n            {\n               \"userId\": \"9dec8947-0381-4809-a053-b56777f782f4\",\n               \"firstName\": \"Anthony\",\n               \"lastName\": \"Daga\",\n               \"displayName\": \"Anthony Dude Daga\",\n               \"icon\": null,\n               \"userType\": \"hablaUser\",\n               \"enabled\": true,\n               \"preferences\": {\n               }\n            },\n            {\n               \"userId\": \"9dec8947-0381-4809-a053-b56777f782f5\",\n               \"firstName\": \"Jill\",\n               \"lastName\": \"Goodacre\",\n               \"displayName\": \"Jill Goodacre\",\n               \"icon\": null,\n               \"userType\": \"hablaUser\",\n               \"enabled\": true,\n               \"preferences\": {\n               }\n            }\n         ],\n         \"created\": \"2017-08-17T00:59:49Z\",\n         \"lastModified: \"2017-08-17T00:59:49Z\"\n      }\n   ]\n}\n",
+                           "type": "object",
+                           "properties": {
+                              "conversations": {
+                                 "title": "conversations",
+                                 "type": "array",
+                                 "items": {
+                                    "title": "items",
+                                    "type": "object",
+                                    "properties": {
+                                       "conversationId": {
+                                          "title": "conversationId",
+                                          "type": "string"
+                                       },
+                                       "teamRoomId": {
+                                          "title": "teamRoomId",
+                                          "type": "string"
+                                       },
+                                       "participants": {
+                                          "title": "participants",
+                                          "type": "array",
+                                          "items": {
+                                             "title": "items",
+                                             "type": "object",
+                                             "properties": {
+                                                "userId": {
+                                                   "title": "userId",
+                                                   "type": "string"
+                                                },
+                                                "firstName": {
+                                                   "title": "firstName",
+                                                   "type": "string"
+                                                },
+                                                "lastName": {
+                                                   "title": "lastName",
+                                                   "type": "string"
+                                                },
+                                                "displayName": {
+                                                   "title": "displayName",
+                                                   "type": "string"
+                                                },
+                                                "icon": {
+                                                   "title": "icon",
+                                                   "default": "nil",
+                                                   "description": "Base64 representation.",
+                                                   "type": "object"
+                                                },
+                                                "userType": {
+                                                   "title": "userType",
+                                                   "type": "string"
+                                                },
+                                                "enabled": {
+                                                   "title": "enabled",
+                                                   "type": "boolean"
+                                                },
+                                                "preferences": {
+                                                   "title": "preferences",
+                                                   "type": "object"
+                                                }
+                                             },
+                                             "required": [
+                                                "userId",
+                                                "firstName",
+                                                "lastName",
+                                                "displayName",
+                                                "userType",
+                                                "enabled",
+                                                "preferences"
+                                             ]
+                                          }
+                                       },
+                                       "created": {
+                                          "title": "created",
+                                          "type": "string",
+                                          "format": "date-time"
+                                       },
+                                       "lastModified": {
+                                          "title": "lastModified",
+                                          "type": "string",
+                                          "format": "date-time"
+                                       }
+                                    },
+                                    "required": [
+                                       "conversationId",
+                                       "participants",
+                                       "created",
+                                       "lastModified"
+                                    ]
+                                 }
+                              }
+                           },
+                           "required": [
+                              "conversations"
+                           ]
+                        }
+                     }
+                  }
+               }
+            },
+            "description": "Retrieve the conversations that the authenticated user is privy to.\nTo narrow down the results to conversations of a team room, add the `teamRoomId` query parameter.\n",
+            "operationId": "GET_conversations-getConversations",
+            "parameters": [
+               {
+                  "name": "teamRoomId",
+                  "in": "query",
+                  "description": "Narrow the results to conversations of a team room.",
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "security": [
+               {
+                  "oauth_2_0": []
+               }
+            ]
+         }
+      },
+      "/conversations/getTranscript/{conversationId}": {
+         "get": {
+            "responses": {
+               "200": {
+                  "description": "OK\n",
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "title": "application/json",
+                           "example": "{\n   \"messages\": [\n      {\n         \"messageId\": \"9dec8947-0381-4809-a053-b56777f782f4\",\n         \"createdBy\": \"9dec8947-0381-4809-a053-b56777f782f4\",\n         \"messageType\": \"text\",\n         \"text\": \"Alright.\",\n         \"path\": \"9dec8947-0381-4809-a053-b56777f782f4\",\n         \"level\": 0,\n         \"created\": \"2017-08-17T00:59:49Z\",\n         \"lastModified: \"2017-08-17T00:59:49Z\"\n      },\n      {\n         \"messageId\": \"9dec8947-0381-4809-a053-b56777f782f5\",\n         \"createdBy\": \"9dec8947-0381-4809-a053-b56777f782f5\",\n         \"messageType\": \"text\",\n         \"text\": \"How's it going?\",\n         \"path\": \"9dec8947-0381-4809-a053-b56777f782f5\",\n         \"level\": 0,\n         \"created\": \"2017-08-17T00:59:49Z\",\n         \"lastModified: \"2017-08-17T00:59:49Z\"\n      }\n   ]\n}\n",
+                           "type": "object",
+                           "properties": {
+                              "messages": {
+                                 "title": "messages",
+                                 "type": "array",
+                                 "items": {
+                                    "title": "items",
+                                    "type": "object",
+                                    "properties": {
+                                       "messageId": {
+                                          "title": "messageId",
+                                          "type": "string"
+                                       },
+                                       "createdBy": {
+                                          "title": "createdBy",
+                                          "description": "`userId`\n",
+                                          "type": "string"
+                                       },
+                                       "messageType": {
+                                          "title": "messageType",
+                                          "enum": [
+                                             "text"
+                                          ],
+                                          "type": "string"
+                                       },
+                                       "text": {
+                                          "title": "text",
+                                          "type": "string"
+                                       },
+                                       "replyTo": {
+                                          "title": "replyTo",
+                                          "description": "`messageId` this messages is attached to.  This is for threaded messages support.\n",
+                                          "type": "string"
+                                       },
+                                       "path": {
+                                          "title": "path",
+                                          "type": "string"
+                                       },
+                                       "level": {
+                                          "title": "level",
+                                          "type": "integer"
+                                       },
+                                       "created": {
+                                          "title": "created",
+                                          "description": "The format is in [RFC339](https://xml2rfc.tools.ietf.org/public/rfc/html/rfc3339.html#anchor14), which is a profile of [ISO 8601].",
+                                          "type": "string",
+                                          "format": "date-time"
+                                       },
+                                       "lastModified": {
+                                          "title": "lastModified",
+                                          "type": "string",
+                                          "format": "date-time"
+                                       }
+                                    },
+                                    "required": [
+                                       "messageId",
+                                       "createdBy",
+                                       "messageType",
+                                       "text",
+                                       "path",
+                                       "created",
+                                       "lastModified"
+                                    ]
+                                 }
+                              }
+                           },
+                           "required": [
+                              "messages"
+                           ]
+                        }
+                     }
+                  }
+               },
+               "403": {
+                  "description": "FORBIDDEN<br />\nThe user doesn't have permissions to view this conversation.\n"
+               },
+               "404": {
+                  "description": "NOT_FOUND<br />\nThe conversation with the given `conversationId` doesn't exist.\n"
+               }
+            },
+            "description": "Retrieve the transcript for the specified conversation.\nThe transcript messages are returned in `created` descending order.\n",
+            "operationId": "GET_conversations-getTranscript-conversationId",
+            "parameters": [
+               {
+                  "name": "since",
+                  "in": "query",
+                  "description": "The messages returned are greater than or equal to this value, in RFC339 format.",
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "name": "until",
+                  "in": "query",
+                  "description": "The messages returned are less than or equal to this value, in RFC339 format.",
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "name": "minLevel",
+                  "in": "query",
+                  "description": "The minimum level, inclusive, for messages returned.",
+                  "schema": {
+                     "minimum": 0,
+                     "type": "integer"
+                  }
+               },
+               {
+                  "name": "maxLevel",
+                  "in": "query",
+                  "description": "The maximum level, inclusive, for messages returned.",
+                  "schema": {
+                     "minimum": 0,
+                     "type": "integer"
+                  }
+               },
+               {
+                  "name": "maxCount",
+                  "in": "query",
+                  "description": "The maximum number of messages, from the latest, to return.\n",
+                  "schema": {
+                     "minimum": 1,
+                     "type": "integer"
+                  }
+               }
+            ],
+            "security": [
+               {
+                  "oauth_2_0": []
+               }
+            ]
+         },
+         "parameters": [
+            {
+               "name": "conversationId",
+               "in": "path",
+               "required": true,
+               "schema": {
+                  "type": "string"
+               },
+               "description": "Conversation ID."
+            }
+         ]
+      },
+      "/conversations/{conversationId}/createMessage": {
+         "post": {
+            "responses": {
+               "201": {
+                  "description": "CREATED",
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "title": "application/json",
+                           "example": {
+                              "messageId": "9dec8947-0381-4809-a053-b56777f782f4",
+                              "created": "2017-04-12T23:20:50.52Z",
+                              "createdBy": "9dec8947-0381-4809-a053-b56777f782f4",
+                              "messageType": "text",
+                              "text": "Alright.",
+                              "replyTo": "9dec8947-0381-4809-a053-b56777f782f5"
+                           },
+                           "type": "object",
+                           "properties": {
+                              "messageId": {
+                                 "title": "messageId",
+                                 "type": "string"
+                              },
+                              "created": {
+                                 "title": "created",
+                                 "description": "The format is in [RFC339](https://xml2rfc.tools.ietf.org/public/rfc/html/rfc3339.html#anchor14), which is a profile of [ISO 8601].",
+                                 "type": "string",
+                                 "format": "date-time"
+                              },
+                              "createdBy": {
+                                 "title": "createdBy",
+                                 "description": "`userId`\n",
+                                 "type": "string"
+                              },
+                              "messageType": {
+                                 "title": "messageType",
+                                 "enum": [
+                                    "text"
+                                 ],
+                                 "type": "string"
+                              },
+                              "text": {
+                                 "title": "text",
+                                 "type": "string"
+                              },
+                              "replyTo": {
+                                 "title": "replyTo",
+                                 "description": "`messageId` this messages is attached to.  This is for threaded messages support.\n",
+                                 "type": "string"
+                              }
+                           },
+                           "required": [
+                              "messageId",
+                              "created",
+                              "createdBy",
+                              "messageType",
+                              "text"
+                           ]
+                        }
+                     }
+                  }
+               },
+               "403": {
+                  "description": "FORBIDDEN<br />\nThe user is not allowed to create a message in the specified conversation.\n"
+               },
+               "404": {
+                  "description": "NOT_FOUND<br />\nThe specified conversation does not exist.\n"
+               }
+            },
+            "description": "Create a message in a specified conversation.\n",
+            "operationId": "POST_conversations-conversationId-createMessage",
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "example": {
+                        "messageType": "text",
+                        "text": "What's up?"
+                     },
+                     "schema": {
+                        "title": "application/json",
+                        "type": "object",
+                        "properties": {
+                           "messageType": {
+                              "title": "messageType",
+                              "type": "string"
+                           },
+                           "text": {
+                              "title": "text",
+                              "type": "string"
+                           },
+                           "replyTo": {
+                              "title": "replyTo",
+                              "description": "`messageId` this message is attached to.  This is for threaded messages support.\n",
+                              "type": "string"
+                           }
+                        },
+                        "required": [
+                           "messageType",
+                           "text"
+                        ]
+                     }
+                  }
+               },
+               "required": true
+            },
+            "security": [
+               {
+                  "oauth_2_0": []
+               }
+            ]
+         },
+         "parameters": [
+            {
+               "name": "conversationId",
+               "in": "path",
+               "required": true,
+               "schema": {
+                  "type": "string"
+               },
+               "description": "Conversation ID for which subsequent operations are scoped."
+            }
+         ]
+      },
+      "/integrations/getIntegrations": {
+         "get": {
+            "responses": {
+               "200": {
+                  "description": "OK\n",
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "title": "application/json",
+                           "example": {
+                              "integrations": [
+                                 {
+                                    "subscriberOrgId": "18644a74-6fec-4921-af8b-d8286cd5efbb",
+                                    "box": {
+                                       "userId": "1831614173",
+                                       "acquiredAtMS": 1497303951792,
+                                       "accessTokenTTLMS": 3971000,
+                                       "expired": false
+                                    }
+                                 }
+                              ]
+                           },
+                           "type": "object",
+                           "properties": {
+                              "integrations": {
+                                 "title": "integrations",
+                                 "type": "array",
+                                 "items": {
+                                    "title": "items",
+                                    "type": "object",
+                                    "properties": {
+                                       "subscriberOrgId": {
+                                          "title": "subscriberOrgId",
+                                          "type": "string"
+                                       },
+                                       "box": {
+                                          "title": "box",
+                                          "type": "object"
+                                       },
+                                       "googleDrive": {
+                                          "title": "googleDrive",
+                                          "type": "object"
+                                       }
+                                    },
+                                    "required": [
+                                       "subscriberOrgId"
+                                    ]
+                                 }
+                              }
+                           },
+                           "required": [
+                              "integrations"
+                           ]
+                        }
+                     }
+                  }
+               }
+            },
+            "description": "Retrieve integrations for the authenticated user, scoped to the `subscriberOrgId` if the query parameter exists.",
+            "operationId": "GET_integrations-getIntegrations",
+            "parameters": [
+               {
+                  "name": "subscriberOrgId",
+                  "in": "query",
+                  "description": "Narrow the results to integrations for a subscriber organization.",
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "security": [
+               {
+                  "oauth_2_0": []
+               }
+            ]
+         }
+      },
+      "/integrations/box/integrate/{subscriberOrgId}": {
+         "get": {
+            "responses": {
+               "202": {
+                  "description": "ACCEPTED<br />\nIf request header `Accept` contains `application/json`, the body will contain JSON `{ location: ... }`.\nManually redirect the browser to that location.\n"
+               },
+               "302": {
+                  "description": "FOUND<br />\nRedirect to Box access approval.\n"
+               }
+            },
+            "description": "Integrate Box to Habla, scoped to the logged-in user and provided `subscriberOrgId`.",
+            "operationId": "GET_integrations-box-integrate-subscriberOrgId",
+            "security": [
+               {
+                  "oauth_2_0": []
+               }
+            ]
+         },
+         "parameters": [
+            {
+               "name": "subscriberOrgId",
+               "in": "path",
+               "required": true,
+               "schema": {
+                  "type": "string"
+               },
+               "description": "Box integration, scoped to the logged-in user and provided `subscriberOrgId`."
+            }
+         ]
+      },
+      "/integrations/box/access": {
+         "get": {
+            "responses": {
+               "302": {
+                  "description": "FOUND<br />\nRedirect to Habla Box integration page.\nThe query parameter `integration` is included, with current value: box | google.\nThe query parameter `status` is included, which contains one of the values:<br />\nCREATED: Successfully integrated to Box.<br />\nNOT_FOUND: The provided `subscriberOrgId` is invalid for the current user.<br />\nINTERNAL_SERVER_ERROR: Something bad happened.\n"
+               }
+            },
+            "description": "Invoked by Box in response to user access response.",
+            "operationId": "GET_integrations-box-access"
+         }
+      },
+      "/integrations/box/revoke/{subscriberOrgId}": {
+         "get": {
+            "responses": {
+               "200": {
+                  "description": "OK<br />\nThe integration was revoked successfully, which includes clearing data in the DB as well as notifying Box of revocation.\n"
+               },
+               "404": {
+                  "description": "NOT_FOUND<br />\nInvalid subscriberOrgId.\n"
+               },
+               "410": {
+                  "description": "GONE<br />\nClearing integration data from the DB was successful, but the remote call to Box failed.\nThis can mean either the existing access token is no longer valid, or Box isn't aware of this Habla integration.\nEither way, Habla no longer has access to the user's data, but having the user check on the Box end might be a good idea.\n"
+               }
+            },
+            "description": "Revoke Box access from Habla, scoped to the logged-in user and provided `subscriberOrgId`.",
+            "operationId": "GET_integrations-box-revoke-subscriberOrgId",
+            "security": [
+               {
+                  "oauth_2_0": []
+               }
+            ]
+         },
+         "parameters": [
+            {
+               "name": "subscriberOrgId",
+               "in": "path",
+               "required": true,
+               "schema": {
+                  "type": "string"
+               },
+               "description": "Box integration, scoped to the logged-in user and provided `subscriberOrgId`."
+            }
+         ]
+      },
+      "/integrations/box/webhooks": {
+         "post": {
+            "responses": {
+               "202": {
+                  "description": "ACCEPTED<br />\nHabla accepted the webhook event and forwarded it to AI.\n"
+               },
+               "403": {
+                  "description": ""
+               }
+            },
+            "description": "Invoked by Box for webhook events.",
+            "operationId": "POST_integrations-box-webhooks",
+            "parameters": [
+               {
+                  "name": "Box-*",
+                  "in": "header",
+                  "required": true,
+                  "description": "Used to validate a Box message.",
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ]
+         }
+      },
+      "/integrations/google/integrate/{subscriberOrgId}": {
+         "get": {
+            "responses": {
+               "202": {
+                  "description": "ACCEPTED<br />\nIf request header `Accept` contains `application/json`, the body will contain JSON `{ location: ... }`.\nManually redirect the browser to that location.\n"
+               },
+               "302": {
+                  "description": "FOUND<br />\nRedirect to Google access approval.\n"
+               }
+            },
+            "description": "Integrate Google to Habla, scoped to the logged-in user and provided `subscriberOrgId`.",
+            "operationId": "GET_integrations-google-integrate-subscriberOrgId",
+            "security": [
+               {
+                  "oauth_2_0": []
+               }
+            ]
+         },
+         "parameters": [
+            {
+               "name": "subscriberOrgId",
+               "in": "path",
+               "required": true,
+               "schema": {
+                  "type": "string"
+               },
+               "description": "Google integration, scoped to the logged-in user and provided `subscriberOrgId`."
+            }
+         ]
+      },
+      "/integrations/google/access": {
+         "get": {
+            "responses": {
+               "302": {
+                  "description": "FOUND<br />\nRedirect to Habla Google integration page.\nThe query parameter `integration` is included, with current value: box | google.\nThe query parameter `status` is included, which contains one of the values:<br />\nCREATED: Successfully integrated to Google.<br />\nNOT_FOUND: The provided `subscriberOrgId` is invalid for the current user.<br />\nINTERNAL_SERVER_ERROR: Something bad happened.\n"
+               }
+            },
+            "description": "Invoked by Google in response to user access response.",
+            "operationId": "GET_integrations-google-access"
+         }
+      },
+      "/integrations/google/revoke/{subscriberOrgId}": {
+         "get": {
+            "responses": {
+               "200": {
+                  "description": "OK<br />\nThe integration was revoked successfully, which includes clearing data in the DB as well as notifying Google of revocation.\n"
+               },
+               "404": {
+                  "description": "NOT_FOUND<br />\nInvalid subscriberOrgId.\n"
+               },
+               "410": {
+                  "description": "GONE<br />\nClearing integration data from the DB was successful, but the remote call to Google failed.\nThis can mean either the existing access token is no longer valid, or Google isn't aware of this Habla integration.\nEither way, Habla no longer has access to the user's data, but having the user check on the Google end might be a good idea.\n"
+               }
+            },
+            "description": "Revoke Google access from Habla, scoped to the logged-in user and provided `subscriberOrgId`.",
+            "operationId": "GET_integrations-google-revoke-subscriberOrgId",
+            "security": [
+               {
+                  "oauth_2_0": []
+               }
+            ]
+         },
+         "parameters": [
+            {
+               "name": "subscriberOrgId",
+               "in": "path",
+               "required": true,
+               "schema": {
+                  "type": "string"
+               },
+               "description": "Google integration, scoped to the logged-in user and provided `subscriberOrgId`."
+            }
+         ]
+      },
+      "/integrations/google/webhooks": {
+         "post": {
+            "responses": {
+               "202": {
+                  "description": "ACCEPTED<br />\nHabla accepted the webhook event and forwarded it to AI.\n"
+               },
+               "403": {
+                  "description": ""
+               }
+            },
+            "description": "Invoked by Google for webhook events.",
+            "operationId": "POST_integrations-google-webhooks",
+            "parameters": [
+               {
+                  "name": "X-Goog-Channel-Token",
+                  "in": "header",
+                  "required": true,
+                  "description": "Specifies an arbitrary string value to use as a channel token, to verify the message as coming from Google.",
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ]
+         }
+      }
+   },
+   "components": {
+      "schemas": {},
+      "responses": {},
+      "parameters": {},
+      "examples": {},
+      "requestBodies": {},
+      "headers": {},
+      "securitySchemes": {
+         "oauth_2_0": {
+            "type": "oauth2",
+            "flows": {
+               "implicit": {
+                  "authorizationUrl": "https://dev.habla.ai/signin",
+                  "scopes": {}
+               }
+            }
+         }
+      },
+      "links": {},
+      "callbacks": {}
+   }
+}

@@ -139,6 +139,12 @@ documentation:
                                     description: Private preferences only available to the user.
                                     type: object
                                     required: true
+                           created:
+                              type: datetime
+                              required: true
+                           lastModified:
+                              type: datetime
+                              required: true
                      websocketUrl:
                         description: URL for socket.io connection.
                         type: string
@@ -165,7 +171,9 @@ documentation:
                               "private": {
                                  "lastWindowLocation": "110, 64"
                               }
-                           }
+                           },
+                           "created": "2017-08-17T00:59:49Z",
+                           "lastModified: "2017-08-17T00:59:49Z"
                         },
                         "websocketUrl": "http://localhost:3000"
                      }
@@ -322,6 +330,12 @@ documentation:
                         description: Private preferences only available to the user.
                         type: object
                         required: false
+               created:
+                  type: datetime
+                  required: true
+               lastModified:
+                  type: datetime
+                  required: true
             example: |
                {
                   "firstName": "Anthony",
@@ -337,7 +351,9 @@ documentation:
                      "private": {
                         "lastWindowLocation": "110, 64"
                      }
-                  }
+                  },
+                  "created": "2017-08-17T00:59:49Z",
+                  "lastModified: "2017-08-17T00:59:49Z"
                }
          responses:
             201:
@@ -390,6 +406,12 @@ documentation:
                         description: Private preferences only available to the user.
                         type: object
                         required: false
+               created:
+                  type: datetime
+                  required: true
+               lastModified:
+                  type: datetime
+                  required: true
             example: |
                {
                   "firstName": "Anthony",
@@ -403,7 +425,9 @@ documentation:
                      "private": {
                         "lastWindowLocation": "110, 64"
                      }
-                  }
+                  },
+                  "created": "2017-08-17T00:59:49Z",
+                  "lastModified: "2017-08-17T00:59:49Z"
                }
          responses:
             204:
@@ -549,6 +573,12 @@ documentation:
                                     description: Private preferences only available to the organization administrators.
                                     type: object
                                     required: false
+                              created:
+                                 type: datetime
+                                 required: true
+                              lastModified:
+                                 type: datetime
+                                 required: true
                   example: |
                      {
                         "subscriberOrgs": [
@@ -557,14 +587,18 @@ documentation:
                               "name": "Anthony Daga",
                               "enabled": true,
                               "preferences": {
-                              }
+                              },
+                              "created": "2017-08-17T00:59:49Z",
+                              "lastModified: "2017-08-17T00:59:49Z"
                            },
                            {
                               "subscriberOrgId": "ea794510-cea6-4132-0008-a7ae1d32abb5",
                               "name": "Acme",
                               "enabled": true,
                               "preferences": {
-                              }
+                              },
+                              "created": "2017-08-17T00:59:49Z",
+                              "lastModified: "2017-08-17T00:59:49Z"
                            }
                         ]
                      }
@@ -706,6 +740,12 @@ documentation:
                                  preferences:
                                     type: object
                                     required: true
+                                 created:
+                                    type: datetime
+                                    required: true
+                                 lastModified:
+                                    type: datetime
+                                    required: true
                                  role:
                                     description: User's role related to this organization.  Currently admin | user.
                                     type: string
@@ -757,6 +797,8 @@ documentation:
                                  "enabled": true,
                                  "preferences": {
                                  },
+                                 "created": "2017-08-17T00:59:49Z",
+                                 "lastModified: "2017-08-17T00:59:49Z".
                                  "role": "admin",
                                  "presence": [
                                     {
@@ -776,6 +818,8 @@ documentation:
                                  "enabled": true,
                                  "preferences": {
                                  },
+                                 "created": "2017-08-17T00:59:49Z",
+                                 "lastModified: "2017-08-17T00:59:49Z".
                                  "role": "user"
                               }
                            ]
@@ -828,6 +872,10 @@ documentation:
                   description: |
                      FORBIDDEN<br />
                      The user doesn't have permissions to invite users to this subscriberOrg.
+               405:
+                  description: |
+                     METHOD_NOT_ALLOWED<br />
+                     Invitations can't be sent out for a disabled subscriberOrg.
 
    /replyToInvite:
       /{subscriberOrgId}:
@@ -855,7 +903,7 @@ documentation:
                404:
                   description: |
                      NOT_FOUND<br />
-                     The invitation or subscriberOrg was not found.
+                     The invitation or subscriberOrg was not found, or the invitation expired.
                403:
                   description: |
                      FORBIDDEN<br />
@@ -910,6 +958,12 @@ documentation:
                                        description: Private preferences only available to the team administrators.
                                        type: object
                                        required: false
+                              created:
+                                 type: datetime
+                                 required: true
+                              lastModified:
+                                 type: datetime
+                                 required: true
                   example: |
                      {
                         "teams": [
@@ -920,7 +974,9 @@ documentation:
                               "active": true,
                               "primary": false,
                               "preferences": {
-                              }
+                              },
+                              "created": "2017-08-17T00:59:49Z",
+                              "lastModified: "2017-08-17T00:59:49Z"
                            },
                            {
                               "teamId": "9dec8947-0381-4809-a053-b56777f782f5",
@@ -929,7 +985,9 @@ documentation:
                               "active": true,
                               "primary": false,
                               "preferences": {
-                              }
+                              },
+                              "created": "2017-08-17T00:59:49Z",
+                              "lastModified: "2017-08-17T00:59:49Z"
                            }
                         ]
                      }
@@ -992,6 +1050,14 @@ documentation:
                   description: |
                      FORBIDDEN<br />
                      The user is not allowed to create a team within the specified subscriber organization.
+               404:
+                  description: |
+                     NOT_FOUND<br />
+                     The subscriberOrg is invalid.
+               405:
+                                 description: |
+                                    METHOD_NOT_ALLOWED<br />
+                                    Invitations can't be sent out for an inactive team.
 
    /updateTeam:
       /{teamId}:
@@ -1207,6 +1273,10 @@ documentation:
                   description: |
                      FORBIDDEN<br />
                      The user doesn't have permissions to invite users to this team.
+               405:
+                  description: |
+                     METHOD_NOT_ALLOWED<br />
+                     Invitations can't be sent out for an inactive team.
 
    /replyToInvite:
       /{teamId}:
@@ -1234,7 +1304,7 @@ documentation:
                404:
                   description: |
                      NOT_FOUND<br />
-                     The invitation or team was not found.
+                     The invitation or team was not found, or the invitation expired.
                403:
                   description: |
                      FORBIDDEN<br />
@@ -1304,6 +1374,12 @@ documentation:
                                        description: Private preferences only available to the team room administrators.
                                        type: object
                                        required: false
+                              created:
+                                 type: datetime
+                                 required: true
+                              lastModified:
+                                 type: datetime
+                                 required: true
                   example: |
                      {
                         "teamRooms": [
@@ -1316,7 +1392,9 @@ documentation:
                               "active": true,
                               "primary": false,
                               "preferences: {
-                              }
+                              },
+                              "created": "2017-08-17T00:59:49Z",
+                              "lastModified: "2017-08-17T00:59:49Z"
                            },
                            {
                               "teamRoomId": "9dec8947-0381-4809-a053-b56777f782f5",
@@ -1327,7 +1405,9 @@ documentation:
                               "active": true,
                               "primary": true,
                               "preferences: {
-                              }
+                              },
+                              "created": "2017-08-17T00:59:49Z",
+                              "lastModified: "2017-08-17T00:59:49Z"
                            }
                         ]
                      }
@@ -1638,6 +1718,10 @@ documentation:
                   description: |
                      FORBIDDEN<br />
                      The user doesn't have permissions to invite users to this team room.
+               405:
+                  description: |
+                     METHOD_NOT_ALLOWED<br />
+                     Invitations can't be sent out for an inactive team room.
 
    /replyToInvite:
       /{teamRoomId}:
@@ -1665,7 +1749,7 @@ documentation:
                404:
                   description: |
                      NOT_FOUND<br />
-                     The invitation or team room was not found.
+                     The invitation or team room was not found, or the invitation expired.
                403:
                   description: |
                      FORBIDDEN<br />
@@ -1733,6 +1817,12 @@ documentation:
                                        preferences:
                                           type: object
                                           required: true
+                              created:
+                                 type: datetime
+                                 required: true
+                              lastModified:
+                                 type: datetime
+                                 required: true
                   example: |
                      {
                         "conversations": [
@@ -1761,7 +1851,9 @@ documentation:
                                     "preferences": {
                                     }
                                  }
-                              ]
+                              ],
+                              "created": "2017-08-17T00:59:49Z",
+                              "lastModified: "2017-08-17T00:59:49Z"
                            },
                            {
                               "conversationId": "9dec8947-0381-4809-a053-b56777f782f5",
@@ -1789,7 +1881,9 @@ documentation:
                                     "preferences": {
                                     }
                                  }
-                              ]
+                              ],
+                              "created": "2017-08-17T00:59:49Z",
+                              "lastModified: "2017-08-17T00:59:49Z"
                            }
                         ]
                      }
@@ -1845,10 +1939,6 @@ documentation:
                                  messageId:
                                     type: string
                                     required: true
-                                 created:
-                                    description: The format is in [RFC339](https://xml2rfc.tools.ietf.org/public/rfc/html/rfc3339.html#anchor14), which is a profile of [ISO 8601].
-                                    type: datetime
-                                    required: true
                                  createdBy:
                                     description: |
                                        `userId`
@@ -1874,27 +1964,36 @@ documentation:
                                     required: true
                                  level:
                                     type: integer
+                                    required: true,
+                                 created:
+                                    description: The format is in [RFC339](https://xml2rfc.tools.ietf.org/public/rfc/html/rfc3339.html#anchor14), which is a profile of [ISO 8601].
+                                    type: datetime
+                                    required: true
+                                 lastModified:
+                                    type: datetime
                                     required: true
                      example: |
                         {
                            "messages": [
                               {
                                  "messageId": "9dec8947-0381-4809-a053-b56777f782f4",
-                                 "created": "2017-04-12T23:20:50.52Z",
                                  "createdBy": "9dec8947-0381-4809-a053-b56777f782f4",
                                  "messageType": "text",
                                  "text": "Alright.",
                                  "path": "9dec8947-0381-4809-a053-b56777f782f4",
-                                 "level": 0
+                                 "level": 0,
+                                 "created": "2017-08-17T00:59:49Z",
+                                 "lastModified: "2017-08-17T00:59:49Z"
                               },
                               {
                                  "messageId": "9dec8947-0381-4809-a053-b56777f782f5",
-                                 "created": "2017-04-12T23:20:39.13Z",
                                  "createdBy": "9dec8947-0381-4809-a053-b56777f782f5",
                                  "messageType": "text",
                                  "text": "How's it going?",
                                  "path": "9dec8947-0381-4809-a053-b56777f782f5",
-                                 "level": 0
+                                 "level": 0,
+                                 "created": "2017-08-17T00:59:49Z",
+                                 "lastModified: "2017-08-17T00:59:49Z"
                               }
                            ]
                         }
@@ -1979,6 +2078,10 @@ documentation:
                   description: |
                      FORBIDDEN<br />
                      The user is not allowed to create a message in the specified conversation.
+               405:
+                  description: |
+                     METHOD_NOT_ALLOWED<br />
+                     Messages can't be posted to an inactive conversation.
 
 
 /integrations:
