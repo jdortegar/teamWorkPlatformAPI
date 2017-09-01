@@ -60,9 +60,9 @@ export function getUserTeams(req, userId, subscriberOrgId = undefined) {
             // Remove partitionId.
             const retTeams = [];
             teams.forEach((team) => {
-               const teamClone = JSON.parse(JSON.stringify(team));
+               const teamClone = _.cloneDeep(team);
                delete teamClone.partitionId;
-               teamClone.active = ((teamClone.subscriberOrgEnabled) && (teamClone.subscriberOrgEnabled === false)) ? false : teamClone.active;
+               teamClone.teamInfo.active = (('subscriberOrgEnabled' in teamClone.teamInfo) && (teamClone.teamInfo.subscriberOrgEnabled === false)) ? false : teamClone.teamInfo.active;
                retTeams.push(teamClone);
             });
             resolve(retTeams);
@@ -204,6 +204,7 @@ export function updateTeam(req, teamId, updateInfo, userId) {
             if (('active' in updateInfo) && (previousActive !== updateInfo.active)) {
                // Enable/disable children.
                teamRoomSvc.setTeamRoomsOfTeamActive(req, teamId, updateInfo.active);
+               req.logger.debug(`AD: setting teamrooms, teamId=${teamId}=${updateInfo.active}`);
             }
          })
          .catch(err => reject(err));

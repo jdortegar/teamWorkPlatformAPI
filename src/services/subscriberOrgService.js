@@ -32,7 +32,7 @@ export function getUserSubscriberOrgs(req, userId) {
             // Remove partitionId.
             const retSubscriberOrgs = [];
             subscriberOrgs.forEach((subscriberOrg) => {
-               const subscriberOrgClone = JSON.parse(JSON.stringify(subscriberOrg));
+               const subscriberOrgClone = _.cloneDeep(subscriberOrg);
                delete subscriberOrgClone.partitionId;
                retSubscriberOrgs.push(subscriberOrgClone);
             });
