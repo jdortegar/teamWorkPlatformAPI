@@ -420,7 +420,6 @@ export function getSubscriberUsersByUserIdAndSubscriberOrgId(req, userId, subscr
    if ((userId === undefined) || (subscriberOrgId === undefined)) {
       return Promise.reject('userId and subscriberOrgId needs to be specified.');
    }
-   req.logger.info(`AD: 3, userId=${userId}, subscriberOrgId=${subscriberOrgId}`);
 
    const tableName = `${config.tablePrefix}subscriberUsers`;
    return filteredScan(req, tableName, { subscriberUserInfo: { userId, subscriberOrgId } });

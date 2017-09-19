@@ -1,6 +1,6 @@
 import httpStatus from 'http-status';
 import APIError from '../helpers/APIError';
-import { publicConversations, publicMessage, publicMessages } from '../helpers/publishedVisibility';
+import { apiVersionedVisibility, publishByApiVersion } from '../helpers/publishedVisibility';
 import * as conversationsSvc from '../services/conversationService';
 import { ConversationNotActiveError, ConversationNotExistError, NoPermissionsError } from '../services/errors';
 
@@ -11,7 +11,7 @@ export function getConversations(req, res, next) {
 
    conversationsSvc.getConversations(req, userId, teamRoomId)
       .then((conversations) => {
-         res.status(httpStatus.OK).json({ conversations: publicConversations(conversations) });
+         res.status(httpStatus.OK).json({ conversations: publishByApiVersion(req, apiVersionedVisibility.publicConversations, conversations) });
       })
       .catch((err) => {
          next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
@@ -29,7 +29,7 @@ export function getTranscript(req, res, next) {
 
    conversationsSvc.getMessages(req, conversationId, userId, { since, until, minLevel, maxLevel, maxCount })
       .then((messages) => {
-         res.status(httpStatus.OK).json({ messages: publicMessages(messages) });
+         res.status(httpStatus.OK).json({ messages: publishByApiVersion(req, apiVersionedVisibility.publicMessages, messages) });
       })
       .catch((err) => {
          if (err instanceof ConversationNotExistError) {
@@ -49,7 +49,7 @@ export function createMessage(req, res, next) {
 
    conversationsSvc.createMessage(req, conversationId, userId, messageType, text, replyTo)
       .then((dbMessage) => {
-         res.status(httpStatus.CREATED).json({ message: publicMessage(dbMessage) });
+         res.status(httpStatus.CREATED).json({ message: publishByApiVersion(req, apiVersionedVisibility.publicMessage, dbMessage) });
       })
       .catch((err) => {
          if (err instanceof ConversationNotExistError) {

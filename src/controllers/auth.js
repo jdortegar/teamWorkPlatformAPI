@@ -14,7 +14,7 @@ import jwt from 'jsonwebtoken';
 import config from '../config/env';
 import { jwtMiddleware } from '../config/express';
 import APIError from '../helpers/APIError';
-import { privateUser } from '../helpers/publishedVisibility';
+import { apiVersionedVisibility, publishByApiVersion } from '../helpers/publishedVisibility';
 import { getAuthData, passwordMatch } from '../models/user';
 import * as userSvc from '../services/userService';
 
@@ -59,7 +59,7 @@ export function login(req, res, next) {
                res.status(httpStatus.OK).json({
                   status: 'SUCCESS',
                   token: jwt.sign(getAuthData(user, user.userId), config.jwtSecret),
-                  user: privateUser(user),
+                  user: publishByApiVersion(req, apiVersionedVisibility.privateUser, user),
                   websocketUrl: config.apiEndpoint
                });
                return;

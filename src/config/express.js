@@ -37,19 +37,40 @@ app.use(preAuthMiddleware);
 
 app.use(googleSiteVerification);
 
+// Extract API version in request and put in request as "apiVersion", defaulting to 0.
+app.use((req, res, next) => {
+   let apiVersion = 0;
+
+   const vMatch = req.url.match(/\/v\d+\//);
+   if (vMatch !== null) {
+      const vMatchStr = vMatch[0].substring(2, vMatch[0].length - 1);
+      try {
+         apiVersion = Number(vMatchStr);
+         if (apiVersion > config.apiVersion) {
+            throw new APIError(`Invalid API Version: ${vMatchStr}`, httpStatus.BAD_REQUEST);
+         }
+      } catch (err) {
+         throw new APIError(`Invalid API Version: ${vMatchStr}`, httpStatus.BAD_REQUEST);
+      }
+   }
+
+   req.apiVersion = apiVersion;
+   next();
+});
+
 export const jwtMiddleware = jwt({ secret: config.jwtSecret });
-app.use(jwtMiddleware.unless({
+app.use(jwtMiddleware.unless({ // TODO: version
    path: [
-      /^\/test/,
-      /^\/users\/registerUser/,
-      /^\/users\/validateEmail/,
-      /^\/users\/createUser/,
-      /^\/auth\/login/,
-      /^\/auth\/logout/,
-      /^\/integrations\/.*\/access/,
-      /^\/integrations\/.*\/webhooks/,
-      /^\/users\/passwordreset/,
-      /^.*\/passwordupdate/
+      /^\/(v\d+\/)?test/,
+      /^\/(v\d+\/)?users\/registerUser/,
+      /^\/(v\d+\/)?users\/validateEmail/,
+      /^\/(v\d+\/)?users\/createUser/,
+      /^\/(v\d+\/)?auth\/login/,
+      /^\/(v\d+\/)?auth\/logout/,
+      /^\/(v\d+\/)?integrations\/.*\/access/,
+      /^\/(v\d+\/)?integrations\/.*\/webhooks/,
+      /^\/(v\d+\/)?users\/passwordreset/,
+      /^\/(v\d+\/)?passwordupdate/
    ]
 }));
 
@@ -57,6 +78,7 @@ app.use(postAuthMiddleware);
 
 // mount all routes on / path
 app.use('/', routes);
+app.use('/v:apiVersion/', routes);
 
 // Catch 404 and forward to error handler.
 app.use((req, res, next) => {

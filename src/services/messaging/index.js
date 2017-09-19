@@ -1,20 +1,5 @@
 import _ from 'lodash';
-import {
-   privateSubscriberOrg,
-   privateTeam,
-   privateTeamRoom,
-   privateUser,
-   publicConversation,
-   publicIntegration,
-   publicTeam,
-   publicTeamMember,
-   publicTeamRoom,
-   publicTeamRoomMember,
-   publicUser,
-   publicMessage,
-   publicSubscriber,
-   publicSubscriberOrg
-} from '../../helpers/publishedVisibility';
+import { apiVersionedVisibility, publishByApiVersion } from '../../helpers/publishedVisibility';
 import * as internalQueue from './internalQueue';
 import { _broadcastEvent, _joinChannels, ChannelFactory, EventTypes } from './messagingService';
 import Roles from '../roles';
@@ -39,13 +24,13 @@ export function userCreated(req, user) { // eslint-disable-line no-unused-vars
 
 export function userUpdated(req, user) {
    // TODO: should only be broadcast to subscribersOrgs of the user.
-   return _broadcastEvent(req, EventTypes.userUpdated, publicUser(user), [
+   return _broadcastEvent(req, EventTypes.userUpdated, publishByApiVersion(req, apiVersionedVisibility.publicUser, user), [
       ChannelFactory.publicChannel()
    ]);
 }
 
 export function userPrivateInfoUpdated(req, user) {
-   return _broadcastEvent(req, EventTypes.userPrivateInfoUpdated, privateUser(user), [
+   return _broadcastEvent(req, EventTypes.userPrivateInfoUpdated, publishByApiVersion(req, apiVersionedVisibility.privateUser, user), [
       ChannelFactory.personalChannel(user.userId)
    ]);
 }
@@ -65,19 +50,19 @@ export function subscriberOrgCreated(req, subscriberOrg, userId) {
       ChannelFactory.subscriberOrgAdminChannel(subscriberOrg.subscriberOrgId)
    ]);
 
-   return _broadcastEvent(req, EventTypes.subscriberOrgCreated, publicSubscriberOrg(subscriberOrg), [
+   return _broadcastEvent(req, EventTypes.subscriberOrgCreated, publishByApiVersion(req, apiVersionedVisibility.publicSubscriberOrg, subscriberOrg), [
       ChannelFactory.publicChannel()
    ]); // TODO: which channels gets this.
 }
 
 export function subscriberOrgUpdated(req, subscriberOrg) {
-   return _broadcastEvent(req, EventTypes.subscriberOrgUpdated, publicSubscriberOrg(subscriberOrg), [
+   return _broadcastEvent(req, EventTypes.subscriberOrgUpdated, publishByApiVersion(req, apiVersionedVisibility.publicSubscriberOrg, subscriberOrg), [
       ChannelFactory.subscriberOrgChannel(subscriberOrg.subscriberOrgId)
    ]);
 }
 
 export function subscriberOrgPrivateInfoUpdated(req, subscriberOrg) {
-   return _broadcastEvent(req, EventTypes.userPrivateInfoUpdated, privateSubscriberOrg(subscriberOrg), [
+   return _broadcastEvent(req, EventTypes.userPrivateInfoUpdated, publishByApiVersion(req, apiVersionedVisibility.privateSubscriberOrg, subscriberOrg), [
       ChannelFactory.subscriberOrgAdminChannel(subscriberOrg.subscriberOrgId)
    ]);
 }
@@ -90,7 +75,9 @@ export function subscriberAdded(req, subscriberOrgId, user, role = Roles.user) {
    }
 
    return _joinChannels(req, user.userId, channels)
-      .then(() => _broadcastEvent(req, EventTypes.subscriberAdded, publicSubscriber(subscriberOrgId, user), [subscriberOrgChannel]))
+      .then(() => {
+         _broadcastEvent(req, EventTypes.subscriberAdded, publishByApiVersion(req, apiVersionedVisibility.publicSubscriber, subscriberOrgId, user), [subscriberOrgChannel]);
+      })
       .catch(err => req.logger.error(err));
 }
 
@@ -103,19 +90,19 @@ export function teamCreated(req, team, userId) {
       ChannelFactory.teamAdminChannel(team.teamId)
    ]);
 
-   return _broadcastEvent(req, EventTypes.teamCreated, publicTeam(team), [
+   return _broadcastEvent(req, EventTypes.teamCreated, publishByApiVersion(req, apiVersionedVisibility.publicTeam, team), [
       ChannelFactory.subscriberOrgChannel(team.subscriberOrgId)
    ]);
 }
 
 export function teamUpdated(req, team) {
-   return _broadcastEvent(req, EventTypes.teamUpdated, publicTeam(team), [
+   return _broadcastEvent(req, EventTypes.teamUpdated, publishByApiVersion(req, apiVersionedVisibility.publicTeam, team), [
       ChannelFactory.teamChannel(team.teamId)
    ]);
 }
 
 export function teamPrivateInfoUpdated(req, team) {
-   return _broadcastEvent(req, EventTypes.teamPrivateInfoUpdated, privateTeam(team), [
+   return _broadcastEvent(req, EventTypes.teamPrivateInfoUpdated, publishByApiVersion(req, apiVersionedVisibility.privateTeam, team), [
       ChannelFactory.teamAdminChannel(team.teamId)
    ]);
 }
@@ -128,7 +115,7 @@ export function teamMemberAdded(req, teamId, user, role = Roles.user) {
    }
 
    return _joinChannels(req, user.userId, channels)
-      .then(() => _broadcastEvent(req, EventTypes.teamMemberAdded, publicTeamMember(teamId, user), [teamChannel]))
+      .then(() => _broadcastEvent(req, EventTypes.teamMemberAdded, publishByApiVersion(req, apiVersionedVisibility.publicTeamMember, teamId, user), [teamChannel]))
       .catch(err => req.logger.error(err));
 }
 
@@ -141,19 +128,19 @@ export function teamRoomCreated(req, teamRoom, userId) {
       ChannelFactory.teamRoomAdminChannel(teamRoom.teamRoomId)
    ]);
 
-   return _broadcastEvent(req, EventTypes.teamRoomCreated, publicTeamRoom(teamRoom), [
+   return _broadcastEvent(req, EventTypes.teamRoomCreated, publishByApiVersion(req, apiVersionedVisibility.publicTeamRoom, teamRoom), [
       ChannelFactory.teamChannel(teamRoom.teamId)
    ]);
 }
 
 export function teamRoomUpdated(req, teamRoom) {
-   return _broadcastEvent(req, EventTypes.teamRoomUpdated, publicTeamRoom(teamRoom), [
+   return _broadcastEvent(req, EventTypes.teamRoomUpdated, publishByApiVersion(req, apiVersionedVisibility.publicTeamRoom, teamRoom), [
       ChannelFactory.teamRoomChannel(teamRoom.teamRoomId)
    ]);
 }
 
 export function teamRoomPrivateInfoUpdated(req, teamRoom) {
-   return _broadcastEvent(req, EventTypes.teamRoomPrivateInfoUpdated, privateTeamRoom(teamRoom), [
+   return _broadcastEvent(req, EventTypes.teamRoomPrivateInfoUpdated, publishByApiVersion(req, apiVersionedVisibility.privateTeamRoom, teamRoom), [
       ChannelFactory.teamRoomAdminChannel(teamRoom.teamRoomId)
    ]);
 }
@@ -166,7 +153,7 @@ export function teamRoomMemberAdded(req, teamRoomId, user, role = Roles.user) {
    }
 
    return _joinChannels(req, user.userId, channels)
-      .then(() => _broadcastEvent(req, EventTypes.teamRoomMemberAdded, publicTeamRoomMember(teamRoomId, user), [teamRoomChannel]))
+      .then(() => _broadcastEvent(req, EventTypes.teamRoomMemberAdded, publishByApiVersion(req, apiVersionedVisibility.publicTeamRoomMember, teamRoomId, user), [teamRoomChannel]))
       .catch(err => req.logger.error(err));
 }
 
@@ -178,13 +165,13 @@ export function conversationCreated(req, conversation, userId) {
       ChannelFactory.conversationChannel(conversation.conversationId)
    ]);
 
-   return _broadcastEvent(req, EventTypes.conversationCreated, publicConversation(conversation), [
+   return _broadcastEvent(req, EventTypes.conversationCreated, publishByApiVersion(req, apiVersionedVisibility.publicConversation, conversation), [
       ChannelFactory.teamRoomChannel(conversation.teamRoomId)
    ]);
 }
 
 export function conversationUpdated(req, conversation) {
-   return _broadcastEvent(req, EventTypes.conversationUpdated, publicConversation(conversation), [
+   return _broadcastEvent(req, EventTypes.conversationUpdated, publishByApiVersion(req, apiVersionedVisibility.publicConversation, conversation), [
       ChannelFactory.conversationChannel(conversation.conversationId)
    ]);
 }
@@ -193,7 +180,7 @@ export function conversationUpdated(req, conversation) {
 // EventType = message
 
 export function messageCreated(req, message) {
-   return _broadcastEvent(req, EventTypes.messageCreated, publicMessage(message), [
+   return _broadcastEvent(req, EventTypes.messageCreated, publishByApiVersion(req, apiVersionedVisibility.publicMessage, message), [
       ChannelFactory.conversationChannel(message.conversationId)
    ]);
 }
@@ -207,19 +194,19 @@ export function boxIntegrationCreated(req, subscriberUser) {
    delete event.role;
    internalQueue.sendEvent(req, EventTypes.boxIntegrationCreated, event);
 
-   return _broadcastEvent(req, EventTypes.boxIntegrationCreated, publicIntegration(subscriberUser), [
+   return _broadcastEvent(req, EventTypes.boxIntegrationCreated, publishByApiVersion(req, apiVersionedVisibility.publicIntegration, subscriberUser), [
       ChannelFactory.personalChannel(subscriberUser.userId)
    ]);
 }
 
 export function boxIntegrationExpired(req, subscriberUser) {
-   return _broadcastEvent(req, EventTypes.boxIntegrationExpired, publicIntegration(subscriberUser), [
+   return _broadcastEvent(req, EventTypes.boxIntegrationExpired, publishByApiVersion(req, apiVersionedVisibility.publicIntegration, subscriberUser), [
       ChannelFactory.personalChannel(subscriberUser.userId)
    ]);
 }
 
 export function boxIntegrationRevoked(req, subscriberUser) {
-   return _broadcastEvent(req, EventTypes.boxIntegrationRevoked, publicIntegration(subscriberUser), [
+   return _broadcastEvent(req, EventTypes.boxIntegrationRevoked, publishByApiVersion(req, apiVersionedVisibility.publicIntegration, subscriberUser), [
       ChannelFactory.personalChannel(subscriberUser.userId)
    ]);
 }
@@ -235,19 +222,19 @@ export function googleIntegrationCreated(req, subscriberUser) {
    delete event.role;
    internalQueue.sendEvent(req, EventTypes.googleIntegrationCreated, event);
 
-   return _broadcastEvent(req, EventTypes.googleIntegrationCreated, publicIntegration(subscriberUser), [
+   return _broadcastEvent(req, EventTypes.googleIntegrationCreated, publishByApiVersion(req, apiVersionedVisibility.publicIntegration, subscriberUser), [
       ChannelFactory.personalChannel(subscriberUser.userId)
    ]);
 }
 
 export function googleIntegrationExpired(req, subscriberUser) {
-   return _broadcastEvent(req, EventTypes.googleIntegrationExpired, publicIntegration(subscriberUser), [
+   return _broadcastEvent(req, EventTypes.googleIntegrationExpired, publishByApiVersion(req, apiVersionedVisibility.publicIntegration, subscriberUser), [
       ChannelFactory.personalChannel(subscriberUser.userId)
    ]);
 }
 
 export function googleIntegrationRevoked(req, subscriberUser) {
-   return _broadcastEvent(req, EventTypes.googleIntegrationRevoked, publicIntegration(subscriberUser), [
+   return _broadcastEvent(req, EventTypes.googleIntegrationRevoked, publishByApiVersion(req, apiVersionedVisibility.publicIntegration, subscriberUser), [
       ChannelFactory.personalChannel(subscriberUser.userId)
    ]);
 }

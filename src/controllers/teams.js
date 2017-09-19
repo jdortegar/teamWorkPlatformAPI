@@ -1,6 +1,6 @@
 import httpStatus from 'http-status';
 import APIError from '../helpers/APIError';
-import { privateTeam, publicTeams, publicUsers } from '../helpers/publishedVisibility';
+import { apiVersionedVisibility, publishByApiVersion } from '../helpers/publishedVisibility';
 import * as teamSvc from '../services/teamService';
 import {
    CannotDeactivateError,
@@ -20,7 +20,7 @@ export function getTeams(req, res, next) {
 
    teamSvc.getUserTeams(req, userId, subscriberOrgId)
       .then((teams) => {
-         res.status(httpStatus.OK).json({ teams: publicTeams(teams) });
+         res.status(httpStatus.OK).json({ teams: publishByApiVersion(req, apiVersionedVisibility.publicTeams, teams) });
       })
       .catch((err) => {
          next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
@@ -33,7 +33,7 @@ export function createTeam(req, res, next) {
 
    teamSvc.createTeam(req, subscriberOrgId, req.body, userId)
       .then((createdTeam) => {
-         res.status(httpStatus.CREATED).json(privateTeam(createdTeam));
+         res.status(httpStatus.CREATED).json(publishByApiVersion(req, apiVersionedVisibility.privateTeam, createdTeam));
       })
       .catch((err) => {
          if (err instanceof TeamExistsError) {
@@ -76,7 +76,7 @@ export function getTeamMembers(req, res, next) {
 
    teamSvc.getTeamUsers(req, teamId, userId)
       .then((teamUsers) => {
-         res.status(httpStatus.OK).json({ teamMembers: publicUsers(teamUsers) });
+         res.status(httpStatus.OK).json({ teamMembers: publishByApiVersion(req, apiVersionedVisibility.publicUsers, teamUsers) });
       })
       .catch((err) => {
          if (err instanceof TeamNotExistError) {

@@ -162,7 +162,16 @@ export function setConversationsOfTeamRoomActive(req, teamRoomId, active) {
             dbConversations.forEach((dbConversation) => {
                const { conversationInfo } = dbConversation;
                conversationInfo.active = active;
-               updateConversations.push(updateItem(req, -1, `${config.tablePrefix}conversations`, 'conversationId', dbConversation.conversationId, { conversationInfo: { active } }));
+               updateConversations.push(
+                  updateItem(
+                     req,
+                     -1,
+                     `${config.tablePrefix}conversations`,
+                     'conversationId',
+                     dbConversation.conversationId,
+                     { conversationInfo: { active } }
+                  )
+               );
                conversations.push(_.merge({ conversationId: dbConversation.conversationId }, conversationInfo));
             });
             return Promise.all(updateConversations);
@@ -383,3 +392,41 @@ export function createMessage(req, conversationId, userId, messageType, text, re
          .catch(err => reject(err));
    });
 }
+
+
+// /**
+//  *
+//  * @param req
+//  * @param userId
+//  * @param conversationId
+//  * @param until
+//  * @param parentMessageId
+//  * @returns {Promise}
+//  */
+// export function readMessages(req, userId, conversationId, until, parentMessageId = undefined) {
+//    return new Promise((resolve, reject) => {
+//
+//    });
+// }
+//
+// export function getReadMessages(req, userId, conversationIds = undefined) {
+//
+// }
+//
+// export function unreadMessages(req, userId, conversationId, since, parentMessageId = undefined) {
+//
+// }
+
+// const readMessages = {
+//    readMessages: [
+//       {
+//          conversationId, // required
+//          until,
+//          parentMessages: {
+//             parentMessageId: {
+//                until
+//             }
+//          }
+//       }
+//    ]
+// }

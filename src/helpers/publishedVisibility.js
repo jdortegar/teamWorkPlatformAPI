@@ -1,6 +1,6 @@
 import _ from 'lodash';
 
-export function privateUser(dbUser) {
+function privateUser(dbUser) {
    const userId = dbUser.userId;
    const { emailAddress, firstName, lastName, displayName, country, timeZone, icon, enabled, preferences, created, lastModified, role, presence } = dbUser.userInfo || dbUser;
    return {
@@ -25,7 +25,7 @@ export function privateUser(dbUser) {
    };
 }
 
-export function publicUser(dbUser) {
+function publicUser(dbUser) {
    const ret = privateUser(dbUser);
    delete ret.username;
    delete ret.email;
@@ -38,14 +38,14 @@ export function publicUser(dbUser) {
    return ret;
 }
 
-export function publicUsers(dbUsers) {
+function publicUsers(dbUsers) {
    return dbUsers.map((dbUser) => {
       return publicUser(dbUser);
    });
 }
 
 
-export function privateSubscriberOrg(dbSubscriberOrg) {
+function privateSubscriberOrg(dbSubscriberOrg) {
    const subscriberOrgId = dbSubscriberOrg.subscriberOrgId;
    const { name, enabled, preferences, created, lastModified } = dbSubscriberOrg.subscriberOrgInfo || dbSubscriberOrg;
    return {
@@ -58,7 +58,7 @@ export function privateSubscriberOrg(dbSubscriberOrg) {
    };
 }
 
-export function publicSubscriberOrg(dbSubscriberOrg) {
+function publicSubscriberOrg(dbSubscriberOrg) {
    const ret = privateSubscriberOrg(dbSubscriberOrg);
    if ((ret.preferences) && (ret.preferences.private)) {
       delete ret.preferences.private;
@@ -66,13 +66,13 @@ export function publicSubscriberOrg(dbSubscriberOrg) {
    return ret;
 }
 
-export function publicSubscriberOrgs(dbSubscriberOrgs) {
+function publicSubscriberOrgs(dbSubscriberOrgs) {
    return dbSubscriberOrgs.map((dbSubscriberOrg) => {
       return publicSubscriberOrg(dbSubscriberOrg);
    });
 }
 
-export function publicSubscriber(subscriberOrgId, dbUser) {
+function publicSubscriber(subscriberOrgId, dbUser) {
    return {
       subscriberOrgId,
       user: publicUser(dbUser)
@@ -80,7 +80,7 @@ export function publicSubscriber(subscriberOrgId, dbUser) {
 }
 
 
-export function privateTeam(dbTeam) {
+function privateTeam(dbTeam) {
    const teamId = dbTeam.teamId;
    const { subscriberOrgId, name, active, primary, preferences, created, lastModified } = dbTeam.teamInfo || dbTeam;
    return {
@@ -95,7 +95,7 @@ export function privateTeam(dbTeam) {
    };
 }
 
-export function publicTeam(dbTeam) {
+function publicTeam(dbTeam) {
    const ret = privateTeam(dbTeam);
    if ((ret.preferences) && (ret.preferences.private)) {
       delete ret.preferences.private;
@@ -103,13 +103,13 @@ export function publicTeam(dbTeam) {
    return ret;
 }
 
-export function publicTeams(dbTeams) {
+function publicTeams(dbTeams) {
    return dbTeams.map((dbTeam) => {
       return publicTeam(dbTeam);
    });
 }
 
-export function publicTeamMember(teamId, dbUser) {
+function publicTeamMember(teamId, dbUser) {
    return {
       teamId,
       user: publicUser(dbUser)
@@ -117,7 +117,7 @@ export function publicTeamMember(teamId, dbUser) {
 }
 
 
-export function privateTeamRoom(dbTeamRoom) {
+function privateTeamRoom(dbTeamRoom) {
    const teamRoomId = dbTeamRoom.teamRoomId;
    const { teamId, name, purpose, publish, active, primary, preferences, created, lastModified } = dbTeamRoom.teamRoomInfo || dbTeamRoom;
    return {
@@ -134,7 +134,7 @@ export function privateTeamRoom(dbTeamRoom) {
    };
 }
 
-export function publicTeamRoom(dbTeamRoom) {
+function publicTeamRoom(dbTeamRoom) {
    const ret = privateTeamRoom(dbTeamRoom);
    if ((ret.preferences) && (ret.preferences.private)) {
       delete ret.preferences.private;
@@ -142,13 +142,13 @@ export function publicTeamRoom(dbTeamRoom) {
    return ret;
 }
 
-export function publicTeamRooms(dbTeamRooms) {
+function publicTeamRooms(dbTeamRooms) {
    return dbTeamRooms.map((dbTeamRoom) => {
       return publicTeamRoom(dbTeamRoom);
    });
 }
 
-export function publicTeamRoomMember(teamRoomId, dbUser) {
+function publicTeamRoomMember(teamRoomId, dbUser) {
    return {
       teamRoomId,
       user: publicUser(dbUser)
@@ -156,7 +156,7 @@ export function publicTeamRoomMember(teamRoomId, dbUser) {
 }
 
 
-export function publicConversation(dbConversation) {
+function publicConversation(dbConversation) {
    const conversationId = dbConversation.conversationId;
    const { teamRoomId, created, lastModified } = dbConversation.conversationInfo || dbConversation;
    const participants = (dbConversation.participants) ? publicUsers(dbConversation.participants) : undefined;
@@ -169,14 +169,14 @@ export function publicConversation(dbConversation) {
    };
 }
 
-export function publicConversations(dbConversations) {
+function publicConversations(dbConversations) {
    return dbConversations.map((dbConversation) => {
       return publicConversation(dbConversation);
    });
 }
 
 
-export function publicMessage(dbMessage) {
+function publicMessage(dbMessage) {
    const messageId = dbMessage.messageId;
    const { conversationId, createdBy, messageType, text, replyTo, path, level, created, lastModified } = dbMessage.messageInfo || dbMessage;
    return {
@@ -193,13 +193,13 @@ export function publicMessage(dbMessage) {
    };
 }
 
-export function publicMessages(dbMessages) {
+function publicMessages(dbMessages) {
    return dbMessages.map((dbMessage) => {
       return publicMessage(dbMessage);
    });
 }
 
-export function publicIntegration(integration) {
+function publicIntegration(integration) {
    const clone = _.cloneDeep(integration);
    if (clone.box) {
       delete clone.box.accessToken;
@@ -214,6 +214,99 @@ export function publicIntegration(integration) {
    return clone;
 }
 
-export function publicIntegrations(integrations) {
+function publicIntegrations(integrations) {
    return integrations.map(integration => publicIntegration(integration));
+}
+
+
+// Index in the array is the version number to publish against.
+export const apiVersionedVisibility = {
+   privateUser: [
+      privateUser,
+      privateUser
+   ],
+   publicUser: [
+      publicUser,
+      publicUser
+   ],
+   publicUsers: [
+      publicUsers,
+      publicUsers
+   ],
+   privateSubscriberOrg: [
+      privateSubscriberOrg,
+      privateSubscriberOrg
+   ],
+   publicSubscriberOrg: [
+      publicSubscriberOrg,
+      publicSubscriberOrg
+   ],
+   publicSubscriberOrgs: [
+      publicSubscriberOrgs,
+      publicSubscriberOrgs
+   ],
+   publicSubscriber: [
+      publicSubscriber,
+      publicSubscriber
+   ],
+   privateTeam: [
+      privateTeam,
+      privateTeam
+   ],
+   publicTeam: [
+      publicTeam,
+      publicTeam
+   ],
+   publicTeams: [
+      publicTeams,
+      publicTeams
+   ],
+   publicTeamMember: [
+      publicTeamMember,
+      publicTeamMember
+   ],
+   privateTeamRoom: [
+      privateTeamRoom,
+      privateTeamRoom
+   ],
+   publicTeamRoom: [
+      publicTeamRoom,
+      publicTeamRoom
+   ],
+   publicTeamRooms: [
+      publicTeamRooms,
+      publicTeamRooms
+   ],
+   publicTeamRoomMember: [
+      publicTeamRoomMember,
+      publicTeamRoomMember
+   ],
+   publicConversation: [
+      publicConversation,
+      publicConversation
+   ],
+   publicConversations: [
+      publicConversations,
+      publicConversations
+   ],
+   publicMessage: [
+      publicMessage,
+      publicMessage
+   ],
+   publicMessages: [
+      publicMessages,
+      publicMessages
+   ],
+   publicIntegration: [
+      publicIntegration,
+      publicIntegration
+   ],
+   publicIntegrations: [
+      publicIntegrations,
+      publicIntegrations
+   ]
+};
+
+export function publishByApiVersion(req, publishers, ...args) {
+   return publishers[req.apiVersion](...args);
 }

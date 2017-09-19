@@ -10,14 +10,13 @@
 //---------------------------------------------------------------------
 
 import express from 'express';
-import validate from 'express-validation';
-import paramValidation from '../config/param-validation';
+import { apiVersionedValidators, validateByApiVersion } from '../config/param-validation';
 import * as auth from '../controllers/auth';
 
 const router = express.Router();
 
 router.route('/login')
-   .post(validate(paramValidation.login), auth.login);
+   .post(validateByApiVersion(apiVersionedValidators.login), auth.login);
 
 router.route('/logout')
    .get(auth.logout);

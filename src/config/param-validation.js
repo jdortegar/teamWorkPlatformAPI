@@ -1,4 +1,5 @@
 import Joi from 'joi';
+import validate from 'express-validation';
 
 
 const validationSchemas = {
@@ -143,4 +144,88 @@ const validationSchemas = {
    }
 };
 
-export default validationSchemas;
+
+// Index in the array is the version number to validate against.
+export const apiVersionedValidators = {
+   registerUser: [
+      validate(validationSchemas.registerUser),
+      validate(validationSchemas.registerUser)
+   ],
+   createUser: [
+      validate(validationSchemas.createUser),
+      validate(validationSchemas.createUser)
+   ],
+   updateUser: [
+      validate(validationSchemas.updateUser),
+      validate(validationSchemas.updateUser)
+   ],
+   updateUserPublicPreferences: [
+      validate(validationSchemas.updateUserPublicPreferences),
+      validate(validationSchemas.updateUserPublicPreferences)
+   ],
+   login: [
+      validate(validationSchemas.login),
+      validate(validationSchemas.login)
+   ],
+   createSubscriberOrg: [
+      validate(validationSchemas.createSubscriberOrg),
+      validate(validationSchemas.createSubscriberOrg)
+   ],
+   updateSubscriberOrg: [
+      validate(validationSchemas.updateSubscriberOrg),
+      validate(validationSchemas.updateSubscriberOrg)
+   ],
+   inviteSubscribers: [
+      validate(validationSchemas.inviteSubscribers),
+      validate(validationSchemas.inviteSubscribers)
+   ],
+   replyToInvite: [
+      validate(validationSchemas.replyToInvite),
+      validate(validationSchemas.replyToInvite)
+   ],
+   createTeam: [
+      validate(validationSchemas.createTeam),
+      validate(validationSchemas.createTeam)
+   ],
+   updateTeam: [
+      validate(validationSchemas.updateTeam),
+      validate(validationSchemas.updateTeam)
+   ],
+   inviteTeamMembers: [
+      validate(validationSchemas.inviteTeamMembers),
+      validate(validationSchemas.inviteTeamMembers)
+   ],
+   createTeamRoom: [
+      validate(validationSchemas.createTeamRoom),
+      validate(validationSchemas.createTeamRoom)
+   ],
+   updateTeamRoom: [
+      validate(validationSchemas.updateTeamRoom),
+      validate(validationSchemas.updateTeamRoom)
+   ],
+   inviteTeamRoomMembers: [
+      validate(validationSchemas.inviteTeamRoomMembers),
+      validate(validationSchemas.inviteTeamRoomMembers)
+   ],
+   createMessage: [
+      validate(validationSchemas.createMessage),
+      validate(validationSchemas.createMessage)
+   ]
+};
+
+class ApiValidator {
+   validators;
+
+   constructor(validators) {
+      this.validators = validators;
+   }
+
+   doValidation(req, res, next) {
+      this.validators[req.apiVersion](req, res, next);
+   }
+}
+
+export function validateByApiVersion(validators) {
+   const apiValidator = new ApiValidator(validators);
+   return apiValidator.doValidation.bind(apiValidator);
+}

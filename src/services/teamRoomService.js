@@ -72,7 +72,9 @@ export function getUserTeamRooms(req, userId, { teamId, subscriberOrgId } = {}) 
             teamRooms.forEach((teamRoom) => {
                const teamRoomClone = _.cloneDeep(teamRoom);
                delete teamRoomClone.partitionId;
-               teamRoomClone.teamRoomInfo.active = (('teamActive' in teamRoomClone.teamRoomInfo) && (teamRoomClone.teamRoomInfo.teamActive === false)) ? false : teamRoomClone.teamRoomInfo.active;
+               teamRoomClone.teamRoomInfo.active =
+                  (('teamActive' in teamRoomClone.teamRoomInfo) && (teamRoomClone.teamRoomInfo.teamActive === false))
+                     ? false : teamRoomClone.teamRoomInfo.active;
                retTeamRooms.push(teamRoomClone);
             });
             resolve(retTeamRooms);
@@ -230,7 +232,6 @@ export function setTeamRoomsOfTeamActive(req, teamId, active) {
             dbTeamRooms.forEach((dbTeamRoom) => {
                const { teamRoomInfo } = dbTeamRoom;
                teamRoomInfo.teamActive = active;
-               req.logger.debug(`AD: setting teamRoomId=${dbTeamRoom.teamRoomId}.teamActive=${teamRoomInfo.teamActive}`);
                updateTeamRooms.push(updateItem(req, -1, `${config.tablePrefix}teamRooms`, 'teamRoomId', dbTeamRoom.teamRoomId, { teamRoomInfo: { teamActive: active } }));
                teamRooms.push(_.merge({ teamRoomId: dbTeamRoom.teamRoomId }, teamRoomInfo));
             });
