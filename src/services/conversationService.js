@@ -6,32 +6,19 @@ import { conversationCreated, conversationUpdated, messageCreated } from './mess
 import * as teamRoomSvc from './teamRoomService';
 import { ConversationNotExistError, NoPermissionsError, NotActiveError } from './errors';
 import {
+   createMessageInDb,
+   getMessagesByConversationIdFiltered,
+   getMessageById
+} from '../repositories/messagesRepo';
+import {
    createItem,
    getConversationParticipantsByConversationId,
    getConversationParticipantsByUserId,
    getConversationsByIds,
    getConversationsByTeamRoomId,
-   getMessagesByConversationIdFiltered,
-   getMessageById,
    getUsersByIds,
    updateItem
-} from './queries';
-
-function createMessageInDb(req, partitionId, messageId, message) {
-   const docClient = new req.app.locals.AWS.DynamoDB.DocumentClient();
-   const tableName = `${config.tablePrefix}messages`;
-
-   const params = {
-      TableName: tableName,
-      Item: {
-         partitionId,
-         messageId,
-         messageInfo: message
-      }
-   };
-
-   return docClient.put(params).promise();
-}
+} from '../repositories/util';
 
 const MESSAGE_PATH_SEPARATOR = '##';
 
@@ -335,15 +322,14 @@ export function getMessages(req, conversationId, userId = undefined, { since, un
    });
 }
 
-export function createMessage(req, conversationId, userId, messageType, text, replyTo) {
+export function createMessage(req, conversationId, userId, content, replyTo) {
    return new Promise((resolve, reject) => {
       const messageId = uuid.v4();
 
       const message = {
          conversationId,
          createdBy: userId,
-         messageType,
-         text,
+         content,
          replyTo,
          created: req.now.format(),
          lastModified: req.now.format()
@@ -358,7 +344,7 @@ export function createMessage(req, conversationId, userId, messageType, text, re
             }
             const conversation = conversations[0];
 
-            if (('active' in conversation.conversationInfo) || (conversation.conversationInfo.active === false)) {
+            if (('active' in conversation.conversationInfo) && (conversation.conversationInfo.active === false)) {
                throw new NotActiveError(conversationId);
             }
 
@@ -372,10 +358,11 @@ export function createMessage(req, conversationId, userId, messageType, text, re
             }
             return undefined;
          })
-         .then((replyToMessage) => {
-            if (replyToMessage) {
-               message.level = ((replyToMessage.level) ? replyToMessage.level : 0) + 1;
-               message.path = (replyToMessage.path) ? replyToMessage.path : '';
+         .then((replyToMessages) => {
+            if ((replyToMessages) && (replyToMessages.length > 0)) {
+               const replyToMessage = replyToMessages[0];
+               message.level = ((replyToMessage.messageInfo.level) ? replyToMessage.messageInfo.level : 0) + 1;
+               message.path = (replyToMessage.messageInfo.path) ? replyToMessage.messageInfo.path : '';
                message.path = `${message.path}${MESSAGE_PATH_SEPARATOR}${messageId}`;
             } else {
                message.level = 0;

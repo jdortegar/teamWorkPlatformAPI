@@ -5,7 +5,7 @@ import { NoPermissionsError, UserNotExistError } from './errors';
 import { getRedisInvitations } from './invitations';
 import { userCreated, userUpdated } from './messaging';
 import * as subscriberOrgSvc from './subscriberOrgService';
-import { createItem, getUsersByIds, getUsersByEmailAddresses, updateItem } from './queries';
+import { createItem, getUsersByIds, getUsersByEmailAddresses, updateItem } from '../repositories/util';
 import { getRandomColor } from './util';
 import { hashPassword } from '../models/user';
 

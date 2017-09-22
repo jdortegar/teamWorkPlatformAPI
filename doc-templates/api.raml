@@ -149,6 +149,10 @@ documentation:
                         description: URL for socket.io connection.
                         type: string
                         required: true
+                     resourcesBaseUrl:
+                        description: Base URL for storing resources (ex. images, pdf, etc.).
+                        type: string
+                        required: true
                   example: |
                      {
                         "status": "SUCCESS",
@@ -175,7 +179,8 @@ documentation:
                            "created": "2017-08-17T00:59:49Z",
                            "lastModified: "2017-08-17T00:59:49Z"
                         },
-                        "websocketUrl": "http://localhost:3000"
+                        "websocketUrl": "http://localhost:3000",
+                        "resourcesBaseUrl": "https://hablaai-resources.example.com/some/path"
                      }
             401:
                description: |
@@ -1055,9 +1060,9 @@ documentation:
                      NOT_FOUND<br />
                      The subscriberOrg is invalid.
                405:
-                                 description: |
-                                    METHOD_NOT_ALLOWED<br />
-                                    Invitations can't be sent out for an inactive team.
+                  description: |
+                     METHOD_NOT_ALLOWED<br />
+                     Invitations can't be sent out for an inactive team.
 
    /updateTeam:
       /{teamId}:
@@ -1950,10 +1955,37 @@ documentation:
                                  #   required: true
                                  messageType:
                                     enum: [ text ]
-                                    required: true
+                                    description: DEPRECATED
                                  text:
                                     type: string
+                                    description: DEPRECATED
+                                 content:
+                                    type: array
                                     required: true
+                                    items:
+                                       properties:
+                                          type:
+                                             type: string
+                                             required: true
+                                             description: Media Types as specified at https://www.iana.org/assignments/media-types/media-types.xhtml.
+                                          text:
+                                             type: string
+                                             required: false
+                                             description: if type is text/plain, then this field is required.
+                                          resourceId:
+                                             type: string
+                                             required: false
+                                             description: |
+                                                For binary files this field is required.<br />
+                                                Obtain the resource ID from first uploading the resource using the PUT /resources/{fileName} endpoint.
+                                          meta:
+                                             type: object
+                                             required: false
+                                             description: Optional fields for your pleasure.  Can add whatever, but you probably want consistency.
+                                             properties:
+                                                fileName:
+                                                   type: string
+                                                   required: false
                                  replyTo:
                                     description: |
                                        `messageId` this messages is attached to.  This is for threaded messages support.
@@ -1973,6 +2005,43 @@ documentation:
                                     type: datetime
                                     required: true
                      example: |
+                        {
+                           "messages": [
+                              {
+                                 "messageId": "9dec8947-0381-4809-a053-b56777f782f4",
+                                 "createdBy": "9dec8947-0381-4809-a053-b56777f782f4",
+                                 "messageType": "text",
+                                 "text": "Alright.",
+                                 "content": [
+                                    { "type": "text/plain", "text": "Alright." }
+                                 ],
+                                 "path": "9dec8947-0381-4809-a053-b56777f782f4",
+                                 "level": 0,
+                                 "created": "2017-08-17T00:59:49Z",
+                                 "lastModified: "2017-08-17T00:59:49Z"
+                              },
+                              {
+                                 "messageId": "9dec8947-0381-4809-a053-b56777f782f5",
+                                 "createdBy": "9dec8947-0381-4809-a053-b56777f782f5",
+                                 "messageType": "text",
+                                 "text": "How's it going?",
+                                 "content": [
+                                    { "type": "text/plain", "text": "How's it going?" },
+                                    {
+                                       "type": "application/octet-stream",
+                                       "resourceId": "bfefa47e-bde6-4dbf-816c-bc231a7320b1",
+                                       "meta": { "fileName": "abc.xyz" }
+                                    }
+                                 ],
+                                 "path": "9dec8947-0381-4809-a053-b56777f782f5",
+                                 "level": 0,
+                                 "created": "2017-08-17T00:59:49Z",
+                                 "lastModified: "2017-08-17T00:59:49Z"
+                              }
+                           ]
+                        }
+                     example: |
+                        // v0
                         {
                            "messages": [
                               {
@@ -2017,18 +2086,50 @@ documentation:
                Create a message in a specified conversation.
             body:
                properties:
-                  messageType:
-                     type: string
+                  content:
+                     type: array
                      required: true
-                  text:
-                     type: string
-                     required: true
+                     items:
+                        properties:
+                           type:
+                              type: string
+                              required: true
+                              description: Media Types as specified at https://www.iana.org/assignments/media-types/media-types.xhtml.
+                           text:
+                              type: string
+                              required: false
+                              description: if type is text/plain, then this field is required.
+                           resourceId:
+                              type: string
+                              required: false
+                              description: |
+                                 For binary files this field is required.<br />
+                                 Obtain the resource ID from first uploading the resource using the PUT /resources/{fileName} endpoint.
+                           meta:
+                              type: object
+                              required: false
+                              properties:
+                                 fileName:
+                                    type: string
+                                    required: false
                   replyTo:
                      description: |
                         `messageId` this message is attached to.  This is for threaded messages support.
                      type: string
                      required: false
                example: |
+                  {
+                     "content": [
+                        { "type": "text/plain", "text": "What's up?" },
+                        {
+                           "type": "application/octet-stream",
+                           "resourceId": "bfefa47e-bde6-4dbf-816c-bc231a7320b1",
+                           "meta": { "fileName": "abc.xyz" }
+                        }
+                     ]
+                  }
+               example: |
+                  // v0
                   {
                      "messageType": "text",
                      "text": "What's up?"
@@ -2082,6 +2183,79 @@ documentation:
                   description: |
                      METHOD_NOT_ALLOWED<br />
                      Messages can't be posted to an inactive conversation.
+
+/resources:
+   description: |
+      For the complete URL for this path, use the base URL given by resourcesBaseUrl from the login response.<br />
+      For example, if resourcesBaseUrl is https://hablaai-resources.example.com/some/path, then the complete URL would be https://hablaai-resources.example.com/some/path/resources
+   /{fileName}:
+      uriParameters:
+         fileName:
+            description: |
+               The name of the file, as no Resource ID has been generated.  Just the file, no path.
+      put:
+         securedBy: [oauth_2_0]
+         description: |
+            Upload a resource.  Ex. image, pdf, etc.
+         headers:
+            Content-Type:
+               description: |
+                  Refer to [Media Types](https://www.iana.org/assignments/media-types/media-types.xhtml).
+                  The data in the request body should be in this specified media type.
+            Content-Length:
+               description: Used to validate the content being sent by byte length.
+            Content-MD5:
+               description: |
+                  (Optional) MD5 checksum of the content, for further data validation.
+                  TODO: MD5 calculation of multi-part upload.
+         responses:
+            201:
+               description: |
+                  CREATED<br />
+                  The resource ID is return in the JSON body.  Use this resource ID as referenced by a message.
+               body:
+                  properties:
+                     resourceId:
+                        type: string
+                        required: true
+                  example: |
+                     {
+                        "messageId": "9dec8947-0381-4809-a053-b56777f782f4",
+                        "created": "2017-04-12T23:20:50.52Z",
+                        "createdBy": "9dec8947-0381-4809-a053-b56777f782f4",
+                        "messageType": "text",
+                        "text": "Alright.",
+                        "replyTo": "9dec8947-0381-4809-a053-b56777f782f5"
+                     }
+            416:
+               description: |
+                  RANGE_NOT_SATISFIABLE<br />
+                  Content-Length not specified or Body length does not match specified content length or MD5 checksum did not match.
+   /{resourceId}:
+      uriParameters:
+         resourceId:
+            description: |
+               The actual Resource ID as generated from a PUT.
+      get:
+         securedBy: [oauth_2_0]
+         description: |
+            Retrieve a resource.  Ex. image, pdf, etc.
+         responses:
+            200:
+               description: |
+                  OK<br />
+                  The resource is returned in the body.
+               headers:
+                  Content-Type:
+                     description: |
+                        Refer to [Media Types](https://www.iana.org/assignments/media-types/media-types.xhtml).
+                        The data in the response body is in this media type.
+                  Content-Length:
+                     description: The length of the body.
+                  Last-Modified:
+                     description: Creation or last modification of this resource.
+                  x-hablaai-filename:
+                     description: The file name of this resource as specified in an earlier PUT.
 
 
 /integrations:

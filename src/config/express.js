@@ -59,7 +59,7 @@ app.use((req, res, next) => {
 });
 
 export const jwtMiddleware = jwt({ secret: config.jwtSecret });
-app.use(jwtMiddleware.unless({ // TODO: version
+app.use(jwtMiddleware.unless({
    path: [
       /^\/(v\d+\/)?test/,
       /^\/(v\d+\/)?users\/registerUser/,

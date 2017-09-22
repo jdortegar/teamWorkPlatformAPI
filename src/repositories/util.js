@@ -1,10 +1,10 @@
 import AWS from 'aws-sdk';
 import _ from 'lodash';
-import config from '../config/env';
+import config from '../config/env/index';
 
 let _docClient;
 
-function docClient() {
+export function docClient() {
    if (_docClient === undefined) {
       _docClient = new AWS.DynamoDB.DocumentClient();
    }
@@ -57,7 +57,7 @@ function removeIntermediateDataTypeFromArray(arr) {
 }
 
 
-function batchGetItemBySortKey(req, tableName, sortKeyName, sortKeys) {
+export function batchGetItemBySortKey(req, tableName, sortKeyName, sortKeys) {
    if ((sortKeys === undefined) || (sortKeys.length === 0)) {
       return Promise.resolve([]);
    }
@@ -105,7 +105,19 @@ class ObjectExpressions {
    }
 
    process(node, variablePath) {
-      if ((typeof node === 'object') && (node !== null)) {
+      if ((node instanceof Array) && (node !== null)) {
+         const currentDynamoNode = { L: [] };
+         node.forEach((nodeElem) => {
+            const variable = `#n${this.nameCount}`;
+            this.nameCount += 1;
+
+            currentDynamoNode.L.push(this.process(
+               nodeElem,
+               (variablePath) ? `${variablePath}.${variable}` : variable
+            ));
+         });
+         return currentDynamoNode;
+      } else if ((typeof node === 'object') && (node !== null)) {
          const currentDynamoNode = { M: {} };
          const objKeys = Object.keys(node);
          objKeys.forEach((objKey) => {
@@ -150,7 +162,7 @@ class ObjectExpressions {
       return nodeValue;
    }
 
-   paramsForCompleteUpdate(tableName, partitionIdString, sortKeyName, sortKey) {
+   paramsForCompleteUpdate(tableName, partitionIdString, sortKeyName, sortKey, v) {
       const params = {
          TableName: tableName,
          Key: {
@@ -160,7 +172,13 @@ class ObjectExpressions {
          ExpressionAttributeNames: { '#n0': this.dynamoAttributeName },
          ExpressionAttributeValues: { ':v0': this.dynamoDoc }
       };
+      if (v) {
+         params.UpdateExpression = `${params.UpdateExpression}, v=:v1`;
+         params.ExpressionAttributeValues[':v1'] = { N: v.toString() };
+      }
+
       params.Key[sortKeyName] = { S: sortKey };
+
       return params;
    }
 
@@ -355,16 +373,39 @@ export function updateItem(req, partitionId, tableName, sortKeyName, sortKey, up
    });
 }
 
-export function updateItemCompletely(req, partitionId, tableName, sortKeyName, sortKey, updateInfo) {
+export function updateItemCompletely(req, partitionId, tableName, sortKeyName, sortKey, updateInfo, v) {
    const dynamoDb = req.app.locals.db;
    const partitionIdString = ((typeof partitionId === 'string') || (partitionId instanceof String)) ? partitionId : String(partitionId);
    const expressions = new ObjectExpressions(updateInfo);
 
-   const params = expressions.paramsForCompleteUpdate(tableName, partitionIdString, sortKeyName, sortKey);
+   const params = expressions.paramsForCompleteUpdate(tableName, partitionIdString, sortKeyName, sortKey, v);
 
    return new Promise((resolve, reject) => {
       dynamoDb.updateItem(params).promise()
          .then(() => resolve())
+         .catch(err => reject(err));
+   });
+}
+
+export function scan(params) {
+   return new Promise((resolve, reject) => {
+      let items;
+      docClient().scan(params).promise()
+         .then((data) => {
+            items = data.Items;
+            if (data.LastEvaluatedKey) {
+               const continueParams = _.cloneDeep(params);
+               continueParams.ExclusiveStartKey = data.LastEvaluatedKey;
+               return scan(continueParams);
+            }
+            return undefined;
+         })
+         .then((moreData) => {
+            if (moreData) {
+               items = [...items, ...moreData.Items];
+            }
+            resolve(items);
+         })
          .catch(err => reject(err));
    });
 }
@@ -636,116 +677,6 @@ export function getConversationsByTeamRoomId(req, teamRoomId) {
 
    const tableName = `${config.tablePrefix}conversations`;
    return filteredScan(req, tableName, { conversationInfo: { teamRoomId } });
-}
-
-
-export function getMessageById(req, messageId) {
-   if (messageId === undefined) {
-      return Promise.reject('messageId needs to be specified.');
-   }
-
-   const tableName = `${config.tablePrefix}messages`;
-   return batchGetItemBySortKey(req, tableName, 'messageId', [messageId]);
-}
-
-export function getMessagesByConversationId(req, conversationId) {
-   if (conversationId === undefined) {
-      return Promise.reject('conversationId needs to be specified.');
-   }
-
-   const tableName = `${config.tablePrefix}messages`;
-   return filteredScanValueIn(req, tableName, 'messageInfo.conversationId', [conversationId]);
-}
-
-function scan(params) {
-   return new Promise((resolve, reject) => {
-      let items;
-      docClient().scan(params).promise()
-         .then((data) => {
-            items = data.Items;
-            if (data.LastEvaluatedKey) {
-               const continueParams = _.cloneDeep(params);
-               continueParams.ExclusiveStartKey = data.LastEvaluatedKey;
-               return scan(continueParams);
-            }
-            return undefined;
-         })
-         .then((moreData) => {
-            if (moreData) {
-               items = [...items, ...moreData.Items];
-            }
-            resolve(items);
-         })
-         .catch(err => reject(err));
-   });
-}
-
-// filter = { since, until, minLevel, maxLevel }
-export function getMessagesByConversationIdFiltered(req, conversationId, filter) {
-   if (conversationId === undefined) {
-      return Promise.reject('conversationId needs to be specified.');
-   }
-
-   const { since, until, minLevel, maxLevel } = filter;
-   const tableName = `${config.tablePrefix}messages`;
-   let nIdx = 0;
-   let vIdx = 0;
-
-   // Add 'conversationId' to filter.
-   let filterExpression = '(#n1.#n2 IN (:v1))';
-   const queryNames = {
-      '#n1': 'messageInfo',
-      '#n2': 'conversationId'
-   };
-   nIdx += 2;
-   const queryValues = {
-      ':v1': conversationId
-   };
-   vIdx += 1;
-
-   // Add 'since' to filter.
-   if (since) {
-      nIdx += 1;
-      vIdx += 1;
-      filterExpression += ` AND (#n1.#n${nIdx} >= :v${vIdx})`;
-      queryNames[`#n${nIdx}`] = 'created';
-      queryValues[`:v${vIdx}`] = since;
-   }
-
-   // Add 'until' to filter.
-   if (until) {
-      nIdx += 1;
-      vIdx += 1;
-      filterExpression += ` AND (#n1.#n${nIdx} <= :v${vIdx})`;
-      queryNames[`#n${nIdx}`] = 'created';
-      queryValues[`:v${vIdx}`] = until;
-   }
-
-   // Add 'minLevel' to filter.
-   if (typeof minLevel !== 'undefined') {
-      nIdx += 1;
-      vIdx += 1;
-      filterExpression += ` AND (#n1.#n${nIdx} >= :v${vIdx})`;
-      queryNames[`#n${nIdx}`] = 'level';
-      queryValues[`:v${vIdx}`] = minLevel;
-   }
-
-   // Add 'maxLevel' to filter.
-   if (typeof maxLevel !== 'undefined') {
-      nIdx += 1;
-      vIdx += 1;
-      filterExpression += ` AND (#n1.#n${nIdx} <= :v${vIdx})`;
-      queryNames[`#n${nIdx}`] = 'level';
-      queryValues[`:v${vIdx}`] = maxLevel;
-   }
-
-   const params = {
-      TableName: tableName,
-      FilterExpression: filterExpression,
-      ExpressionAttributeNames: queryNames,
-      ExpressionAttributeValues: queryValues
-   };
-   return scan(params);
 }
 
 export function getConversationParticipantsByUserId(req, userId) {

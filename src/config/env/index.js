@@ -23,6 +23,7 @@ const config = {
    dynamoDbEndpoint: process.env.DYNAMODB_ENDPOINT || defaultConfig.dynamoDbEndpoint,
 
    webappBaseUri: process.env.WEBAPP_BASE_URI || defaultConfig.webappBaseUri,
+   resourcesBaseUrl: process.env.RESOURCES_BASE_URL || defaultConfig.resourcesBaseUrl,
 
    /**
     * 'error', 'warn', 'info', 'verbose', 'debug', 'silly'.

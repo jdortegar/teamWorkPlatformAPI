@@ -34,7 +34,7 @@ import {
    getTeamRoomsByTeamIdAndPrimary,
    getUsersByIds,
    updateItem
-} from './queries';
+} from '../repositories/util';
 import Roles from './roles';
 
 export const defaultTeamRoomName = 'Lobby';

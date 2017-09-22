@@ -41,7 +41,7 @@
     "md": "npm run md:socketio && npm run md:redux",
     "md:socketio": "marked -i doc-templates/socketio.md > doc/socketio.html",
     "md:redux": "marked -i doc-templates/redux.md > doc/redux.html",
-    "client:local": "babel-node $NODE_DEBUG_OPTION Client.js http://localhost:3000",
+    "client:local": "babel-node $NODE_DEBUG_OPTION Client.js http://localhost:3000/v1",
     "client:dev": "babel-node $NODE_DEBUG_OPTION Client.js https://habla-fe-api-dev.habla.ai",
     "client:ngrok": "babel-node $NODE_DEBUG_OPTION Client.js https://hablaapi.ngrok.io"
   },

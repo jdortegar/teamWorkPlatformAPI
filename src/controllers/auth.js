@@ -60,7 +60,8 @@ export function login(req, res, next) {
                   status: 'SUCCESS',
                   token: jwt.sign(getAuthData(user, user.userId), config.jwtSecret),
                   user: publishByApiVersion(req, apiVersionedVisibility.privateUser, user),
-                  websocketUrl: config.apiEndpoint
+                  websocketUrl: config.apiEndpoint,
+                  resourcesBaseUrl: config.resourcesBaseUrl
                });
                return;
             }

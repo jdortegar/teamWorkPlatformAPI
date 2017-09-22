@@ -141,76 +141,91 @@ const validationSchemas = {
          text: Joi.string().min(1).required(),
          replyTo: Joi.string().min(1).allow(null)
       }
+   },
+   createMessage_v1: {
+      body: {
+         content: Joi.array().min(1).items(
+            Joi.object().keys({
+               type: Joi.string().min(1).required(),
+               text: Joi.string().min(1),
+               resourceId: Joi.string().min(1),
+               meta: Joi.object().keys({
+                  fileName: Joi.string().min(1)
+               })
+            })
+         ).required(),
+         replyTo: Joi.string().min(1).allow(null)
+      }
    }
 };
 
 
 // Index in the array is the version number to validate against.
 export const apiVersionedValidators = {
-   registerUser: [
-      validate(validationSchemas.registerUser),
-      validate(validationSchemas.registerUser)
-   ],
-   createUser: [
-      validate(validationSchemas.createUser),
-      validate(validationSchemas.createUser)
-   ],
-   updateUser: [
-      validate(validationSchemas.updateUser),
-      validate(validationSchemas.updateUser)
-   ],
-   updateUserPublicPreferences: [
-      validate(validationSchemas.updateUserPublicPreferences),
-      validate(validationSchemas.updateUserPublicPreferences)
-   ],
-   login: [
-      validate(validationSchemas.login),
-      validate(validationSchemas.login)
-   ],
-   createSubscriberOrg: [
-      validate(validationSchemas.createSubscriberOrg),
-      validate(validationSchemas.createSubscriberOrg)
-   ],
-   updateSubscriberOrg: [
-      validate(validationSchemas.updateSubscriberOrg),
-      validate(validationSchemas.updateSubscriberOrg)
-   ],
-   inviteSubscribers: [
-      validate(validationSchemas.inviteSubscribers),
-      validate(validationSchemas.inviteSubscribers)
-   ],
-   replyToInvite: [
-      validate(validationSchemas.replyToInvite),
-      validate(validationSchemas.replyToInvite)
-   ],
-   createTeam: [
-      validate(validationSchemas.createTeam),
-      validate(validationSchemas.createTeam)
-   ],
-   updateTeam: [
-      validate(validationSchemas.updateTeam),
-      validate(validationSchemas.updateTeam)
-   ],
-   inviteTeamMembers: [
-      validate(validationSchemas.inviteTeamMembers),
-      validate(validationSchemas.inviteTeamMembers)
-   ],
-   createTeamRoom: [
-      validate(validationSchemas.createTeamRoom),
-      validate(validationSchemas.createTeamRoom)
-   ],
-   updateTeamRoom: [
-      validate(validationSchemas.updateTeamRoom),
-      validate(validationSchemas.updateTeamRoom)
-   ],
-   inviteTeamRoomMembers: [
-      validate(validationSchemas.inviteTeamRoomMembers),
-      validate(validationSchemas.inviteTeamRoomMembers)
-   ],
-   createMessage: [
-      validate(validationSchemas.createMessage),
-      validate(validationSchemas.createMessage)
-   ]
+   registerUser: {
+      0: validate(validationSchemas.registerUser),
+      1: validate(validationSchemas.registerUser)
+   },
+   createUser: {
+      0: validate(validationSchemas.createUser),
+      1: validate(validationSchemas.createUser)
+   },
+   updateUser: {
+      0: validate(validationSchemas.updateUser),
+      1: validate(validationSchemas.updateUser)
+   },
+   updateUserPublicPreferences: {
+      0: validate(validationSchemas.updateUserPublicPreferences),
+      1: validate(validationSchemas.updateUserPublicPreferences)
+   },
+   login: {
+      0: validate(validationSchemas.login),
+      1: validate(validationSchemas.login)
+   },
+   createSubscriberOrg: {
+      0: validate(validationSchemas.createSubscriberOrg),
+      1: validate(validationSchemas.createSubscriberOrg)
+   },
+   updateSubscriberOrg: {
+      0: validate(validationSchemas.updateSubscriberOrg),
+      1: validate(validationSchemas.updateSubscriberOrg)
+   },
+   inviteSubscribers: {
+      0: validate(validationSchemas.inviteSubscribers),
+      1: validate(validationSchemas.inviteSubscribers)
+   },
+   replyToInvite: {
+      0: validate(validationSchemas.replyToInvite),
+      1: validate(validationSchemas.replyToInvite)
+   },
+   createTeam: {
+      0: validate(validationSchemas.createTeam),
+      1: validate(validationSchemas.createTeam)
+   },
+   updateTeam: {
+      0: validate(validationSchemas.updateTeam),
+      1: validate(validationSchemas.updateTeam)
+   },
+   inviteTeamMembers: {
+      0: validate(validationSchemas.inviteTeamMembers),
+      1: validate(validationSchemas.inviteTeamMembers)
+   },
+   createTeamRoom: {
+      0: validate(validationSchemas.createTeamRoom),
+      1: validate(validationSchemas.createTeamRoom)
+   },
+   updateTeamRoom: {
+      0: validate(validationSchemas.updateTeamRoom),
+      1: validate(validationSchemas.updateTeamRoom)
+   },
+   inviteTeamRoomMembers: {
+      0: validate(validationSchemas.inviteTeamRoomMembers),
+      1: validate(validationSchemas.inviteTeamRoomMembers)
+   },
+   createMessage: {
+      0: validate(validationSchemas.createMessage),
+      1: validate(validationSchemas.createMessage_v1)
+   }
 };
 
 class ApiValidator {
@@ -221,7 +236,7 @@ class ApiValidator {
    }
 
    doValidation(req, res, next) {
-      this.validators[req.apiVersion](req, res, next);
+      this.validators[req.apiVersion.toString()](req, res, next);
    }
 }
 

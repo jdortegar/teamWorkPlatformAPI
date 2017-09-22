@@ -33,7 +33,7 @@ import {
    getTeamBySubscriberOrgIdAndPrimary,
    getUsersByIds,
    updateItem
-} from './queries';
+} from '../repositories/util';
 
 export const defaultTeamName = 'All';
 

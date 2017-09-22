@@ -17,7 +17,7 @@ import {
    getUsersByEmailAddresses,
    getUsersByIds,
    updateItem
-} from './queries';
+} from '../repositories/util';
 import { getRandomColor } from './util';
 
 

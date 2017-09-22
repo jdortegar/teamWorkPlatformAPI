@@ -439,7 +439,10 @@ function promptForMessage() {
 }
 
 function createMessage(baseUrl, jwt, conversationId, messageText) {
-   const body = { messageType: 'text', text: messageText };
+   let body = { messageType: 'text', text: messageText };
+   if (baseUrl.endsWith('v1')) {
+      body = { content: [ { type: 'text/plain', text: messageText } ] };
+   }
    return new Promise((resolve, reject) => {
       axios.post(`${baseUrl}/conversations/${conversationId}/createMessage`, body, { headers: { Authorization: `Bearer ${jwt}` }, content_type: 'application/json' })
          .then((response) => {

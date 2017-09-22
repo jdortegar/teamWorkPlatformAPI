@@ -2,7 +2,7 @@ import httpStatus from 'http-status';
 import APIError from '../helpers/APIError';
 import { apiVersionedVisibility, publishByApiVersion } from '../helpers/publishedVisibility';
 import * as conversationsSvc from '../services/conversationService';
-import { ConversationNotActiveError, ConversationNotExistError, NoPermissionsError } from '../services/errors';
+import { NotActiveError, ConversationNotExistError, NoPermissionsError } from '../services/errors';
 
 
 export function getConversations(req, res, next) {
@@ -45,9 +45,16 @@ export function getTranscript(req, res, next) {
 export function createMessage(req, res, next) {
    const userId = req.user._id;
    const conversationId = req.params.conversationId;
-   const { messageType, text, replyTo } = req.body;
+   const { messageType, text, replyTo } = req.body; // eslint-disable-line no-unused-vars
+   let { content } = req.body;
 
-   conversationsSvc.createMessage(req, conversationId, userId, messageType, text, replyTo)
+   // TODO: deprecated in v1.  messageType, text
+   if (req.apiVersion === 0) {
+      content = [];
+      content.push({ type: 'text/plain', text });
+   }
+
+   conversationsSvc.createMessage(req, conversationId, userId, content, replyTo)
       .then((dbMessage) => {
          res.status(httpStatus.CREATED).json({ message: publishByApiVersion(req, apiVersionedVisibility.publicMessage, dbMessage) });
       })
@@ -56,7 +63,7 @@ export function createMessage(req, res, next) {
             res.status(httpStatus.NOT_FOUND).end();
          } else if (err instanceof NoPermissionsError) {
             res.status(httpStatus.FORBIDDEN).end();
-         } else if (err instanceof ConversationNotActiveError) {
+         } else if (err instanceof NotActiveError) {
             res.status(httpStatus.METHOD_NOT_ALLOWED).end();
          } else {
             next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE));
