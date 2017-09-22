@@ -35,6 +35,7 @@ import {
    getUsersByIds,
    updateItem
 } from '../repositories/util';
+import { getRandomColor } from './util';
 import Roles from './roles';
 
 export const defaultTeamRoomName = 'Lobby';
@@ -89,6 +90,7 @@ export function createTeamRoomNoCheck(req, teamId, teamRoomInfo, teamMemberId, u
    if (preferences.private === undefined) {
       preferences.private = {};
    }
+   preferences.iconColor = preferences.iconColor || getRandomColor();
    const teamRoom = {
       teamId,
       teamActive: true,

@@ -34,6 +34,7 @@ import {
    getUsersByIds,
    updateItem
 } from '../repositories/util';
+import { getRandomColor } from './util';
 
 export const defaultTeamName = 'All';
 
@@ -79,6 +80,7 @@ export function createTeamNoCheck(req, subscriberOrgId, teamInfo, subscriberUser
    if (preferences.private === undefined) {
       preferences.private = {};
    }
+   preferences.iconColor = preferences.iconColor || getRandomColor();
    const team = {
       subscriberOrgId,
       subscriberOrgEnabled: true,

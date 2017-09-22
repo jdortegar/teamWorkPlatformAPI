@@ -86,6 +86,7 @@ const validationSchemas = {
       body: {
          name: Joi.string().min(1).required(),
          preferences: Joi.object().keys({
+            iconColor: Joi.string().min(1),
             private: Joi.object().required()
          })
       }
@@ -95,6 +96,7 @@ const validationSchemas = {
          name: Joi.string().min(1),
          active: Joi.boolean(),
          preferences: Joi.object().keys({
+            iconColor: Joi.string().min(1),
             private: Joi.object()
          })
       }
@@ -113,6 +115,7 @@ const validationSchemas = {
          publish: Joi.boolean().required(),
          active: Joi.boolean().required(),
          preferences: Joi.object().keys({
+            iconColor: Joi.string().min(1),
             private: Joi.object().required()
          })
       }
@@ -124,6 +127,7 @@ const validationSchemas = {
          publish: Joi.boolean(),
          active: Joi.boolean(),
          preferences: Joi.object().keys({
+            iconColor: Joi.string().min(1),
             private: Joi.object()
          })
       }
