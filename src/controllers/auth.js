@@ -21,6 +21,7 @@ import * as userSvc from '../services/userService';
 export function login(req, res, next) {
    const username = req.body.username || '';
    const password = req.body.password || '';
+   delete req.body.password;
 
    // Retrieve UUID from cache.
    req.app.locals.redis.hmgetAsync(`${config.redisPrefix}${username}`, 'uid', 'status')
