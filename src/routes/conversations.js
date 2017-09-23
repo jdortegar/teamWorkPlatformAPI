@@ -1,6 +1,5 @@
 import express from 'express';
-import validate from 'express-validation';
-import paramValidation from '../config/param-validation';
+import { apiVersionedValidators, validateByApiVersion } from '../config/param-validation';
 import * as conversations from '../controllers/conversations';
 
 const router = express.Router();
@@ -12,6 +11,6 @@ router.route('/getTranscript/:conversationId')
    .get(conversations.getTranscript);
 
 router.route('/:conversationId/createMessage')
-   .post(validate(paramValidation.createMessage), conversations.createMessage);
+   .post(validateByApiVersion(apiVersionedValidators.createMessage), conversations.createMessage);
 
 export default router;

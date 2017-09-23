@@ -22,7 +22,12 @@ function toInvitationKey(invitationKey, invitationValue) {
    return `${invitationKey}=${invitationValue}`;
 }
 
-
+/**
+ *
+ * @param req
+ * @param email
+ * @returns {Promise}
+ */
 export function getRedisInvitations(req, email) {
    return new Promise((resolve, reject) => {
       req.app.locals.redis.zremrangebyscoreAsync(`${config.redisPrefix}${hashKey(email)}`, 0, req.now.unix())

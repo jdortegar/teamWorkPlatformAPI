@@ -7,6 +7,7 @@ if (process.env.NODE_ENV === 'test') {
 }
 
 const config = {
+   apiVersion: 1,
    nodePort: process.env.NODE_PORT || defaultConfig.nodePort,
    tablePrefix: process.env.TBL_PREFIX || defaultConfig.tablePrefix,
    cacheServer: process.env.CACHE_SERVER || defaultConfig.cacheServer,
@@ -22,6 +23,7 @@ const config = {
    dynamoDbEndpoint: process.env.DYNAMODB_ENDPOINT || defaultConfig.dynamoDbEndpoint,
 
    webappBaseUri: process.env.WEBAPP_BASE_URI || defaultConfig.webappBaseUri,
+   resourcesBaseUrl: process.env.RESOURCES_BASE_URL || defaultConfig.resourcesBaseUrl,
 
    /**
     * 'error', 'warn', 'info', 'verbose', 'debug', 'silly'.

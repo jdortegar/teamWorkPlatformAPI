@@ -13,8 +13,11 @@ export const aws = {
 };
 export const dynamoDbEndpoint = 'http://localhost:8000';
 
-export const webappBaseUri = 'http://localhost:8080';
+export const webappBaseUri = 'http://localhost:8081';
 // export const webappBaseUri = 'https://hablawebapp.ngrok.io';
+
+export const resourcesBaseUrl = 'http://localhost:3001';
+// export const resourcesBaseUrl = 'https://hablaresources.ngrok.io';
 
 export const loggerLevel = 'debug';
 export const loggerJson = false;
@@ -27,5 +30,4 @@ export const boxWebhooksSecondaryKey = 'UsmcEmGsgaWPu7IDPyLQpoTkQDbAGmVP';
 
 export const googleClientId = '56229434385-er6slkc68oaklfs58oi5ej2fbbjabpc7.apps.googleusercontent.com';
 export const googleClientSecret = 'tQ-XvOvgGmAAJfjMWjH4Ai1T';
-export const googleChannelKey = '9itYJpL8fp27HPiWguSGYpBmusVKwSgz';
 

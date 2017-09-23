@@ -1,6 +1,6 @@
 import httpStatus from 'http-status';
 import APIError from '../helpers/APIError';
-import { privateTeamRoom, publicTeamRooms, publicUsers } from '../helpers/publishedVisibility';
+import { apiVersionedVisibility, publishByApiVersion } from '../helpers/publishedVisibility';
 import * as teamRoomSvc from '../services/teamRoomService';
 import {
    CannotDeactivateError,
@@ -20,7 +20,7 @@ export function getTeamRooms(req, res, next) {
 
    teamRoomSvc.getUserTeamRooms(req, userId, { teamId, subscriberOrgId })
       .then((teamRooms) => {
-         res.status(httpStatus.OK).json({ teamRooms: publicTeamRooms(teamRooms) });
+         res.status(httpStatus.OK).json({ teamRooms: publishByApiVersion(req, apiVersionedVisibility.publicTeamRooms, teamRooms) });
       })
       .catch((err) => {
          return next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
@@ -33,7 +33,7 @@ export function createTeamRoom(req, res, next) {
 
    teamRoomSvc.createTeamRoom(req, teamId, req.body, userId)
       .then((createdTeamRoom) => {
-         res.status(httpStatus.CREATED).json(privateTeamRoom(createdTeamRoom));
+         res.status(httpStatus.CREATED).json(publishByApiVersion(req, apiVersionedVisibility.privateTeamRoom, createdTeamRoom));
       })
       .catch((err) => {
          if (err instanceof TeamRoomExistsError) {
@@ -76,7 +76,7 @@ export function getTeamRoomMembers(req, res, next) {
 
    teamRoomSvc.getTeamRoomUsers(req, teamRoomId, userId)
       .then((teamRoomUsers) => {
-         res.status(httpStatus.OK).json({ teamRoomMembers: publicUsers(teamRoomUsers) });
+         res.status(httpStatus.OK).json({ teamRoomMembers: publishByApiVersion(req, apiVersionedVisibility.publicUsers, teamRoomUsers) });
       })
       .catch((err) => {
          if (err instanceof TeamRoomNotExistError) {

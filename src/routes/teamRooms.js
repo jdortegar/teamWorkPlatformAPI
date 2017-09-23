@@ -1,6 +1,5 @@
 import express from 'express';
-import validate from 'express-validation';
-import paramValidation from '../config/param-validation';
+import { apiVersionedValidators, validateByApiVersion } from '../config/param-validation';
 import * as teamRooms from '../controllers/teamRooms';
 
 const router = express.Router();
@@ -9,18 +8,18 @@ router.route('/getTeamRooms')
   .get(teamRooms.getTeamRooms);
 
 router.route('/createTeamRoom/:teamId')
-   .post(validate(paramValidation.createTeamRoom), teamRooms.createTeamRoom);
+   .post(validateByApiVersion(apiVersionedValidators.createTeamRoom), teamRooms.createTeamRoom);
 
 router.route('/updateTeamRoom/:teamRoomId')
-   .patch(validate(paramValidation.updateTeamRoom), teamRooms.updateTeamRoom);
+   .patch(validateByApiVersion(apiVersionedValidators.updateTeamRoom), teamRooms.updateTeamRoom);
 
 router.route('/getMembers/:teamRoomId')
    .get(teamRooms.getTeamRoomMembers);
 
 router.route('/inviteMembers/:teamRoomId')
-   .post(validate(paramValidation.inviteTeamRoomMembers), teamRooms.inviteMembers);
+   .post(validateByApiVersion(apiVersionedValidators.inviteTeamRoomMembers), teamRooms.inviteMembers);
 
 router.route('/replyToInvite/:teamRoomId')
-   .post(validate(paramValidation.replyToInvite), teamRooms.replyToInvite);
+   .post(validateByApiVersion(apiVersionedValidators.replyToInvite), teamRooms.replyToInvite);
 
 export default router;

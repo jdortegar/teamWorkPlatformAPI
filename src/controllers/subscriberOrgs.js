@@ -1,6 +1,6 @@
 import httpStatus from 'http-status';
 import APIError from '../helpers/APIError';
-import { privateSubscriberOrg, publicSubscriberOrgs, publicUsers } from '../helpers/publishedVisibility';
+import { apiVersionedVisibility, publishByApiVersion } from '../helpers/publishedVisibility';
 import * as subscriberOrgSvc from '../services/subscriberOrgService';
 import { CannotInviteError, InvitationNotExistError, NoPermissionsError, SubscriberOrgExistsError, SubscriberOrgNotExistError, UserNotExistError } from '../services/errors';
 
@@ -9,7 +9,7 @@ export function getSubscriberOrgs(req, res, next) {
 
    subscriberOrgSvc.getUserSubscriberOrgs(req, userId)
       .then((subscriberOrgs) => {
-         res.status(httpStatus.OK).json({ subscriberOrgs: publicSubscriberOrgs(subscriberOrgs) });
+         res.status(httpStatus.OK).json({ subscriberOrgs: publishByApiVersion(req, apiVersionedVisibility.publicSubscriberOrgs, subscriberOrgs) });
       })
       .catch((err) => {
          next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
@@ -21,7 +21,7 @@ export function createSubscriberOrg(req, res, next) {
 
    subscriberOrgSvc.createSubscriberOrg(req, req.body, userId)
       .then((createdSubscriberOrg) => {
-         res.status(httpStatus.CREATED).json(privateSubscriberOrg(createdSubscriberOrg));
+         res.status(httpStatus.CREATED).json(publishByApiVersion(req, apiVersionedVisibility.privateSubscriberOrg, createdSubscriberOrg));
       })
       .catch((err) => {
          if (err instanceof SubscriberOrgExistsError) {
@@ -58,7 +58,7 @@ export function getSubscriberOrgUsers(req, res, next) {
 
    subscriberOrgSvc.getSubscriberOrgUsers(req, subscriberOrgId, userId)
       .then((subscriberOrgUsers) => {
-         res.status(httpStatus.OK).json({ subscribers: publicUsers(subscriberOrgUsers) });
+         res.status(httpStatus.OK).json({ subscribers: publishByApiVersion(req, apiVersionedVisibility.publicUsers, subscriberOrgUsers) });
       })
       .catch((err) => {
          if (err instanceof SubscriberOrgNotExistError) {

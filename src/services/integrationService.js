@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import { getSubscriberUsersByUserIdAndSubscriberOrgId, getSubscriberUsersByUserIds } from './queries';
+import { getSubscriberUsersByUserIdAndSubscriberOrgId, getSubscriberUsersByUserIds } from '../repositories/util';
 
 export function getIntegrations(req, userId, subscriberOrgId = undefined) { // eslint-disable-line import/prefer-default-export
    return new Promise((resolve, reject) => {

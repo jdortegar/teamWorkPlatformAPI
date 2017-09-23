@@ -4,7 +4,7 @@ import config from '../config/env';
 import { IntegrationAccessError, SubscriberOrgNotExistError } from './errors';
 import { composeAuthorizationUrl, exchangeAuthorizationCodeForAccessToken, getUserInfo, revokeIntegration, validateWebhookMessage } from '../integrations/google';
 import { googleIntegrationCreated, googleIntegrationRevoked, googleWebhookEvent } from './messaging';
-import { getSubscriberUsersByUserIdAndSubscriberOrgId, updateItemCompletely } from './queries';
+import { getSubscriberUsersByUserIdAndSubscriberOrgId, updateItemCompletely } from '../repositories/util';
 
 const defaultExpiration = 30 * 60; // 30 minutes.
 
