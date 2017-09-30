@@ -2187,7 +2187,8 @@ documentation:
 /resources:
    description: |
       For the complete URL for this path, use the base URL given by resourcesBaseUrl from the login response.<br />
-      For example, if resourcesBaseUrl is https://hablaai-resources.example.com/some/path, then the complete URL would be https://hablaai-resources.example.com/some/path/resources
+      For example, if resourcesBaseUrl is https://hablaai-resources.example.com/some/path, then the complete URL would be https://hablaai-resources.example.com/some/path/resources.<br />
+      TODO: Wait for final deployment for the policy around this.
    /{fileName}:
       uriParameters:
          fileName:
@@ -2201,13 +2202,17 @@ documentation:
             Content-Type:
                description: |
                   Refer to [Media Types](https://www.iana.org/assignments/media-types/media-types.xhtml).
-                  The data in the request body should be in this specified media type.
-            Content-Length:
-               description: Used to validate the content being sent by byte length.
-            Content-MD5:
+                  The data in the request body is the base64 representation of this media type.
+            x-hablaai-content-length:
+               description: Used to validate the content being sent by byte length.  This is the length of the base64 representation.
+            x-hablaai-content-md5:
+               required: false
                description: |
-                  (Optional) MD5 checksum of the content, for further data validation.
-                  TODO: MD5 calculation of multi-part upload.
+                  (Optional) MD5 checksum of the body content (base64 representation), for further data validation.
+         body:
+            text/plain:
+               type: application/base64
+               description: Base64 representation of binary image, pdf, etc.
          responses:
             201:
                description: |
@@ -2215,22 +2220,29 @@ documentation:
                   The resource ID is return in the JSON body.  Use this resource ID as referenced by a message.
                body:
                   properties:
+                     statusCode:
+                        type: string
+                        required: true
                      resourceId:
                         type: string
                         required: true
                   example: |
                      {
-                        "messageId": "9dec8947-0381-4809-a053-b56777f782f4",
-                        "created": "2017-04-12T23:20:50.52Z",
-                        "createdBy": "9dec8947-0381-4809-a053-b56777f782f4",
-                        "messageType": "text",
-                        "text": "Alright.",
-                        "replyTo": "9dec8947-0381-4809-a053-b56777f782f5"
+                         "statusCode": 201,
+                         "body": "{\"resourceId\":\"27142d20-a0e8-11e7-9236-6932dfafe0a9\"}"
                      }
+            400:
+               description: |
+                  BAD_REQUEST<br />
+                  Content-Type not specified.
+            411:
+               description: |
+                  LENGTH_REQUIRED<br />
+                  Content-Length not specified.
             416:
                description: |
                   RANGE_NOT_SATISFIABLE<br />
-                  Content-Length not specified or Body length does not match specified content length or MD5 checksum did not match.
+                  Body length does not match specified content length or MD5 checksum did not match.
    /{resourceId}:
       uriParameters:
          resourceId:
@@ -2249,9 +2261,9 @@ documentation:
                   Content-Type:
                      description: |
                         Refer to [Media Types](https://www.iana.org/assignments/media-types/media-types.xhtml).
-                        The data in the response body is in this media type.
+                        The data in the response body is the base64 representation of this media type.
                   Content-Length:
-                     description: The length of the body.
+                     description: The length of the base64 representation within the body.
                   Last-Modified:
                      description: Creation or last modification of this resource.
                   x-hablaai-filename:
