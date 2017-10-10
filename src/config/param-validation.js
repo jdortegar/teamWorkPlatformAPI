@@ -55,6 +55,7 @@ const validationSchemas = {
    createSubscriberOrg: {
       body: {
          name: Joi.string().min(1).required(),
+         icon: Joi.string().base64().allow(null),
          preferences: Joi.object().keys({
             iconColor: Joi.string().min(1),
             private: Joi.object().required()
@@ -64,6 +65,7 @@ const validationSchemas = {
    updateSubscriberOrg: {
       body: {
          name: Joi.string().min(1),
+         icon: Joi.string().base64().allow(null),
          preferences: Joi.object().keys({
             iconColor: Joi.string().min(1),
             private: Joi.object()
@@ -85,6 +87,7 @@ const validationSchemas = {
    createTeam: {
       body: {
          name: Joi.string().min(1).required(),
+         icon: Joi.string().base64().allow(null),
          preferences: Joi.object().keys({
             iconColor: Joi.string().min(1),
             private: Joi.object().required()
@@ -95,6 +98,7 @@ const validationSchemas = {
       body: {
          name: Joi.string().min(1),
          active: Joi.boolean(),
+         icon: Joi.string().base64().allow(null),
          preferences: Joi.object().keys({
             iconColor: Joi.string().min(1),
             private: Joi.object()
@@ -114,6 +118,7 @@ const validationSchemas = {
          purpose: Joi.string().min(1),
          publish: Joi.boolean().required(),
          active: Joi.boolean().required(),
+         icon: Joi.string().base64().allow(null),
          preferences: Joi.object().keys({
             iconColor: Joi.string().min(1),
             private: Joi.object().required()
@@ -126,6 +131,7 @@ const validationSchemas = {
          purpose: Joi.string().min(1),
          publish: Joi.boolean(),
          active: Joi.boolean(),
+         icon: Joi.string().base64().allow(null),
          preferences: Joi.object().keys({
             iconColor: Joi.string().min(1),
             private: Joi.object()

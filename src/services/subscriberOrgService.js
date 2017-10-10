@@ -44,6 +44,7 @@ export function getUserSubscriberOrgs(req, userId) {
 
 export function createSubscriberOrgNoCheck(req, subscriberOrgInfo, user, subscriberOrgId = undefined) {
    const actualSubscriberOrgId = subscriberOrgId || uuid.v4();
+   const icon = subscriberOrgInfo.icon || null;
    const preferences = subscriberOrgInfo.preferences || { private: {} };
    if (preferences.private === undefined) {
       preferences.private = {};
@@ -51,6 +52,7 @@ export function createSubscriberOrgNoCheck(req, subscriberOrgInfo, user, subscri
    preferences.iconColor = preferences.iconColor || getRandomColor();
    const subscriberOrg = {
       name: subscriberOrgInfo.name,
+      icon,
       enabled: true,
       preferences,
       created: req.now.format(),
