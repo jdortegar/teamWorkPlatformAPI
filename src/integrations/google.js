@@ -22,8 +22,8 @@ const oauth2Client = new OAuth2(
 
 export function composeAuthorizationUrl(state) {
    const settings = {
-      // 'online' (default) or 'offline' (gets refresh_token).
-      access_type: 'offline',
+      access_type: 'offline', // 'online' (default) or 'offline' (gets refresh_token).
+      approval_prompt: 'force', // refresh_token given only on initial authorization.  This forces subsequent.
       scope: scopes,
       // Optional property that passes state parameters to redirect URI.
       state
