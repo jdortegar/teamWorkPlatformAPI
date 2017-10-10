@@ -47,10 +47,11 @@ function publicUsers(dbUsers) {
 
 function privateSubscriberOrg(dbSubscriberOrg) {
    const subscriberOrgId = dbSubscriberOrg.subscriberOrgId;
-   const { name, enabled, preferences, created, lastModified } = dbSubscriberOrg.subscriberOrgInfo || dbSubscriberOrg;
+   const { name, icon, enabled, preferences, created, lastModified } = dbSubscriberOrg.subscriberOrgInfo || dbSubscriberOrg;
    return {
       subscriberOrgId,
       name,
+      icon,
       enabled,
       preferences: _.cloneDeep(preferences),
       created,
@@ -82,11 +83,12 @@ function publicSubscriber(subscriberOrgId, dbUser) {
 
 function privateTeam(dbTeam) {
    const teamId = dbTeam.teamId;
-   const { subscriberOrgId, name, active, primary, preferences, created, lastModified } = dbTeam.teamInfo || dbTeam;
+   const { subscriberOrgId, name, icon, active, primary, preferences, created, lastModified } = dbTeam.teamInfo || dbTeam;
    return {
       teamId,
       subscriberOrgId,
       name,
+      icon,
       active,
       primary,
       preferences: _.cloneDeep(preferences),
@@ -119,13 +121,14 @@ function publicTeamMember(teamId, dbUser) {
 
 function privateTeamRoom(dbTeamRoom) {
    const teamRoomId = dbTeamRoom.teamRoomId;
-   const { teamId, name, purpose, publish, active, primary, preferences, created, lastModified } = dbTeamRoom.teamRoomInfo || dbTeamRoom;
+   const { teamId, name, purpose, publish, icon, active, primary, preferences, created, lastModified } = dbTeamRoom.teamRoomInfo || dbTeamRoom;
    return {
       teamRoomId,
       teamId,
       name,
       purpose,
       publish,
+      icon,
       active,
       primary,
       preferences: _.cloneDeep(preferences),

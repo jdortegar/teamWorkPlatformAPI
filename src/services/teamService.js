@@ -76,6 +76,7 @@ export function getUserTeams(req, userId, subscriberOrgId = undefined) {
 
 export function createTeamNoCheck(req, subscriberOrgId, teamInfo, subscriberUserId, user, teamId = undefined) {
    const actualTeamId = teamId || uuid.v4();
+   const icon = teamInfo.icon || null;
    const preferences = teamInfo.preferences || { private: {} };
    if (preferences.private === undefined) {
       preferences.private = {};
@@ -85,6 +86,7 @@ export function createTeamNoCheck(req, subscriberOrgId, teamInfo, subscriberUser
       subscriberOrgId,
       subscriberOrgEnabled: true,
       name: teamInfo.name,
+      icon,
       active: true,
       primary: teamInfo.primary || false,
       preferences,

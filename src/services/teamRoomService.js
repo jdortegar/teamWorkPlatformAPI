@@ -86,6 +86,7 @@ export function getUserTeamRooms(req, userId, { teamId, subscriberOrgId } = {}) 
 
 export function createTeamRoomNoCheck(req, teamId, teamRoomInfo, teamMemberId, user, teamRoomId = undefined) {
    const actualTeamRoomId = teamRoomId || uuid.v4();
+   const icon = teamRoomInfo.icon || null;
    const preferences = teamRoomInfo.preferences || { private: {} };
    if (preferences.private === undefined) {
       preferences.private = {};
@@ -97,6 +98,7 @@ export function createTeamRoomNoCheck(req, teamId, teamRoomInfo, teamMemberId, u
       name: teamRoomInfo.name,
       purpose: teamRoomInfo.purpose,
       publish: teamRoomInfo.publish,
+      icon,
       active: teamRoomInfo.active,
       primary: teamRoomInfo.primary || false,
       preferences,
