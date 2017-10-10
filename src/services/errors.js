@@ -90,7 +90,10 @@ export class CannotInviteError extends Error {
 }
 
 export class IntegrationAccessError extends Error {
-   constructor(...args) {
+   _subscriberOrgId;
+   _chainedError;
+
+   constructor(subscriberOrgId, ...args) {
       super(...args);
       Error.captureStackTrace(this, IntegrationAccessError);
    }

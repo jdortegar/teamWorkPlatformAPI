@@ -120,7 +120,18 @@ export function boxAccessResponse(req, { code, state, error, error_description }
             boxIntegrationCreated(req, event);
             resolve(subscriberOrgId);
          })
-         .catch(err => reject(err));
+         .catch((err) => {
+            let integrationError;
+            if (err instanceof IntegrationAccessError) {
+               integrationError = err;
+            } else {
+               integrationError = new IntegrationAccessError();
+               integrationError._chainedError = err;
+            }
+
+            integrationError._subscriberOrgId = subscriberOrgId;
+            reject(integrationError);
+         });
    });
 }
 

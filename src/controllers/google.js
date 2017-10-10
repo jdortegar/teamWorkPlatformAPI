@@ -29,21 +29,26 @@ export function integrateGoogle(req, res, next) {
 
 export function googleAccess(req, res) {
    // Use referrer to get subscriberOrgId.
-   const refererToks = req.headers.referer.split('/');
-   const subscriberOrgId = refererToks[refererToks.length - 1];
-   const redirectUri = `${webappIntegrationUri}/${subscriberOrgId}`;
+   // TODO: remove  const refererToks = req.headers.referer.split('/');
+   // TODO: remove  const subscriberOrgId = refererToks[refererToks.length - 1];
+   const redirectUri = `${webappIntegrationUri}`;
+
+   let subscriberOrgId;
 
    googleSvc.googleAccessResponse(req, req.query)
-      .then(() => {
-         res.redirect(`${redirectUri}?integration=google&status=CREATED`);
+      .then((stateSubscriberOrgId) => {
+         subscriberOrgId = stateSubscriberOrgId;
+         res.redirect(`${redirectUri}/${subscriberOrgId}/google&status=CREATED`);
       })
       .catch((err) => {
-         if (err instanceof IntegrationAccessError) {
-            res.redirect(`${redirectUri}?integration=google&status=FORBIDDEN`);
-         } else if (err instanceof SubscriberOrgNotExistError) {
-            res.redirect(`${redirectUri}?integration=google&status=NOT_FOUND`);
+         subscriberOrgId = subscriberOrgId || err.subscriberOrgId;
+         const realError = err._chainedError || err;
+         if (realError instanceof IntegrationAccessError) {
+            res.redirect(`${redirectUri}/${subscriberOrgId}/google&status=FORBIDDEN`);
+         } else if (realError instanceof SubscriberOrgNotExistError) {
+            res.redirect(`${redirectUri}/${subscriberOrgId}/google&status=NOT_FOUND`);
          } else {
-            res.redirect(`${redirectUri}?integration=google&status=INTERNAL_SERVER_ERROR`);
+            res.redirect(`${redirectUri}/${subscriberOrgId}/google&status=INTERNAL_SERVER_ERROR`);
          }
       });
 }
