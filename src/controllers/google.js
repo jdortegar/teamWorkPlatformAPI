@@ -38,17 +38,17 @@ export function googleAccess(req, res) {
    googleSvc.googleAccessResponse(req, req.query)
       .then((stateSubscriberOrgId) => {
          subscriberOrgId = stateSubscriberOrgId;
-         res.redirect(`${redirectUri}/${subscriberOrgId}/google&status=CREATED`);
+         res.redirect(`${redirectUri}/${subscriberOrgId}/google/CREATED`);
       })
       .catch((err) => {
          subscriberOrgId = subscriberOrgId || err.subscriberOrgId;
          const realError = err._chainedError || err;
          if (realError instanceof IntegrationAccessError) {
-            res.redirect(`${redirectUri}/${subscriberOrgId}/google&status=FORBIDDEN`);
+            res.redirect(`${redirectUri}/${subscriberOrgId}/google/FORBIDDEN`);
          } else if (realError instanceof SubscriberOrgNotExistError) {
-            res.redirect(`${redirectUri}/${subscriberOrgId}/google&status=NOT_FOUND`);
+            res.redirect(`${redirectUri}/${subscriberOrgId}/google/NOT_FOUND`);
          } else {
-            res.redirect(`${redirectUri}/${subscriberOrgId}/google&status=INTERNAL_SERVER_ERROR`);
+            res.redirect(`${redirectUri}/${subscriberOrgId}/google/INTERNAL_SERVER_ERROR`);
          }
       });
 }
