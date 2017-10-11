@@ -144,15 +144,18 @@ export function revokeGoogle(req, userId, subscriberOrgId) {
             }
 
             const subscriberUserId = subscriberUsers[0].subscriberUserId;
+            console.log(`AD: revokeGoogle(), subscriberUser=${subscriberUsers[0]}`);
             subscriberUserInfo = _.cloneDeep(subscriberUsers[0].subscriberUserInfo);
             const userAccessToken = ((subscriberUserInfo.integrations) && (subscriberUserInfo.integrations.google))
                ? subscriberUserInfo.integrations.google.access_token : undefined;
-            subscriberUserInfo.google = { revoked: true };
-
-            const promises = [updateItemCompletely(req, -1, `${config.tablePrefix}subscriberUsers`, 'subscriberUserId', subscriberUserId, { subscriberUserInfo })];
+            const promises = [];
 
             if (userAccessToken) {
+               subscriberUserInfo.integrations.google = { revoked: true };
+               promises.push(updateItemCompletely(req, -1, `${config.tablePrefix}subscriberUsers`, 'subscriberUserId', subscriberUserId, { subscriberUserInfo }));
                promises.push(revokeIntegration(req, userAccessToken));
+            } else {
+               throw new IntegrationAccessError('Google integration doesn\'t exist.');
             }
             return Promise.all(promises);
          })
