@@ -35,17 +35,17 @@ export function boxAccess(req, res) {
    boxSvc.boxAccessResponse(req, req.query)
       .then((stateSubscriberOrgId) => {
          subscriberOrgId = stateSubscriberOrgId;
-         res.redirect(`${redirectUri}/${subscriberOrgId}/box&status=CREATED`);
+         res.redirect(`${redirectUri}/${subscriberOrgId}/box/CREATED`);
       })
       .catch((err) => { // err is always instance of IntegrationAccessError, which has subscriberOrgId and chained error.
          subscriberOrgId = subscriberOrgId || err.subscriberOrgId;
          const realError = err._chainedError || err;
          if (realError instanceof IntegrationAccessError) {
-            res.redirect(`${redirectUri}/${subscriberOrgId}/box&status=FORBIDDEN`);
+            res.redirect(`${redirectUri}/${subscriberOrgId}/box/FORBIDDEN`);
          } else if (realError instanceof SubscriberOrgNotExistError) {
-            res.redirect(`${redirectUri}/${subscriberOrgId}/box&status=NOT_FOUND`);
+            res.redirect(`${redirectUri}/${subscriberOrgId}/box/NOT_FOUND`);
          } else {
-            res.redirect(`${redirectUri}/${subscriberOrgId}/box&status=INTERNAL_SERVER_ERROR`);
+            res.redirect(`${redirectUri}/${subscriberOrgId}/box/INTERNAL_SERVER_ERROR`);
          }
       });
 }
