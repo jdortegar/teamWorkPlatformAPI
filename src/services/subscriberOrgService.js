@@ -191,6 +191,7 @@ export function updateSubscriberOrg(req, subscriberOrgId, updateInfo, userId) {
  */
 export function getSubscriberOrgUsers(req, subscriberOrgId, userId = undefined) {
    const userIdsRoles = {};
+   const userIdsSubscriberUserIds = {};
    let usersWithRoles;
    return new Promise((resolve, reject) => {
       getSubscriberUsersBySubscriberOrgId(req, subscriberOrgId)
@@ -201,6 +202,7 @@ export function getSubscriberOrgUsers(req, subscriberOrgId, userId = undefined) 
 
             const userIds = subscriberUsers.map((subscriberUser) => {
                userIdsRoles[subscriberUser.subscriberUserInfo.userId] = subscriberUser.subscriberUserInfo.role;
+               userIdsSubscriberUserIds[subscriberUser.subscriberUserInfo.userId] = subscriberUser.subscriberUserId;
                return subscriberUser.subscriberUserInfo.userId;
             });
             if ((userId) && (userIds.indexOf(userId)) < 0) {
@@ -213,6 +215,7 @@ export function getSubscriberOrgUsers(req, subscriberOrgId, userId = undefined) 
             usersWithRoles = users.map((user) => {
                const ret = _.cloneDeep(user);
                ret.userInfo.role = userIdsRoles[user.userId];
+               ret.userInfo.subscriberUserId = userIdsSubscriberUserIds[user.userId];
                return ret;
             });
 
