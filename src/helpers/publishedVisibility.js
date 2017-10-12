@@ -2,7 +2,7 @@ import _ from 'lodash';
 
 function privateUser(dbUser) {
    const userId = dbUser.userId;
-   const { emailAddress, firstName, lastName, displayName, country, timeZone, icon, enabled, preferences, created, lastModified, role, presence } = dbUser.userInfo || dbUser;
+   const { emailAddress, firstName, lastName, displayName, country, timeZone, icon, enabled, preferences, created, lastModified, subscriberUserId, role, presence } = dbUser.userInfo || dbUser;
    return {
       userId,
       username: emailAddress,
@@ -17,6 +17,7 @@ function privateUser(dbUser) {
       preferences: _.cloneDeep(preferences),
       created,
       lastModified,
+      subscriberUserId,
       role,
       presence,
       // roleMemberships: dbUser.roleMemberships,
