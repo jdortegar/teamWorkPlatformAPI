@@ -104,6 +104,7 @@ export function boxAccessResponse(req, { code, state, error, error_description }
                box: integrationInfo
             };
             updateInfo = _.merge(subscriberUsers[0].subscriberUserInfo, { integrations: boxInfo });
+            delete updateInfo.integrations.box.revoked;
 
             return updateItemCompletely(req, -1, `${config.tablePrefix}subscriberUsers`, 'subscriberUserId', subscriberUserId, { subscriberUserInfo: updateInfo });
          })
