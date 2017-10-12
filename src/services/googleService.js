@@ -104,6 +104,7 @@ export function googleAccessResponse(req, { code, state, error }) {
                google: integrationInfo
             };
             updateInfo = _.merge(subscriberUsers[0].subscriberUserInfo, { integrations: googleInfo });
+            delete updateInfo.integrations.google.revoked;
 
             return updateItemCompletely(req, -1, `${config.tablePrefix}subscriberUsers`, 'subscriberUserId', subscriberUserId, { subscriberUserInfo: updateInfo });
          })
@@ -144,7 +145,7 @@ export function revokeGoogle(req, userId, subscriberOrgId) {
             }
 
             const subscriberUserId = subscriberUsers[0].subscriberUserId;
-            console.log(`AD: revokeGoogle(), subscriberUser=${subscriberUsers[0]}`);
+            console.log(`AD: revokeGoogle(), subscriberUser=${JSON.stringify(subscriberUsers[0])}`);
             subscriberUserInfo = _.cloneDeep(subscriberUsers[0].subscriberUserInfo);
             const userAccessToken = ((subscriberUserInfo.integrations) && (subscriberUserInfo.integrations.google))
                ? subscriberUserInfo.integrations.google.access_token : undefined;
