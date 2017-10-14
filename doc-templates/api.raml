@@ -568,6 +568,10 @@ documentation:
                               name:
                                  type: string
                                  required: true
+                              icon:
+                                 description: Base64 representation.
+                                 type: string | nil
+                                 required: false
                               enabled:
                                  type: boolean
                                  required: true
@@ -590,6 +594,7 @@ documentation:
                            {
                               "subscriberOrgId": "ea794510-cea6-4132-0008-a7ae1d32abb5",
                               "name": "Anthony Daga",
+                              "icon": null,
                               "enabled": true,
                               "preferences": {
                               },
@@ -599,6 +604,7 @@ documentation:
                            {
                               "subscriberOrgId": "ea794510-cea6-4132-0008-a7ae1d32abb5",
                               "name": "Acme",
+                              "icon: null,
                               "enabled": true,
                               "preferences": {
                               },
@@ -641,6 +647,10 @@ documentation:
                         type: string
                         required: true
                         example: 9dec8947-0381-4809-a053-b56777f782f4
+                     icon:
+                        description: Base64 representation.
+                        type: string | nil
+                        required: false
                      enabled:
                         type: boolean
                         required: true
@@ -672,6 +682,10 @@ documentation:
                properties:
                   name:
                      type: string
+                     required: false
+                  icon:
+                     description: Base64 representation.
+                     type: string | nil
                      required: false
                   preferences:
                      type: object
@@ -720,6 +734,9 @@ documentation:
                            items:
                               properties:
                                  userId:
+                                    type: string
+                                    required: true
+                                 subscriberUserId:
                                     type: string
                                     required: true
                                  firstName:
@@ -794,6 +811,7 @@ documentation:
                            "subscribers": [
                               {
                                  "userId": "9dec8947-0381-4809-a053-b56777f782f4",
+                                 "subscriberUserId": "9dec8947-0381-4809-a053-b56777f782f5",
                                  "firstName": "Anthony",
                                  "lastName": "Daga",
                                  "displayName": "Anthony Dude Daga",
@@ -815,6 +833,7 @@ documentation:
                               },
                               {
                                  "userId": "9dec8947-0381-4809-a053-b56777f782f5",
+                                 "subscriberUserId": "9dec8947-0381-4809-a053-b56777f782f6",
                                  "firstName": "Jill",
                                  "lastName": "Goodacre",
                                  "displayName": "Jill Goodacre",
@@ -948,6 +967,10 @@ documentation:
                               name:
                                  type: string
                                  required: true
+                              icon:
+                                 description: Base64 representation.
+                                 type: string | nil
+                                 required: false
                               active:
                                  type: boolean
                                  required: true
@@ -976,6 +999,7 @@ documentation:
                               "teamId": "9dec8947-0381-4809-a053-b56777f782f4",
                               "subscriberOrgId": "ea794510-cea6-4132-0008-a7ae1d32abb5",
                               "name": "Posse",
+                              "icon": null,
                               "active": true,
                               "primary": false,
                               "preferences": {
@@ -987,6 +1011,7 @@ documentation:
                               "teamId": "9dec8947-0381-4809-a053-b56777f782f5",
                               "subscriberOrgId": "ea794510-cea6-4132-0008-a7ae1d32abb5",
                               "name": "Friends",
+                              "icon": null,
                               "active": true,
                               "primary": false,
                               "preferences": {
@@ -1011,6 +1036,10 @@ documentation:
                   name:
                      type: string
                      required: true
+                  icon:
+                     description: Base64 representation.
+                     type: string | nil
+                     required: false
                   preferences:
                      type: object
                      required: false
@@ -1041,6 +1070,10 @@ documentation:
                         name:
                            type: string
                            required: true
+                        icon:
+                           description: Base64 representation.
+                           type: string | nil
+                           required: false
                      example: |
                         {
                            "teamId": "9dec8947-0381-4809-a053-b56777f782f5",
@@ -1077,6 +1110,10 @@ documentation:
                properties:
                   name:
                      type: string
+                     required: false
+                  icon:
+                     description: Base64 representation.
+                     type: string | nil
                      required: false
                   active:
                      description: If updating a primary team, deactivation is not allowed and will result in a 409 return code.
@@ -1361,6 +1398,10 @@ documentation:
                               publish:
                                  type: boolean
                                  required: true
+                              icon:
+                                 description: Base64 representation.
+                                 type: string | nil
+                                 required: false
                               active:
                                  type: boolean
                                  required: true
@@ -1438,6 +1479,10 @@ documentation:
                   publish:
                      type: boolean
                      required: true
+                  icon:
+                     description: Base64 representation.
+                     type: string | nil
+                     required: false
                   active:
                      type: boolean
                      required: true
@@ -1479,6 +1524,10 @@ documentation:
                         publish:
                            type: boolean
                            required: true
+                        icon:
+                           description: Base64 representation.
+                           type: string | nil
+                           required: false
                         active:
                            type: boolean
                            required: true
@@ -1520,6 +1569,10 @@ documentation:
                      default: nil
                   publish:
                      type: boolean
+                     required: false
+                  icon:
+                     description: Base64 representation.
+                     type: string | nil
                      required: false
                   active:
                      description: If updating a primary team room, deactivation is not allowed and will result in a 409 return code.
@@ -2220,16 +2273,12 @@ documentation:
                   The resource ID is return in the JSON body.  Use this resource ID as referenced by a message.
                body:
                   properties:
-                     statusCode:
-                        type: string
-                        required: true
                      resourceId:
                         type: string
                         required: true
                   example: |
                      {
-                         "statusCode": 201,
-                         "body": "{\"resourceId\":\"27142d20-a0e8-11e7-9236-6932dfafe0a9\"}"
+                         "resourceId": "27142d20-a0e8-11e7-9236-6932dfafe0a9"
                      }
             400:
                description: |
