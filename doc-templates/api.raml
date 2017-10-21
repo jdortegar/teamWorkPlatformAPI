@@ -2237,6 +2237,81 @@ documentation:
                      METHOD_NOT_ALLOWED<br />
                      Messages can't be posted to an inactive conversation.
 
+   /updateMessage:
+      /{messageId}:
+         uriParameters:
+            messageId:
+               description: Message to update.
+         patch:
+            securedBy: [oauth_2_0]
+            description: |
+               Update a message in Habla.
+            body:
+               properties:
+                  content:
+                     type: array
+                     required: true
+                     items:
+                        properties:
+                           type:
+                              type: string
+                              required: true
+                              description: Media Types as specified at https://www.iana.org/assignments/media-types/media-types.xhtml.
+                           text:
+                              type: string
+                              required: false
+                              description: if type is text/plain, then this field is required.
+                           resourceId:
+                              type: string
+                              required: false
+                              description: |
+                                 For binary files this field is required.<br />
+                                 Obtain the resource ID from first uploading the resource using the PUT /resources/{fileName} endpoint.
+                           meta:
+                              type: object
+                              required: false
+                              properties:
+                                 fileName:
+                                    type: string
+                                    required: false
+            responses:
+               204:
+                  description: |
+                     NO_CONTENT<br />
+                     The message was updated successfully.
+               404:
+                  description: |
+                     NOT_FOUND<br />
+                     The `message` with the specified ID was not found.
+               403:
+                  description: |
+                     FORBIDDEN<br />
+                     The user is not allowed to update the specified message.
+
+   /deleteMessage:
+      /{messageId}:
+         uriParameters:
+            messageId:
+               description: Message to delete.
+         delete:
+            securedBy: [oauth_2_0]
+            description: |
+               Delete a message in Habla.
+            responses:
+               204:
+                  description: |
+                     NO_CONTENT<br />
+                     The message was deleted successfully.
+               404:
+                  description: |
+                     NOT_FOUND<br />
+                     The `message` with the specified ID was not found.
+               403:
+                  description: |
+                     FORBIDDEN<br />
+                     The user is not allowed to delete the specified message.
+
+
 /resources:
    description: |
       For the complete URL for this path, use the base URL given by resourcesBaseUrl from the login response.<br />

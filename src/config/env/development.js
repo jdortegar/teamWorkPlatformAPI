@@ -16,7 +16,7 @@ export const dynamoDbEndpoint = 'http://localhost:8000';
 export const webappBaseUri = 'http://localhost:8081';
 // export const webappBaseUri = 'https://hablawebapp.ngrok.io';
 
-export const resourcesBaseUrl = 'https://fyd46g1283.execute-api.us-west-2.amazonaws.com/dev';
+export const resourcesBaseUrl = 'https://uw33cc3bz4.execute-api.us-west-2.amazonaws.com/dev';
 // export const resourcesBaseUrl = 'https://hablaresources.ngrok.io';
 
 export const loggerLevel = 'debug';
