@@ -112,7 +112,7 @@ export function createTeamNoCheck(req, subscriberOrgId, teamInfo, subscriberUser
          .then(() => {
             team.teamId = actualTeamId;
             teamCreated(req, team, user.userId);
-            teamMemberAdded(req, actualTeamId, user, role);
+            teamMemberAdded(req, actualTeamId, user, role, teamMemberId);
 
             const teamRoom = {
                name: teamRoomSvc.defaultTeamRoomName,
@@ -261,6 +261,7 @@ export function setTeamsOfSubscriberOrgActive(req, subscriberOrgId, active) {
  */
 export function getTeamUsers(req, teamId, userId = undefined) {
    const userIdsRoles = {};
+   const userIdsTeamMemberIds = {};
    let usersWithRoles;
 
    return new Promise((resolve, reject) => {
@@ -272,6 +273,7 @@ export function getTeamUsers(req, teamId, userId = undefined) {
 
             const userIds = teamMembers.map((teamMember) => {
                userIdsRoles[teamMember.teamMemberInfo.userId] = teamMember.teamMemberInfo.role;
+               userIdsTeamMemberIds[teamMember.teamMemberInfo.userId] = teamMember.teamMemberId;
                return teamMember.teamMemberInfo.userId;
             });
             if ((userId) && (userIds.indexOf(userId)) < 0) {
@@ -284,6 +286,7 @@ export function getTeamUsers(req, teamId, userId = undefined) {
             usersWithRoles = users.map((user) => {
                const ret = _.cloneDeep(user);
                ret.userInfo.role = userIdsRoles[user.userId];
+               ret.userInfo.teamMemberId = userIdsTeamMemberIds[user.userId];
                return ret;
             });
 
@@ -344,11 +347,15 @@ export function inviteMembers(req, teamId, userIds, userId) {
             }
 
             const uniqueUserIds = userIds.reduce((prevList, userIdEntry) => {
-               if (prevList.indexOf(userIdEntry) < 0) {
+               if ((prevList.indexOf(userIdEntry) < 0) && (userIdEntry !== userId)) {
                   prevList.push(userIdEntry);
                }
                return prevList;
             }, []);
+
+            if (uniqueUserIds.length === 0) {
+               throw new CannotInviteError(userId);
+            }
 
             return Promise.all([
                getUsersByIds(req, [userId, ...uniqueUserIds]),
@@ -410,7 +417,7 @@ export function addUserToTeam(req, user, subscriberUserId, teamId, role) {
             return createItem(req, -1, `${config.tablePrefix}teamMembers`, 'teamMemberId', teamMemberId, 'teamMemberInfo', teamMember);
          })
          .then(() => {
-            teamMemberAdded(req, teamId, user, role);
+            teamMemberAdded(req, teamId, user, role, teamMemberId);
             return teamRoomSvc.addUserToPrimaryTeamRoom(req, user, teamId, teamMemberId, Roles.user);
          })
          .then(() => resolve(teamMemberId))

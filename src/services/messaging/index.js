@@ -50,10 +50,10 @@ export function subscriberOrgCreated(req, subscriberOrg, userId) {
       ChannelFactory.subscriberOrgAdminChannel(subscriberOrg.subscriberOrgId)
    ]);
 
-   // Which channels gets this.  Certainly not everybody.
-   // return _broadcastEvent(req, EventTypes.subscriberOrgCreated, publishByApiVersion(req, apiVersionedVisibility.publicSubscriberOrg, subscriberOrg), [
-   //    ChannelFactory.publicChannel()
-   // ]);
+   // Only the person who created this gets to know, as she's the only person in that org.
+   return _broadcastEvent(req, EventTypes.subscriberOrgCreated, publishByApiVersion(req, apiVersionedVisibility.publicSubscriberOrg, subscriberOrg), [
+      ChannelFactory.personalChannel(userId)
+   ]);
 }
 
 export function subscriberOrgUpdated(req, subscriberOrg) {
@@ -68,7 +68,7 @@ export function subscriberOrgPrivateInfoUpdated(req, subscriberOrg) {
    ]);
 }
 
-export function subscriberAdded(req, subscriberOrgId, user, role = Roles.user) {
+export function subscriberAdded(req, subscriberOrgId, user, role, subscriberUserId) {
    const subscriberOrgChannel = ChannelFactory.subscriberOrgChannel(subscriberOrgId);
    const channels = [ChannelFactory.subscriberOrgChannel(subscriberOrgId)];
    if (role === Roles.admin) {
@@ -77,7 +77,8 @@ export function subscriberAdded(req, subscriberOrgId, user, role = Roles.user) {
 
    return _joinChannels(req, user.userId, channels)
       .then(() => {
-         _broadcastEvent(req, EventTypes.subscriberAdded, publishByApiVersion(req, apiVersionedVisibility.publicSubscriber, subscriberOrgId, user), [subscriberOrgChannel]);
+         const mergedUser = _.merge(user, { role, subscriberUserId });
+         _broadcastEvent(req, EventTypes.subscriberAdded, publishByApiVersion(req, apiVersionedVisibility.publicSubscriber, subscriberOrgId, mergedUser), [subscriberOrgChannel]);
       })
       .catch(err => req.logger.error(err));
 }
@@ -108,7 +109,7 @@ export function teamPrivateInfoUpdated(req, team) {
    ]);
 }
 
-export function teamMemberAdded(req, teamId, user, role = Roles.user) {
+export function teamMemberAdded(req, teamId, user, role, teamMemberId) {
    const teamChannel = ChannelFactory.teamChannel(teamId);
    const channels = [teamChannel];
    if (role === Roles.admin) {
@@ -116,7 +117,10 @@ export function teamMemberAdded(req, teamId, user, role = Roles.user) {
    }
 
    return _joinChannels(req, user.userId, channels)
-      .then(() => _broadcastEvent(req, EventTypes.teamMemberAdded, publishByApiVersion(req, apiVersionedVisibility.publicTeamMember, teamId, user), [teamChannel]))
+      .then(() => {
+         const mergedUser = _.merge(user, { role, teamMemberId });
+         _broadcastEvent(req, EventTypes.teamMemberAdded, publishByApiVersion(req, apiVersionedVisibility.publicTeamMember, teamId, mergedUser), [teamChannel]);
+      })
       .catch(err => req.logger.error(err));
 }
 
@@ -146,7 +150,7 @@ export function teamRoomPrivateInfoUpdated(req, teamRoom) {
    ]);
 }
 
-export function teamRoomMemberAdded(req, teamRoomId, user, role = Roles.user) {
+export function teamRoomMemberAdded(req, teamRoomId, user, role, teamRoomMemberId) {
    const teamRoomChannel = ChannelFactory.teamRoomChannel(teamRoomId);
    const channels = [teamRoomChannel];
    if (role === Roles.admin) {
@@ -154,7 +158,10 @@ export function teamRoomMemberAdded(req, teamRoomId, user, role = Roles.user) {
    }
 
    return _joinChannels(req, user.userId, channels)
-      .then(() => _broadcastEvent(req, EventTypes.teamRoomMemberAdded, publishByApiVersion(req, apiVersionedVisibility.publicTeamRoomMember, teamRoomId, user), [teamRoomChannel]))
+      .then(() => {
+         const mergedUser = _.merge(user, { role, teamRoomMemberId });
+         _broadcastEvent(req, EventTypes.teamRoomMemberAdded, publishByApiVersion(req, apiVersionedVisibility.publicTeamRoomMember, teamRoomId, mergedUser), [teamRoomChannel]);
+      })
       .catch(err => req.logger.error(err));
 }
 

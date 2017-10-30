@@ -367,7 +367,7 @@ class MessagingService {
                const errors = [];
                clientIds.forEach((clientId) => {
                   channels.forEach((channel) => {
-                     this.io.of('/').adapter.remoteLeav(clientId, channel, (err2) => {
+                     this.io.of('/').adapter.remoteLeave(clientId, channel, (err2) => {
                         if (err2) {
                            logger.error(err2);
                            errors.push(err2);
