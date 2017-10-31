@@ -46,13 +46,8 @@ export const EventTypes = Object.freeze({
    typing: 'typing',
    location: 'location',
 
-   boxIntegrationCreated: 'boxIntegrationCreated',
-   boxIntegrationExpired: 'boxIntegrationExpired',
-   boxIntegrationRevoked: 'boxIntegrationRevoked',
+   integrationsUpdated: 'integrationsUpdated',
    boxWebhookEvent: 'boxWebhookEvent',
-   googleIntegrationCreated: 'googleIntegrationCreated',
-   googleIntegrationExpired: 'googleIntegrationCreated',
-   googleIntegrationRevoked: 'googleIntegrationRevoked',
    googleWebhookEvent: 'googleWebhookEvent',
 
    from(value) { return (this[value]); }
@@ -321,7 +316,7 @@ class MessagingService {
          } else {
             this.io.emit(eventType, event);
          }
-         const channelsString = (channels) ? `, channels="${channels}"` : '';
+         const channelsString = (channels) ? `, channels="${JSON.stringify(channels)}"` : '';
          logger.debug(`MessagingService.broadcastEvent(eventType=${eventType}, event=${JSON.stringify(event)})${channelsString}`);
          resolve();
       });
@@ -367,7 +362,7 @@ class MessagingService {
                const errors = [];
                clientIds.forEach((clientId) => {
                   channels.forEach((channel) => {
-                     this.io.of('/').adapter.remoteLeav(clientId, channel, (err2) => {
+                     this.io.of('/').adapter.remoteLeave(clientId, channel, (err2) => {
                         if (err2) {
                            logger.error(err2);
                            errors.push(err2);

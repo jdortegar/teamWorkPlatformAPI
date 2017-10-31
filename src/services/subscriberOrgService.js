@@ -76,7 +76,7 @@ export function createSubscriberOrgNoCheck(req, subscriberOrgInfo, user, subscri
          .then(() => {
             subscriberOrg.subscriberOrgId = actualSubscriberOrgId;
             subscriberOrgCreated(req, subscriberOrg, user.userId);
-            subscriberAdded(req, actualSubscriberOrgId, user, role);
+            subscriberAdded(req, actualSubscriberOrgId, user, role, subscriberUserId);
             return teamSvc.createTeamNoCheck(req, actualSubscriberOrgId, { name: teamSvc.defaultTeamName, primary: true }, subscriberUserId, user);
          })
          .then(() => resolve(subscriberOrg))
@@ -366,7 +366,7 @@ function addUserToSubscriberOrg(req, user, subscriberOrgId, role) {
             return createItem(req, -1, `${config.tablePrefix}subscriberUsers`, 'subscriberUserId', subscriberUserId, 'subscriberUserInfo', subscriberUser);
          })
          .then(() => {
-            subscriberAdded(req, subscriberOrgId, user, role);
+            subscriberAdded(req, subscriberOrgId, user, role, subscriberUserId);
             return teamSvc.addUserToPrimaryTeam(req, user, subscriberOrgId, subscriberUserId, Roles.user);
          })
          .then(() => resolve(subscriberUserId))

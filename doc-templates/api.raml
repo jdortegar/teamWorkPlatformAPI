@@ -772,6 +772,9 @@ documentation:
                                     description: User's role related to this organization.  Currently admin | user.
                                     type: string
                                     required: true
+                                 subscriberUserId:
+                                    type: string
+                                    required: true
                                  presence:
                                     type: array
                                     required: false
@@ -823,6 +826,7 @@ documentation:
                                  "created": "2017-08-17T00:59:49Z",
                                  "lastModified: "2017-08-17T00:59:49Z".
                                  "role": "admin",
+                                 "subscriberUserId": "9dec8947-0381-4809-a053-b56777f782a2",
                                  "presence": [
                                     {
                                        "address": "::ffff:127.0.0.1",
@@ -844,7 +848,15 @@ documentation:
                                  },
                                  "created": "2017-08-17T00:59:49Z",
                                  "lastModified: "2017-08-17T00:59:49Z".
-                                 "role": "user"
+                                 "role": "user",
+                                 "subscriberUserId": "9dec8947-0381-4809-a053-b56777f782a2",
+                                 "presence": [
+                                    {
+                                       "address": "::ffff:127.0.0.1",
+                                       "userAgent": "node-XMLHttpRequest",
+                                       "presenceStatus": "available"
+                                    }
+                                 ]
                               }
                            ]
                         }
@@ -946,7 +958,7 @@ documentation:
                description: Narrow the results to teams of a subscriber organization.
                type: string
                required: false
-               example: /teams/getTeams?subscriberOrgIdId=9dec8947-0381-4809-a053-b56777f782f4
+               example: /teams/getTeams?subscriberOrgId=9dec8947-0381-4809-a053-b56777f782f4
          responses:
             200:
                description: |
@@ -1205,6 +1217,9 @@ documentation:
                                     description: User's role related to this organization.  Currently admin | user.
                                     type: string
                                     required: true
+                                 teamMemberId:
+                                    type: string
+                                    required: true
                                  presence:
                                     type: array
                                     required: false
@@ -1252,7 +1267,8 @@ documentation:
                                  "enabled": true,
                                  "preferences": {
                                  },
-                                 "role": "admin"
+                                 "role": "admin",
+                                 "teamMemberId": "9dec8947-0381-4809-a053-b56777f782a2"
                               },
                               {
                                  "userId": "9dec8947-0381-4809-a053-b56777f782f5",
@@ -1264,7 +1280,8 @@ documentation:
                                  "enabled": true,
                                  "preferences": {
                                  },
-                                 "role": "user"
+                                 "role": "user",
+                                 "teamMemberId": "9dec8947-0381-4809-a053-b56777f782a2"
                               }
                            ]
                         }
@@ -1666,6 +1683,9 @@ documentation:
                                     description: User's role related to this organization.  Currently admin | user.
                                     type: string
                                     required: true
+                                 teamRoomMemberId:
+                                    type: string
+                                    required: true
                                  presence:
                                     type: array
                                     required: false
@@ -1713,7 +1733,8 @@ documentation:
                                  "enabled": true,
                                  "preferences": {
                                  },
-                                 "role": "admin"
+                                 "role": "admin",
+                                 "teamRoomMemberId": "9dec8947-0381-4809-a053-b56777f782a2"
                               },
                               {
                                  "userId": "9dec8947-0381-4809-a053-b56777f782f5",
@@ -1725,7 +1746,8 @@ documentation:
                                  "enabled": true,
                                  "preferences": {
                                  },
-                                 "role": "user"
+                                 "role": "user",
+                                 "teamRoomMemberId": "9dec8947-0381-4809-a053-b56777f782a2"
                               }
                            ]
                         }
@@ -2485,7 +2507,7 @@ documentation:
             uriParameters:
                subscriberOrgId:
                   description: Box integration, scoped to the logged-in user and provided `subscriberOrgId`.
-            get:
+            post:
                securedBy: [oauth_2_0]
                description: Revoke Box access from Habla, scoped to the logged-in user and provided `subscriberOrgId`.
                responses:
@@ -2564,7 +2586,7 @@ documentation:
             uriParameters:
                subscriberOrgId:
                   description: Google integration, scoped to the logged-in user and provided `subscriberOrgId`.
-            get:
+            post:
                securedBy: [oauth_2_0]
                description: Revoke Google access from Habla, scoped to the logged-in user and provided `subscriberOrgId`.
                responses:

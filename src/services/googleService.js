@@ -3,7 +3,7 @@ import uuid from 'uuid';
 import config from '../config/env';
 import { IntegrationAccessError, SubscriberOrgNotExistError } from './errors';
 import { composeAuthorizationUrl, exchangeAuthorizationCodeForAccessToken, getUserInfo, revokeIntegration, validateWebhookMessage } from '../integrations/google';
-import { googleIntegrationCreated, googleIntegrationRevoked, googleWebhookEvent } from './messaging';
+import { integrationsUpdated, googleWebhookEvent } from './messaging';
 import { getSubscriberUsersByUserIdAndSubscriberOrgId, updateItemCompletely } from '../repositories/util';
 
 const defaultExpiration = 30 * 60; // 30 minutes.
@@ -109,15 +109,7 @@ export function googleAccessResponse(req, { code, state, error }) {
             return updateItemCompletely(req, -1, `${config.tablePrefix}subscriberUsers`, 'subscriberUserId', subscriberUserId, { subscriberUserInfo: updateInfo });
          })
          .then(() => {
-            // Only have google integration info.
-            const event = {
-               userId: { updateInfo },
-               subscriberOrgId: { updateInfo },
-               integrations: {
-                  google: updateInfo.integrations.google
-               }
-            };
-            googleIntegrationCreated(req, event);
+            integrationsUpdated(req, updateInfo);
             resolve(subscriberOrgId);
          })
          .catch((err) => {
@@ -162,7 +154,7 @@ export function revokeGoogle(req, userId, subscriberOrgId) {
          })
          .then(() => {
             resolve();
-            googleIntegrationRevoked(req, subscriberUserInfo);
+            integrationsUpdated(req, subscriberUserInfo);
          })
          .catch(err => reject(err));
    });

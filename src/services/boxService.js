@@ -3,7 +3,7 @@ import uuid from 'uuid';
 import config from '../config/env';
 import { IntegrationAccessError, SubscriberOrgNotExistError } from './errors';
 import { composeAuthorizationUrl, exchangeAuthorizationCodeForAccessToken, getUserInfo, revokeIntegration, validateWebhookMessage } from '../integrations/box';
-import { boxIntegrationCreated, boxIntegrationRevoked, boxWebhookEvent } from './messaging';
+import { integrationsUpdated, boxWebhookEvent } from './messaging';
 import { getSubscriberUsersByUserIdAndSubscriberOrgId, updateItemCompletely } from '../repositories/util';
 
 const defaultExpiration = 30 * 60; // 30 minutes.
@@ -109,16 +109,7 @@ export function boxAccessResponse(req, { code, state, error, error_description }
             return updateItemCompletely(req, -1, `${config.tablePrefix}subscriberUsers`, 'subscriberUserId', subscriberUserId, { subscriberUserInfo: updateInfo });
          })
          .then(() => {
-            // Only have box integration info.
-            const event = {
-               userId: { updateInfo },
-               subscriberOrgId: { updateInfo },
-               integrations: {
-                  google: updateInfo.integrations.box
-               }
-            };
-
-            boxIntegrationCreated(req, event);
+            integrationsUpdated(req, updateInfo);
             resolve(subscriberOrgId);
          })
          .catch((err) => {
@@ -161,7 +152,7 @@ export function revokeBox(req, userId, subscriberOrgId) {
          })
          .then(() => {
             resolve();
-            boxIntegrationRevoked(req, subscriberUserInfo);
+            integrationsUpdated(req, subscriberUserInfo);
          })
          .catch(err => reject(err));
    });

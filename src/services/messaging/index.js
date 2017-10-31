@@ -4,15 +4,6 @@ import * as internalQueue from './internalQueue';
 import { _broadcastEvent, _joinChannels, ChannelFactory, EventTypes } from './messagingService';
 import Roles from '../roles';
 
-// EventType = presence
-
-// export function presenceChanged(req, userId, presenceStatus, presenceMessage = undefined) {
-//    // TODO: presence only for orgs of user.
-//    // TODO: get address, userAgent, location
-//    return _presenceChanged(req, EventTypes.presenceChanged, userId, address, userAgent, location, presenceStatus, presenceMessage });
-// }
-
-
 // EventType = user
 
 export function userCreated(req, user) { // eslint-disable-line no-unused-vars
@@ -50,10 +41,10 @@ export function subscriberOrgCreated(req, subscriberOrg, userId) {
       ChannelFactory.subscriberOrgAdminChannel(subscriberOrg.subscriberOrgId)
    ]);
 
-   // Which channels gets this.  Certainly not everybody.
-   // return _broadcastEvent(req, EventTypes.subscriberOrgCreated, publishByApiVersion(req, apiVersionedVisibility.publicSubscriberOrg, subscriberOrg), [
-   //    ChannelFactory.publicChannel()
-   // ]);
+   // Only the person who created this gets to know, as she's the only person in that org.
+   return _broadcastEvent(req, EventTypes.subscriberOrgCreated, publishByApiVersion(req, apiVersionedVisibility.publicSubscriberOrg, subscriberOrg), [
+      ChannelFactory.personalChannel(userId)
+   ]);
 }
 
 export function subscriberOrgUpdated(req, subscriberOrg) {
@@ -68,7 +59,7 @@ export function subscriberOrgPrivateInfoUpdated(req, subscriberOrg) {
    ]);
 }
 
-export function subscriberAdded(req, subscriberOrgId, user, role = Roles.user) {
+export function subscriberAdded(req, subscriberOrgId, user, role, subscriberUserId) {
    const subscriberOrgChannel = ChannelFactory.subscriberOrgChannel(subscriberOrgId);
    const channels = [ChannelFactory.subscriberOrgChannel(subscriberOrgId)];
    if (role === Roles.admin) {
@@ -77,7 +68,8 @@ export function subscriberAdded(req, subscriberOrgId, user, role = Roles.user) {
 
    return _joinChannels(req, user.userId, channels)
       .then(() => {
-         _broadcastEvent(req, EventTypes.subscriberAdded, publishByApiVersion(req, apiVersionedVisibility.publicSubscriber, subscriberOrgId, user), [subscriberOrgChannel]);
+         const mergedUser = _.merge(user, { role, subscriberUserId });
+         _broadcastEvent(req, EventTypes.subscriberAdded, publishByApiVersion(req, apiVersionedVisibility.publicSubscriber, subscriberOrgId, mergedUser), [subscriberOrgChannel]);
       })
       .catch(err => req.logger.error(err));
 }
@@ -108,7 +100,7 @@ export function teamPrivateInfoUpdated(req, team) {
    ]);
 }
 
-export function teamMemberAdded(req, teamId, user, role = Roles.user) {
+export function teamMemberAdded(req, teamId, user, role, teamMemberId) {
    const teamChannel = ChannelFactory.teamChannel(teamId);
    const channels = [teamChannel];
    if (role === Roles.admin) {
@@ -116,7 +108,10 @@ export function teamMemberAdded(req, teamId, user, role = Roles.user) {
    }
 
    return _joinChannels(req, user.userId, channels)
-      .then(() => _broadcastEvent(req, EventTypes.teamMemberAdded, publishByApiVersion(req, apiVersionedVisibility.publicTeamMember, teamId, user), [teamChannel]))
+      .then(() => {
+         const mergedUser = _.merge(user, { role, teamMemberId });
+         _broadcastEvent(req, EventTypes.teamMemberAdded, publishByApiVersion(req, apiVersionedVisibility.publicTeamMember, teamId, mergedUser), [teamChannel]);
+      })
       .catch(err => req.logger.error(err));
 }
 
@@ -146,7 +141,7 @@ export function teamRoomPrivateInfoUpdated(req, teamRoom) {
    ]);
 }
 
-export function teamRoomMemberAdded(req, teamRoomId, user, role = Roles.user) {
+export function teamRoomMemberAdded(req, teamRoomId, user, role, teamRoomMemberId) {
    const teamRoomChannel = ChannelFactory.teamRoomChannel(teamRoomId);
    const channels = [teamRoomChannel];
    if (role === Roles.admin) {
@@ -154,7 +149,10 @@ export function teamRoomMemberAdded(req, teamRoomId, user, role = Roles.user) {
    }
 
    return _joinChannels(req, user.userId, channels)
-      .then(() => _broadcastEvent(req, EventTypes.teamRoomMemberAdded, publishByApiVersion(req, apiVersionedVisibility.publicTeamRoomMember, teamRoomId, user), [teamRoomChannel]))
+      .then(() => {
+         const mergedUser = _.merge(user, { role, teamRoomMemberId });
+         _broadcastEvent(req, EventTypes.teamRoomMemberAdded, publishByApiVersion(req, apiVersionedVisibility.publicTeamRoomMember, teamRoomId, mergedUser), [teamRoomChannel]);
+      })
       .catch(err => req.logger.error(err));
 }
 
@@ -189,36 +187,13 @@ export function messageCreated(req, message) {
 
 // EventType = integration
 
-export function boxIntegrationCreated(req, subscriberUser) {
+export function integrationsUpdated(req, subscriberUser) {
    // Send to internal channel.
    const event = _.cloneDeep(subscriberUser);
    delete event.role;
-   internalQueue.sendEvent(req, EventTypes.boxIntegrationCreated, event);
+   internalQueue.sendEvent(req, EventTypes.integrationsUpdated, event);
 
-   return _broadcastEvent(req, EventTypes.boxIntegrationCreated, publishByApiVersion(req, apiVersionedVisibility.publicIntegration, subscriberUser), [
-      ChannelFactory.personalChannel(subscriberUser.userId)
-   ]);
-}
-
-export function boxIntegrationExpired(req, subscriberUser) {
-   // Send to internal channel.
-   const event = _.cloneDeep(subscriberUser);
-   delete event.role;
-   internalQueue.sendEvent(req, EventTypes.boxIntegrationExpired, event);
-
-
-   return _broadcastEvent(req, EventTypes.boxIntegrationExpired, publishByApiVersion(req, apiVersionedVisibility.publicIntegration, subscriberUser), [
-      ChannelFactory.personalChannel(subscriberUser.userId)
-   ]);
-}
-
-export function boxIntegrationRevoked(req, subscriberUser) {
-   // Send to internal channel.
-   const event = _.cloneDeep(subscriberUser);
-   delete event.role;
-   internalQueue.sendEvent(req, EventTypes.boxIntegrationRevoked, event);
-
-   return _broadcastEvent(req, EventTypes.boxIntegrationRevoked, publishByApiVersion(req, apiVersionedVisibility.publicIntegration, subscriberUser), [
+   return _broadcastEvent(req, EventTypes.integrationsUpdated, publishByApiVersion(req, apiVersionedVisibility.publicIntegration, subscriberUser), [
       ChannelFactory.personalChannel(subscriberUser.userId)
    ]);
 }
@@ -226,39 +201,6 @@ export function boxIntegrationRevoked(req, subscriberUser) {
 export function boxWebhookEvent(req, body) {
    // Send to internal channel.
    internalQueue.sendEvent(req, EventTypes.boxWebhookEvent, body);
-}
-
-export function googleIntegrationCreated(req, subscriberUser) {
-   // Send to internal channel.
-   const event = _.cloneDeep(subscriberUser);
-   delete event.role;
-   internalQueue.sendEvent(req, EventTypes.googleIntegrationCreated, event);
-
-   return _broadcastEvent(req, EventTypes.googleIntegrationCreated, publishByApiVersion(req, apiVersionedVisibility.publicIntegration, subscriberUser), [
-      ChannelFactory.personalChannel(subscriberUser.userId)
-   ]);
-}
-
-export function googleIntegrationExpired(req, subscriberUser) {
-   // Send to internal channel.
-   const event = _.cloneDeep(subscriberUser);
-   delete event.role;
-   internalQueue.sendEvent(req, EventTypes.googleIntegrationExpired, event);
-
-   return _broadcastEvent(req, EventTypes.googleIntegrationExpired, publishByApiVersion(req, apiVersionedVisibility.publicIntegration, subscriberUser), [
-      ChannelFactory.personalChannel(subscriberUser.userId)
-   ]);
-}
-
-export function googleIntegrationRevoked(req, subscriberUser) {
-   // Send to internal channel.
-   const event = _.cloneDeep(subscriberUser);
-   delete event.role;
-   internalQueue.sendEvent(req, EventTypes.googleIntegrationRevoked, event);
-
-   return _broadcastEvent(req, EventTypes.googleIntegrationRevoked, publishByApiVersion(req, apiVersionedVisibility.publicIntegration, subscriberUser), [
-      ChannelFactory.personalChannel(subscriberUser.userId)
-   ]);
 }
 
 export function googleWebhookEvent(req, body) {

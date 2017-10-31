@@ -3,7 +3,7 @@ import uuid from 'uuid';
 import config from '../config/env';
 import { NoPermissionsError, UserNotExistError } from './errors';
 import { getRedisInvitations } from './invitations';
-import { userCreated, userUpdated } from './messaging';
+import { userCreated, userUpdated, userPrivateInfoUpdated } from './messaging';
 import * as subscriberOrgSvc from './subscriberOrgService';
 import { createItem, getUsersByIds, getUsersByEmailAddresses, updateItem } from '../repositories/util';
 import { getRandomColor } from './util';
@@ -142,6 +142,9 @@ export function updateUser(req, userId, updateInfo, requestorUserId = undefined)
             _.merge(user, timestampedUpdateInfo);
             user.userId = userId;
             userUpdated(req, user);
+            if ((updateInfo.preferences) && (updateInfo.preferences.private)) {
+               userPrivateInfoUpdated(req, user);
+            }
          })
          .catch(err => reject(err));
    });

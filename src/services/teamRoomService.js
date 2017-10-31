@@ -124,7 +124,7 @@ export function createTeamRoomNoCheck(req, teamId, teamRoomInfo, teamMemberId, u
          .then(() => {
             teamRoom.teamRoomId = actualTeamRoomId;
             teamRoomCreated(req, teamRoom, user.userId);
-            teamRoomMemberAdded(req, actualTeamRoomId, user, role);
+            teamRoomMemberAdded(req, actualTeamRoomId, user, role, teamRoomMemberId);
 
             const conversation = {};
             return conversationSvc.createConversationNoCheck(req, actualTeamRoomId, conversation, user.userId);
@@ -272,6 +272,7 @@ export function setTeamRoomsOfTeamActive(req, teamId, active) {
  */
 export function getTeamRoomUsers(req, teamRoomId, userId = undefined) {
    const userIdsRoles = {};
+   const userIdsTeamRoomMemberIds = {};
    let usersWithRoles;
 
    return new Promise((resolve, reject) => {
@@ -283,6 +284,7 @@ export function getTeamRoomUsers(req, teamRoomId, userId = undefined) {
 
             const userIds = teamRoomMembers.map((teamRoomMember) => {
                userIdsRoles[teamRoomMember.teamRoomMemberInfo.userId] = teamRoomMember.teamRoomMemberInfo.role;
+               userIdsTeamRoomMemberIds[teamRoomMember.teamRoomMemberInfo.userId] = teamRoomMember.teamRoomMemberId;
                return teamRoomMember.teamRoomMemberInfo.userId;
             });
             if ((userId) && (userIds.indexOf(userId)) < 0) {
@@ -295,6 +297,7 @@ export function getTeamRoomUsers(req, teamRoomId, userId = undefined) {
             usersWithRoles = users.map((user) => {
                const ret = _.cloneDeep(user);
                ret.userInfo.role = userIdsRoles[user.userId];
+               ret.userInfo.teamRoomMemberId = userIdsTeamRoomMemberIds[user.userId];
                return ret;
             });
 
@@ -427,7 +430,7 @@ export function addUserToTeamRoom(req, user, teamMemberId, teamRoomId, role) {
             return createItem(req, -1, `${config.tablePrefix}teamRoomMembers`, 'teamRoomMemberId', teamRoomMemberId, 'teamRoomMemberInfo', teamRoomMember);
          })
          .then(() => {
-            teamRoomMemberAdded(req, teamRoomId, user, role);
+            teamRoomMemberAdded(req, teamRoomId, user, role, teamRoomMemberId);
             return conversationSvc.addUserToConversationByTeamRoomId(req, user, teamRoomId);
          })
          .then(() => resolve())
