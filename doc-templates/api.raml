@@ -2507,7 +2507,7 @@ documentation:
             uriParameters:
                subscriberOrgId:
                   description: Box integration, scoped to the logged-in user and provided `subscriberOrgId`.
-            get:
+            post:
                securedBy: [oauth_2_0]
                description: Revoke Box access from Habla, scoped to the logged-in user and provided `subscriberOrgId`.
                responses:
@@ -2586,7 +2586,7 @@ documentation:
             uriParameters:
                subscriberOrgId:
                   description: Google integration, scoped to the logged-in user and provided `subscriberOrgId`.
-            get:
+            post:
                securedBy: [oauth_2_0]
                description: Revoke Google access from Habla, scoped to the logged-in user and provided `subscriberOrgId`.
                responses:

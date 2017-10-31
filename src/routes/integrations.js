@@ -16,7 +16,7 @@ router.route('/box/access')
    .get(box.boxAccess);
 
 router.route('/box/revoke/:subscriberOrgId')
-   .get(box.revokeBox);
+   .post(box.revokeBox);
 
 router.route('/box/webhooks')
    .post(box.boxWebhooks);
@@ -29,7 +29,7 @@ router.route('/google/access')
    .get(google.googleAccess);
 
 router.route('/google/revoke/:subscriberOrgId')
-   .get(google.revokeGoogle);
+   .post(google.revokeGoogle);
 
 router.route('/google/webhooks')
    .post(google.googleWebhooks);

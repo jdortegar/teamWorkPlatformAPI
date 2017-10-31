@@ -4,15 +4,6 @@ import * as internalQueue from './internalQueue';
 import { _broadcastEvent, _joinChannels, ChannelFactory, EventTypes } from './messagingService';
 import Roles from '../roles';
 
-// EventType = presence
-
-// export function presenceChanged(req, userId, presenceStatus, presenceMessage = undefined) {
-//    // TODO: presence only for orgs of user.
-//    // TODO: get address, userAgent, location
-//    return _presenceChanged(req, EventTypes.presenceChanged, userId, address, userAgent, location, presenceStatus, presenceMessage });
-// }
-
-
 // EventType = user
 
 export function userCreated(req, user) { // eslint-disable-line no-unused-vars
@@ -196,36 +187,13 @@ export function messageCreated(req, message) {
 
 // EventType = integration
 
-export function boxIntegrationCreated(req, subscriberUser) {
+export function integrationsUpdated(req, subscriberUser) {
    // Send to internal channel.
    const event = _.cloneDeep(subscriberUser);
    delete event.role;
-   internalQueue.sendEvent(req, EventTypes.boxIntegrationCreated, event);
+   internalQueue.sendEvent(req, EventTypes.integrationsUpdated, event);
 
-   return _broadcastEvent(req, EventTypes.boxIntegrationCreated, publishByApiVersion(req, apiVersionedVisibility.publicIntegration, subscriberUser), [
-      ChannelFactory.personalChannel(subscriberUser.userId)
-   ]);
-}
-
-export function boxIntegrationExpired(req, subscriberUser) {
-   // Send to internal channel.
-   const event = _.cloneDeep(subscriberUser);
-   delete event.role;
-   internalQueue.sendEvent(req, EventTypes.boxIntegrationExpired, event);
-
-
-   return _broadcastEvent(req, EventTypes.boxIntegrationExpired, publishByApiVersion(req, apiVersionedVisibility.publicIntegration, subscriberUser), [
-      ChannelFactory.personalChannel(subscriberUser.userId)
-   ]);
-}
-
-export function boxIntegrationRevoked(req, subscriberUser) {
-   // Send to internal channel.
-   const event = _.cloneDeep(subscriberUser);
-   delete event.role;
-   internalQueue.sendEvent(req, EventTypes.boxIntegrationRevoked, event);
-
-   return _broadcastEvent(req, EventTypes.boxIntegrationRevoked, publishByApiVersion(req, apiVersionedVisibility.publicIntegration, subscriberUser), [
+   return _broadcastEvent(req, EventTypes.integrationsUpdated, publishByApiVersion(req, apiVersionedVisibility.publicIntegration, subscriberUser), [
       ChannelFactory.personalChannel(subscriberUser.userId)
    ]);
 }
@@ -233,39 +201,6 @@ export function boxIntegrationRevoked(req, subscriberUser) {
 export function boxWebhookEvent(req, body) {
    // Send to internal channel.
    internalQueue.sendEvent(req, EventTypes.boxWebhookEvent, body);
-}
-
-export function googleIntegrationCreated(req, subscriberUser) {
-   // Send to internal channel.
-   const event = _.cloneDeep(subscriberUser);
-   delete event.role;
-   internalQueue.sendEvent(req, EventTypes.googleIntegrationCreated, event);
-
-   return _broadcastEvent(req, EventTypes.googleIntegrationCreated, publishByApiVersion(req, apiVersionedVisibility.publicIntegration, subscriberUser), [
-      ChannelFactory.personalChannel(subscriberUser.userId)
-   ]);
-}
-
-export function googleIntegrationExpired(req, subscriberUser) {
-   // Send to internal channel.
-   const event = _.cloneDeep(subscriberUser);
-   delete event.role;
-   internalQueue.sendEvent(req, EventTypes.googleIntegrationExpired, event);
-
-   return _broadcastEvent(req, EventTypes.googleIntegrationExpired, publishByApiVersion(req, apiVersionedVisibility.publicIntegration, subscriberUser), [
-      ChannelFactory.personalChannel(subscriberUser.userId)
-   ]);
-}
-
-export function googleIntegrationRevoked(req, subscriberUser) {
-   // Send to internal channel.
-   const event = _.cloneDeep(subscriberUser);
-   delete event.role;
-   internalQueue.sendEvent(req, EventTypes.googleIntegrationRevoked, event);
-
-   return _broadcastEvent(req, EventTypes.googleIntegrationRevoked, publishByApiVersion(req, apiVersionedVisibility.publicIntegration, subscriberUser), [
-      ChannelFactory.personalChannel(subscriberUser.userId)
-   ]);
 }
 
 export function googleWebhookEvent(req, body) {
