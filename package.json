@@ -17,13 +17,13 @@
   "engines": {
     "node": ">=6"
   },
-  "pre-commit": [
-    "lint",
-    "test"
-  ],
+  "lint-staged": {
+    "*.{js,jsx}": "eslint"
+  },
   "scripts": {
     "start": "nodemon $NODE_DEBUG_OPTION src/index.js --exec babel-node",
     "debug": "nodemon src/index.js --exec babel-node --debug",
+    "precommit": "lint-staged",
     "lint": "eslint src",
     "test": "cross-env NODE_ENV=test jest --verbose --runInBand",
     "coverage": "cross-env NODE_ENV=test jest --runInBand --silent --coverage",
@@ -66,11 +66,12 @@
     "eslint-plugin-import": "^2.2.0",
     "eslint-plugin-jsx-a11y": "^5.0.3",
     "eslint-plugin-react": "^7.0.1",
+    "husky": "^0.14.3",
     "jest": "^20.0.3",
+    "lint-staged": "^4.3.0",
     "marked": "^0.3.6",
     "nodejs-dashboard": "^0.4.1",
     "nodemon": "^1.11.0",
-    "pre-commit": "^1.2.2",
     "prompt": "^1.0.0",
     "raml2html": "^6.3.0",
     "shx": "^0.2.2",
