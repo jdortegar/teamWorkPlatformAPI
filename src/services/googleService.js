@@ -137,7 +137,6 @@ export function revokeGoogle(req, userId, subscriberOrgId) {
             }
 
             const subscriberUserId = subscriberUsers[0].subscriberUserId;
-            console.log(`AD: revokeGoogle(), subscriberUser=${JSON.stringify(subscriberUsers[0])}`);
             subscriberUserInfo = _.cloneDeep(subscriberUsers[0].subscriberUserInfo);
             const userAccessToken = ((subscriberUserInfo.integrations) && (subscriberUserInfo.integrations.google))
                ? subscriberUserInfo.integrations.google.access_token : undefined;
