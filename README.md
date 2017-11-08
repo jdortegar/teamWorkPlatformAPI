@@ -1,6 +1,45 @@
 # hablaapi
-Habla Application Services
+# Habla Application Services
+           
+## Habla API Structure
+There are no standard structures for API layout in NodeJS/Express, but there are some best practices to implementing APIs.  The best practice for Habla API structure dictates a modular appraoch to the API design.
 
+### root directory
+This is the directory for the api.  It contains the README.md (this file), `package.json`, which is the configuration file for NodeJS and is used by `npm install` to install necessary packages required by the application.  It also contains the `src` directory, where all application source code lives.
+
+### ./src directory
+The `src` directory contains all source code, including the `index.js` file at the root level, which is the container for the NodeJS application.  This file uses `require` statements to pull-in all of the other code distributed among the following subdirectories:
+
+### ./src/config
+Pretty much just what it sounds like - this directory contains all environment / system configuration logic
+
+###./src/routes
+This folder contains all service routes (URIs) for the API.  Each .js file in this directory `requires` the necessary controller in the `../controllers` directory.
+
+### ./src/controllers
+This directory contains all logic to support a particular service route, invoked from the `../routes` path.
+
+### ./src/helpers
+This directory contains all common utility functions to support the API
+
+### ./src/models
+This directory contains the functions to interact with the database / datastore for an entity; usually invoked via controllers.
+
+### ./src/policies
+This is where service policy-related functions (e.g., role-based access logic) is stored
+
+To run the service, set your working directory to `hablaapi` and run
+```
+$ npm start
+```
+If you get an error that there are missing modules, run
+```
+$ npm install
+```
+This should install all necessary modules into the `hablaapi/node_modules` directory.  **NEVER** add the `node_modules` folder to your git repo; this will break the service on other platforms (e.g., **PRODUCTION**).
+
+
+##Habla Git Workflow
 If you are not familiar with git, **PLEASE** read up on the subject before proceeding.  A good reference is *Professional Git* by Brent Laster.
 
 To setup your local repository:
@@ -124,3 +163,98 @@ Total 1 (delta 0), reused 0 (delta 0)
 To https://github.com/Habla-Inc/hablaapi.git
    818be50..0409625  development -> development
 ```
+
+
+
+## Dependencies
+
+* [Node.js](https://nodejs.org/) version >6.x
+
+* [DynamoDB](http://docs.aws.amazon.com/amazondynamodb/latest/gettingstartedguide/GettingStarted.Download.html)
+
+* [Redis](https://redis.io/download) version >=3.2
+
+
+## Install
+
+    npm install
+
+
+## Commands
+
+* `npm run start` - starts the development server with hot reloading enabled
+
+* `npm run test` - start the test runner
+
+* `npm run watch:test` - start the test runner with watch mode
+
+* `npm run build` - build for production into `dist` directory.
+
+* `npm run start:prod` - run for production (assumes built)
+
+Refer to the scripts section of `package.json` for a complete and more accurate listing of available commands.
+
+
+## Usage
+Navigate to [http://localhost:3000/](http://localhost:3000/) for the UI.
+
+NOTE: No UI for this!!! This serves REST endpoints...!!!  ONLY!!! Go to the webapp for that.
+
+
+## Commit
+
+lint and test tasks are run, and need to be passed, before checkin.
+Although not preferable, you can bypass the commit hook to checkin your code.
+Since tests are run in CI, you must at least pass the tests.
+Either that, or don't write tests...
+
+
+## Documentation
+
+To generate html from inline documentation and templates (including RAML API documentation):
+
+    npm run doc
+    open doc/code/index.html
+    open doc/api.html
+
+Generic documentation is generated, and includes your added [esdoc](https://esdoc.org)-style comments.
+Don't go crazy, but try to document things that you think might be unclear to someone looking at your code.
+I'm sure you don't want to have to explain it over and over again verbally.
+API documentation is also generated.
+
+Additional documentation can be referenced in [Confluence](https://hablaai.atlassian.net/wiki/display/PD/Habla+API+Server).
+
+
+## Deployment
+
+### CI Build
+
+    npm install
+    npm build
+
+Distribution assets to push:  TODO: probably archive it too.
+
+### Target
+
+#### Environment Variables
+
+    WEBAPP_BASE_URI points to the webapp (ex. https://habla.ai)
+
+Please refer to src/config/env/index.js for a more complete and up-to-latest listing of environment variables available.
+
+#### Runtime
+
+    npm run start:prod
+    
+That's one way.
+TODO: Another way is ...
+
+
+### Client
+
+You can use a command line client to invoke the REST APIs, play around with usage, and listen to events.
+
+    npm run client:dev
+    npm run client:local
+    npm run client:ngrok
+

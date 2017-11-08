@@ -1,0 +1,116 @@
+/**
+---------------------------------------------------------------------
+ config/express.js
+
+ configuration code for hablaapi service
+---------------------------------------------------------------------
+  Date         Initials    Description
+  ----------   --------    ------------------------------------------
+  2017-02-02    RLA         Initial module creation
+
+---------------------------------------------------------------------
+*/
+
+import bodyParser from 'body-parser';
+import cors from 'cors';
+import express from 'express';
+import expressValidation from 'express-validation';
+import httpStatus from 'http-status';
+import jwt, { UnauthorizedError } from 'express-jwt';
+import config from './env';
+import APIError from '../helpers/APIError';
+import { googleSiteVerification } from '../integrations/google';
+import { errorMiddleware as loggerErrorMiddleware, preAuthMiddleware, postAuthMiddleware } from '../logger';
+import routes from '../routes';
+
+const app = express();
+
+// Parse body params and attach them to req.body.
+app.use(bodyParser.json({ limit: '100mb' }));
+app.use(bodyParser.urlencoded({
+   extended: true
+}));
+
+app.use(cors({ origin: '*' })); // This should match origins setting in messagingService.js.  Should be a variable.
+
+app.use(preAuthMiddleware);
+
+app.use(googleSiteVerification);
+
+// Extract API version in request and put in request as "apiVersion", defaulting to 0.
+app.use((req, res, next) => {
+   let apiVersion = 0;
+
+   const vMatch = req.url.match(/\/v\d+\//);
+   if (vMatch !== null) {
+      const vMatchStr = vMatch[0].substring(2, vMatch[0].length - 1);
+      try {
+         apiVersion = Number(vMatchStr);
+         if (apiVersion > config.apiVersion) {
+            throw new APIError(`Invalid API Version: ${vMatchStr}`, httpStatus.BAD_REQUEST);
+         }
+      } catch (err) {
+         throw new APIError(`Invalid API Version: ${vMatchStr}`, httpStatus.BAD_REQUEST);
+      }
+   }
+
+   req.apiVersion = apiVersion;
+   next();
+});
+
+export const jwtMiddleware = jwt({ secret: config.jwtSecret });
+app.use(jwtMiddleware.unless({
+   path: [
+      /^\/(v\d+\/)?test/,
+      /^\/(v\d+\/)?users\/registerUser/,
+      /^\/(v\d+\/)?users\/validateEmail/,
+      /^\/(v\d+\/)?users\/createUser/,
+      /^\/(v\d+\/)?auth\/login/,
+      /^\/(v\d+\/)?auth\/logout/,
+      /^\/(v\d+\/)?integrations\/.*\/access/,
+      /^\/(v\d+\/)?integrations\/.*\/webhooks/,
+      /^\/(v\d+\/)?users\/passwordreset/,
+      /^\/(v\d+\/)?passwordupdate/
+   ]
+}));
+
+app.use(postAuthMiddleware);
+
+// mount all routes on / path
+app.use('/', routes);
+app.use('/v:apiVersion/', routes);
+
+// Catch 404 and forward to error handler.
+app.use((req, res, next) => {
+   const err = new APIError('API not found', httpStatus.NOT_FOUND);
+   return next(err);
+});
+
+// If error is not an instanceOf APIError, convert it.
+app.use((err, req, res, next) => {
+   let e = err;
+   if (err instanceof expressValidation.ValidationError) {
+      const unifiedErrorMessage = err.errors.map((error) => {
+         return error.messages.join('. ');
+      }).join(' and ');
+      e = new APIError(unifiedErrorMessage, err.status, true);
+   } else if (err instanceof UnauthorizedError) {
+      req.logger.warn(err.message);
+      res.status(httpStatus.UNAUTHORIZED).end();
+      return;
+   } else if (!(err instanceof APIError)) {
+      e = new APIError(err.message, err.status, err.isPublic);
+   }
+
+   next(e);
+});
+
+app.use(loggerErrorMiddleware);
+
+app.use((err, req, res, next) => { // eslint-disable-line no-unused-vars
+   res.status(err.status).json({
+      message: err.message
+   });
+});
+
+export default app;

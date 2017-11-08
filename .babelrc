@@ -1,0 +1,17 @@
+{
+  "plugins": [
+    ["transform-es2015-modules-commonjs"],
+    ["transform-async-to-generator"],
+    ["babel-plugin-transform-class-properties"],
+    ["transform-runtime", {
+      "polyfill": true,
+      "regenerator": true
+    }]
+  ],
+  "env": {
+    "production": {
+      "comments": false,
+      "minified": true
+    }
+  }
+}
