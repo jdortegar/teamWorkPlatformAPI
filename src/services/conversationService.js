@@ -130,7 +130,11 @@ export function createConversationNoCheck(req, teamRoomId, conversationInfo, use
                conversationParticipant,
             );
          })
-         .then(() => {
+         .then(() => getUsersByIds(req, [userId]))
+         .then((dbUsers) => {
+            const { userInfo: participant } = dbUsers[0];
+            participant.userId = userId;
+            conversation.participants = [participant];
             conversation.conversationId = actualConversationId;
             conversationCreated(req, conversation, userId);
 
