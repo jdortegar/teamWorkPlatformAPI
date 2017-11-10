@@ -2,7 +2,24 @@ import _ from 'lodash';
 
 function privateUser(dbUser) {
    const userId = dbUser.userId;
-   const { emailAddress, firstName, lastName, displayName, country, timeZone, icon, enabled, preferences, created, lastModified, role, subscriberUserId, teamMemberId, teamRoomMemberId, presence } = dbUser.userInfo || dbUser;
+   const {
+      emailAddress,
+      firstName,
+      lastName,
+      displayName,
+      country,
+      timeZone,
+      icon,
+      enabled,
+      preferences,
+      created,
+      lastModified,
+      role,
+      subscriberUserId,
+      teamMemberId,
+      teamRoomMemberId,
+      presence
+   } = dbUser.userInfo || dbUser;
    return {
       userId,
       username: emailAddress,

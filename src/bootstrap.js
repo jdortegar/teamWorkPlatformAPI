@@ -1,13 +1,21 @@
 import AWS from 'aws-sdk';
+import moment from 'moment';
 import config from './config/env';
 import app from './config/express';
 import logger from './logger';
 import messagingSvc from './services/messaging/messagingService';
 import { listenForInternalEvents, stopListeningForInternalEvents } from './services/messaging/internalQueue';
 import { connectToRedis, disconnectFromRedis } from './redis-connection';
+import { ensureCachedByteCountExists, startCronUpdateCustomerEntitlements } from './services/awsMarketplaceService';
 
 let redisClient;
 let server;
+
+AWS.config.update({
+   accessKeyId: config.aws.accessKeyId,
+   secretAccessKey: config.aws.secretAccessKey,
+   region: config.aws.awsRegion
+});
 
 function startupInfo() {
    logger.info('Habla API Startup');
@@ -24,13 +32,11 @@ function startupInfo() {
 
 export function setupDynamoDb() {
    return new Promise((resolve) => {
-      AWS.config.update({
-         region: config.aws.awsRegion,
-         endpoint: config.dynamoDbEndpoint
-      });
+      AWS.config.dynamodb = { endpoint: config.dynamoDbEndpoint };
       const dynamodb = new AWS.DynamoDB();
       app.locals.AWS = AWS;
       app.locals.db = dynamodb;
+      app.locals.docClient = new AWS.DynamoDB.DocumentClient();
 
       logger.info('Connected to DynamoDB.');
       resolve(dynamodb);
@@ -151,5 +157,7 @@ export default function start() {
          server = httpServer;
          return registerGracefulShutdown();
       })
+      .then(() => ensureCachedByteCountExists({ app, now: moment.utc() }))
+      .then(() => startCronUpdateCustomerEntitlements())
       .catch(err => logger.error(err));
 }

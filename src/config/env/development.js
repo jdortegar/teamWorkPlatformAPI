@@ -12,12 +12,15 @@ export const aws = {
    awsRegion: 'us-west-2'
 };
 export const dynamoDbEndpoint = 'http://localhost:8000';
+// export const dynamoDbEndpoint = 'https://dynamodb.us-west-2.amazonaws.com';
 
-export const webappBaseUri = 'http://localhost:8081';
+export const webappBaseUri = 'http://localhost:9090';
 // export const webappBaseUri = 'https://hablawebapp.ngrok.io';
 
 export const resourcesBaseUrl = 'https://uw33cc3bz4.execute-api.us-west-2.amazonaws.com/dev';
 // export const resourcesBaseUrl = 'https://hablaresources.ngrok.io';
+
+export const signedCookieSecret = '4fIv(E2@';
 
 export const loggerLevel = 'debug';
 export const loggerJson = false;
@@ -31,3 +34,4 @@ export const boxWebhooksSecondaryKey = 'UsmcEmGsgaWPu7IDPyLQpoTkQDbAGmVP';
 export const googleClientId = '56229434385-er6slkc68oaklfs58oi5ej2fbbjabpc7.apps.googleusercontent.com';
 export const googleClientSecret = 'tQ-XvOvgGmAAJfjMWjH4Ai1T';
 
+export const awsProductCode = '8loyvo6g5k96nfobn626rwjbj';

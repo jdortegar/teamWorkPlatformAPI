@@ -194,3 +194,28 @@ createTable(conversationsParams);
 createTable(conversationParticipantsParams);
 createTable(messagesParams);
 
+function createAwsMarketplaceCustomerTable() {
+   var params = {
+      TableName : tablePrefix + 'awsMarketplaceCustomers',
+      KeySchema: [
+         { AttributeName: 'awsCustomerId', KeyType: 'HASH'}
+      ],
+      AttributeDefinitions: [
+         { AttributeName: 'awsCustomerId', AttributeType: 'S' }
+      ],
+      ProvisionedThroughput: {
+         ReadCapacityUnits: 10,
+         WriteCapacityUnits: 10
+      }
+   };
+
+   dynamodb.createTable(params, function(err, data) {
+      if (err) {
+         console.error('Unable to create table. Error JSON:', JSON.stringify(err, null, 2));
+      } else {
+         console.log('Created table. Table description JSON:', JSON.stringify(data, null, 2));
+      }
+   });
+}
+createAwsMarketplaceCustomerTable();
+
