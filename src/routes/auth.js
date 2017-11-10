@@ -1,14 +1,3 @@
-//---------------------------------------------------------------------
-// routes/auth.js
-//
-// route for /auth service
-//---------------------------------------------------------------------
-//  Date         Initials    Description
-//  ----------   --------    ------------------------------------------
-//  2017-02-02    RLA         Initial module creation
-//
-//---------------------------------------------------------------------
-
 import express from 'express';
 import { apiVersionedValidators, validateByApiVersion } from '../config/param-validation';
 import * as auth from '../controllers/auth';
@@ -20,5 +9,11 @@ router.route('/login')
 
 router.route('/logout')
    .get(auth.logout);
+
+router.route('/registerAWSCustomer')
+   .post(auth.resolveAwsCustomer);
+
+router.route('/handleAWSEntitlementEvent')
+   .post(auth.handleAWSEntitlementEvent);
 
 export default router;

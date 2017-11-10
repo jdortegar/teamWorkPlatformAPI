@@ -1,13 +1,14 @@
 import _ from 'lodash';
 import uuid from 'uuid';
 import config from '../config/env';
-import { NoPermissionsError, UserNotExistError } from './errors';
+import { NoPermissionsError, UserNotExistError, CustomerExistsError } from './errors';
 import { getRedisInvitations } from './invitations';
 import { userCreated, userUpdated, userPrivateInfoUpdated } from './messaging';
 import * as subscriberOrgSvc from './subscriberOrgService';
 import { createItem, getUsersByIds, getUsersByEmailAddresses, updateItem } from '../repositories/util';
 import { getRandomColor } from './util';
 import { hashPassword } from '../models/user';
+import * as awsMarketplaceSvc from './awsMarketplaceService';
 
 export function addUserToCache(req, email, uid, status) {
    return new Promise((resolve, reject) => {
@@ -106,14 +107,33 @@ export function createUser(req, userInfo) {
          })
          .then((createdSubscriberOrg) => {
             if (createdSubscriberOrg) {
-               resolve(user);
                userCreated(req, user);
-            } else {
-               // Key is found in cache, user already registered.
-               req.logger.debug(`users-create: user ${email} found in cache`);
-               reject(new NoPermissionsError(email));
+
+               // See if it's a new AWS customer.
+               return req.app.locals.redis.getAsync(`${config.redisPrefix}${email}#awsCustomerId`);
             }
+
+            // Key is found in cache, user already registered.
+            req.logger.debug(`users-create: user ${email} found in cache`);
+            throw new NoPermissionsError(email);
          })
+         .then((awsCustomerId) => {
+            if ((awsCustomerId) && (awsCustomerId !== null)) {
+               return new Promise((resolve2, reject2) => {
+                  awsMarketplaceSvc.registerCustomer(req, awsCustomerId, user)
+                     .then(() => resolve2())
+                     .catch((err) => {
+                        if (err instanceof CustomerExistsError) {
+                           // TODO: do we auto invite, etc.
+                        } else {
+                           reject2(err); // TODO:
+                        }
+                     });
+               });
+            }
+            return undefined;
+         })
+         .then(() => resolve(user))
          .catch((err) => {
             req.logger.warn(err);
             reject(err);

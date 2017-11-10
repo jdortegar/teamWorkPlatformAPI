@@ -4,12 +4,12 @@ import * as util from './util';
 // Schema Version for messages table.
 const v = 1;
 
-function persistUpgradedDbObject(req, upgradedDbObject) {
+const persistUpgradedDbObject = (req, upgradedDbObject) => {
    const updateInfo = upgradedDbObject.messageInfo;
    return util.updateItemCompletely(req, -1, `${config.tablePrefix}messages`, 'messageId', upgradedDbObject.messageId, { messageInfo: updateInfo }, upgradedDbObject.v);
-}
+};
 
-function upgradeSchema(req, dbObjects) {
+const upgradeSchema = (req, dbObjects) => {
    return new Promise((resolve, reject) => {
       const upgradePromises = [];
       const upgradedDbObjects = [];
@@ -56,29 +56,29 @@ function upgradeSchema(req, dbObjects) {
          resolve(upgradedDbObjects);
       }
    });
-}
+};
 
 // Start Proxies to intercept and upgrade schema version.
-function batchGetItemBySortKey(req, tableName, sortKeyName, sortKeys) {
+const batchGetItemBySortKey = (req, tableName, sortKeyName, sortKeys) => {
    return new Promise((resolve, reject) => {
       util.batchGetItemBySortKey(req, tableName, sortKeyName, sortKeys)
          .then(originalResults => upgradeSchema(req, originalResults))
          .then(latestResults => resolve(latestResults))
          .catch(err => reject(err));
    });
-}
+};
 
-function scan(req, params) {
+const scan = (req, params) => {
    return new Promise((resolve, reject) => {
       util.scan(params)
          .then(originalResults => upgradeSchema(req, originalResults))
          .then(latestResults => resolve(latestResults))
          .catch(err => reject(err));
    });
-}
+};
 // End Proxies to intercept and upgrade schema version.
 
-export function createMessageInDb(req, partitionId, messageId, message) {
+export const createMessageInDb = (req, partitionId, messageId, message) => {
    const tableName = `${config.tablePrefix}messages`;
 
    const params = {
@@ -92,20 +92,20 @@ export function createMessageInDb(req, partitionId, messageId, message) {
    };
 
    return util.docClient().put(params).promise();
-}
+};
 
 
-export function getMessageById(req, messageId) {
+export const getMessageById = (req, messageId) => {
    if (messageId === undefined) {
       return Promise.reject('messageId needs to be specified.');
    }
 
    const tableName = `${config.tablePrefix}messages`;
    return batchGetItemBySortKey(req, tableName, 'messageId', [messageId]);
-}
+};
 
 // filter = { since, until, minLevel, maxLevel }
-export function getMessagesByConversationIdFiltered(req, conversationId, filter) {
+export const getMessagesByConversationIdFiltered = (req, conversationId, filter) => {
    if (conversationId === undefined) {
       return Promise.reject('conversationId needs to be specified.');
    }
@@ -170,4 +170,4 @@ export function getMessagesByConversationIdFiltered(req, conversationId, filter)
       ExpressionAttributeValues: queryValues
    };
    return scan(req, params);
-}
+};

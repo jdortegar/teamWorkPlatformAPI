@@ -199,6 +199,41 @@ documentation:
                   OK<br />
                   Always OK, whether a valid JWT exists or not, or any other server failure.
 
+   /registerAWSCustomer:
+      post:
+         description: |
+            AWS Marketplace SaaS registration endpoint, invoked my user purchase on AWS Marketplace.
+         body:
+            application/x-www-form-urlencoded:
+               properties:
+                  x-amzn-marketplace-token:
+                     description: AWS Marketplace customer’s registration token, to be used to retrieve the AWS customer ID.
+                     type: string
+                     required: true
+         responses:
+            302:
+               description: |
+                  FOUND<br />
+                  Redirect user to Habla AI login page, for the user to login or register.
+            404:
+               description: |
+                  NOT_FOUND<br />
+                  Either the customer's registration token was not given, or the Product Code that the customer signed up for does not match Habla AI .
+
+   /handleAWSEntitlementEvent:
+      post:
+         description: |
+            AWS Marketplace SaaS notification endpoint, invoked when the customer makes changes to their plan on AWS Marketplace.
+         responses:
+            200:
+               description: |
+                  OK<br />
+                  We were able to process the message cleanly, whether valid or not.  This signifies the invoker to not reinvoke.
+            500:
+               description: |
+                  Internal Server Error<br />
+                  There's an error in processing.  This signal the invoker to resend, and for us to fix a bug.
+
 
 /users:
 

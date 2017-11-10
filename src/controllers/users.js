@@ -1,14 +1,3 @@
-//---------------------------------------------------------------------
-// controllers/users.js
-//
-// controller for users object
-//---------------------------------------------------------------------
-//  Date         Initials    Description
-//  ----------   --------    ------------------------------------------
-//  2017-02-02    RLA         Initial module creation
-//
-//---------------------------------------------------------------------
-
 import httpStatus from 'http-status';
 import uuid from 'uuid';
 import app from '../config/express';
@@ -17,6 +6,7 @@ import APIError from '../helpers/APIError';
 import * as mailer from '../helpers/mailer';
 import { NoPermissionsError, UserNotExistError } from '../services/errors';
 import * as userSvc from '../services/userService';
+import { AWS_CUSTOMER_ID_HEADER_NAME } from './auth';
 
 /**
 * Create a reservation for a user.
@@ -25,6 +15,7 @@ import * as userSvc from '../services/userService';
 */
 export function createReservation(req, res) {
    const email = req.body.email || '';
+   const awsCustomerId = req.get(AWS_CUSTOMER_ID_HEADER_NAME);
 
    // Add new reservation to cache
 
@@ -45,6 +36,10 @@ export function createReservation(req, res) {
          });
       }
    });
+
+   if (awsCustomerId) {
+      req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#awsCustomerId`, awsCustomerId);
+   }
 }
 
 export function deleteRedisKey(rid) {
@@ -96,9 +91,7 @@ export function validateEmail(req, res) {
 
 export function createUser(req, res, next) {
    userSvc.createUser(req, req.body)
-      .then(() => {
-         res.status(httpStatus.CREATED).end();
-      })
+      .then(() => res.status(httpStatus.CREATED).end())
       .catch((err) => {
          if (err instanceof NoPermissionsError) {
             res.status(httpStatus.FORBIDDEN).end();

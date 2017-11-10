@@ -25,6 +25,8 @@ const config = {
    webappBaseUri: process.env.WEBAPP_BASE_URI || defaultConfig.webappBaseUri,
    resourcesBaseUrl: process.env.RESOURCES_BASE_URL || defaultConfig.resourcesBaseUrl,
 
+   signedCookieSecret: process.env.SIGNED_COOKIE_SECRET || defaultConfig.signedCookieSecret,
+
    /**
     * 'error', 'warn', 'info', 'verbose', 'debug', 'silly'.
     */
@@ -41,7 +43,8 @@ const config = {
    boxWebhooksSecondaryKey: process.env.BOX_WEBHOOKS_SECONDARY_KEY || defaultConfig.boxWebhooksSecondaryKey,
 
    googleClientId: process.env.GOOGLE_CLIENT_ID || defaultConfig.googleClientId,
-   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || defaultConfig.googleClientSecret
+   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || defaultConfig.googleClientSecret,
+
+   awsProductCode: process.env.AWS_PRODUCT_CODE || defaultConfig.awsProductCode
 };
 export default config;
-
