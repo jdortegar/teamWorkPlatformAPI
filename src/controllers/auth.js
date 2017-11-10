@@ -1,22 +1,19 @@
-//---------------------------------------------------------------------
-// controllers/auth.js
-//
-// controller for auth service
-//---------------------------------------------------------------------
-//  Date         Initials    Description
-//  ----------   --------    ------------------------------------------
-//  2017-02-02    RLA         Initial module creation
-//
-//---------------------------------------------------------------------
-
 import httpStatus from 'http-status';
 import jwt from 'jsonwebtoken';
+import SnsValidator from 'sns-validator';
+import axios from 'axios';
 import config from '../config/env';
 import { jwtMiddleware } from '../config/express';
 import APIError from '../helpers/APIError';
 import { apiVersionedVisibility, publishByApiVersion } from '../helpers/publishedVisibility';
 import { getAuthData, passwordMatch } from '../models/user';
 import * as userSvc from '../services/userService';
+import * as awsMarketplaceSvc from '../services/awsMarketplaceService';
+import { InvalidAwsProductCodeError, CustomerExistsError } from '../services/errors';
+
+export const AWS_CUSTOMER_ID_HEADER_NAME = 'x-hablaai-awsCustomerId';
+export const AWS_CUSTOMER_ID_QUERY_NAME = 'awsCustomerId';
+
 
 export function login(req, res, next) {
    const username = req.body.username || '';
@@ -57,13 +54,41 @@ export function login(req, res, next) {
             }
 
             if ((user) && (passwordMatch(user, password))) {
-               res.status(httpStatus.OK).json({
-                  status: 'SUCCESS',
-                  token: jwt.sign(getAuthData(user, user.userId), config.jwtSecret),
-                  user: publishByApiVersion(req, apiVersionedVisibility.privateUser, user),
-                  websocketUrl: config.apiEndpoint,
-                  resourcesBaseUrl: config.resourcesBaseUrl
-               });
+               const awsCustomerId = req.get(AWS_CUSTOMER_ID_HEADER_NAME);
+               if (awsCustomerId) {
+                  awsMarketplaceSvc.registerCustomer(req, awsCustomerId, user)
+                     .then(() => {
+                        res.status(httpStatus.OK).json({
+                           status: 'SUCCESS',
+                           token: jwt.sign(getAuthData(user, user.userId), config.jwtSecret),
+                           user: publishByApiVersion(req, apiVersionedVisibility.privateUser, user),
+                           websocketUrl: config.apiEndpoint,
+                           resourcesBaseUrl: config.resourcesBaseUrl
+                        });
+                     })
+                     .catch((err) => {
+                        if (err instanceof CustomerExistsError) {
+                           res.status(httpStatus.OK).json({
+                              status: 'SUCCESS',
+                              token: jwt.sign(getAuthData(user, user.userId), config.jwtSecret),
+                              user: publishByApiVersion(req, apiVersionedVisibility.privateUser, user),
+                              websocketUrl: config.apiEndpoint,
+                              resourcesBaseUrl: config.resourcesBaseUrl,
+                              postLoginUrl: `${config.webappBaseUri}/app/editSubscriberOrg` // TODO: customer id exists
+                           });
+                        } else {
+                           next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
+                        }
+                     });
+               } else {
+                  res.status(httpStatus.OK).json({
+                     status: 'SUCCESS',
+                     token: jwt.sign(getAuthData(user, user.userId), config.jwtSecret),
+                     user: publishByApiVersion(req, apiVersionedVisibility.privateUser, user),
+                     websocketUrl: config.apiEndpoint,
+                     resourcesBaseUrl: config.resourcesBaseUrl
+                  });
+               }
                return;
             }
          }
@@ -82,3 +107,54 @@ export function logout(req, res) {
 
    res.status(httpStatus.OK).end();
 }
+
+export const resolveAwsCustomer = (req, res, next) => {
+   // const amznMarketplaceToken = req.body['x-amzn-marketplace-token'] || req.query['x-amzn-marketplace-token']; // TODO: remove query param.
+   const amznMarketplaceToken = req.body['x-amzn-marketplace-token'];
+   if (amznMarketplaceToken) {
+      awsMarketplaceSvc.resolveCustomer(req, amznMarketplaceToken)
+         .then((awsCustomerId) => {
+            // TODO: Check if logged in.  What to do if already logged in?
+            res.redirect(`${config.webappBaseUri}/login?${AWS_CUSTOMER_ID_QUERY_NAME}=${awsCustomerId}`);
+         })
+         .catch((err) => {
+            if (err instanceof InvalidAwsProductCodeError) {
+               next(new APIError(err, httpStatus.NOT_FOUND));
+            } else {
+               next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
+            }
+         });
+   } else {
+      next(new APIError('Amazon Marketplace Token not found.', httpStatus.NOT_FOUND));
+   }
+};
+
+export const handleAWSEntitlementEvent = (req, res) => {
+   const messageType = req.get('x-amz-sns-message-type');
+   const event = req.body;
+   const snsValidator = new SnsValidator();
+   console.log(`AD: event=${JSON.stringify(event)}`); // eslint-disable-line no-console
+
+   if (messageType === 'SubscriptionConfirmation') {
+      snsValidator.validate(event, (error) => {
+         if (error) {
+            res.status(httpStatus.OK).end();
+         } else {
+            const { SubscribeURL } = event;
+            axios.get(SubscribeURL);
+         }
+      });
+      res.status(httpStatus.OK).end();
+   } else if (messageType === 'Notification') {
+      snsValidator.validate(event, (error) => {
+         if (error) {
+            res.status(httpStatus.OK).end();
+         } else {
+            const { Subject, Message } = event; // eslint-disable-line no-unused-vars
+            awsMarketplaceSvc.updateCustomerEntitlements(req, Message)
+               .then(() => res.status(httpStatus.OK).end())
+               .catch(() => res.status(httpStatus.BAD_REQUEST).end());
+         }
+      });
+   }
+};

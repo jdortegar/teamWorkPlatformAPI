@@ -1,17 +1,5 @@
-/**
----------------------------------------------------------------------
- config/express.js
-
- configuration code for hablaapi service
----------------------------------------------------------------------
-  Date         Initials    Description
-  ----------   --------    ------------------------------------------
-  2017-02-02    RLA         Initial module creation
-
----------------------------------------------------------------------
-*/
-
 import bodyParser from 'body-parser';
+import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express from 'express';
 import expressValidation from 'express-validation';
@@ -25,13 +13,23 @@ import routes from '../routes';
 
 const app = express();
 
+app.use(cookieParser(config.signedCookieSecret));
+
+// Hack for SNS incorrect content type "text/plain" when it should be "application/json".
+// Forces bodyParser to parse JSON and put into req.body.
+// https://forums.aws.amazon.com/thread.jspa?messageID=254070&#254070
+app.use((req, res, next) => {
+   if (req.get('x-amz-sns-message-type')) {
+      req.headers['content-type'] = 'application/json';
+   }
+   next();
+});
+
 // Parse body params and attach them to req.body.
 app.use(bodyParser.json({ limit: '100mb' }));
-app.use(bodyParser.urlencoded({
-   extended: true
-}));
+app.use(bodyParser.urlencoded({ extended: true }));
 
-app.use(cors({ origin: '*' })); // This should match origins setting in messagingService.js.  Should be a variable.
+app.use(cors({ origin: '*' })); // TODO: https://beta.habla.ai  This should match origins setting in messagingService.js.  Should be a variable.
 
 app.use(preAuthMiddleware);
 
@@ -65,6 +63,8 @@ app.use(jwtMiddleware.unless({
       /^\/(v\d+\/)?users\/registerUser/,
       /^\/(v\d+\/)?users\/validateEmail/,
       /^\/(v\d+\/)?users\/createUser/,
+      /^\/(v\d+\/)?auth\/registerAWSCustomer/,
+      /^\/(v\d+\/)?auth\/handleAWSEntitlementEvent/,
       /^\/(v\d+\/)?auth\/login/,
       /^\/(v\d+\/)?auth\/logout/,
       /^\/(v\d+\/)?integrations\/.*\/access/,

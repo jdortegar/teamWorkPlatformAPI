@@ -98,3 +98,17 @@ export class IntegrationAccessError extends Error {
       Error.captureStackTrace(this, IntegrationAccessError);
    }
 }
+
+export class InvalidAwsProductCodeError extends Error {
+   constructor(awsProductCode, ...args) {
+      super(awsProductCode, ...args);
+      Error.captureStackTrace(this, InvalidAwsProductCodeError);
+   }
+}
+
+export class CustomerExistsError extends Error {
+   constructor(awsProductCode, ...args) {
+      super(awsProductCode, ...args);
+      Error.captureStackTrace(this, CustomerExistsError);
+   }
+}
