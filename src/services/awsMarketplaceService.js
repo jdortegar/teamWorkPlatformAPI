@@ -1,11 +1,10 @@
 import AWS from 'aws-sdk';
-import moment from 'moment';
 import cron from 'node-cron';
 import config from '../config/env';
-import app from '../config/express';
 import * as awsMarketplaceCustomersRepo from '../repositories/awsMarketplaceCustomersRepo';
 import { getUserSubscriberOrgs, updateSubscriberOrg } from './subscriberOrgService';
-import { InvalidAwsProductCodeError, CustomerExistsError } from './errors';
+import { InvalidAwsProductCodeError, CustomerExistsError, CustomerNotExistError } from './errors';
+import { createPseudoRequest } from '../logger';
 
 const getCachedByteCount = (req, subscriberOrgId) => {
    return req.app.locals.redis.getAsync(`${config.redisPrefix}${subscriberOrgId}#bytesUsed`);
@@ -21,7 +20,6 @@ export const updateCachedByteCount = (req, subscriberOrgId, addValue) => {
 
 
 export const ensureCachedByteCountExists = (req) => {
-   console.log('Ensure cached byte count exists for customers.');
    return new Promise((resolve, reject) => {
       let subscriberOrgId;
 
@@ -35,7 +33,7 @@ export const ensureCachedByteCountExists = (req) => {
                         setCachedByteCount(req, customer.subscriberOrgId, customer.currentGB);
                      }
                   })
-                  .catch(err => console.error(`Error ensureCachedByteCountExists for subscriberOrgId=${subscriberOrgId}:  ${err}`))
+                  .catch(err => req.logger.error(`Error ensureCachedByteCountExists for subscriberOrgId=${subscriberOrgId}:  ${err}`))
                );
             });
             return Promise.all(promises);
@@ -50,7 +48,6 @@ export const resolveCustomer = (req, amznMarketplaceToken) => {
    return new Promise((resolve, reject) => {
       const marketplaceMetering = new AWS.MarketplaceMetering();
       marketplaceMetering.resolveCustomer({ RegistrationToken: amznMarketplaceToken }).promise()
-      // Promise.resolve({ CustomerIdentifier: amznMarketplaceToken, ProductCode: config.awsProductCode }) // TODO: remove
          .then((data) => {
             const { CustomerIdentifier, ProductCode } = data;
             if (ProductCode !== config.awsProductCode) {
@@ -65,7 +62,7 @@ export const resolveCustomer = (req, amznMarketplaceToken) => {
 const getEntitlements = (req, productCode, customerIdentifier = undefined) => {
    return new Promise((resolve, reject) => {
       // Marketplace Entitle Service currently only available in us-east-1.
-      const marketplaceEntitlement = new AWS.MarketplaceEntitlementService({ region: 'us-east-1' });
+      const marketplaceEntitlement = new AWS.MarketplaceEntitlementService({ region: 'https://entitlement.marketplace.us-east-1.amazonaws.com' });
       const params = { ProductCode: productCode };
       if (customerIdentifier) {
          params.Filter = {
@@ -106,12 +103,11 @@ export const registerCustomer = (req, awsCustomerId, user) => {
 
             return Promise.all([
                getEntitlements(req, config.awsProductCode, awsCustomerId),
-               // Promise.resolve({ Entitlements: [{ ExpirationDate: "today", ProductCode: config.awsProductCode, Value: { IntegerValue: 15 } }]}), // TODO: remove
                getUserSubscriberOrgs(req, user.userId)
             ]);
          })
          .then((promises) => {
-            const entitlements = promises[0];
+            const entitlements = promises[0].Entitlements;
             subscriberOrg = promises[1][0];
 
             const { subscriberOrgId } = subscriberOrg;
@@ -123,26 +119,6 @@ export const registerCustomer = (req, awsCustomerId, user) => {
          .then(() => setCachedByteCount(req, subscriberOrg.subscriberOrgId, 0))
          .then(() => resolve())
          .catch(err => reject(err));
-   });
-};
-
-/**
- * {
- *   "action": "subscribe-success",
- *   "customer-identifier": "T1VJRC0xMjM0MTIzNDEyMzQtNTY3ODU2ODc1Nj",
- *   "product-code": "72m8mmj6t2dgb8dfscnpsbfmn"
- * }
- * @param req
- * @param event
- * @returns {Promise}
- */
-export const updateCustomerEntitlements = (req, message) => {
-   return new Promise((resolve, reject) => {
-      console.log(`AD: updateCustomerEntitlements: ${JSON.stringify(message)}`);
-      // if (message.action === 'entitlement-updated'
-      // const { awsProductCode, awsCustomerId } = ..
-      // else if (message.action === 'unsubscribe-pending') || (message.action === 'unsubscriber-success')) {.
-      resolve(); // TODO: what to do with this event.
    });
 };
 
@@ -165,6 +141,41 @@ const updateCustomerFromEntitlements = (req, customer) => {
    });
 };
 
+/**
+ * {
+ *   "action": "subscribe-success",
+ *   "customer-identifier": "T1VJRC0xMjM0MTIzNDEyMzQtNTY3ODU2ODc1Nj",
+ *   "product-code": "72m8mmj6t2dgb8dfscnpsbfmn"
+ * }
+ * @param req
+ * @param event
+ * @returns {Promise}
+ */
+export const updateCustomerEntitlements = (req, message) => {
+   return new Promise((resolve, reject) => {
+      req.logger.info(`updateCustomerEntitlements: ${JSON.stringify(message)}`);
+      const action = message.action;
+      const awsCustomerId = message['customer-identifier'];
+      const awsProductCode = message['product-code']; // eslint-disable-line no-unused-vars
+      if ((action === 'entitlement-updated') || (action === 'unsubscribe-pending') || (action === 'unsubscriber-success')) {
+         awsMarketplaceCustomersRepo.getCustomer(req, awsCustomerId)
+            .then((customer) => {
+               if ((!customer) || (customer === null)) {
+                  throw new CustomerNotExistError(awsCustomerId);
+               } else {
+                  updateCustomerFromEntitlements(req, customer)
+                     .catch((err) => { throw err; });
+               }
+            })
+            .catch((err) => {
+               req.logger.error({ error: err }, `updateCustomerEntitlements failed for awsCustomerId=${awsCustomerId}`);
+               reject(err);
+            });
+      }
+      resolve();
+   });
+};
+
 const syncAllCustomerEntitlements = (req) => {
    return new Promise((resolve, reject) => {
       awsMarketplaceCustomersRepo.getAllCustomers(req)
@@ -182,14 +193,38 @@ const syncAllCustomerEntitlements = (req) => {
 };
 
 
+const lockEnsureUpdateCustomerEntitlements = (req) => {
+   return new Promise((resolve, reject) => {
+      req.app.locals.redis.setAsync(`${config.redisPrefix}updateCustomerEntitlementsLock`, true, 'NX', 'EX', 120) // Expire in 2 minutes.
+         .then((response) => { resolve(response === 'OK'); })
+         .catch(err => reject(err));
+   });
+};
+
+const unlockEnsureUpdateCustomerEntitlements = (req) => {
+   return req.app.locals.redis.delAsync(`${config.redisPrefix}updateCustomerEntitlementsLock`);
+};
+
 /**
  * Update customer entitlements every midnight.
  */
 export const startCronUpdateCustomerEntitlements = () => {
-   console.log('Starting Cron to update AWS Marketplace customer entitlements every midnight.');
-   cron.schedule('0 0 0 * * *', () => {
-      console.log('Updating customer entitlements...'); // eslint-disable-line no-console
-      const req = { app, now: moment.utc() };
-      syncAllCustomerEntitlements(req);
+   createPseudoRequest().logger.info('Starting Cron to update AWS Marketplace customer entitlements every midnight.');
+   // cron.schedule('0 0 0 * * *', () => {
+   cron.schedule('0 * * * * *', () => {
+      const req = createPseudoRequest();
+      lockEnsureUpdateCustomerEntitlements(req)
+         .then((locked) => {
+            if (locked) {
+               req.logger.info('Updating customer entitlements...');
+               return syncAllCustomerEntitlements(req);
+            }
+            return undefined;
+         })
+         .then(() => unlockEnsureUpdateCustomerEntitlements(req))
+         .catch((err) => {
+            unlockEnsureUpdateCustomerEntitlements(req);
+            req.logger.error(err);
+         });
    });
 };

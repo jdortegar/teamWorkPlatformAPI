@@ -1,6 +1,10 @@
 import config from '../config/env/index';
 import * as util from './util';
 
+const tableName = () => {
+   return `${config.tablePrefix}messages`;
+};
+
 // Schema Version for messages table.
 const v = 1;
 
@@ -59,9 +63,9 @@ const upgradeSchema = (req, dbObjects) => {
 };
 
 // Start Proxies to intercept and upgrade schema version.
-const batchGetItemBySortKey = (req, tableName, sortKeyName, sortKeys) => {
+const batchGetItemBySortKey = (req, table, sortKeyName, sortKeys) => {
    return new Promise((resolve, reject) => {
-      util.batchGetItemBySortKey(req, tableName, sortKeyName, sortKeys)
+      util.batchGetItemBySortKey(req, table, sortKeyName, sortKeys)
          .then(originalResults => upgradeSchema(req, originalResults))
          .then(latestResults => resolve(latestResults))
          .catch(err => reject(err));
@@ -79,10 +83,8 @@ const scan = (req, params) => {
 // End Proxies to intercept and upgrade schema version.
 
 export const createMessageInDb = (req, partitionId, messageId, message) => {
-   const tableName = `${config.tablePrefix}messages`;
-
    const params = {
-      TableName: tableName,
+      TableName: tableName(),
       Item: {
          partitionId,
          messageId,
@@ -100,8 +102,7 @@ export const getMessageById = (req, messageId) => {
       return Promise.reject('messageId needs to be specified.');
    }
 
-   const tableName = `${config.tablePrefix}messages`;
-   return batchGetItemBySortKey(req, tableName, 'messageId', [messageId]);
+   return batchGetItemBySortKey(req, tableName(), 'messageId', [messageId]);
 };
 
 // filter = { since, until, minLevel, maxLevel }
@@ -111,7 +112,6 @@ export const getMessagesByConversationIdFiltered = (req, conversationId, filter)
    }
 
    const { since, until, minLevel, maxLevel } = filter;
-   const tableName = `${config.tablePrefix}messages`;
    let nIdx = 0;
    let vIdx = 0;
 
@@ -164,7 +164,7 @@ export const getMessagesByConversationIdFiltered = (req, conversationId, filter)
    }
 
    const params = {
-      TableName: tableName,
+      TableName: tableName(),
       FilterExpression: filterExpression,
       ExpressionAttributeNames: queryNames,
       ExpressionAttributeValues: queryValues

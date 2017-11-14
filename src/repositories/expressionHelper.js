@@ -7,6 +7,8 @@ export const createUpdateExpression = (updateObject) => { // eslint-disable-line
    const ExpressionAttributeValues = {};
    let i = 0;
 
+   const keyToAttributeNameMap = {};
+
    Object.keys(updateObject).forEach((key) => {
       const expressionName = `${expressionNamePrefix}${i}`;
       const expressionValue = `${expressionValuePrefix}${i}`;
@@ -19,9 +21,9 @@ export const createUpdateExpression = (updateObject) => { // eslint-disable-line
       UpdateExpression += `${expressionName} = ${expressionValue}`;
       ExpressionAttributeNames[expressionName] = key;
       ExpressionAttributeValues[expressionValue] = value;
-
+      keyToAttributeNameMap[key] = expressionName;
       i += 1;
    });
 
-   return { UpdateExpression, ExpressionAttributeNames, ExpressionAttributeValues };
+   return { UpdateExpression, ExpressionAttributeNames, ExpressionAttributeValues, keyToAttributeNameMap };
 };

@@ -5,6 +5,7 @@ import moment from 'moment';
 import shortid from 'shortid';
 import winston from 'winston';
 import config from './config/env';
+import app from './config/express';
 
 const level = config.loggerLevel;
 const json = config.loggerJson;
@@ -87,16 +88,22 @@ class Wrapper {
    silly(...args) { this.log('silly', args); }
 }
 
-function fillPreAuthRequest(req) {
+const fillPreAuthRequest = (req) => {
    req.logger = new Wrapper(req);
    req.cId = shortid.generate();
    req.now = moment.utc(req._startTime);
    req.startUtc = req.now.format();
-}
+};
 
-function fillPostAuthRequest(req) {
+export const createPseudoRequest = () => {
+   const req = { app, _startTime: (new Date()) };
+   fillPreAuthRequest(req);
+   return req;
+};
+
+const fillPostAuthRequest = (req) => {
    req.userEmail = (req.user) ? req.user.email : 'n/a';
-}
+};
 
 const expressOptions = {
    winstonInstance: logger,

@@ -5,7 +5,7 @@ import logger from './logger';
 bluebird.promisifyAll(redis.RedisClient.prototype);
 bluebird.promisifyAll(redis.Multi.prototype);
 
-export function connectToRedis(redisConfig) {
+export const connectToRedis = (redisConfig) => {
    return new Promise((resolve, reject) => {
       const client = redis.createClient(redisConfig);
 
@@ -17,9 +17,9 @@ export function connectToRedis(redisConfig) {
          reject(err);
       });
    });
-}
+};
 
-export function disconnectFromRedis(client) {
+export const disconnectFromRedis = (client) => {
    return new Promise((resolve) => {
       const killRedisConnection = setTimeout(() => {
          logger.error('Could not close redis connections in time, forcefully closing redis connections.');
@@ -33,4 +33,5 @@ export function disconnectFromRedis(client) {
          return resolve();
       });
    });
-}
+};
+

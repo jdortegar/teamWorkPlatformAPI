@@ -15,7 +15,7 @@ export const AWS_CUSTOMER_ID_HEADER_NAME = 'x-hablaai-awsCustomerId';
 export const AWS_CUSTOMER_ID_QUERY_NAME = 'awsCustomerId';
 
 
-export function login(req, res, next) {
+export const login = (req, res, next) => {
    const username = req.body.username || '';
    const password = req.body.password || '';
    delete req.body.password;
@@ -97,16 +97,16 @@ export function login(req, res, next) {
       .catch((err) => {
          next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
       });
-}
+};
 
-export function logout(req, res) {
+export const logout = (req, res) => {
    jwtMiddleware(req, res, () => {
       const username = (req.user) ? req.user.email : undefined; // eslint-disable-line no-unused-vars
       // Nothing to do, for now.
    });
 
    res.status(httpStatus.OK).end();
-}
+};
 
 export const resolveAwsCustomer = (req, res, next) => {
    // const amznMarketplaceToken = req.body['x-amzn-marketplace-token'] || req.query['x-amzn-marketplace-token']; // TODO: remove query param.
@@ -150,7 +150,7 @@ export const handleAWSEntitlementEvent = (req, res) => {
          if (error) {
             res.status(httpStatus.OK).end();
          } else {
-            const { Subject, Message } = event; // eslint-disable-line no-unused-vars
+            const { Message } = event;
             awsMarketplaceSvc.updateCustomerEntitlements(req, Message)
                .then(() => res.status(httpStatus.OK).end())
                .catch(() => res.status(httpStatus.BAD_REQUEST).end());

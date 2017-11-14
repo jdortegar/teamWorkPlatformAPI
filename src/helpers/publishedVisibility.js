@@ -1,6 +1,6 @@
 import _ from 'lodash';
 
-function privateUser(dbUser) {
+const privateUser = (dbUser) => {
    const userId = dbUser.userId;
    const {
       emailAddress,
@@ -43,9 +43,9 @@ function privateUser(dbUser) {
       // defaultPage: dbUser.defaultPage,
       userType: dbUser.userType || 'hablaUser'
    };
-}
+};
 
-function publicUser(dbUser) {
+const publicUser = (dbUser) => {
    const ret = privateUser(dbUser);
    delete ret.username;
    delete ret.email;
@@ -56,16 +56,16 @@ function publicUser(dbUser) {
    delete ret.defaultPage;
    delete ret.userType;
    return ret;
-}
+};
 
-function publicUsers(dbUsers) {
+const publicUsers = (dbUsers) => {
    return dbUsers.map((dbUser) => {
       return publicUser(dbUser);
    });
-}
+};
 
 
-function privateSubscriberOrg(dbSubscriberOrg) {
+const privateSubscriberOrg = (dbSubscriberOrg) => {
    const subscriberOrgId = dbSubscriberOrg.subscriberOrgId;
    const { name, icon, enabled, preferences, created, lastModified } = dbSubscriberOrg.subscriberOrgInfo || dbSubscriberOrg;
    return {
@@ -77,31 +77,31 @@ function privateSubscriberOrg(dbSubscriberOrg) {
       created,
       lastModified
    };
-}
+};
 
-function publicSubscriberOrg(dbSubscriberOrg) {
+const publicSubscriberOrg = (dbSubscriberOrg) => {
    const ret = privateSubscriberOrg(dbSubscriberOrg);
    if ((ret.preferences) && (ret.preferences.private)) {
       delete ret.preferences.private;
    }
    return ret;
-}
+};
 
-function publicSubscriberOrgs(dbSubscriberOrgs) {
+const publicSubscriberOrgs = (dbSubscriberOrgs) => {
    return dbSubscriberOrgs.map((dbSubscriberOrg) => {
       return publicSubscriberOrg(dbSubscriberOrg);
    });
-}
+};
 
-function publicSubscriber(subscriberOrgId, dbUser) {
+const publicSubscriber = (subscriberOrgId, dbUser) => {
    return {
       subscriberOrgId,
       user: publicUser(dbUser)
    };
-}
+};
 
 
-function privateTeam(dbTeam) {
+const privateTeam = (dbTeam) => {
    const teamId = dbTeam.teamId;
    const { subscriberOrgId, name, icon, active, primary, preferences, created, lastModified } = dbTeam.teamInfo || dbTeam;
    return {
@@ -115,31 +115,31 @@ function privateTeam(dbTeam) {
       created,
       lastModified
    };
-}
+};
 
-function publicTeam(dbTeam) {
+const publicTeam = (dbTeam) => {
    const ret = privateTeam(dbTeam);
    if ((ret.preferences) && (ret.preferences.private)) {
       delete ret.preferences.private;
    }
    return ret;
-}
+};
 
-function publicTeams(dbTeams) {
+const publicTeams = (dbTeams) => {
    return dbTeams.map((dbTeam) => {
       return publicTeam(dbTeam);
    });
-}
+};
 
-function publicTeamMember(teamId, dbUser) {
+const publicTeamMember = (teamId, dbUser) => {
    return {
       teamId,
       user: publicUser(dbUser)
    };
-}
+};
 
 
-function privateTeamRoom(dbTeamRoom) {
+const privateTeamRoom = (dbTeamRoom) => {
    const teamRoomId = dbTeamRoom.teamRoomId;
    const { teamId, name, purpose, publish, icon, active, primary, preferences, created, lastModified } = dbTeamRoom.teamRoomInfo || dbTeamRoom;
    return {
@@ -155,31 +155,31 @@ function privateTeamRoom(dbTeamRoom) {
       created,
       lastModified
    };
-}
+};
 
-function publicTeamRoom(dbTeamRoom) {
+const publicTeamRoom = (dbTeamRoom) => {
    const ret = privateTeamRoom(dbTeamRoom);
    if ((ret.preferences) && (ret.preferences.private)) {
       delete ret.preferences.private;
    }
    return ret;
-}
+};
 
-function publicTeamRooms(dbTeamRooms) {
+const publicTeamRooms = (dbTeamRooms) => {
    return dbTeamRooms.map((dbTeamRoom) => {
       return publicTeamRoom(dbTeamRoom);
    });
-}
+};
 
-function publicTeamRoomMember(teamRoomId, dbUser) {
+const publicTeamRoomMember = (teamRoomId, dbUser) => {
    return {
       teamRoomId,
       user: publicUser(dbUser)
    };
-}
+};
 
 
-function publicConversation(dbConversation) {
+const publicConversation = (dbConversation) => {
    const conversationId = dbConversation.conversationId;
    const { teamRoomId, created, lastModified } = dbConversation.conversationInfo || dbConversation;
    const participants = (dbConversation.participants) ? publicUsers(dbConversation.participants) : undefined;
@@ -190,16 +190,16 @@ function publicConversation(dbConversation) {
       created,
       lastModified
    };
-}
+};
 
-function publicConversations(dbConversations) {
+const publicConversations = (dbConversations) => {
    return dbConversations.map((dbConversation) => {
       return publicConversation(dbConversation);
    });
-}
+};
 
 
-function publicMessage(dbMessage) {
+const publicMessage = (dbMessage) => {
    const messageId = dbMessage.messageId;
    const { conversationId, createdBy, content, replyTo, path, level, created, lastModified } = dbMessage.messageInfo || dbMessage;
    const messageType = 'text';
@@ -222,15 +222,15 @@ function publicMessage(dbMessage) {
       created,
       lastModified
    };
-}
+};
 
-function publicMessages(dbMessages) {
+const publicMessages = (dbMessages) => {
    return dbMessages.map((dbMessage) => {
       return publicMessage(dbMessage);
    });
-}
+};
 
-function publicIntegration(integration) {
+const publicIntegration = (integration) => {
    const clone = _.cloneDeep(integration);
    if (clone.box) {
       delete clone.box.accessToken;
@@ -243,11 +243,11 @@ function publicIntegration(integration) {
       delete clone.google.token_type;
    }
    return clone;
-}
+};
 
-function publicIntegrations(integrations) {
+const publicIntegrations = (integrations) => {
    return integrations.map(integration => publicIntegration(integration));
-}
+};
 
 
 // Index in the array is the version number to publish against.
@@ -317,8 +317,9 @@ export const apiVersionedVisibility = {
    }
 };
 
-export function publishByApiVersion(req, publishers, ...args) {
+export const publishByApiVersion = (req, publishers, ...args) => {
    // Always the latest for publishing.  This implies backwards compatability for publishing.
    return publishers.latest(...args);
    // return publishers[req.apiVersion.toString()](...args);
-}
+};
+

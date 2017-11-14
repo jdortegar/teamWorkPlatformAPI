@@ -107,8 +107,15 @@ export class InvalidAwsProductCodeError extends Error {
 }
 
 export class CustomerExistsError extends Error {
-   constructor(awsProductCode, ...args) {
-      super(awsProductCode, ...args);
+   constructor(awsCustomerId, ...args) {
+      super(awsCustomerId, ...args);
       Error.captureStackTrace(this, CustomerExistsError);
+   }
+}
+
+export class CustomerNotExistError extends Error {
+   constructor(awsCustomerId, ...args) {
+      super(awsCustomerId, ...args);
+      Error.captureStackTrace(this, CustomerNotExistError);
    }
 }

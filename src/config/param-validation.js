@@ -160,7 +160,8 @@ const validationSchemas = {
                text: Joi.string().min(1),
                resourceId: Joi.string().min(1),
                meta: Joi.object().keys({
-                  fileName: Joi.string().min(1)
+                  fileName: Joi.string().min(1),
+                  fileSize: Joi.number().min(1)
                })
             })
          ).required(),
@@ -250,7 +251,8 @@ class ApiValidator {
    }
 }
 
-export function validateByApiVersion(validators) {
+export const validateByApiVersion = (validators) => {
    const apiValidator = new ApiValidator(validators);
    return apiValidator.doValidation.bind(apiValidator);
-}
+};
+

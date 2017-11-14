@@ -412,14 +412,13 @@ export function inviteMembers(req, teamRoomId, userIds, userId) {
 
 export function addUserToTeamRoom(req, user, teamMemberId, teamRoomId, role) {
    return new Promise((resolve, reject) => {
-      let teamRoomMemberId;
+      const teamRoomMemberId = uuid.v4();
       getTeamRoomsByIds(req, [teamRoomId])
          .then((teamRooms) => {
             if (teamRooms.length === 0) {
                throw new TeamRoomNotExistError(teamRoomId);
             }
 
-            teamRoomMemberId = uuid.v4();
             const teamRoomMember = {
                teamMemberId,
                teamRoomId,
