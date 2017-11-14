@@ -4,6 +4,7 @@ import uuid from 'uuid';
 import config from '../config/env';
 import { conversationCreated, conversationUpdated, messageCreated } from './messaging';
 import * as teamRoomSvc from './teamRoomService';
+import { updateCachedByteCount } from './awsMarketplaceService';
 import { ConversationNotExistError, NoPermissionsError, NotActiveError } from './errors';
 import {
    createMessageInDb,
@@ -326,15 +327,47 @@ export function getMessages(req, conversationId, userId = undefined, { since, un
    });
 }
 
+const byteCountOfContent = (content) => {
+   let byteCount;
+   content.forEach((entry) => {
+      if ((entry.meta) && (entry.meta.fileSize)) {
+         byteCount += entry.meta.fileSize;
+      } else if (entry.type === 'text/plain') {
+         byteCount += Buffer.byteLength(entry.text, 'utf8');
+      }
+   });
+   return byteCount;
+};
+
+const getSubscriberOrgIdByConversationId = (req, conversationId) => {
+   return new Promise((resolve, reject) => {
+      req.app.locals.redis.getAsync(`${config.redisPrefix}${conversationId}#subscriberOrgId`)
+         .then((cachedSubscriberOrgId) => {
+            let subscriberOrgId = cachedSubscriberOrgId;
+            if ((!subscriberOrgId) || (subscriberOrgId === null)) {
+               // TODO: wait until schema change.
+               // TODO: get from DB and set cache.
+               subscriberOrgId = undefined;
+               req.app.locals.redis.setAsync(`${config.redisPrefix}${conversationId}#subscriberOrgId`, subscriberOrgId);
+            }
+            return subscriberOrgId;
+         })
+         .then(subscriberOrgId => resolve(subscriberOrgId))
+         .catch(err => reject(err));
+   });
+};
+
 export function createMessage(req, conversationId, userId, content, replyTo) {
    return new Promise((resolve, reject) => {
       const messageId = uuid.v4();
 
+      const byteCount = byteCountOfContent(content);
       const message = {
          conversationId,
          createdBy: userId,
          content,
          replyTo,
+         byteCount,
          created: req.now.format(),
          lastModified: req.now.format()
       };
@@ -375,6 +408,8 @@ export function createMessage(req, conversationId, userId, content, replyTo) {
 
             return createMessageInDb(req, -1, messageId, message);
          })
+         .then(() => getSubscriberOrgIdByConversationId(req, conversationId))
+         .then(subscriberOrgId => updateCachedByteCount(req, subscriberOrgId, byteCount))
          .then(() => {
             message.messageId = messageId;
             resolve(message);

@@ -5,7 +5,7 @@ import * as conversationsSvc from '../services/conversationService';
 import { NotActiveError, ConversationNotExistError, NoPermissionsError } from '../services/errors';
 
 
-export function getConversations(req, res, next) {
+export const getConversations = (req, res, next) => {
    const userId = req.user._id;
    const { teamRoomId } = req.query;
 
@@ -16,9 +16,9 @@ export function getConversations(req, res, next) {
       .catch((err) => {
          next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
       });
-}
+};
 
-export function getTranscript(req, res, next) {
+export const getTranscript = (req, res, next) => {
    const userId = req.user._id;
    const conversationId = req.params.conversationId;
    const since = req.query.since;
@@ -40,9 +40,9 @@ export function getTranscript(req, res, next) {
             next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
          }
       });
-}
+};
 
-export function createMessage(req, res, next) {
+export const createMessage = (req, res, next) => {
    const userId = req.user._id;
    const conversationId = req.params.conversationId;
    const { messageType, text, replyTo } = req.body; // eslint-disable-line no-unused-vars
@@ -69,4 +69,5 @@ export function createMessage(req, res, next) {
             next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE));
          }
       });
-}
+};
+

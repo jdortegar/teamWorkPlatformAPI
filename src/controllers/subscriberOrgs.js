@@ -4,7 +4,7 @@ import { apiVersionedVisibility, publishByApiVersion } from '../helpers/publishe
 import * as subscriberOrgSvc from '../services/subscriberOrgService';
 import { CannotInviteError, InvitationNotExistError, NoPermissionsError, SubscriberOrgExistsError, SubscriberOrgNotExistError, UserNotExistError } from '../services/errors';
 
-export function getSubscriberOrgs(req, res, next) {
+export const getSubscriberOrgs = (req, res, next) => {
    const userId = req.user._id;
 
    subscriberOrgSvc.getUserSubscriberOrgs(req, userId)
@@ -14,9 +14,9 @@ export function getSubscriberOrgs(req, res, next) {
       .catch((err) => {
          next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
       });
-}
+};
 
-export function createSubscriberOrg(req, res, next) {
+export const createSubscriberOrg = (req, res, next) => {
    const userId = req.user._id;
 
    subscriberOrgSvc.createSubscriberOrg(req, req.body, userId)
@@ -32,9 +32,9 @@ export function createSubscriberOrg(req, res, next) {
             next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
          }
       });
-}
+};
 
-export function updateSubscriberOrg(req, res, next) {
+export const updateSubscriberOrg = (req, res, next) => {
    const userId = req.user._id;
    const subscriberOrgId = req.params.subscriberOrgId;
    subscriberOrgSvc.updateSubscriberOrg(req, subscriberOrgId, req.body, userId)
@@ -50,9 +50,9 @@ export function updateSubscriberOrg(req, res, next) {
             next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE));
          }
       });
-}
+};
 
-export function getSubscriberOrgUsers(req, res, next) {
+export const getSubscriberOrgUsers = (req, res, next) => {
    const userId = req.user._id;
    const subscriberOrgId = req.params.subscriberOrgId;
 
@@ -69,9 +69,9 @@ export function getSubscriberOrgUsers(req, res, next) {
             next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
          }
       });
-}
+};
 
-export function inviteSubscribers(req, res, next) {
+export const inviteSubscribers = (req, res, next) => {
    const userId = req.user._id;
    const subscriberOrgId = req.params.subscriberOrgId;
 
@@ -90,9 +90,9 @@ export function inviteSubscribers(req, res, next) {
             next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
          }
       });
-}
+};
 
-export function replyToInvite(req, res, next) {
+export const replyToInvite = (req, res, next) => {
    const userId = req.user._id;
    const subscriberOrgId = req.params.subscriberOrgId;
 
@@ -109,4 +109,5 @@ export function replyToInvite(req, res, next) {
             next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
          }
       });
-}
+};
+

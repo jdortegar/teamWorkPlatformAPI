@@ -4,11 +4,11 @@ import config from '../../config/env';
 
 const defaultExpirationMinutes = 7 * 24 * 60; // 1 week in minutes.
 
-function hashKey(userId) {
+const hashKey = (userId) => {
    return `${userId}#presence`;
-}
+};
 
-export function getPresence(req, userId) {
+export const getPresence = (req, userId) => {
    return new Promise((resolve, reject) => {
       req.app.locals.redis.zremrangebyscoreAsync(`${config.redisPrefix}${hashKey(userId)}`, 0, req.now.unix())
          .then(() => {
@@ -25,9 +25,9 @@ export function getPresence(req, userId) {
          })
          .catch(err => reject(err));
    });
-}
+};
 
-export function setPresence(req, userId, presence) {
+export const setPresence = (req, userId, presence) => {
    return new Promise((resolve, reject) => {
       const hash = hashKey(userId);
       const ttl = req.now.add(defaultExpirationMinutes, 'minutes').unix();
@@ -55,4 +55,5 @@ export function setPresence(req, userId, presence) {
          .then(() => resolve())
          .catch(err => reject(err));
    });
-}
+};
+

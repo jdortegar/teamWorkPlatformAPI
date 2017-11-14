@@ -1,12 +1,10 @@
-import moment from 'moment';
 import SocketIO from 'socket.io';
 import socketioJwt from 'socketio-jwt';
 import SocketIORedisAdapter from 'socket.io-redis';
 import SocketIOWildcard from 'socketio-wildcard';
 import config from '../../config/env';
-import app from '../../config/express';
 import * as conversationSvc from '../conversationService';
-import logger from '../../logger';
+import logger, { createPseudoRequest } from '../../logger';
 import { setPresence } from './presence';
 import {
    getSubscriberUsersByUserIds,
@@ -98,7 +96,7 @@ export const PresenceStatuses = Object.freeze({
 });
 
 
-function joinCurrentChannels(req, socket, userId) {
+const joinCurrentChannels = (req, socket, userId) => {
    const publicChannel = ChannelFactory.publicChannel();
    socket.join(publicChannel);
    logger.debug(`MessagingService: userId=${userId} joining ${publicChannel}`);
@@ -173,7 +171,7 @@ function joinCurrentChannels(req, socket, userId) {
          });
       })
       .catch(err => logger.error(err));
-}
+};
 
 
 class MessagingService {
@@ -249,7 +247,7 @@ class MessagingService {
       const location = undefined;
       logger.debug(`MessagingService: User connected. sId=${socket.id} userId=${userId} ${socket.decoded_token.email} address=${address} userAgent=${userAgent}`);
 
-      const req = { app, now: moment.utc() };
+      const req = createPseudoRequest();
       joinCurrentChannels(req, socket, userId);
       this._presenceChanged(req, userId, address, userAgent, location, PresenceStatuses.available);
    }
@@ -264,7 +262,7 @@ class MessagingService {
       const location = undefined;
       logger.debug(`MessagingService: User disconnected. sId=${socket.id} userId=${userId} ${socket.decoded_token.email} address=${address} userAgent=${userAgent} (${reason})`);
 
-      const req = { app, now: moment.utc() };
+      const req = createPseudoRequest();
       this._presenceChanged(req, userId, address, userAgent, location, PresenceStatuses.away);
    }
 
@@ -292,7 +290,7 @@ class MessagingService {
       } else if (eventType === EventTypes.location) {
          const { lat, lon, alt, accuracy } = event;
          if ((lat) && (lon)) {
-            const req = { app, now: moment.utc() };
+            const req = createPseudoRequest();
             const userId = socket.decoded_token._id;
             const address = socket.client.conn.remoteAddress;
             const userAgent = socket.client.request.headers['user-agent'];
@@ -382,18 +380,19 @@ const messagingService = new MessagingService();
 export default messagingService;
 
 
-// export function _presenceChanged(req, userId, address, userAgent, location, presenceStatus, presenceMessage = undefined) {
+// export const _presenceChanged = (req, userId, address, userAgent, location, presenceStatus, presenceMessage = undefined) => {
 //    messagingService._presenceChanged(req, userId, address, userAgent, location, presenceStatus, presenceMessage);
-// }
+// };
 
-export function _broadcastEvent(req, eventType, event, channels = undefined) {
+export const _broadcastEvent = (req, eventType, event, channels = undefined) => {
    messagingService._broadcastEvent(req, eventType, event, channels);
-}
+};
 
-export function _joinChannels(req, userId, channels) {
+export const _joinChannels = (req, userId, channels) => {
    return messagingService._joinChannels(req, userId, channels);
-}
+};
 
-export function _leaveChannels(req, userId, channels) {
+export const _leaveChannels = (req, userId, channels) => {
    messagingService._leaveChannels(req, userId, channels);
-}
+};
+

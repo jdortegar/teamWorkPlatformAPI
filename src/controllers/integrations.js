@@ -3,7 +3,7 @@ import APIError from '../helpers/APIError';
 import { apiVersionedVisibility, publishByApiVersion } from '../helpers/publishedVisibility';
 import * as integrationSvc from '../services/integrationService';
 
-export function getIntegrations(req, res, next) { // eslint-disable-line import/prefer-default-export
+export const getIntegrations = (req, res, next) => { // eslint-disable-line import/prefer-default-export
    const userId = req.user._id;
    const subscriberOrgId = req.query.subscriberOrgId;
 
@@ -14,4 +14,5 @@ export function getIntegrations(req, res, next) { // eslint-disable-line import/
       .catch((err) => {
          next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
       });
-}
+};
+

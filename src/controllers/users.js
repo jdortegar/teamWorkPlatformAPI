@@ -13,7 +13,7 @@ import { AWS_CUSTOMER_ID_HEADER_NAME } from './auth';
 * A user is not created here.
 * A reservation is ...
 */
-export function createReservation(req, res) {
+export const createReservation = (req, res) => {
    const email = req.body.email || '';
    const awsCustomerId = req.get(AWS_CUSTOMER_ID_HEADER_NAME);
 
@@ -40,15 +40,15 @@ export function createReservation(req, res) {
    if (awsCustomerId) {
       req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#awsCustomerId`, awsCustomerId);
    }
-}
+};
 
-export function deleteRedisKey(rid) {
+export const deleteRedisKey = (rid) => {
    return new Promise((resolve, reject) => {
       app.locals.redis.delAsync(`${config.redisPrefix}${rid}`)
          .then(() => resolve())
          .catch(err => reject(err));
    });
-}
+};
 
 /**
  * Endpoint:   /user/validateEmail/:rid
@@ -60,7 +60,7 @@ export function deleteRedisKey(rid) {
  * @param res
  * @param next
  */
-export function validateEmail(req, res) {
+export const validateEmail = (req, res) => {
    const rid = req.params.rid || req.body.reservationId || '';
 
    // Find reservation in cache
@@ -87,9 +87,9 @@ export function validateEmail(req, res) {
          res.status(httpStatus.NOT_FOUND).json(response);
       }
    });
-}
+};
 
-export function createUser(req, res, next) {
+export const createUser = (req, res, next) => {
    userSvc.createUser(req, req.body)
       .then(() => res.status(httpStatus.CREATED).end())
       .catch((err) => {
@@ -99,9 +99,9 @@ export function createUser(req, res, next) {
             next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE));
          }
       });
-}
+};
 
-export function updateUser(req, res, next) {
+export const updateUser = (req, res, next) => {
    const userId = req.user._id;
 
    userSvc.updateUser(req, userId, req.body)
@@ -115,9 +115,9 @@ export function updateUser(req, res, next) {
             next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE));
          }
       });
-}
+};
 
-export function updatePublicPreferences(req, res, next) {
+export const updatePublicPreferences = (req, res, next) => {
    const userId = req.user._id;
    const updateUserId = req.params.userId;
 
@@ -134,12 +134,13 @@ export function updatePublicPreferences(req, res, next) {
             next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE));
          }
       });
-}
+};
 
-export function getInvitations(req, res, next) {
+export const getInvitations = (req, res, next) => {
    const email = req.user.email;
 
    userSvc.getInvitations(req, email)
       .then(invitations => res.status(httpStatus.OK).json({ invitations }))
       .catch(err => next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE)));
-}
+};
+

@@ -13,15 +13,15 @@ import Bcrypt from '../helpers/Bcrypt';
 
 const bcrypt = new Bcrypt(11);
 
-export function hashPassword(password) {
+export const hashPassword = (password) => {
    return bcrypt.hash(password);
-}
+};
 
-export function passwordMatch(user, password) {
+export const passwordMatch = (user, password) => {
    return Bcrypt.compare(password, user.password);
-}
+};
 
-export function getAuthData(user, id) {
+export const getAuthData = (user, id) => {
    return {
       _id: id,
       username: user.userName,
@@ -29,12 +29,5 @@ export function getAuthData(user, id) {
       roles: user.roleMemberships,
       siteGuid: user.siteGuid
    };
-}
+};
 
-// export function generateSalt() {
-//    return crypto.randomBytes(16).toString('hex');
-// }
-
-// export function encryptPassword(pass, salt) {
-//    return crypto.createHmac('sha1', salt).update(pass).digest('hex');
-// }

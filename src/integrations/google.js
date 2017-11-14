@@ -20,7 +20,7 @@ const oauth2Client = new OAuth2(
    redirectUri
 );
 
-export function composeAuthorizationUrl(state) {
+export const composeAuthorizationUrl = (state) => {
    const settings = {
       access_type: 'offline', // 'online' (default) or 'offline' (gets refresh_token).
       approval_prompt: 'force', // refresh_token given only on initial authorization.  This forces subsequent.
@@ -29,7 +29,7 @@ export function composeAuthorizationUrl(state) {
       state
    };
    return oauth2Client.generateAuthUrl(settings);
-}
+};
 
 /**
  * tokenInfo: {
@@ -43,7 +43,7 @@ export function composeAuthorizationUrl(state) {
  * @param authorizationCode
  * @returns {Promise}
  */
-export function exchangeAuthorizationCodeForAccessToken(authorizationCode) {
+export const exchangeAuthorizationCodeForAccessToken = (authorizationCode) => {
    return new Promise((resolve, reject) => {
       oauth2Client.getToken(authorizationCode, (err, tokens) => {
          if (err) {
@@ -53,9 +53,9 @@ export function exchangeAuthorizationCodeForAccessToken(authorizationCode) {
          }
       });
    });
-}
+};
 
-export function getUserInfo(req, userAccessToken) {
+export const getUserInfo = (req, userAccessToken) => {
    return new Promise((resolve, reject) => {
       const plus = google.plus('v1');
       const client = new OAuth2(
@@ -72,9 +72,9 @@ export function getUserInfo(req, userAccessToken) {
          }
       });
    });
-}
+};
 
-export function revokeIntegration(req, userAccessToken) {
+export const revokeIntegration = (req, userAccessToken) => {
    return new Promise((resolve, reject) => {
       axios.get(`https://accounts.google.com/o/oauth2/revoke?token=${userAccessToken}`)
          .then((response) => {
@@ -88,19 +88,20 @@ export function revokeIntegration(req, userAccessToken) {
             reject(new IntegrationAccessError(`Failed to revoke google integration: ${err}`));
          });
    });
-}
+};
 
-export function googleSiteVerification(req, res, next) {
+export const googleSiteVerification = (req, res, next) => {
    if (req.url.match(/^\/google.*.html$/)) {
       const googleUrl = req.url.substring(1);
       res.send(`google-site-verification: ${googleUrl}`);
    } else {
       next();
    }
-}
+};
 
-export function validateWebhookMessage(req) {
+export const validateWebhookMessage = (req) => {
    if (req.get('X-Goog-Channel-Token') !== googleChannelKey) {
       throw new IntegrationAccessError('Invalid Google webhook message.');
    }
-}
+};
+
