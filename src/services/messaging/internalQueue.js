@@ -8,7 +8,7 @@ const incomingIntegrationQueue = 'integration#api';
 let listen = false;
 let stoppedCallback;
 
-export function sendEvent(req, eventType, event) { // eslint-disable-line import/prefer-default-export
+export const sendEvent = (req, eventType, event) => { // eslint-disable-line import/prefer-default-export
    const redisClient = app.locals.redis;
    const message = { eventType, event };
    const messageString = JSON.stringify(message);
@@ -20,9 +20,9 @@ export function sendEvent(req, eventType, event) { // eslint-disable-line import
       .catch((err) => {
          req.logger.error(err, message);
       });
-}
+};
 
-export function listenForInternalEvents() {
+export const listenForInternalEvents = () => {
    const redisClient = app.locals.redis;
    redisClient.brpop(incomingIntegrationQueue, 5, (err, response) => {
       if (err) {
@@ -47,9 +47,9 @@ export function listenForInternalEvents() {
       logger.info('Listening for internal events.');
       listen = true;
    }
-}
+};
 
-export function stopListeningForInternalEvents() {
+export const stopListeningForInternalEvents = () => {
    if (listen) {
       return new Promise((resolve) => {
          stoppedCallback = resolve;
@@ -58,4 +58,5 @@ export function stopListeningForInternalEvents() {
    }
 
    return Promise.resolve();
-}
+};
+

@@ -7,7 +7,7 @@ import { IntegrationAccessError, SubscriberOrgNotExistError } from '../services/
 const webappIntegrationUri = `${config.webappBaseUri}/app/integrations`;
 
 // ex. https://hablaapi.ngrok.io/integrations/box/integrate/:subscriberOrgId
-export function integrateBox(req, res, next) {
+export const integrateBox = (req, res, next) => {
    const userId = req.user._id;
    const subscriberOrgId = req.params.subscriberOrgId;
 
@@ -26,9 +26,9 @@ export function integrateBox(req, res, next) {
             next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
          }
       });
-}
+};
 
-export function boxAccess(req, res) {
+export const boxAccess = (req, res) => {
    const redirectUri = `${webappIntegrationUri}`;
    let subscriberOrgId;
 
@@ -48,9 +48,9 @@ export function boxAccess(req, res) {
             res.redirect(`${redirectUri}/${subscriberOrgId}/box/INTERNAL_SERVER_ERROR`);
          }
       });
-}
+};
 
-export function revokeBox(req, res, next) {
+export const revokeBox = (req, res, next) => {
    const userId = req.user._id;
    const subscriberOrgId = req.params.subscriberOrgId;
 
@@ -67,9 +67,9 @@ export function revokeBox(req, res, next) {
             next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
          }
       });
-}
+};
 
-export function boxWebhooks(req, res) {
+export const boxWebhooks = (req, res) => {
    boxSvc.webhookEvent(req)
       .then(() => res.status(httpStatus.ACCEPTED).end())
       .catch((err) => {
@@ -80,4 +80,5 @@ export function boxWebhooks(req, res) {
             res.status(httpStatus.INTERNAL_SERVER_ERROR).end();
          }
       });
-}
+};
+

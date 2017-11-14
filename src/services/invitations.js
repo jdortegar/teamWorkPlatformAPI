@@ -14,13 +14,13 @@ export const InvitationKeys = Object.freeze({
 const defaultExpirationMinutes = 7 * 24 * 60; // 1 week in minutes.
 // const defaultExpirationOrgInviteMinutes = defaultExpirationMinutes;
 
-function hashKey(email) {
+const hashKey = (email) => {
    return `${email}#pendingInvites`;
-}
+};
 
-function toInvitationKey(invitationKey, invitationValue) {
+const toInvitationKey = (invitationKey, invitationValue) => {
    return `${invitationKey}=${invitationValue}`;
-}
+};
 
 /**
  *
@@ -28,7 +28,7 @@ function toInvitationKey(invitationKey, invitationValue) {
  * @param email
  * @returns {Promise}
  */
-export function getRedisInvitations(req, email) {
+export const getRedisInvitations = (req, email) => {
    return new Promise((resolve, reject) => {
       req.app.locals.redis.zremrangebyscoreAsync(`${config.redisPrefix}${hashKey(email)}`, 0, req.now.unix())
          .then(() => {
@@ -44,9 +44,9 @@ export function getRedisInvitations(req, email) {
          })
          .catch(err => reject(err));
    });
-}
+};
 
-function createRedisInvitation(req, email, invitation, expiration) {
+const createRedisInvitation = (req, email, invitation, expiration) => {
    return new Promise((resolve, reject) => {
       const hash = hashKey(email);
       const ttl = req.now.add(expiration, 'minutes').unix();
@@ -55,9 +55,9 @@ function createRedisInvitation(req, email, invitation, expiration) {
          .then(() => resolve())
          .catch(err => reject(err));
    });
-}
+};
 
-export function deleteRedisInvitation(req, email, invitationKey, invitationValue) {
+export const deleteRedisInvitation = (req, email, invitationKey, invitationValue) => {
    return new Promise((resolve, reject) => {
       let invitation;
       getRedisInvitations(req, email)
@@ -100,10 +100,10 @@ export function deleteRedisInvitation(req, email, invitationKey, invitationValue
          .then(() => resolve(invitation))
          .catch(err => reject(err));
    });
-}
+};
 
 
-export function inviteExistingUsersToSubscriberOrg(req, invitingDbUser, existingDbUsers, subscriberOrg) {
+export const inviteExistingUsersToSubscriberOrg = (req, invitingDbUser, existingDbUsers, subscriberOrg) => {
    return new Promise((resolve, reject) => {
       const promises = [];
       const key = toInvitationKey(InvitationKeys.subscriberOrgId, subscriberOrg.subscriberOrgId);
@@ -129,9 +129,9 @@ export function inviteExistingUsersToSubscriberOrg(req, invitingDbUser, existing
          .then(() => resolve())
          .catch(err => reject(err));
    });
-}
+};
 
-export function inviteExistingUsersToTeam(req, invitingDbUser, existingDbUsers, subscriberOrg, team) {
+export const inviteExistingUsersToTeam = (req, invitingDbUser, existingDbUsers, subscriberOrg, team) => {
    return new Promise((resolve, reject) => {
       const promises = [];
       const key = toInvitationKey(InvitationKeys.teamId, team.teamId);
@@ -159,9 +159,9 @@ export function inviteExistingUsersToTeam(req, invitingDbUser, existingDbUsers, 
          .then(() => resolve())
          .catch(err => reject(err));
    });
-}
+};
 
-export function inviteExistingUsersToTeamRoom(req, invitingDbUser, existingDbUsers, subscriberOrg, team, teamRoom) {
+export const inviteExistingUsersToTeamRoom = (req, invitingDbUser, existingDbUsers, subscriberOrg, team, teamRoom) => {
    return new Promise((resolve) => {
       const key = toInvitationKey(InvitationKeys.teamRoomId, teamRoom.teamRoomId);
       const invitation = {
@@ -202,9 +202,9 @@ export function inviteExistingUsersToTeamRoom(req, invitingDbUser, existingDbUse
             resolve();
          });
    });
-}
+};
 
-export function inviteExternalUsersToSubscriberOrg(req, invitingDbUser, emails, subscriberOrg) {
+export const inviteExternalUsersToSubscriberOrg = (req, invitingDbUser, emails, subscriberOrg) => {
    return new Promise((resolve, reject) => {
       const promises = [];
       const invitation = {
@@ -224,4 +224,5 @@ export function inviteExternalUsersToSubscriberOrg(req, invitingDbUser, emails, 
          .then(() => resolve())
          .catch(err => reject(err));
    });
-}
+};
+
