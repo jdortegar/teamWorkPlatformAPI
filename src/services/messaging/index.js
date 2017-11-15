@@ -68,7 +68,7 @@ export const subscriberAdded = (req, subscriberOrgId, user, role, subscriberUser
 
    return _joinChannels(req, user.userId, channels)
       .then(() => {
-         const mergedUser = _.merge(user, { role, subscriberUserId });
+         const mergedUser = _.merge(user.userInfo, { userId: user.userId, role, subscriberUserId });
          _broadcastEvent(req, EventTypes.subscriberAdded, publishByApiVersion(req, apiVersionedVisibility.publicSubscriber, subscriberOrgId, mergedUser), [subscriberOrgChannel]);
       })
       .catch(err => req.logger.error(err));
@@ -109,7 +109,7 @@ export const teamMemberAdded = (req, teamId, user, role, teamMemberId) => {
 
    return _joinChannels(req, user.userId, channels)
       .then(() => {
-         const mergedUser = _.merge(user, { role, teamMemberId });
+         const mergedUser = _.merge(user.userInfo, { user: user.userId, role, teamMemberId });
          _broadcastEvent(req, EventTypes.teamMemberAdded, publishByApiVersion(req, apiVersionedVisibility.publicTeamMember, teamId, mergedUser), [teamChannel]);
       })
       .catch(err => req.logger.error(err));
@@ -150,7 +150,7 @@ export const teamRoomMemberAdded = (req, teamRoomId, user, role, teamRoomMemberI
 
    return _joinChannels(req, user.userId, channels)
       .then(() => {
-         const mergedUser = _.merge(user, { role, teamRoomMemberId });
+         const mergedUser = _.merge(user.userInfo, { userId: user.userId, role, teamRoomMemberId });
          _broadcastEvent(req, EventTypes.teamRoomMemberAdded, publishByApiVersion(req, apiVersionedVisibility.publicTeamRoomMember, teamRoomId, mergedUser), [teamRoomChannel]);
       })
       .catch(err => req.logger.error(err));
