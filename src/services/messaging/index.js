@@ -32,6 +32,12 @@ export const userInvited = (req, userId, invitation) => {
    ]);
 };
 
+export const userInvitationDeclined = (req, userId, invitation) => {
+   return _broadcastEvent(req, EventTypes.userInvitationDeclined, invitation, [
+      ChannelFactory.personalChannel(userId)
+   ]);
+};
+
 
 // EventType = subscriberOrg
 

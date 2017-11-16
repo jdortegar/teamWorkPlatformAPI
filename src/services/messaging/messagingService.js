@@ -21,6 +21,7 @@ export const EventTypes = Object.freeze({
    userCreated: 'userCreated',
    userUpdated: 'userUpdated',
    userPrivateInfoUpdated: 'userPrivateInfoUpdated',
+   userInvitationDeclined: 'userInvitationDeclined',
 
    subscriberOrgCreated: 'subscriberOrgCreated',
    subscriberOrgUpdated: 'subscriberOrgUpdated',

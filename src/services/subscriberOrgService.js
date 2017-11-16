@@ -3,7 +3,7 @@ import uuid from 'uuid';
 import config from '../config/env';
 import { CannotInviteError, InvitationNotExistError, NoPermissionsError, SubscriberOrgExistsError, SubscriberOrgNotExistError, UserNotExistError } from './errors';
 import { deleteRedisInvitation, InvitationKeys, inviteExistingUsersToSubscriberOrg, inviteExternalUsersToSubscriberOrg } from './invitations';
-import { subscriberAdded, subscriberOrgCreated, subscriberOrgPrivateInfoUpdated, subscriberOrgUpdated } from './messaging';
+import { subscriberAdded, subscriberOrgCreated, subscriberOrgPrivateInfoUpdated, subscriberOrgUpdated, userInvitationDeclined } from './messaging';
 import { getPresence } from './messaging/presence';
 import Roles from './roles';
 import * as teamSvc from './teamService';
@@ -396,9 +396,13 @@ export function replyToInvite(req, subscriberOrgId, accept, userId) {
             return deleteRedisInvitation(req, user.userInfo.emailAddress, InvitationKeys.subscriberOrgId, subscriberOrgId);
          })
          .then((invitation) => {
-            if ((invitation) && (subscriberOrg.subscriberOrgInfo.enabled === true)) {
+            if (invitation) {
                if (accept) {
-                  return addUserToSubscriberOrg(req, user, subscriberOrgId, Roles.user);
+                  if (subscriberOrg.subscriberOrgInfo.enabled === true) {
+                     return addUserToSubscriberOrg(req, user, subscriberOrgId, Roles.user);
+                  }
+               } else {
+                  userInvitationDeclined(req, userId, invitation);
                }
                return undefined;
             }
