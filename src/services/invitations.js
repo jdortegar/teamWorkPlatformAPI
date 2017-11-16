@@ -109,6 +109,8 @@ export const inviteExistingUsersToSubscriberOrg = (req, invitingDbUser, existing
       const key = toInvitationKey(InvitationKeys.subscriberOrgId, subscriberOrg.subscriberOrgId);
       const invitation = {
          byUserId: invitingDbUser.userId,
+         byUserFirstName: invitingDbUser.userInfo.firstName,
+         byUserLastName: invitingDbUser.userInfo.lastName,
          byUserDisplayName: invitingDbUser.userInfo.displayName,
          subscriberOrgId: subscriberOrg.subscriberOrgId,
          subscriberOrgName: subscriberOrg.subscriberOrgInfo.name
@@ -119,7 +121,7 @@ export const inviteExistingUsersToSubscriberOrg = (req, invitingDbUser, existing
          const promise = createRedisInvitation(req, dbUser.userInfo.emailAddress, invitation, defaultExpirationMinutes)
             .then(() => {
                return Promise.all([
-                  sendSubscriberOrgInviteToExistingUser(email, subscriberOrg.subscriberOrgInfo.name, invitingDbUser.userInfo.displayName, key),
+                  sendSubscriberOrgInviteToExistingUser(email, subscriberOrg.subscriberOrgInfo.name, invitingDbUser.userInfo, key),
                   userInvited(req, dbUser.userId, invitation)
                ]);
             });
@@ -137,6 +139,8 @@ export const inviteExistingUsersToTeam = (req, invitingDbUser, existingDbUsers, 
       const key = toInvitationKey(InvitationKeys.teamId, team.teamId);
       const invitation = {
          byUserId: invitingDbUser.userId,
+         byUserFirstName: invitingDbUser.userInfo.firstName,
+         byUserLastName: invitingDbUser.userInfo.lastName,
          byUserDisplayName: invitingDbUser.userInfo.displayName,
          subscriberOrgId: team.teamInfo.subscriberOrgId,
          subscriberOrgName: subscriberOrg.subscriberOrgInfo.name,
@@ -149,7 +153,7 @@ export const inviteExistingUsersToTeam = (req, invitingDbUser, existingDbUsers, 
          const promise = createRedisInvitation(req, dbUser.userInfo.emailAddress, invitation, defaultExpirationMinutes)
             .then(() => {
                return Promise.all([
-                  sendTeamInviteToExistingUser(email, subscriberOrg.subscriberOrgInfo.name, team.teamInfo.name, invitingDbUser.userInfo.displayName, key),
+                  sendTeamInviteToExistingUser(email, subscriberOrg.subscriberOrgInfo.name, team.teamInfo.name, invitingDbUser.userInfo, key),
                   userInvited(req, dbUser.userId, invitation)
                ]);
             });
@@ -166,6 +170,8 @@ export const inviteExistingUsersToTeamRoom = (req, invitingDbUser, existingDbUse
       const key = toInvitationKey(InvitationKeys.teamRoomId, teamRoom.teamRoomId);
       const invitation = {
          byUserId: invitingDbUser.userId,
+         byUserFirstName: invitingDbUser.userInfo.firstName,
+         byUserLastName: invitingDbUser.userInfo.lastName,
          byUserDisplayName: invitingDbUser.userInfo.displayName,
          subscriberOrgId: team.teamInfo.subscriberOrgId,
          subscriberOrgName: subscriberOrg.subscriberOrgInfo.name,
@@ -186,7 +192,7 @@ export const inviteExistingUsersToTeamRoom = (req, invitingDbUser, existingDbUse
                      subscriberOrg.subscriberOrgInfo.name,
                      team.teamInfo.name,
                      teamRoom.teamRoomInfo.name,
-                     invitingDbUser.userInfo.displayName,
+                     invitingDbUser.userInfo,
                      key
                   ),
                   userInvited(req, dbUser.userId, invitation)
@@ -209,6 +215,8 @@ export const inviteExternalUsersToSubscriberOrg = (req, invitingDbUser, emails, 
       const promises = [];
       const invitation = {
          byUserId: invitingDbUser.userId,
+         byUserFirstName: invitingDbUser.userInfo.firstName,
+         byUserLastName: invitingDbUser.userInfo.lastName,
          byUserDisplayName: invitingDbUser.userInfo.displayName,
          subscriberOrgId: subscriberOrg.subscriberOrgId,
          subscriberOrgName: subscriberOrg.subscriberOrgInfo.name
@@ -217,7 +225,7 @@ export const inviteExternalUsersToSubscriberOrg = (req, invitingDbUser, emails, 
       emails.forEach((email) => {
          const promise = createRedisInvitation(req, email, invitation, defaultExpirationMinutes, 'minutes')
             .then(() => createRedisRegistration(req, email, defaultExpirationMinutes))
-            .then(rid => sendSubscriberOrgInviteToExternalUser(email, subscriberOrg.subscriberOrgInfo.name, invitingDbUser.userInfo.displayName, rid));
+            .then(rid => sendSubscriberOrgInviteToExternalUser(email, subscriberOrg.subscriberOrgInfo.name, invitingDbUser.userInfo, rid));
          promises.push(promise);
       });
       Promise.all(promises)

@@ -53,10 +53,10 @@ export const sendActivationLink = (email, rid) => {
    });
 };
 
-export const sendSubscriberOrgInviteToExternalUser = (email, subscriberOrgName, byUserDisplayName, rid) => {
+export const sendSubscriberOrgInviteToExternalUser = (email, subscriberOrgName, byUserInfo, rid) => {
    const html = `
       <h1><img src="https://static.wixstatic.com/media/ac0e25_95ce977831a9430989f049b46928fda6~mv2.jpg/v1/fill/w_247,h_244,al_c,q_80,usm_0.66_1.00_0.01/ac0e25_95ce977831a9430989f049b46928fda6~mv2.jpg" height="100" width="100" align="middle"></h1>
-      <br>${byUserDisplayName} has invited you to "${subscriberOrgName}" in Habla AI.<br>
+      <br>${byUserInfo.firstName} ${byUserInfo.lastName} has invited you to "${subscriberOrgName}" in Habla AI.<br>
       <br>Please <a href="${config.webappBaseUri}/signup/${rid}">click here</a> to activate your account and join them.<br>
    `;
    return sendMail({
@@ -67,11 +67,11 @@ export const sendSubscriberOrgInviteToExternalUser = (email, subscriberOrgName, 
    });
 };
 
-export const sendSubscriberOrgInviteToExistingUser = (email, subscriberOrgName, byUserDisplayName, key) => {
+export const sendSubscriberOrgInviteToExistingUser = (email, subscriberOrgName, byUserInfo, key) => {
    const webKey = key.split('=')[1];
    const html = `
       <h1><img src="https://static.wixstatic.com/media/ac0e25_95ce977831a9430989f049b46928fda6~mv2.jpg/v1/fill/w_247,h_244,al_c,q_80,usm_0.66_1.00_0.01/ac0e25_95ce977831a9430989f049b46928fda6~mv2.jpg" height="100" width="100" align="middle"></h1>
-      <br>${byUserDisplayName} has invited you to "${subscriberOrgName}" on Habla AI.<br>
+      <br>${byUserInfo.firstName} ${byUserInfo.lastName} has invited you to "${subscriberOrgName}" on Habla AI.<br>
       <br>Please <a href="${config.webappBaseUri}/app/acceptinvitation/subscriberOrg/${webKey}">click here</a> to join them.<br>
    `;
    return sendMail({
@@ -82,11 +82,11 @@ export const sendSubscriberOrgInviteToExistingUser = (email, subscriberOrgName, 
    });
 };
 
-export const sendTeamInviteToExistingUser = (email, subscriberOrgName, teamName, byUserDisplayName, key) => {
+export const sendTeamInviteToExistingUser = (email, subscriberOrgName, teamName, byUserInfo, key) => {
    const webKey = key.split('=')[1];
    const html = `
       <h1><img src="https://static.wixstatic.com/media/ac0e25_95ce977831a9430989f049b46928fda6~mv2.jpg/v1/fill/w_247,h_244,al_c,q_80,usm_0.66_1.00_0.01/ac0e25_95ce977831a9430989f049b46928fda6~mv2.jpg" height="100" width="100" align="middle"></h1>
-      <br>${byUserDisplayName} has invited you to team "${teamName}" of "${subscriberOrgName}" in Habla AI.<br>
+      <br>${byUserInfo.firstName} ${byUserInfo.lastName} has invited you to team "${teamName}" of "${subscriberOrgName}" in Habla AI.<br>
       <br>Please <a href="${config.webappBaseUri}/app/acceptinvitation/team/${webKey}">click here</a> to join them.<br>
       `;
    return sendMail({
@@ -97,11 +97,11 @@ export const sendTeamInviteToExistingUser = (email, subscriberOrgName, teamName,
    });
 };
 
-export const sendTeamRoomInviteToExistingUser = (email, subscriberOrgName, teamName, teamRoomName, byUserDisplayName, key) => {
+export const sendTeamRoomInviteToExistingUser = (email, subscriberOrgName, teamName, teamRoomName, byUserInfo, key) => {
    const webKey = key.split('=')[1];
    const html = `
       <h1><img src="https://static.wixstatic.com/media/ac0e25_95ce977831a9430989f049b46928fda6~mv2.jpg/v1/fill/w_247,h_244,al_c,q_80,usm_0.66_1.00_0.01/ac0e25_95ce977831a9430989f049b46928fda6~mv2.jpg" height="100" width="100" align="middle"></h1>
-      <br>${byUserDisplayName} has invited you to team room "${teamRoomName}" of "${subscriberOrgName}" in Habla AI.<br>
+      <br>${byUserInfo.firstName} ${byUserInfo.lastName} has invited you to team room "${teamRoomName}" of "${subscriberOrgName}" in Habla AI.<br>
       <br>Please <a href="${config.webappBaseUri}/app/acceptinvitation/teamRoom/${webKey}">click here</a> to join them.<br>
       `;
    return sendMail({
