@@ -328,7 +328,7 @@ export function getMessages(req, conversationId, userId = undefined, { since, un
 }
 
 const byteCountOfContent = (content) => {
-   let byteCount;
+   let byteCount = 0;
    content.forEach((entry) => {
       if ((entry.meta) && (entry.meta.fileSize)) {
          byteCount += entry.meta.fileSize;
