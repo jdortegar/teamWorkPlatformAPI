@@ -13,7 +13,7 @@ import {
    UserNotExistError
 } from './errors';
 import { deleteRedisInvitation, InvitationKeys, inviteExistingUsersToTeam } from './invitations';
-import { teamCreated, teamMemberAdded, teamPrivateInfoUpdated, teamUpdated } from './messaging';
+import { teamCreated, teamMemberAdded, teamPrivateInfoUpdated, teamUpdated, userInvitationDeclined } from './messaging';
 import { getPresence } from './messaging/presence';
 import Roles from './roles';
 import * as teamRoomSvc from './teamRoomService';
@@ -467,6 +467,8 @@ export function replyToInvite(req, teamId, accept, userId) {
                if ((team.teamInfo.active) && (accept)) {
                   const { subscriberOrgId } = invitation;
                   return getSubscriberUsersByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId);
+               } else if (!accept) {
+                  userInvitationDeclined(req, invitation, userId);
                }
                return undefined;
             }

@@ -402,7 +402,7 @@ export function replyToInvite(req, subscriberOrgId, accept, userId) {
                      return addUserToSubscriberOrg(req, user, subscriberOrgId, Roles.user);
                   }
                } else {
-                  userInvitationDeclined(req, userId, invitation);
+                  userInvitationDeclined(req, invitation, user.userInfo.emailAddress);
                }
                return undefined;
             }

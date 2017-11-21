@@ -14,7 +14,7 @@ import {
    UserNotExistError
 } from './errors';
 import { deleteRedisInvitation, InvitationKeys, inviteExistingUsersToTeamRoom } from './invitations';
-import { teamRoomCreated, teamRoomMemberAdded, teamRoomPrivateInfoUpdated, teamRoomUpdated } from './messaging';
+import { teamRoomCreated, teamRoomMemberAdded, teamRoomPrivateInfoUpdated, teamRoomUpdated, userInvitationDeclined } from './messaging';
 import { getPresence } from './messaging/presence';
 import {
    createItem,
@@ -479,6 +479,8 @@ export function replyToInvite(req, teamRoomId, accept, userId) {
                if ((teamRoom.teamRoomInfo.active) && (accept)) {
                   const { teamId } = invitation;
                   return getTeamMembersByUserIdAndTeamId(req, userId, teamId);
+               } else if (!accept) {
+                  userInvitationDeclined(req, invitation, userId);
                }
                return undefined;
             }
