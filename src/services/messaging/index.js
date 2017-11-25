@@ -46,12 +46,16 @@ export const subscriberOrgCreated = (req, subscriberOrg, userId) => {
    _joinChannels(req, userId, [
       ChannelFactory.subscriberOrgChannel(subscriberOrg.subscriberOrgId),
       ChannelFactory.subscriberOrgAdminChannel(subscriberOrg.subscriberOrgId)
-   ]);
-
-   // Only the person who created this gets to know, as she's the only person in that org.
-   return _broadcastEvent(req, EventTypes.subscriberOrgCreated, publishByApiVersion(req, apiVersionedVisibility.publicSubscriberOrg, subscriberOrg), [
-      ChannelFactory.personalChannel(userId)
-   ]);
+   ])
+      .then(() => {
+         // Only the person who created this gets to know, as she's the only person in that org.
+         return _broadcastEvent(req, EventTypes.subscriberOrgCreated, publishByApiVersion(req, apiVersionedVisibility.publicSubscriberOrg, subscriberOrg), [
+            ChannelFactory.personalChannel(userId)
+         ]);
+      })
+      .catch((err) => {
+         req.logger.error({ err }, `Failed to join channels for subscriberOrgId=${subscriberOrg.subscriberOrgId}`);
+      });
 };
 
 export const subscriberOrgUpdated = (req, subscriberOrg) => {
@@ -78,21 +82,27 @@ export const subscriberAdded = (req, subscriberOrgId, user, role, subscriberUser
          const mergedUser = _.merge(user.userInfo, { userId: user.userId, role, subscriberUserId });
          _broadcastEvent(req, EventTypes.subscriberAdded, publishByApiVersion(req, apiVersionedVisibility.publicSubscriber, subscriberOrgId, mergedUser), [subscriberOrgChannel]);
       })
-      .catch(err => req.logger.error(err));
+      .catch(err => req.logger.error({ err }));
 };
 
 
 // EventType = team
 
-export const teamCreated = (req, team, userId) => {
-   _joinChannels(req, userId, [
-      ChannelFactory.teamChannel(team.teamId),
-      ChannelFactory.teamAdminChannel(team.teamId)
-   ]);
+export const teamCreated = (req, team, teamAdminUserIds) => {
+   const joinChannelPromises = [];
+   teamAdminUserIds.forEach((teamAdminUserId) => {
+      joinChannelPromises.push(_joinChannels(req, teamAdminUserId, [
+         ChannelFactory.teamChannel(team.teamId),
+         ChannelFactory.teamAdminChannel(team.teamId)
+      ]));
+   });
 
-   return _broadcastEvent(req, EventTypes.teamCreated, publishByApiVersion(req, apiVersionedVisibility.publicTeam, team), [
-      ChannelFactory.subscriberOrgChannel(team.subscriberOrgId)
-   ]);
+   return Promise.all(joinChannelPromises)
+      .then(() => {
+         return _broadcastEvent(req, EventTypes.teamCreated, publishByApiVersion(req, apiVersionedVisibility.publicTeam, team), [
+            ChannelFactory.subscriberOrgChannel(team.subscriberOrgId)
+         ]);
+      });
 };
 
 export const teamUpdated = (req, team) => {
@@ -119,21 +129,27 @@ export const teamMemberAdded = (req, teamId, user, role, teamMemberId) => {
          const mergedUser = _.merge(user.userInfo, { user: user.userId, role, teamMemberId });
          _broadcastEvent(req, EventTypes.teamMemberAdded, publishByApiVersion(req, apiVersionedVisibility.publicTeamMember, teamId, mergedUser), [teamChannel]);
       })
-      .catch(err => req.logger.error(err));
+      .catch(err => req.logger.error({ err }));
 };
 
 
 // EventType = teamRoom
 
-export const teamRoomCreated = (req, teamRoom, userId) => {
-   _joinChannels(req, userId, [
-      ChannelFactory.teamRoomChannel(teamRoom.teamRoomId),
-      ChannelFactory.teamRoomAdminChannel(teamRoom.teamRoomId)
-   ]);
+export const teamRoomCreated = (req, teamRoom, teamRoomAdminUserIds) => {
+   const joinChannelPromises = [];
+   teamRoomAdminUserIds.forEach((teamRoomAdminUserId) => {
+      joinChannelPromises.push(_joinChannels(req, teamRoomAdminUserId, [
+         ChannelFactory.teamRoomChannel(teamRoom.teamRoomId),
+         ChannelFactory.teamRoomAdminChannel(teamRoom.teamRoomId)
+      ]));
+   });
 
-   return _broadcastEvent(req, EventTypes.teamRoomCreated, publishByApiVersion(req, apiVersionedVisibility.publicTeamRoom, teamRoom), [
-      ChannelFactory.teamChannel(teamRoom.teamId)
-   ]);
+   return Promise.all(joinChannelPromises)
+      .then(() => {
+         return _broadcastEvent(req, EventTypes.teamRoomCreated, publishByApiVersion(req, apiVersionedVisibility.publicTeamRoom, teamRoom), [
+            ChannelFactory.teamChannel(teamRoom.teamId)
+         ]);
+      });
 };
 
 export const teamRoomUpdated = (req, teamRoom) => {
@@ -160,20 +176,26 @@ export const teamRoomMemberAdded = (req, teamRoomId, user, role, teamRoomMemberI
          const mergedUser = _.merge(user.userInfo, { userId: user.userId, role, teamRoomMemberId });
          _broadcastEvent(req, EventTypes.teamRoomMemberAdded, publishByApiVersion(req, apiVersionedVisibility.publicTeamRoomMember, teamRoomId, mergedUser), [teamRoomChannel]);
       })
-      .catch(err => req.logger.error(err));
+      .catch(err => req.logger.error({ err }));
 };
 
 
 // EventType = conversation
 
-export const conversationCreated = (req, conversation, userId) => {
-   _joinChannels(req, userId, [
-      ChannelFactory.conversationChannel(conversation.conversationId)
-   ]);
+export const conversationCreated = (req, conversation, conversationParticipantUserIds) => {
+   const joinChannelPromises = [];
+   conversationParticipantUserIds.forEach((conversationParticipantUserId) => {
+      _joinChannels(req, conversationParticipantUserId, [
+         ChannelFactory.conversationChannel(conversation.conversationId)
+      ]);
+   });
 
-   return _broadcastEvent(req, EventTypes.conversationCreated, publishByApiVersion(req, apiVersionedVisibility.publicConversation, conversation), [
-      ChannelFactory.teamRoomChannel(conversation.teamRoomId)
-   ]);
+   return Promise.all(joinChannelPromises)
+      .then(() => {
+         return _broadcastEvent(req, EventTypes.conversationCreated, publishByApiVersion(req, apiVersionedVisibility.publicConversation, conversation), [
+            ChannelFactory.conversationChannel(conversation.teamRoomId)
+         ]);
+      });
 };
 
 export const conversationUpdated = (req, conversation) => {

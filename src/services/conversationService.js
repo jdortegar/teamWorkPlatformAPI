@@ -24,7 +24,7 @@ import {
 const MESSAGE_PATH_SEPARATOR = '##';
 
 
-function convertParticipantsToUsers(req, conversationParticipantsUserIds) {
+const convertParticipantsToUsers = (req, conversationParticipantsUserIds) => {
    const userIds = new Set();
    conversationParticipantsUserIds.forEach((participants) => {
       participants.forEach(userId => userIds.add(userId));
@@ -47,7 +47,7 @@ function convertParticipantsToUsers(req, conversationParticipantsUserIds) {
          })
          .catch(err => reject(err));
    });
-}
+};
 
 /**
  * Retrieve all conversations that the specified user is privy to.
@@ -58,7 +58,7 @@ function convertParticipantsToUsers(req, conversationParticipantsUserIds) {
  * @param teamId
  * @returns {Promise}
  */
-export function getConversations(req, userId, teamRoomId = undefined) {
+export const getConversations = (req, userId, teamRoomId = undefined) => {
    return new Promise((resolve, reject) => {
       let conversations;
       getConversationParticipantsByUserId(req, userId)
@@ -100,9 +100,9 @@ export function getConversations(req, userId, teamRoomId = undefined) {
          .then(() => resolve(conversations))
          .catch(err => reject(err));
    });
-}
+};
 
-export function createConversationNoCheck(req, teamRoomId, conversationInfo, userId, conversationId = undefined) {
+export const createConversationNoCheck = (req, teamRoomId, conversationInfo, userId, conversationParticipantUserIds, conversationId = undefined) => {
    const actualConversationId = conversationId || uuid.v4();
    const conversation = {
       teamRoomId,
@@ -137,15 +137,15 @@ export function createConversationNoCheck(req, teamRoomId, conversationInfo, use
             participant.userId = userId;
             conversation.participants = [participant];
             conversation.conversationId = actualConversationId;
-            conversationCreated(req, conversation, userId);
+            conversationCreated(req, conversation, conversationParticipantUserIds);
 
             resolve(conversation);
          })
          .catch(err => reject(err));
    });
-}
+};
 
-export function setConversationsOfTeamRoomActive(req, teamRoomId, active) {
+export const setConversationsOfTeamRoomActive = (req, teamRoomId, active) => {
    return new Promise((resolve, reject) => {
       const conversations = [];
       getConversationsByTeamRoomId(req, teamRoomId)
@@ -180,9 +180,9 @@ export function setConversationsOfTeamRoomActive(req, teamRoomId, active) {
          })
          .catch(err => reject(err));
    });
-}
+};
 
-export function addUserToConversation(req, user, conversationId) {
+export const addUserToConversation = (req, user, conversationId) => {
    const conversationParticipantId = uuid.v4();
    const conversationParticipant = {
       conversationId,
@@ -200,9 +200,9 @@ export function addUserToConversation(req, user, conversationId) {
       'conversationParticipantInfo',
       conversationParticipant
    );
-}
+};
 
-export function addUserToConversationByTeamRoomId(req, user, teamRoomId) {
+export const addUserToConversationByTeamRoomId = (req, user, teamRoomId) => {
    return new Promise((resolve, reject) => {
       getConversationsByTeamRoomId(req, teamRoomId)
          .then((conversations) => {
@@ -214,9 +214,40 @@ export function addUserToConversationByTeamRoomId(req, user, teamRoomId) {
          .then(() => resolve())
          .catch(err => reject(err));
    });
-}
+};
 
-function sortMessagesArray(messages) {
+// TODO:
+// export const getPresenceOfParticipants = (req, conversationId) => {
+//    return new Promise((resolve, reject) => {
+//       getConversationsByIds(req, [conversationId])
+//          .then((conversations) => {
+//             if (conversations.length !== 1) {
+//                throw new ConversationNotExistError(conversationId);
+//             }
+//
+//             const conversation = conversations[0];
+//             if (userId) {
+//                const teamRoomId = conversation.conversationInfo.teamRoomId;
+//                return teamRoomSvc.getTeamRoomUsers(req, teamRoomId, userId);
+//             }
+//             return undefined;
+//          })
+//          .then(() => {
+//             return getMessagesByConversationIdFiltered(req, conversationId, { since, until, minLevel, maxLevel });
+//          })
+//          .then(messages => sortMessages(messages))
+//          .then((messages) => {
+//             if ((typeof maxCount !== 'undefined') && (messages.length > maxCount)) {
+//                return messages.slice(messages.length - maxCount, messages.length);
+//             }
+//             return messages;
+//          })
+//          .then(messages => resolve(messages))
+//          .catch(err => reject(err));
+//    });
+// };
+
+const sortMessagesArray = (messages) => {
    let sortedMessages = messages.sort((msg1, msg2) => {
       const epoch1 = moment(msg1.messageInfo.created).unix();
       const epoch2 = moment(msg2.messageInfo.created).unix();
@@ -239,9 +270,9 @@ function sortMessagesArray(messages) {
    });
 
    return sortedMessages;
-}
+};
 
-function flattenMessagesArray(messages) {
+const flattenMessagesArray = (messages) => {
    let flattenedMessages = [];
    messages.forEach((message) => {
       flattenedMessages.push(message);
@@ -251,9 +282,9 @@ function flattenMessagesArray(messages) {
       }
    });
    return flattenedMessages;
-}
+};
 
-function sortMessages(messages) {
+const sortMessages = (messages) => {
    const messageMap = new Map();
    const topLevelMessages = [];
    const threadMessages = [];
@@ -284,7 +315,7 @@ function sortMessages(messages) {
    const flattenedMessages = flattenMessagesArray(sortedMessages);
 
    return flattenedMessages;
-}
+};
 
 /**
  * If the conversation doesn't exist, a ConversationNotExistError is thrown.
@@ -297,7 +328,7 @@ function sortMessages(messages) {
  * @param userId Optional userId to return results only if the user is a team room member.
  * @returns {Promise}
  */
-export function getMessages(req, conversationId, userId = undefined, { since, until, minLevel, maxLevel, maxCount }) {
+export const getMessages = (req, conversationId, userId = undefined, { since, until, minLevel, maxLevel, maxCount }) => {
    return new Promise((resolve, reject) => {
       getConversationsByIds(req, [conversationId])
          .then((conversations) => {
@@ -325,7 +356,7 @@ export function getMessages(req, conversationId, userId = undefined, { since, un
          .then(messages => resolve(messages))
          .catch(err => reject(err));
    });
-}
+};
 
 const byteCountOfContent = (content) => {
    let byteCount = 0;
@@ -357,7 +388,7 @@ const getSubscriberOrgIdByConversationId = (req, conversationId) => {
    });
 };
 
-export function createMessage(req, conversationId, userId, content, replyTo) {
+export const createMessage = (req, conversationId, userId, content, replyTo) => {
    return new Promise((resolve, reject) => {
       const messageId = uuid.v4();
 
@@ -417,7 +448,7 @@ export function createMessage(req, conversationId, userId, content, replyTo) {
          })
          .catch(err => reject(err));
    });
-}
+};
 
 
 // /**

@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import { getSubscriberUsersByUserIdAndSubscriberOrgId, getSubscriberUsersByUserIds } from '../repositories/util';
 
-export function getIntegrations(req, userId, subscriberOrgId = undefined) { // eslint-disable-line import/prefer-default-export
+export const getIntegrations = (req, userId, subscriberOrgId = undefined) => { // eslint-disable-line import/prefer-default-export
    return new Promise((resolve, reject) => {
       let getSubscriberUsers;
       if (subscriberOrgId) {
@@ -24,4 +24,4 @@ export function getIntegrations(req, userId, subscriberOrgId = undefined) { // e
          })
          .catch(err => reject(err));
    });
-}
+};

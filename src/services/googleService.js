@@ -8,20 +8,20 @@ import { getSubscriberUsersByUserIdAndSubscriberOrgId, updateItemCompletely } fr
 
 const defaultExpiration = 30 * 60; // 30 minutes.
 
-function hashKey(state) {
+const hashKey = (state) => {
    return `${state}#googleIntegrationState`;
-}
+};
 
-function createRedisGoogleIntegrationState(req, userId, subscriberOrgId) {
+const createRedisGoogleIntegrationState = (req, userId, subscriberOrgId) => {
    return new Promise((resolve, reject) => {
       const state = uuid.v4();
       req.app.locals.redis.hmsetAsync(hashKey(state), 'userId', userId, 'subscriberOrgId', subscriberOrgId, 'EX', defaultExpiration)
          .then(() => resolve(state))
          .catch(err => reject(err));
    });
-}
+};
 
-function deleteRedisGoogleIntegrationState(req, state) {
+const deleteRedisGoogleIntegrationState = (req, state) => {
    return new Promise((resolve, reject) => {
       let userId;
       let subscriberOrgId;
@@ -41,10 +41,10 @@ function deleteRedisGoogleIntegrationState(req, state) {
          })
          .catch(err => reject(err));
    });
-}
+};
 
 
-export function integrateGoogle(req, userId, subscriberOrgId) {
+export const integrateGoogle = (req, userId, subscriberOrgId) => {
    return new Promise((resolve, reject) => {
       getSubscriberUsersByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId)
          .then((subscriberUsers) => {
@@ -60,9 +60,9 @@ export function integrateGoogle(req, userId, subscriberOrgId) {
          })
          .catch(err => reject(err));
    });
-}
+};
 
-export function googleAccessResponse(req, { code, state, error }) {
+export const googleAccessResponse = (req, { code, state, error }) => {
    if (error) {
       return Promise.reject(new IntegrationAccessError(error));
    }
@@ -125,9 +125,9 @@ export function googleAccessResponse(req, { code, state, error }) {
             reject(integrationError);
          });
    });
-}
+};
 
-export function revokeGoogle(req, userId, subscriberOrgId) {
+export const revokeGoogle = (req, userId, subscriberOrgId) => {
    return new Promise((resolve, reject) => {
       let subscriberUserInfo;
       getSubscriberUsersByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId)
@@ -157,10 +157,10 @@ export function revokeGoogle(req, userId, subscriberOrgId) {
          })
          .catch(err => reject(err));
    });
-}
+};
 
-export function webhookEvent(req) {
+export const webhookEvent = (req) => {
    validateWebhookMessage(req);
    googleWebhookEvent(req, req.body);
    return Promise.resolve();
-}
+};

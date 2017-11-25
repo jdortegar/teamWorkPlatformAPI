@@ -170,7 +170,7 @@ export function updateUser(req, userId, updateInfo, requestorUserId = undefined)
    });
 }
 
-export function getInvitations(req, email) {
+export const getInvitations = (req, email) => {
    return new Promise((resolve, reject) => {
       getRedisInvitations(req, email)
          .then((invitations) => {
@@ -182,4 +182,4 @@ export function getInvitations(req, email) {
          })
          .catch(err => reject(err));
    });
-}
+};

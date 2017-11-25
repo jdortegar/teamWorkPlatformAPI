@@ -8,20 +8,20 @@ import { getSubscriberUsersByUserIdAndSubscriberOrgId, updateItemCompletely } fr
 
 const defaultExpiration = 30 * 60; // 30 minutes.
 
-function hashKey(state) {
+const hashKey = (state) => {
    return `${state}#boxIntegrationState`;
-}
+};
 
-function createRedisBoxIntegrationState(req, userId, subscriberOrgId) {
+const createRedisBoxIntegrationState = (req, userId, subscriberOrgId) => {
    return new Promise((resolve, reject) => {
       const state = uuid.v4();
       req.app.locals.redis.hmsetAsync(hashKey(state), 'userId', userId, 'subscriberOrgId', subscriberOrgId, 'EX', defaultExpiration)
          .then(() => resolve(state))
          .catch(err => reject(err));
    });
-}
+};
 
-function deleteRedisBoxIntegrationState(req, state) {
+const deleteRedisBoxIntegrationState = (req, state) => {
    return new Promise((resolve, reject) => {
       let userId;
       let subscriberOrgId;
@@ -41,10 +41,10 @@ function deleteRedisBoxIntegrationState(req, state) {
          })
          .catch(err => reject(err));
    });
-}
+};
 
 
-export function integrateBox(req, userId, subscriberOrgId) {
+export const integrateBox = (req, userId, subscriberOrgId) => {
    return new Promise((resolve, reject) => {
       getSubscriberUsersByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId)
          .then((subscriberUsers) => {
@@ -60,9 +60,9 @@ export function integrateBox(req, userId, subscriberOrgId) {
          })
          .catch(err => reject(err));
    });
-}
+};
 
-export function boxAccessResponse(req, { code, state, error, error_description }) {
+export const boxAccessResponse = (req, { code, state, error, error_description }) => {
    if (error) {
       return Promise.reject(new IntegrationAccessError(`${error}: ${error_description}`)); // eslint-disable-line camelcase
    }
@@ -125,9 +125,9 @@ export function boxAccessResponse(req, { code, state, error, error_description }
             reject(integrationError);
          });
    });
-}
+};
 
-export function revokeBox(req, userId, subscriberOrgId) {
+export const revokeBox = (req, userId, subscriberOrgId) => {
    return new Promise((resolve, reject) => {
       let subscriberUserInfo;
       getSubscriberUsersByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId)
@@ -156,10 +156,10 @@ export function revokeBox(req, userId, subscriberOrgId) {
          })
          .catch(err => reject(err));
    });
-}
+};
 
-export function webhookEvent(req) {
+export const webhookEvent = (req) => {
    validateWebhookMessage(req);
    boxWebhookEvent(req, req.body);
    return Promise.resolve();
-}
+};

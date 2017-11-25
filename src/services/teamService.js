@@ -74,7 +74,7 @@ export function getUserTeams(req, userId, subscriberOrgId = undefined) {
    });
 }
 
-export function createTeamNoCheck(req, subscriberOrgId, teamInfo, subscriberUserId, user, teamId = undefined) {
+export const createTeamNoCheck = (req, subscriberOrgId, teamInfo, subscriberUserId, user, teamAdminUserIds, teamId = undefined) => {
    const actualTeamId = teamId || uuid.v4();
    const icon = teamInfo.icon || null;
    const preferences = teamInfo.preferences || { private: {} };
@@ -111,7 +111,7 @@ export function createTeamNoCheck(req, subscriberOrgId, teamInfo, subscriberUser
          })
          .then(() => {
             team.teamId = actualTeamId;
-            teamCreated(req, team, user.userId);
+            teamCreated(req, team, teamAdminUserIds);
             teamMemberAdded(req, actualTeamId, user, role, teamMemberId);
 
             const teamRoom = {
@@ -121,16 +121,17 @@ export function createTeamNoCheck(req, subscriberOrgId, teamInfo, subscriberUser
                active: true,
                primary: true,
             };
-            return teamRoomSvc.createTeamRoomNoCheck(req, actualTeamId, teamRoom, teamMemberId, user);
+            return teamRoomSvc.createTeamRoomNoCheck(req, actualTeamId, teamRoom, teamMemberId, user, [user.userId]);
          })
          .then(() => resolve(team))
          .catch(err => reject(err));
    });
-}
+};
 
 export function createTeam(req, subscriberOrgId, teamInfo, userId, teamId = undefined) {
    return new Promise((resolve, reject) => {
       let subscriberUserId;
+      let subscriberOrgAdminUserIds;
 
       Promise.all([getSubscriberOrgsByIds(req, [subscriberOrgId]), getSubscriberUsersByUserIdAndSubscriberOrgIdAndRole(req, userId, subscriberOrgId, Roles.admin)])
          .then((promiseResults) => {
@@ -149,6 +150,11 @@ export function createTeam(req, subscriberOrgId, teamInfo, userId, teamId = unde
                throw new NoPermissionsError(subscriberOrgId);
             }
 
+            // Add all subscriberOrg admins to new team.
+            const adminSubscriberUsers = subscriberUsers.filter(subscriberUser => subscriberUser.subscriberUserInfo.role === Roles.admin);
+            subscriberOrgAdminUserIds = adminSubscriberUsers.map(adminSubscriberUser => adminSubscriberUser.subscriberUserInfo.userId);
+            subscriberOrgAdminUserIds.push(userId);
+
             subscriberUserId = subscriberUsers[0].subscriberUserId;
             return Promise.all([
                getTeamBySubscriberOrgIdAndName(req, subscriberOrgId, teamInfo.name),
@@ -163,7 +169,7 @@ export function createTeam(req, subscriberOrgId, teamInfo, userId, teamId = unde
                throw new TeamExistsError(teamInfo.name);
             }
 
-            return createTeamNoCheck(req, subscriberOrgId, teamInfo, subscriberUserId, user, teamId);
+            return createTeamNoCheck(req, subscriberOrgId, teamInfo, subscriberUserId, user, subscriberOrgAdminUserIds, teamId);
          })
          .then(team => resolve(team))
          .catch(err => reject(err));

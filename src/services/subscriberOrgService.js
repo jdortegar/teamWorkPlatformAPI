@@ -77,14 +77,14 @@ export function createSubscriberOrgNoCheck(req, subscriberOrgInfo, user, subscri
             subscriberOrg.subscriberOrgId = actualSubscriberOrgId;
             subscriberOrgCreated(req, subscriberOrg, user.userId);
             subscriberAdded(req, actualSubscriberOrgId, user, role, subscriberUserId);
-            return teamSvc.createTeamNoCheck(req, actualSubscriberOrgId, { name: teamSvc.defaultTeamName, primary: true }, subscriberUserId, user);
+            return teamSvc.createTeamNoCheck(req, actualSubscriberOrgId, { name: teamSvc.defaultTeamName, primary: true }, subscriberUserId, user, [subscriberUserId]);
          })
          .then(() => resolve(subscriberOrg))
          .catch(err => reject(err));
    });
 }
 
-export function createSubscriberOrg(req, subscriberOrgInfo, userId, subscriberOrgId = undefined, dbUser = undefined) {
+export const createSubscriberOrg = (req, subscriberOrgInfo, userId, subscriberOrgId = undefined, dbUser = undefined) => {
    return new Promise((resolve, reject) => {
       // TODO: if (userId), check canCreateSubscriberOrg() -> false, throw NoPermissionsError
       const promises = [getSubscriberOrgsByName(req, subscriberOrgInfo.name)];
@@ -105,7 +105,7 @@ export function createSubscriberOrg(req, subscriberOrgInfo, userId, subscriberOr
          .then(subscriberOrg => resolve(subscriberOrg))
          .catch(err => reject(err));
    });
-}
+};
 
 /**
  * Create a subscriber organization given the name+`appendNumber`.
@@ -115,7 +115,7 @@ export function createSubscriberOrg(req, subscriberOrgInfo, userId, subscriberOr
  * @param subscriberOrgName
  * @param appendNumber (optional)
  */
-export function createSubscriberOrgUsingBaseName(req, info, dbUser, subscriberOrgId = undefined, appendNumber = undefined) {
+export const createSubscriberOrgUsingBaseName = (req, info, dbUser, subscriberOrgId = undefined, appendNumber = undefined) => {
    const tryInfo = {
       name: info.name + ((appendNumber) ? ` (${appendNumber})` : ''),
       preferences: info.preferences
@@ -134,9 +134,9 @@ export function createSubscriberOrgUsingBaseName(req, info, dbUser, subscriberOr
             }
          });
    });
-}
+};
 
-export function updateSubscriberOrg(req, subscriberOrgId, updateInfo, userId) {
+export const updateSubscriberOrg = (req, subscriberOrgId, updateInfo, userId) => {
    return new Promise((resolve, reject) => {
       const timestampedUpdateInfo = _.cloneDeep(updateInfo);
       timestampedUpdateInfo.lastModified = req.now.format();
@@ -176,7 +176,7 @@ export function updateSubscriberOrg(req, subscriberOrgId, updateInfo, userId) {
          })
          .catch(err => reject(err));
    });
-}
+};
 
 /**
  * If the subscriber org doesn't exist, a SubscriberOrgNotExistError is thrown.
@@ -189,7 +189,7 @@ export function updateSubscriberOrg(req, subscriberOrgId, updateInfo, userId) {
  * @param userId Optional userId to return results only if the user is a subscriber.
  * @returns {Promise}
  */
-export function getSubscriberOrgUsers(req, subscriberOrgId, userId = undefined) {
+export const getSubscriberOrgUsers = (req, subscriberOrgId, userId = undefined) => {
    const userIdsRoles = {};
    const userIdsSubscriberUserIds = {};
    let usersWithRoles;
@@ -246,9 +246,9 @@ export function getSubscriberOrgUsers(req, subscriberOrgId, userId = undefined) 
          })
          .catch(err => reject(err));
    });
-}
+};
 
-export function inviteSubscribers(req, subscriberOrgId, subscriberUserIdEmails, userId) {
+export const inviteSubscribers = (req, subscriberOrgId, subscriberUserIdEmails, userId) => {
    return new Promise((resolve, reject) => {
       let subscriberOrg;
       let dbUser;
@@ -345,9 +345,9 @@ export function inviteSubscribers(req, subscriberOrgId, subscriberUserIdEmails, 
          .then(() => resolve())
          .catch(err => reject(err));
    });
-}
+};
 
-function addUserToSubscriberOrg(req, user, subscriberOrgId, role) {
+const addUserToSubscriberOrg = (req, user, subscriberOrgId, role) => {
    return new Promise((resolve, reject) => {
       const subscriberUserId = uuid.v4();
       getSubscriberOrgsByIds(req, [subscriberOrgId])
@@ -372,9 +372,9 @@ function addUserToSubscriberOrg(req, user, subscriberOrgId, role) {
          .then(() => resolve(subscriberUserId))
          .catch(err => reject(err));
    });
-}
+};
 
-export function replyToInvite(req, subscriberOrgId, accept, userId) {
+export const replyToInvite = (req, subscriberOrgId, accept, userId) => {
    return new Promise((resolve, reject) => {
       let user;
       let subscriberOrg;
@@ -411,4 +411,4 @@ export function replyToInvite(req, subscriberOrgId, accept, userId) {
          .then(() => resolve())
          .catch(err => reject(err));
    });
-}
+};
