@@ -42,7 +42,7 @@ const sendMail = (cid, mailOptions) => {
 const contentsBefore = (cid) => {
    return `
      <style type="text/css">.boxed {border: 2px solid lightgray; border-radius: 8px; padding: 40px; padding-top: 20px; width: 300; font-family: 'Arial'}</style>
-     <h1><img src="cid:${cid}" width="200" width="200" height="56"></h1>
+     <h1><img src="cid:${cid}" width="200" height="56"></h1>
      <div class="boxed">`;
 };
 
