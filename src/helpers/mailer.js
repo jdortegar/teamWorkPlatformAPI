@@ -23,7 +23,7 @@ const sendMail = (cid, mailOptions) => {
          encoding: 'base64',
          contentType: 'image/gif',
          contentDisposition: 'inline',
-         content: mailerLogoBase64
+         raw: mailerLogoBase64
       }];
    }
 
