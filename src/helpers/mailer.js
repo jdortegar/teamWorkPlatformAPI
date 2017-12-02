@@ -45,7 +45,7 @@ const htmlContents = (cid, html) => {
        .boxed {border: 2px solid lightgray; border-radius: 8px; padding: 40px; padding-top: 20px; width: 400; font-family: 'Arial'}
        .footer {padding-top: 20px; width: 400; font-family: 'Arial'; color: lightslategray; font-size: 11}
      </style>
-     <h1><img src="cid:${cid}" width="200" height="56"></h1>
+     <h1><img src="cid:${cid}" width="125" height="35"></h1>
      <div class="boxed">
        ${html}
      </div>
