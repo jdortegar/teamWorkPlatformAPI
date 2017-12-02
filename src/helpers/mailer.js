@@ -18,12 +18,12 @@ const sendMail = (cid, mailOptions) => {
    const options = mailOptions;
    if (cid !== null) {
       options.attachments = [{
-         filename: false,
          cid,
          encoding: 'base64',
          contentType: 'image/gif',
+         // contentTransferEncoding: 'quoted-printable',
          contentDisposition: 'inline',
-         raw: mailerLogoBase64
+         content: mailerLogoBase64
       }];
    }
 
