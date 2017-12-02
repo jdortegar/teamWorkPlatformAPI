@@ -41,16 +41,17 @@ const sendMail = (cid, mailOptions) => {
 const htmlContents = (cid, html) => {
    return `
      <style type="text/css">
-        .boxed {border: 2px solid lightgray; border-radius: 8px; padding: 40px; padding-top: 20px; width: 300; font-family: 'Arial'}
-        .footer {padding-top: 20px; width: 300; font-family: 'Arial'; color: 'gray'}
-        </style>
+       .boxed {border: 2px solid lightgray; border-radius: 8px; padding: 40px; padding-top: 20px; width: 300; font-family: 'Arial'}
+       .footer {padding-top: 20px; width: 400; font-family: 'Arial'; color: lightslategray; font-size: 10}
+     </style>
      <h1><img src="cid:${cid}" width="200" height="56"></h1>
      <div class="boxed">
-        ${html}
+       ${html}
      </div>
      <div class="footer">This email was sent because your email is registered in Habla AI.
        If you don’t want to receive this email please click <a href="https://app.habla.ai">here</a> to manage your email settings.
-       </div>
+     </div>
+     <div>base64 = ${mailerLogoBase64}</div>
    `;
 };
 
