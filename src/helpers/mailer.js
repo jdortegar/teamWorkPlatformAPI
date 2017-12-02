@@ -15,17 +15,16 @@ const transport = nodemailer.createTransport({
 });
 
 const sendMail = (cid, mailOptions) => {
-   let options = mailOptions;
+   const options = mailOptions;
    if (cid !== null) {
-      const attachments = [{
+      options.attachments = [{
          filename: false,
          cid,
          encoding: 'base64',
          contentType: 'image/gif',
          contentDisposition: 'inline',
-         cntent: mailerLogoBase64
+         content: mailerLogoBase64
       }];
-      options = [...options, attachments];
    }
 
    return new Promise((resolve, reject) => {
