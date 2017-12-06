@@ -26,10 +26,10 @@ export const loggerLevel = 'debug';
 export const loggerJson = false;
 
 
-export const boxClientId = 'l2jb56htf6cc5h1f6sp10qeoc4l81wqi';
-export const boxClientSecret = 'KC1z0xleyvc4Qy6B91DuYC1HPrfG92tI';
-export const boxWebhooksPrimaryKey = '9itYJpL8fp27HPiWguSGYpBmusVKwSgz';
-export const boxWebhooksSecondaryKey = 'UsmcEmGsgaWPu7IDPyLQpoTkQDbAGmVP';
+export const boxClientId = 'c7kuuon9sbf7jbynnuvbczj9zzkyzc5c';
+export const boxClientSecret = '9p20xotNgLqLF2uS6ybg1ANd53jpq3GE';
+export const boxWebhooksPrimaryKey = 'fWo4rJNBbVeSpQ0llAdiM5GnDer1CPLE';
+export const boxWebhooksSecondaryKey = 'Q5Ht4J6nucMSxTnXKRKk1w9LwJaBefLY';
 
 export const googleClientId = '56229434385-er6slkc68oaklfs58oi5ej2fbbjabpc7.apps.googleusercontent.com';
 export const googleClientSecret = 'tQ-XvOvgGmAAJfjMWjH4Ai1T';
