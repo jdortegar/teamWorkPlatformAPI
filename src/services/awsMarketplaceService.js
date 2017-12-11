@@ -1,7 +1,7 @@
 import AWS from 'aws-sdk';
 import cron from 'node-cron';
 import config from '../config/env';
-import * as awsMarketplaceCustomersRepo from '../repositories/awsMarketplaceCustomersRepo';
+import * as table from '../repositories/db/awsMarketplaceCustomersTable';
 import { getUserSubscriberOrgs, updateSubscriberOrg } from './subscriberOrgService';
 import { InvalidAwsProductCodeError, CustomerExistsError, CustomerNotExistError } from './errors';
 import { createPseudoRequest } from '../logger';
@@ -15,7 +15,11 @@ const setCachedByteCount = (req, subscriberOrgId, value) => {
 };
 
 export const updateCachedByteCount = (req, subscriberOrgId, addValue) => {
-   return req.app.locals.redis.incrbyAsync(`${config.redisPrefix}${subscriberOrgId}#bytesUsed`, addValue);
+   return new Promise((resolve) => {
+      req.app.locals.redis.incrbyAsync(`${config.redisPrefix}${subscriberOrgId}#bytesUsed`, addValue)
+         .then(() => resolve())
+         .catch(() => resolve()); // Ignore.  Just means this org's usage is not being monitored.
+   });
 };
 
 
@@ -23,7 +27,7 @@ export const ensureCachedByteCountExists = (req) => {
    return new Promise((resolve, reject) => {
       let subscriberOrgId;
 
-      awsMarketplaceCustomersRepo.getAllCustomers(req)
+      table.getAllCustomers(req)
          .then((customers) => {
             const promises = [];
             customers.forEach((customer) => {
@@ -95,7 +99,7 @@ const parseEntitlementsForLatest = (entitlements) => {
 export const registerCustomer = (req, awsCustomerId, user) => {
    return new Promise((resolve, reject) => {
       let subscriberOrg;
-      awsMarketplaceCustomersRepo.getCustomer(req, awsCustomerId)
+      table.getCustomer(req, awsCustomerId)
          .then((customer) => {
             if (customer) {
                throw new CustomerExistsError(awsCustomerId);
@@ -113,7 +117,7 @@ export const registerCustomer = (req, awsCustomerId, user) => {
             const { subscriberOrgId } = subscriberOrg;
             const { expiration, awsProductCode, maxUsers } = parseEntitlementsForLatest(entitlements);
             const maxGB = 5;
-            return awsMarketplaceCustomersRepo.createCustomer(req, subscriberOrgId, awsCustomerId, awsProductCode, entitlements, expiration, maxUsers, 1, maxGB, 0);
+            return table.createCustomer(req, subscriberOrgId, awsCustomerId, awsProductCode, entitlements, expiration, maxUsers, 1, maxGB, 0);
          })
          .then(() => updateSubscriberOrg(req, subscriberOrg.subscriberOrgId, { awsCustomerId }, user.userId))
          .then(() => setCachedByteCount(req, subscriberOrg.subscriberOrgId, 0))
@@ -129,7 +133,7 @@ const updateCustomerFromEntitlements = (req, customer) => {
          .then((entitlements) => {
             const { expiration, maxUsers } = parseEntitlementsForLatest(entitlements);
             const maxGB = 5;
-            return awsMarketplaceCustomersRepo.updateCustomer(req, awsCustomerId, {
+            return table.updateCustomer(req, awsCustomerId, {
                entitlements,
                expiration,
                maxUsers,
@@ -158,7 +162,7 @@ export const updateCustomerEntitlements = (req, message) => {
       const awsCustomerId = message['customer-identifier'];
       const awsProductCode = message['product-code']; // eslint-disable-line no-unused-vars
       if ((action === 'entitlement-updated') || (action === 'unsubscribe-pending') || (action === 'unsubscriber-success')) {
-         awsMarketplaceCustomersRepo.getCustomer(req, awsCustomerId)
+         table.getCustomer(req, awsCustomerId)
             .then((customer) => {
                if ((!customer) || (customer === null)) {
                   throw new CustomerNotExistError(awsCustomerId);
@@ -178,7 +182,7 @@ export const updateCustomerEntitlements = (req, message) => {
 
 const syncAllCustomerEntitlements = (req) => {
    return new Promise((resolve, reject) => {
-      awsMarketplaceCustomersRepo.getAllCustomers(req)
+      table.getAllCustomers(req)
          .then((customers) => {
             const promises = [];
             customers.forEach(customer => promises.push(updateCustomerFromEntitlements(req, customer)));

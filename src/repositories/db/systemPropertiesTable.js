@@ -1,4 +1,4 @@
-import config from '../config/env';
+import config from '../../config/env/index';
 import * as util from './util';
 import { createUpdateExpression } from './expressionHelper';
 
@@ -47,7 +47,7 @@ export const getAllSystemProperties = (req) => {
          TableName: tableName()
       };
 
-      util.scan(params)
+      util.scan(req, params)
          .then(originalResults => upgradeSchema(req, originalResults))
          .then(latestResults => resolve(latestResults))
          .catch(err => reject(err));
