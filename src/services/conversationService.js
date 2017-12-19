@@ -12,6 +12,7 @@ import {
    getMessagesByConversationIdFiltered,
    getMessageById
 } from '../repositories/messagesRepo';
+import { createReadMessages } from '../repositories/db/readMessagesTable';
 import {
    getConversationsByIds,
    getConversationsByTeamRoomId,
@@ -127,8 +128,11 @@ export const createConversationNoCheck = (req, teamRoomId, conversationInfo, use
             participant.userId = userId;
             conversation.participants = [participant];
             conversation.conversationId = actualConversationId;
-            conversationCreated(req, conversation, conversationParticipantUserIds);
 
+            return createReadMessages(req, userId, actualConversationId);
+         })
+         .then(() => {
+            conversationCreated(req, conversation, conversationParticipantUserIds);
             resolve(conversation);
          })
          .catch(err => reject(err));
@@ -174,13 +178,16 @@ export const setConversationsOfTeamRoomActive = (req, teamRoomId, active) => {
 
 export const addUserToConversationByTeamRoomId = (req, user, teamRoomId) => {
    return new Promise((resolve, reject) => {
+      let conversationId;
       getConversationsByTeamRoomId(req, teamRoomId)
          .then((conversations) => {
             if (conversations.length > 0) {
-               return table.createConversationParticipant(req, conversations[0].conversationId, user.userId, teamRoomId);
+               conversationId = conversations[0].conversationId;
+               return table.createConversationParticipant(req, conversationId, user.userId, teamRoomId);
             }
             return undefined;
          })
+         .then(() => createReadMessages(req, user.userId, conversationId))
          .then(() => resolve())
          .catch(err => reject(err));
    });
@@ -389,40 +396,3 @@ export const createMessage = (req, conversationId, userId, content, replyTo) => 
    });
 };
 
-
-// /**
-//  *
-//  * @param req
-//  * @param userId
-//  * @param conversationId
-//  * @param until
-//  * @param parentMessageId
-//  * @returns {Promise}
-//  */
-// export function readMessages(req, userId, conversationId, until, parentMessageId = undefined) {
-//    return new Promise((resolve, reject) => {
-//
-//    });
-// }
-//
-// export function getReadMessages(req, userId, conversationIds = undefined) {
-//
-// }
-//
-// export function unreadMessages(req, userId, conversationId, since, parentMessageId = undefined) {
-//
-// }
-
-// const readMessages = {
-//    readMessages: [
-//       {
-//          conversationId, // required
-//          until,
-//          parentMessages: {
-//             parentMessageId: {
-//                until
-//             }
-//          }
-//       }
-//    ]
-// }

@@ -1,4 +1,4 @@
-import config from '../../config/env/index';
+import config from '../../config/env';
 import * as util from './util';
 
 /**
@@ -11,11 +11,11 @@ import * as util from './util';
  * created
  * lastModified
  *
- * Index: conversationParticipantsUserIdConversationIdIdx
+ * Index: userIdConversationIdIdx
  * hash: userId
  * range: conversationId
  *
- * Index: conversationParticipantsTeamRoomIdUserIdIdx
+ * Index: teamRoomIdUserIdIdx
  * hash: teamRoomId
  * range: userId
  *
@@ -53,9 +53,9 @@ export const getConversationParticipantsByConversationId = (req, conversationId)
    return new Promise((resolve, reject) => {
       const params = {
          TableName: tableName(),
-         KeyConditionExpression: 'conversationId = :v1',
+         KeyConditionExpression: 'conversationId = :conversationId',
          ExpressionAttributeValues: {
-            ':v1': conversationId
+            ':conversationId': conversationId
          }
       };
       util.query(req, params)
@@ -69,7 +69,7 @@ export const getConversationParticipantsByUserId = (req, userId) => {
    return new Promise((resolve, reject) => {
       const params = {
          TableName: tableName(),
-         IndexName: 'conversationParticipantsUserIdConversationIdIdx',
+         IndexName: 'userIdConversationIdIdx',
          KeyConditionExpression: 'userId = :userId',
          ExpressionAttributeValues: {
             ':userId': userId
@@ -86,7 +86,7 @@ export const getConversationParticipantsByTeamRoomId = (req, teamRoomId) => {
    return new Promise((resolve, reject) => {
       const params = {
          TableName: tableName(),
-         IndexName: 'conversationParticipantsTeamRoomIdUserIdIdx',
+         IndexName: 'teamRoomIdUserIdIdx',
          KeyConditionExpression: 'teamRoomId = :teamRoomId',
          ExpressionAttributeValues: {
             ':teamRoomId': teamRoomId

@@ -1,4 +1,4 @@
-import config from '../../config/env/index';
+import config from '../../config/env';
 import * as util from './util';
 import { createUpdateExpression } from './expressionHelper';
 

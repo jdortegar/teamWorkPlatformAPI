@@ -1,6 +1,6 @@
 import AWS from 'aws-sdk';
 import _ from 'lodash';
-import config from '../config/env/index';
+import config from '../config/env';
 
 let _docClient;
 
