@@ -1,6 +1,6 @@
 import AWS from 'aws-sdk';
 import _ from 'lodash';
-import config from '../config/env/index';
+import config from '../config/env';
 
 let _docClient;
 
@@ -660,7 +660,6 @@ export function getTeamRoomsByTeamIdAndPrimary(req, teamId, primary) {
    return filteredScan(req, tableName, { teamRoomInfo: { teamId, primary } });
 }
 
-
 export function getConversationsByIds(req, conversationIds) {
    if (conversationIds === undefined) {
       return Promise.reject('conversationIds needs to be specified.');
@@ -679,20 +678,3 @@ export function getConversationsByTeamRoomId(req, teamRoomId) {
    return filteredScan(req, tableName, { conversationInfo: { teamRoomId } });
 }
 
-export function getConversationParticipantsByUserId(req, userId) {
-   if (userId === undefined) {
-      return Promise.reject('userId needs to be specified.');
-   }
-
-   const tableName = `${config.tablePrefix}conversationParticipants`;
-   return filteredScanValueIn(req, tableName, 'conversationParticipantInfo.userId', [userId]);
-}
-
-export function getConversationParticipantsByConversationId(req, conversationId) {
-   if (conversationId === undefined) {
-      return Promise.reject('conversationId needs to be specified.');
-   }
-
-   const tableName = `${config.tablePrefix}conversationParticipants`;
-   return filteredScanValueIn(req, tableName, 'conversationParticipantInfo.conversationId', [conversationId]);
-}

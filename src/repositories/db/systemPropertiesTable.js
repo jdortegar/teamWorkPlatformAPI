@@ -1,12 +1,12 @@
-import config from '../config/env';
+import config from '../../config/env';
 import * as util from './util';
 import { createUpdateExpression } from './expressionHelper';
 
 const tableName = () => {
-   return `${config.tablePrefix}awsMarketplaceCustomers`;
+   return `${config.tablePrefix}systemProperties`;
 };
 
-// Schema Version for awsMarketplaceCustomers table.
+// Schema Version for systemProperties table.
 const v = 1;
 
 const upgradeSchema = (req, dbObjects) => {
@@ -14,12 +14,12 @@ const upgradeSchema = (req, dbObjects) => {
    return Promise.resolve(dbObjects);
 };
 
-export const getCustomer = (req, awsCustomerId) => {
+export const getSystemProperty = (req, propertyName) => {
    return new Promise((resolve, reject) => {
       const params = {
          TableName: tableName(),
          Key: {
-            awsCustomerId
+            propertyName
          }
       };
       req.app.locals.docClient.get(params).promise()
@@ -41,46 +41,37 @@ export const getCustomer = (req, awsCustomerId) => {
    });
 };
 
-export const getAllCustomers = (req) => {
+export const getAllSystemProperties = (req) => {
    return new Promise((resolve, reject) => {
       const params = {
          TableName: tableName()
       };
 
-      util.scan(params)
+      util.scan(req, params)
          .then(originalResults => upgradeSchema(req, originalResults))
          .then(latestResults => resolve(latestResults))
          .catch(err => reject(err));
    });
 };
 
-export const createCustomer = (req, subscriberOrgId, awsCustomerId, awsProductCode, entitlements, expiration, maxUsers, currentUsers, maxGB, currentGB) => {
+export const createSystemProperty = (req, propertyName, propertyValue) => {
    const params = {
       TableName: tableName(),
       Item: {
-         awsCustomerId,
+         propertyName,
          v,
-         subscriberOrgId,
-         awsProductCode,
-         entitlements,
-         expiration,
-         maxUsers,
-         currentUsers,
-         maxGB,
-         currentGB,
-         created: req.now.format(),
-         lastModified: req.now.format()
+         propertyValue
       }
    };
 
    return req.app.locals.docClient.put(params).promise();
 };
 
-export const updateCustomer = (req, awsCustomerId, updateInfo) => {
+export const updateSystemProperty = (req, propertyName, updateInfo) => {
    const { UpdateExpression, ExpressionAttributeNames, ExpressionAttributeValues } = createUpdateExpression(updateInfo);
    const params = {
       TableName: tableName(),
-      Key: { awsCustomerId },
+      Key: { propertyName },
       UpdateExpression,
       ExpressionAttributeNames,
       ExpressionAttributeValues
