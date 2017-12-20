@@ -42,6 +42,25 @@ export const getTranscript = (req, res, next) => {
       });
 };
 
+export const getUnreadMessages = (req, res, next) => {
+   const userId = req.user._id;
+   const conversationId = req.query.conversationId;
+
+   conversationsSvc.getUnreadMessages(req, userId, conversationId)
+      .then((messages) => {
+         res.status(httpStatus.OK).json({ messages: publishByApiVersion(req, apiVersionedVisibility.publicMessages, messages) });
+      })
+      .catch((err) => {
+         if (err instanceof ConversationNotExistError) {
+            res.status(httpStatus.NOT_FOUND).end();
+         } else if (err instanceof NoPermissionsError) {
+            res.status(httpStatus.FORBIDDEN).end();
+         } else {
+            next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
+         }
+      });
+};
+
 export const createMessage = (req, res, next) => {
    const userId = req.user._id;
    const conversationId = req.params.conversationId;
@@ -55,6 +74,28 @@ export const createMessage = (req, res, next) => {
    }
 
    conversationsSvc.createMessage(req, conversationId, userId, content, replyTo)
+      .then((dbMessage) => {
+         res.status(httpStatus.CREATED).json({ message: publishByApiVersion(req, apiVersionedVisibility.publicMessage, dbMessage) });
+      })
+      .catch((err) => {
+         if (err instanceof ConversationNotExistError) {
+            res.status(httpStatus.NOT_FOUND).end();
+         } else if (err instanceof NoPermissionsError) {
+            res.status(httpStatus.FORBIDDEN).end();
+         } else if (err instanceof NotActiveError) {
+            res.status(httpStatus.METHOD_NOT_ALLOWED).end();
+         } else {
+            next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE));
+         }
+      });
+};
+
+export const readMessage = (req, res, next) => {
+   const userId = req.user._id;
+   const conversationId = req.params.conversationId;
+   const parentMessageId = req.query.parentMessageId;
+
+   conversationsSvc.readMessage(req, userId, conversationId, parentMessageId)
       .then((dbMessage) => {
          res.status(httpStatus.CREATED).json({ message: publishByApiVersion(req, apiVersionedVisibility.publicMessage, dbMessage) });
       })
