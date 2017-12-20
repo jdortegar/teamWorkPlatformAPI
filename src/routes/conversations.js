@@ -10,6 +10,12 @@ router.route('/getConversations')
 router.route('/getTranscript/:conversationId')
    .get(conversations.getTranscript);
 
+router.route('/getUnreadMessages')
+   .get(conversations.getUnreadMessages);
+
+router.route('/readMessages/:conversationId')
+   .post(conversations.readMessage);
+
 router.route('/:conversationId/createMessage')
    .post(validateByApiVersion(apiVersionedValidators.createMessage), conversations.createMessage);
 

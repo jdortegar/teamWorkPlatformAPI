@@ -304,6 +304,18 @@ export const getMessages = (req, conversationId, userId = undefined, { since, un
    });
 };
 
+export const getUnreadMessages = (req, userId, conversationId = undefined) => { // eslint-disable-line
+   return new Promise(() => {
+      // TODO
+   });
+};
+
+export const readMessage = (req, userId, conversationId, parentMessageId = undefined) => { // eslint-disable-line
+   return new Promise(() => {
+      // TODO
+   });
+};
+
 const byteCountOfContent = (content) => {
    let byteCount = 0;
    content.forEach((entry) => {
