@@ -4,17 +4,26 @@
 
 export const getRecursiveMessageCountAndLastTimestampByConversationId = (req, conversationId) => {
    return new Promise((resolve, reject) => {
-      const ret = {
-         conversationId
-      };
+      let ret;
       req.app.locals.redis.hmgetAsync(`${conversationId}#onversationId#messages`, 'messageCount', 'lastTimestamp')
          .then((values) => {
-            ret.messageCount = values[0];
-            ret.lastTimestamp = values[1];
+            if (values[0] === null) {
+               return undefined;
+            }
+
+            ret = {
+               conversationId,
+               messageCount: values[0],
+               lastTimestamp: values[1]
+            };
 
             return req.app.locals.redis.smembersAsync(`${conversationId}#conversationId#parentMessageIds`);
          })
          .then((parentMessageIds) => {
+            if (parentMessageIds === undefined) {
+               return undefined;
+            }
+
             const promises = [];
             parentMessageIds.forEach((parentMessageId) => {
                promises.push(req.app.locals.redis.hmgetAsync(`${conversationId}#onversationId#${parentMessageId}`, 'messageCount', 'lastTimestamp')

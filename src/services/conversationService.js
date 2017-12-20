@@ -3,6 +3,7 @@ import moment from 'moment';
 import uuid from 'uuid';
 import config from '../config/env';
 import * as table from '../repositories/db/conversationParticipantsTable';
+import * as messagesCache from '../repositories/cache/messagesCache'; // eslint-disable-line no-unused-vars
 import { conversationCreated, conversationUpdated, messageCreated } from './messaging';
 import * as teamRoomSvc from './teamRoomService';
 import { updateCachedByteCount } from './awsMarketplaceService';
