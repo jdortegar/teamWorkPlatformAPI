@@ -3,6 +3,7 @@ import moment from 'moment';
 import uuid from 'uuid';
 import config from '../config/env';
 import * as table from '../repositories/db/conversationParticipantsTable';
+import * as messagesCache from '../repositories/cache/messagesCache'; // eslint-disable-line no-unused-vars
 import { conversationCreated, conversationUpdated, messageCreated } from './messaging';
 import * as teamRoomSvc from './teamRoomService';
 import { updateCachedByteCount } from './awsMarketplaceService';
@@ -128,12 +129,16 @@ export const createConversationNoCheck = (req, teamRoomId, conversationInfo, use
             participant.userId = userId;
             conversation.participants = [participant];
             conversation.conversationId = actualConversationId;
-
-            return createReadMessages(req, userId, actualConversationId);
          })
          .then(() => {
             conversationCreated(req, conversation, conversationParticipantUserIds);
             resolve(conversation);
+         })
+         .then(() => {
+            return Promise.all([
+               createReadMessages(req, userId, actualConversationId),
+               messagesCache.setMessageCountAndLastTimestampAndByteCountIfNotExist(req, 0, req.now.format(), 0, actualConversationId)
+            ]);
          })
          .catch(err => reject(err));
    });
@@ -404,7 +409,9 @@ export const createMessage = (req, conversationId, userId, content, replyTo) => 
             resolve(message);
             messageCreated(req, message);
          })
+         .then(() => {
+            messagesCache.incrementMessageCountAndLastTimestampAndByteCount(req, message.created, byteCount, conversationId, message.replyTo);
+         })
          .catch(err => reject(err));
    });
 };
-

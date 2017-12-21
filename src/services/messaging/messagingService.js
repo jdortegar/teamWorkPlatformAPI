@@ -91,8 +91,8 @@ export class ChannelFactory {
 }
 
 export const PresenceStatuses = Object.freeze({
-   available: 'available',
-   away: 'away',
+   online: 'online',
+   offline: 'offline',
    from(value) { return (this[value]); }
 });
 
@@ -250,7 +250,7 @@ class MessagingService {
 
       const req = createPseudoRequest();
       joinCurrentChannels(req, socket, userId);
-      this._presenceChanged(req, userId, address, userAgent, location, PresenceStatuses.available);
+      this._presenceChanged(req, userId, address, userAgent, location, PresenceStatuses.online);
    }
 
    _disconnected(socket, reason) {
@@ -296,7 +296,7 @@ class MessagingService {
             const address = socket.client.conn.remoteAddress;
             const userAgent = socket.client.request.headers['user-agent'];
             const location = { lat, lon, alt, accuracy };
-            this._presenceChanged(req, userId, address, userAgent, location, PresenceStatuses.available);
+            this._presenceChanged(req, userId, address, userAgent, location, PresenceStatuses.online);
             // broadcast.
          }
       } else {
