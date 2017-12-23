@@ -2,8 +2,9 @@ import _ from 'lodash';
 import moment from 'moment';
 import uuid from 'uuid';
 import config from '../config/env';
-import * as table from '../repositories/db/conversationParticipantsTable';
-import * as messagesCache from '../repositories/cache/messagesCache'; // eslint-disable-line no-unused-vars
+import * as conversationsTable from '../repositories/db/conversationsTable';
+import * as conversationParticipantsTable from '../repositories/db/conversationParticipantsTable';
+import * as messagesCache from '../repositories/cache/messagesCache';
 import { conversationCreated, conversationUpdated, messageCreated } from './messaging';
 import * as teamRoomSvc from './teamRoomService';
 import { updateCachedByteCount } from './awsMarketplaceService';
@@ -13,13 +14,9 @@ import {
    getMessagesByConversationIdFiltered,
    getMessageById
 } from '../repositories/messagesRepo';
-import { createReadMessages } from '../repositories/db/readMessagesTable';
+import * as readMessagesTable from '../repositories/db/readMessagesTable';
 import {
-   getConversationsByIds,
-   getConversationsByTeamRoomId,
-   createItem,
    getUsersByIds,
-   updateItem
 } from '../repositories/util';
 
 const MESSAGE_PATH_SEPARATOR = '##';
@@ -62,7 +59,7 @@ const convertParticipantsToUsers = (req, conversationParticipantsUserIds) => {
 export const getConversations = (req, userId, teamRoomId = undefined) => {
    return new Promise((resolve, reject) => {
       let conversations;
-      table.getConversationParticipantsByUserId(req, userId)
+      conversationParticipantsTable.getConversationParticipantsByUserId(req, userId)
          .then((conversationParticipants) => {
             const conversationIds = conversationParticipants.reduce((prevValue, conversationParticipant) => {
                if (teamRoomId) {
@@ -75,14 +72,14 @@ export const getConversations = (req, userId, teamRoomId = undefined) => {
                return prevValue;
             }, []);
 
-            return getConversationsByIds(req, conversationIds);
+            return conversationsTable.getConversationsByConversationIds(req, conversationIds);
          })
          .then((retrievedConversations) => {
             conversations = retrievedConversations;
 
             const promises = [];
             conversations.forEach((conversation) => {
-               promises.push(table.getConversationParticipantsByConversationId(req, conversation.conversationId));
+               promises.push(conversationParticipantsTable.getConversationParticipantsByConversationId(req, conversation.conversationId));
             });
             return Promise.all(promises);
          })
@@ -111,18 +108,16 @@ export const getConversations = (req, userId, teamRoomId = undefined) => {
    });
 };
 
-export const createConversationNoCheck = (req, teamRoomId, conversationInfo, userId, conversationParticipantUserIds, conversationId = undefined) => {
+export const createConversationNoCheck = (req, subscriberOrgId, teamRoomId, userId, conversationParticipantUserIds, conversationId = undefined) => {
    const actualConversationId = conversationId || uuid.v4();
-   const conversation = {
-      teamRoomId,
-      active: true,
-      created: req.now.format(),
-      lastModified: req.now.format()
-   };
 
    return new Promise((resolve, reject) => {
-      createItem(req, -1, `${config.tablePrefix}conversations`, 'conversationId', actualConversationId, 'conversationInfo', conversation)
-         .then(() => table.createConversationParticipant(req, actualConversationId, userId, teamRoomId))
+      let conversation;
+      conversationsTable.createConversation(req, actualConversationId, subscriberOrgId, teamRoomId)
+         .then((retrievedConversation) => {
+            conversation = retrievedConversation;
+            return conversationParticipantsTable.createConversationParticipant(req, actualConversationId, userId, teamRoomId);
+         })
          .then(() => getUsersByIds(req, [userId]))
          .then((dbUsers) => {
             const { userInfo: participant } = dbUsers[0];
@@ -136,7 +131,7 @@ export const createConversationNoCheck = (req, teamRoomId, conversationInfo, use
          })
          .then(() => {
             return Promise.all([
-               createReadMessages(req, userId, actualConversationId),
+               readMessagesTable.createReadMessages(req, userId, actualConversationId),
                messagesCache.setMessageCountAndLastTimestampAndByteCountIfNotExist(req, 0, req.now.format(), 0, actualConversationId)
             ]);
          })
@@ -144,28 +139,13 @@ export const createConversationNoCheck = (req, teamRoomId, conversationInfo, use
    });
 };
 
-export const setConversationsOfTeamRoomActive = (req, teamRoomId, active) => {
+export const setConversationOfTeamRoomActive = (req, teamRoomId, active) => {
    return new Promise((resolve, reject) => {
-      const conversations = [];
-      getConversationsByTeamRoomId(req, teamRoomId)
-         .then((dbConversations) => {
-            const updateConversations = [];
-            dbConversations.forEach((dbConversation) => {
-               const { conversationInfo } = dbConversation;
-               conversationInfo.active = active;
-               updateConversations.push(
-                  updateItem(
-                     req,
-                     -1,
-                     `${config.tablePrefix}conversations`,
-                     'conversationId',
-                     dbConversation.conversationId,
-                     { conversationInfo: { active } }
-                  )
-               );
-               conversations.push(_.merge({ conversationId: dbConversation.conversationId }, conversationInfo));
-            });
-            return Promise.all(updateConversations);
+      let conversation;
+      conversationsTable.getConversationByTeamRoomId(req, teamRoomId)
+         .then((retrievedConversation) => {
+            conversation = retrievedConversation;
+            conversationsTable.updateConversationActive(req, conversation.conversationId, active);
          })
          .then(() => {
             // TODO: Reconfigure socket.io channels.
@@ -173,9 +153,7 @@ export const setConversationsOfTeamRoomActive = (req, teamRoomId, active) => {
          .then(() => {
             resolve();
 
-            conversations.forEach((conversation) => {
-               conversationUpdated(req, conversation);
-            });
+            conversationUpdated(req, conversation);
          })
          .catch(err => reject(err));
    });
@@ -184,15 +162,15 @@ export const setConversationsOfTeamRoomActive = (req, teamRoomId, active) => {
 export const addUserToConversationByTeamRoomId = (req, user, teamRoomId) => {
    return new Promise((resolve, reject) => {
       let conversationId;
-      getConversationsByTeamRoomId(req, teamRoomId)
-         .then((conversations) => {
-            if (conversations.length > 0) {
-               conversationId = conversations[0].conversationId;
-               return table.createConversationParticipant(req, conversationId, user.userId, teamRoomId);
+      conversationsTable.getConversationByTeamRoomId(req, teamRoomId)
+         .then((conversation) => {
+            if (conversation) {
+               conversationId = conversation.conversationId;
+               return conversationParticipantsTable.createConversationParticipant(req, conversationId, user.userId, teamRoomId);
             }
             return undefined;
          })
-         .then(() => createReadMessages(req, user.userId, conversationId))
+         .then(() => readMessagesTable.createReadMessages(req, user.userId, conversationId))
          .then(() => resolve())
          .catch(err => reject(err));
    });
@@ -281,15 +259,14 @@ const sortMessages = (messages) => {
  */
 export const getMessages = (req, conversationId, userId = undefined, { since, until, minLevel, maxLevel, maxCount }) => {
    return new Promise((resolve, reject) => {
-      getConversationsByIds(req, [conversationId])
-         .then((conversations) => {
-            if (conversations.length !== 1) {
+      conversationsTable.getConversationByConversationId(req, conversationId)
+         .then((conversation) => {
+            if (!conversation) {
                throw new ConversationNotExistError(conversationId);
             }
 
-            const conversation = conversations[0];
             if (userId) {
-               const teamRoomId = conversation.conversationInfo.teamRoomId;
+               const { teamRoomId } = conversation;
                return teamRoomSvc.getTeamRoomUsers(req, teamRoomId, userId);
             }
             return undefined;
@@ -309,14 +286,83 @@ export const getMessages = (req, conversationId, userId = undefined, { since, un
    });
 };
 
-export const getUnreadMessages = (req, userId, conversationId = undefined) => { // eslint-disable-line
-   return new Promise(() => {
-      // TODO
+export const getReadMessages = (req, userId, conversationId = undefined) => {
+   return new Promise((resolve, reject) => {
+      let checkPermissionsPromise;
+      if (conversationId) {
+         checkPermissionsPromise = conversationParticipantsTable.getConversationParticipantByConversationIdAndUserId(req, conversationId, userId);
+      } else {
+         checkPermissionsPromise = Promise.resolve();
+      }
+
+      let allReadMessages;
+      checkPermissionsPromise
+         .then((conversationParticipant) => {
+            if ((conversationId) && ((!conversationParticipant) || (conversationParticipant.userId !== userId))) {
+               throw new NoPermissionsError(conversationId);
+            }
+
+            let promise;
+            if (conversationId) {
+               promise = readMessagesTable.getReadMessagesByUserIdAndConversationId(req, userId, conversationId);
+            } else {
+               promise = readMessagesTable.getReadMessagesByUserId(req, userId);
+            }
+            return promise;
+         })
+         .then((retrievedAllReadMessages) => {
+            allReadMessages = (retrievedAllReadMessages instanceof Array) ? retrievedAllReadMessages : [retrievedAllReadMessages];
+            const transcriptStatsPromises = [];
+            allReadMessages.forEach((readMessages) => {
+               transcriptStatsPromises.push(messagesCache.getRecursiveMessageCountAndLastTimestampByConversationId(req, readMessages.conversationId));
+            });
+
+            return (transcriptStatsPromises.length > 0) ? Promise.all(transcriptStatsPromises) : undefined;
+         })
+         .then((transcriptStats) => {
+            const readMessagesResponse = { userId, conversationIds: {} };
+            let idx = 0;
+            allReadMessages.forEach((readMessages) => {
+               const transcriptStat = transcriptStats[idx];
+               const conversationStats = {
+                  messageCount: transcriptStat.messageCount,
+                  lastTimestamp: transcriptStat.lastTimestamp,
+                  lastReadMessageCount: readMessages.lastReadMessageCount,
+                  lastReadTimestamp: readMessages.lastReadMessageCount,
+                  byteCount: transcriptStat.byteCount
+               };
+
+               if (transcriptStat.parentMessages) {
+                  conversationStats.parentMessages = transcriptStat.parentMessages;
+                  Object.keys(conversationStats.parentMessages).forEach((parentMessageId) => {
+                     const messagesThread = conversationStats.parentMessages[parentMessageId];
+                     const userReadMessageThread = readMessages.parentMessageIds[parentMessageId];
+
+                     if (userReadMessageThread) {
+                        messagesThread.lastReadMessageCount = userReadMessageThread.lastReadMessageCount;
+                        messagesThread.lastReadTimestamp = userReadMessageThread.lastReadTimestamp;
+                     } else {
+                        messagesThread.lastReadMessageCount = 0;
+                        messagesThread.lastReadTimestamp = '0000-00-00T00:00:00Z';
+                     }
+
+                     conversationStats.parentMessages[parentMessageId] = messagesThread;
+                  });
+               }
+
+               readMessagesResponse.conversationIds[readMessages.conversationId] = conversationStats;
+
+               idx += 1;
+            });
+
+            resolve(readMessagesResponse);
+         })
+         .catch(err => reject(err));
    });
 };
 
-export const readMessage = (req, userId, conversationId, parentMessageId = undefined) => { // eslint-disable-line
-   return new Promise(() => {
+export const readMessage = (req, userId, conversationId, parentMessageId = undefined) => { // eslint-disable-line no-unused-vars
+   return new Promise((resolve, reject) => { // eslint-disable-line no-unused-vars
       // TODO
    });
 };
@@ -355,6 +401,7 @@ export const createMessage = (req, conversationId, userId, content, replyTo) => 
    return new Promise((resolve, reject) => {
       const messageId = uuid.v4();
 
+      let conversation;
       const byteCount = byteCountOfContent(content);
       const message = {
          conversationId,
@@ -365,17 +412,15 @@ export const createMessage = (req, conversationId, userId, content, replyTo) => 
          created: req.now.format(),
          lastModified: req.now.format()
       };
-      Promise.all([getConversationsByIds(req, [conversationId]), table.getConversationParticipantsByConversationId(req, conversationId)])
+      Promise.all([
+         conversationsTable.incrementConversationMessageCount(req, conversationId),
+         conversationParticipantsTable.getConversationParticipantsByConversationId(req, conversationId)
+      ])
          .then((promiseResults) => {
-            const conversations = promiseResults[0];
+            conversation = promiseResults[0];
             const participants = promiseResults[1];
 
-            if ((conversations.length === 0) || (participants.length === 0)) {
-               throw new ConversationNotExistError(conversationId);
-            }
-            const conversation = conversations[0];
-
-            if (('active' in conversation.conversationInfo) && (conversation.conversationInfo.active === false)) {
+            if (conversation.active === false) {
                throw new NotActiveError(conversationId);
             }
 
@@ -400,6 +445,7 @@ export const createMessage = (req, conversationId, userId, content, replyTo) => 
                message.path = messageId;
             }
 
+            message.messageCount = conversation.messageCount;
             return createMessageInDb(req, -1, messageId, message);
          })
          .then(() => getSubscriberOrgIdByConversationId(req, conversationId))

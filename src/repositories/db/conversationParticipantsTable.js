@@ -65,6 +65,23 @@ export const getConversationParticipantsByConversationId = (req, conversationId)
    });
 };
 
+export const getConversationParticipantByConversationIdAndUserId = (req, conversationId, userId) => {
+   return new Promise((resolve, reject) => {
+      const params = {
+         TableName: tableName(),
+         KeyConditionExpression: 'conversationId = :conversationId and userId = :userId',
+         ExpressionAttributeValues: {
+            ':conversationId': conversationId,
+            ':userId': userId
+         }
+      };
+      util.query(req, params)
+         .then(originalResults => upgradeSchema(req, originalResults))
+         .then(latestResults => resolve((latestResults && latestResults.length > 0) ? latestResults[0] : undefined))
+         .catch(err => reject(err));
+   });
+};
+
 export const getConversationParticipantsByUserId = (req, userId) => {
    return new Promise((resolve, reject) => {
       const params = {

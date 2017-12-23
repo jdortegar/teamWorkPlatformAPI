@@ -1,5 +1,5 @@
 import config from '../../config/env';
-import * as util from '../../services/util';
+import * as util from './util';
 
 /**
  * hash: userId
@@ -91,7 +91,7 @@ export const getReadMessagesByUserIdAndConversationId = (req, userId, conversati
       };
       util.query(req, params)
          .then(originalResults => upgradeSchema(req, originalResults))
-         .then(latestResults => resolve((latestResults.length > 0) ? [latestResults] : []))
+         .then(latestResults => resolve((latestResults.length > 0) ? latestResults[0] : []))
          .catch(err => reject(err));
    });
 };

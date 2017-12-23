@@ -84,7 +84,7 @@ export const getUserTeamRooms = (req, userId, { teamId, subscriberOrgId } = {}) 
    });
 };
 
-export const createTeamRoomNoCheck = (req, teamId, teamRoomInfo, teamMemberId, user, teamRoomAdminUserIds, teamRoomId = undefined) => {
+export const createTeamRoomNoCheck = (req, subscriberOrgId, teamId, teamRoomInfo, teamMemberId, user, teamRoomAdminUserIds, teamRoomId = undefined) => {
    const actualTeamRoomId = teamRoomId || uuid.v4();
    const icon = teamRoomInfo.icon || null;
    const preferences = teamRoomInfo.preferences || { private: {} };
@@ -126,8 +126,7 @@ export const createTeamRoomNoCheck = (req, teamId, teamRoomInfo, teamMemberId, u
             teamRoomCreated(req, teamRoom, teamRoomAdminUserIds);
             teamRoomMemberAdded(req, actualTeamRoomId, user, role, teamRoomMemberId);
 
-            const conversation = {};
-            return conversationSvc.createConversationNoCheck(req, actualTeamRoomId, conversation, user.userId, teamRoomAdminUserIds);
+            return conversationSvc.createConversationNoCheck(req, subscriberOrgId, actualTeamRoomId, user.userId, teamRoomAdminUserIds);
          })
          .then(() => resolve(teamRoom))
          .catch(err => reject(err));
@@ -136,6 +135,7 @@ export const createTeamRoomNoCheck = (req, teamId, teamRoomInfo, teamMemberId, u
 
 export const createTeamRoom = (req, teamId, teamRoomInfo, userId, teamRoomId = undefined) => {
    return new Promise((resolve, reject) => {
+      let subscriberOrgId;
       let teamMemberId;
       let teamAdminUserIds;
 
@@ -148,6 +148,7 @@ export const createTeamRoom = (req, teamId, teamRoomInfo, userId, teamRoomId = u
                throw new TeamNotExistError(teamId);
             }
             const team = teams[0];
+            subscriberOrgId = team.subscriberOrgId;
             if ((('subscriberOrgEnabled' in team) && (team.subscriberOrgEnabled === false)) || (team.active === false)) {
                throw new NotActiveError(teamId);
             }
@@ -173,7 +174,7 @@ export const createTeamRoom = (req, teamId, teamRoomInfo, userId, teamRoomId = u
                throw new TeamRoomExistsError(teamRoomInfo.name);
             }
 
-            return this.createTeamRoomNoCheck(req, teamId, teamRoomInfo, teamMemberId, user, teamAdminUserIds, teamRoomId);
+            return createTeamRoomNoCheck(req, subscriberOrgId, teamId, teamRoomInfo, teamMemberId, user, teamAdminUserIds, teamRoomId);
          })
          .then(teamRoom => resolve(teamRoom))
          .catch(err => reject(err));
@@ -219,7 +220,7 @@ export const updateTeamRoom = (req, teamRoomId, updateInfo, userId) => {
 
             if (('active' in updateInfo) && (previousActive !== updateInfo.active)) {
                // Enable/disable children. Um, no children for this.
-               conversationSvc.setConversationsOfTeamRoomActive(req, teamRoomId, updateInfo.active);
+               conversationSvc.setConversationOfTeamRoomActive(req, teamRoomId, updateInfo.active);
             }
          })
          .catch((err) => {
@@ -249,7 +250,7 @@ export const setTeamRoomsOfTeamActive = (req, teamId, active) => {
          .then(() => {
             const updateConversations = [];
             teamRooms.forEach((teamRoom) => {
-               updateConversations.push(conversationSvc.setConversationsOfTeamRoomActive(req, teamRoom.teamRoomId, active));
+               updateConversations.push(conversationSvc.setConversationOfTeamRoomActive(req, teamRoom.teamRoomId, active));
             });
             return Promise.all(updateConversations);
          })

@@ -10,8 +10,8 @@ router.route('/getConversations')
 router.route('/getTranscript/:conversationId')
    .get(conversations.getTranscript);
 
-router.route('/getUnreadMessages')
-   .get(conversations.getUnreadMessages);
+router.route('/getReadMessages')
+   .get(conversations.getReadMessages);
 
 router.route('/readMessages/:conversationId')
    .post(conversations.readMessage);

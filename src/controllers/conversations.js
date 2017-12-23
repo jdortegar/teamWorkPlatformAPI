@@ -42,18 +42,16 @@ export const getTranscript = (req, res, next) => {
       });
 };
 
-export const getUnreadMessages = (req, res, next) => {
+export const getReadMessages = (req, res, next) => {
    const userId = req.user._id;
    const conversationId = req.query.conversationId;
 
-   conversationsSvc.getUnreadMessages(req, userId, conversationId)
-      .then((messages) => {
-         res.status(httpStatus.OK).json({ messages: publishByApiVersion(req, apiVersionedVisibility.publicMessages, messages) });
+   conversationsSvc.getReadMessages(req, userId, conversationId)
+      .then((readMessages) => {
+         res.status(httpStatus.OK).json({ readMessages: publishByApiVersion(req, apiVersionedVisibility.publicReadMessages, readMessages) });
       })
       .catch((err) => {
-         if (err instanceof ConversationNotExistError) {
-            res.status(httpStatus.NOT_FOUND).end();
-         } else if (err instanceof NoPermissionsError) {
+         if (err instanceof NoPermissionsError) {
             res.status(httpStatus.FORBIDDEN).end();
          } else {
             next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
