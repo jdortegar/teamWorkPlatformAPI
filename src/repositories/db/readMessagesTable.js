@@ -30,7 +30,7 @@ export const createReadMessages = (req, userId, conversationId) => {
             conversationId,
             v,
             lastReadMessageCount: 0,
-            lastReadTimestamp: req.now.format(),
+            lastReadTimestamp: '0000-00-00T00:00:00Z',
             parentMessageIds: {}
          }
       };
@@ -44,24 +44,20 @@ export const createReadMessages = (req, userId, conversationId) => {
 export const updateReadMessages = (req, userId, conversationId, lastReadTimestamp, lastReadMessageCount, parentMessageId = undefined) => {
    const params = {
       TableName: tableName(),
-      Key: { userId },
-      ConditionExpression: 'conversationId = :conversationId'
+      Key: { userId, conversationId },
+      ExpressionAttributeValues: {}
    };
+
    if (parentMessageId) {
       params.UpdateExpression = 'set parentMessageIds.#parentMessageId = :parentMessageIdValues';
       params.ExpressionAttributeNames = {
          '#parentMessageId': parentMessageId
       };
-      params.ExpressionAttributeValues = {
-         ':parentMessageIdValues': { lastReadTimestamp, lastReadMessageCount }
-      };
+      params.ExpressionAttributeValues[':parentMessageIdValues'] = { lastReadTimestamp, lastReadMessageCount };
    } else {
-      params.UpdateExpression = 'set lastReadTimestamp = #lastReadTimestamp, lastReadMessageCount = #lastReadMessageCount';
-      params.ExpressionAttributeValues = {
-         ':conversationId': conversationId,
-         ':lastReadMessageCount': lastReadMessageCount,
-         ':lastReadTimestamp': lastReadTimestamp
-      };
+      params.UpdateExpression = 'set lastReadTimestamp = :lastReadTimestamp, lastReadMessageCount = :lastReadMessageCount';
+      params.ExpressionAttributeValues[':lastReadTimestamp'] = lastReadTimestamp;
+      params.ExpressionAttributeValues[':lastReadMessageCount'] = lastReadMessageCount;
    }
 
    return req.app.locals.docClient.update(params).promise();

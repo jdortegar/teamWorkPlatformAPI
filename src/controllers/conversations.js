@@ -90,20 +90,16 @@ export const createMessage = (req, res, next) => {
 
 export const readMessage = (req, res, next) => {
    const userId = req.user._id;
-   const conversationId = req.params.conversationId;
-   const parentMessageId = req.query.parentMessageId;
+   const { conversationId } = req.params;
+   const { messageId } = req.body;
 
-   conversationsSvc.readMessage(req, userId, conversationId, parentMessageId)
-      .then((dbMessage) => {
-         res.status(httpStatus.CREATED).json({ message: publishByApiVersion(req, apiVersionedVisibility.publicMessage, dbMessage) });
+   conversationsSvc.readMessage(req, userId, conversationId, messageId)
+      .then(() => {
+         res.status(httpStatus.NO_CONTENT).end();
       })
       .catch((err) => {
          if (err instanceof ConversationNotExistError) {
             res.status(httpStatus.NOT_FOUND).end();
-         } else if (err instanceof NoPermissionsError) {
-            res.status(httpStatus.FORBIDDEN).end();
-         } else if (err instanceof NotActiveError) {
-            res.status(httpStatus.METHOD_NOT_ALLOWED).end();
          } else {
             next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE));
          }

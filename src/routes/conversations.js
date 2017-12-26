@@ -13,8 +13,8 @@ router.route('/getTranscript/:conversationId')
 router.route('/getReadMessages')
    .get(conversations.getReadMessages);
 
-router.route('/readMessages/:conversationId')
-   .post(conversations.readMessage);
+router.route('/:conversationId/readMessage')
+   .post(validateByApiVersion(apiVersionedValidators.readMessage), conversations.readMessage);
 
 router.route('/:conversationId/createMessage')
    .post(validateByApiVersion(apiVersionedValidators.createMessage), conversations.createMessage);

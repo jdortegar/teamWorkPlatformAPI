@@ -359,7 +359,7 @@ export const getReadMessages = (req, userId, conversationId = undefined) => {
                   messageCount: transcriptStat.messageCount,
                   lastTimestamp: transcriptStat.lastTimestamp,
                   lastReadMessageCount: readMessages.lastReadMessageCount,
-                  lastReadTimestamp: readMessages.lastReadMessageCount,
+                  lastReadTimestamp: readMessages.lastReadTimestamp,
                   byteCount: transcriptStat.byteCount
                };
 
@@ -392,9 +392,19 @@ export const getReadMessages = (req, userId, conversationId = undefined) => {
    });
 };
 
-export const readMessage = (req, userId, conversationId, parentMessageId = undefined) => { // eslint-disable-line no-unused-vars
-   return new Promise((resolve, reject) => { // eslint-disable-line no-unused-vars
-      // TODO
+export const readMessage = (req, userId, conversationId, messageId = undefined) => {
+   return new Promise((resolve, reject) => {
+      messagesTable.getMessageByConversationIdAndMessageId(req, conversationId, messageId)
+         .then((message) => {
+            if (!message) {
+               throw new ConversationNotExistError(`conversationId=${conversationId}, messageId=${messageId}`);
+            }
+
+            const { replyTo: parentMessageId, messageNumber: lastReadMessageCount, created: lastReadTimestamp } = message;
+            return readMessagesTable.updateReadMessages(req, userId, conversationId, lastReadTimestamp, lastReadMessageCount, parentMessageId);
+         })
+         .then(() => resolve())
+         .catch(err => reject(err));
    });
 };
 
