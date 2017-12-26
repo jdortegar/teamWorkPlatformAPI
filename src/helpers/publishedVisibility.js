@@ -230,6 +230,16 @@ const publicMessages = (dbMessages) => {
    });
 };
 
+const publicReadMessages = (readMessages) => {
+   const ret = _.cloneDeep(readMessages);
+   if (ret.conversationIds) {
+      Object.keys(ret.conversationIds).forEach((conversationId) => {
+         delete ret.conversationIds[conversationId].byteCount;
+      });
+   }
+   return ret;
+};
+
 const publicIntegration = (integration) => {
    const clone = _.cloneDeep(integration);
    if (clone.box) {
@@ -308,6 +318,9 @@ export const apiVersionedVisibility = {
    },
    publicMessages: {
       latest: publicMessages
+   },
+   publicReadMessages: {
+      latest: publicReadMessages
    },
    publicIntegration: {
       latest: publicIntegration

@@ -167,7 +167,12 @@ const validationSchemas = {
          ).required(),
          replyTo: Joi.string().min(1).allow(null)
       }
-   }
+   },
+   readMessage: {
+      body: {
+         messageId: Joi.string().min(1).required()
+      }
+   },
 };
 
 
@@ -236,6 +241,10 @@ export const apiVersionedValidators = {
    createMessage: {
       0: validate(validationSchemas.createMessage),
       1: validate(validationSchemas.createMessage_v1)
+   },
+   readMessage: {
+      0: validate(validationSchemas.readMessage),
+      1: validate(validationSchemas.readMessage)
    }
 };
 

@@ -2,7 +2,7 @@ import AWS from 'aws-sdk';
 import config, { applyPropertiesFromDbToConfig, applyEnvironmentToConfig } from './config/env';
 import app from './config/express';
 import logger, { createPseudoRequest } from './logger';
-import { getAllSystemProperties } from './repositories/systemPropertiesRepo';
+import { getAllSystemProperties } from './repositories/db/systemPropertiesTable';
 import messagingSvc from './services/messaging/messagingService';
 import { listenForInternalEvents, stopListeningForInternalEvents } from './services/messaging/internalQueue';
 import { connectToRedis, disconnectFromRedis } from './redis-connection';
@@ -149,7 +149,7 @@ const registerGracefulShutdown = () => {
 const start = () => {
    const bootup = applyEnvironmentToConfig() // AWS and DB connection properties used.
       .then(() => setupDynamoDb())
-      .then(() => getAllSystemProperties())
+      .then(() => getAllSystemProperties(createPseudoRequest()))
       .then(propertiesFromDb => applyPropertiesFromDbToConfig(propertiesFromDb))
       .then(() => applyEnvironmentToConfig()) // Reapply, since environment takes precedence.
       .then(() => startupInfo())

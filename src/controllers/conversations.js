@@ -71,3 +71,37 @@ export const createMessage = (req, res, next) => {
       });
 };
 
+export const getReadMessages = (req, res, next) => {
+   const userId = req.user._id;
+   const conversationId = req.query.conversationId;
+
+   conversationsSvc.getReadMessages(req, userId, conversationId)
+      .then((readMessages) => {
+         res.status(httpStatus.OK).json({ readMessages: publishByApiVersion(req, apiVersionedVisibility.publicReadMessages, readMessages) });
+      })
+      .catch((err) => {
+         if (err instanceof NoPermissionsError) {
+            res.status(httpStatus.FORBIDDEN).end();
+         } else {
+            next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
+         }
+      });
+};
+
+export const readMessage = (req, res, next) => {
+   const userId = req.user._id;
+   const { conversationId } = req.params;
+   const { messageId } = req.body;
+
+   conversationsSvc.readMessage(req, userId, conversationId, messageId)
+      .then(() => {
+         res.status(httpStatus.NO_CONTENT).end();
+      })
+      .catch((err) => {
+         if (err instanceof ConversationNotExistError) {
+            res.status(httpStatus.NOT_FOUND).end();
+         } else {
+            next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE));
+         }
+      });
+};

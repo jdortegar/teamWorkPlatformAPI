@@ -121,7 +121,7 @@ export const createTeamNoCheck = (req, subscriberOrgId, teamInfo, subscriberUser
                active: true,
                primary: true,
             };
-            return teamRoomSvc.createTeamRoomNoCheck(req, actualTeamId, teamRoom, teamMemberId, user, [user.userId]);
+            return teamRoomSvc.createTeamRoomNoCheck(req, subscriberOrgId, actualTeamId, teamRoom, teamMemberId, user, [user.userId]);
          })
          .then(() => resolve(team))
          .catch(err => reject(err));

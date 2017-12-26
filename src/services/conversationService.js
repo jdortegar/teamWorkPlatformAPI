@@ -2,23 +2,17 @@ import _ from 'lodash';
 import moment from 'moment';
 import uuid from 'uuid';
 import config from '../config/env';
-import { conversationCreated, conversationUpdated, messageCreated } from './messaging';
 import * as teamRoomSvc from './teamRoomService';
+import * as conversationsTable from '../repositories/db/conversationsTable';
+import * as conversationParticipantsTable from '../repositories/db/conversationParticipantsTable';
+import * as messagesTable from '../repositories/db/messagesTable';
+import * as readMessagesTable from '../repositories/db/readMessagesTable';
+import * as messagesCache from '../repositories/cache/messagesCache';
+import { conversationCreated, conversationUpdated, messageCreated, messageRead } from './messaging';
 import { updateCachedByteCount } from './awsMarketplaceService';
 import { ConversationNotExistError, NoPermissionsError, NotActiveError } from './errors';
 import {
-   createMessageInDb,
-   getMessagesByConversationIdFiltered,
-   getMessageById
-} from '../repositories/messagesRepo';
-import {
-   createItem,
-   getConversationParticipantsByConversationId,
-   getConversationParticipantsByUserId,
-   getConversationsByIds,
-   getConversationsByTeamRoomId,
    getUsersByIds,
-   updateItem
 } from '../repositories/util';
 
 const MESSAGE_PATH_SEPARATOR = '##';
@@ -49,6 +43,40 @@ const convertParticipantsToUsers = (req, conversationParticipantsUserIds) => {
    });
 };
 
+const ensureConversationStatsExistInCache = (req, conversations) => {
+   conversations.forEach((conversation) => {
+      const { conversationId } = conversation;
+      messagesCache.isStatsForConversationIdExist(req, conversationId)
+         .then((exists) => {
+            if (!exists) {
+               const { messageCount, byteCount, lastCreated } = conversation;
+               if (messageCount) {
+                  return messagesCache.setMessageCountAndLastTimestampAndByteCountIfNotExist(req, messageCount, lastCreated, byteCount, conversationId);
+               }
+            }
+            return undefined;
+         })
+         .then((isNew) => {
+            if (isNew) {
+               return messagesTable.getParentMessagesByConversationId(req, conversationId);
+            }
+            return undefined;
+         })
+         .then((parentMessages) => {
+            if (parentMessages) {
+               const promises = [];
+               parentMessages.forEach((parentMessage) => {
+                  promises.push(messagesCache.setMessageCountAndLastTimestampAndByteCountIfNotExist(
+                     req, parentMessage.messageCount, parentMessage.lastCreated, undefined, conversationId, parentMessage.messageId));
+               });
+               return promises;
+            }
+            return undefined;
+         })
+         .catch(err => req.logger.error(`Error ensureConversationStatsExistInCache for conversationId=${conversation.conversationId}:  ${err}`));
+   });
+};
+
 /**
  * Retrieve all conversations that the specified user is privy to.
  * If the optional 'teamRoomId' is specified, the results are narrowed down to conversations of the team room.
@@ -61,29 +89,37 @@ const convertParticipantsToUsers = (req, conversationParticipantsUserIds) => {
 export const getConversations = (req, userId, teamRoomId = undefined) => {
    return new Promise((resolve, reject) => {
       let conversations;
-      getConversationParticipantsByUserId(req, userId)
+      conversationParticipantsTable.getConversationParticipantsByUserId(req, userId)
          .then((conversationParticipants) => {
-            const conversationIds = conversationParticipants.map(conversationParticipant => conversationParticipant.conversationParticipantInfo.conversationId);
-            const promises = [getConversationsByIds(req, conversationIds)];
-            conversationIds.forEach((conversationId) => {
-               promises.push(getConversationParticipantsByConversationId(req, conversationId));
+            const conversationIds = conversationParticipants.reduce((prevValue, conversationParticipant) => {
+               if (teamRoomId) {
+                  if (conversationParticipant.teamRoomId === teamRoomId) {
+                     prevValue.push(conversationParticipant.conversationId);
+                  }
+               } else {
+                  prevValue.push(conversationParticipant.conversationId);
+               }
+               return prevValue;
+            }, []);
+
+            return conversationsTable.getConversationsByConversationIds(req, conversationIds);
+         })
+         .then((retrievedConversations) => {
+            conversations = retrievedConversations;
+
+            const promises = [];
+            conversations.forEach((conversation) => {
+               promises.push(conversationParticipantsTable.getConversationParticipantsByConversationId(req, conversation.conversationId));
             });
             return Promise.all(promises);
          })
-         .then((conversationsAndParticipants) => {
+         .then((participantsPerConversations) => {
             const conversationParticipantsUserIds = [];
-
-            let participantsIdx = 0;
-            conversations = conversationsAndParticipants[0].filter((conversation) => {
-               participantsIdx += 1;
-               if ((teamRoomId === undefined) || (conversation.conversationInfo.teamRoomId === teamRoomId)) {
-                  const participants = conversationsAndParticipants[participantsIdx].map((participant) => {
-                     return participant.conversationParticipantInfo.userId;
-                  });
-                  conversationParticipantsUserIds.push(participants);
-                  return true;
-               }
-               return false;
+            participantsPerConversations.forEach((participantsPerConversation) => {
+               const participantUserIds = participantsPerConversation.map((participant) => {
+                  return participant.userId;
+               });
+               conversationParticipantsUserIds.push(participantUserIds);
             });
 
             return convertParticipantsToUsers(req, conversationParticipantsUserIds);
@@ -98,38 +134,20 @@ export const getConversations = (req, userId, teamRoomId = undefined) => {
             });
          })
          .then(() => resolve(conversations))
+         .then(() => ensureConversationStatsExistInCache(req, conversations))
          .catch(err => reject(err));
    });
 };
 
-export const createConversationNoCheck = (req, teamRoomId, conversationInfo, userId, conversationParticipantUserIds, conversationId = undefined) => {
+export const createConversationNoCheck = (req, subscriberOrgId, teamRoomId, userId, conversationParticipantUserIds, conversationId = undefined) => {
    const actualConversationId = conversationId || uuid.v4();
-   const conversation = {
-      teamRoomId,
-      active: true,
-      created: req.now.format(),
-      lastModified: req.now.format()
-   };
-   const conversationParticipantId = uuid.v4();
 
    return new Promise((resolve, reject) => {
-      createItem(req, -1, `${config.tablePrefix}conversations`, 'conversationId', actualConversationId, 'conversationInfo', conversation)
-         .then(() => {
-            const conversationParticipant = {
-               conversationId: actualConversationId,
-               userId,
-               created: req.now.format(),
-               lastModified: req.now.format()
-            };
-            return createItem(
-               req,
-               -1,
-               `${config.tablePrefix}conversationParticipants`,
-               'conversationParticipantId',
-               conversationParticipantId,
-               'conversationParticipantInfo',
-               conversationParticipant,
-            );
+      let conversation;
+      conversationsTable.createConversation(req, actualConversationId, subscriberOrgId, teamRoomId)
+         .then((retrievedConversation) => {
+            conversation = retrievedConversation;
+            return conversationParticipantsTable.createConversationParticipant(req, actualConversationId, userId, teamRoomId);
          })
          .then(() => getUsersByIds(req, [userId]))
          .then((dbUsers) => {
@@ -137,36 +155,28 @@ export const createConversationNoCheck = (req, teamRoomId, conversationInfo, use
             participant.userId = userId;
             conversation.participants = [participant];
             conversation.conversationId = actualConversationId;
+         })
+         .then(() => {
             conversationCreated(req, conversation, conversationParticipantUserIds);
-
             resolve(conversation);
+         })
+         .then(() => {
+            return Promise.all([
+               readMessagesTable.createReadMessages(req, userId, actualConversationId),
+               messagesCache.setMessageCountAndLastTimestampAndByteCountIfNotExist(req, 0, req.now.format(), 0, actualConversationId)
+            ]);
          })
          .catch(err => reject(err));
    });
 };
 
-export const setConversationsOfTeamRoomActive = (req, teamRoomId, active) => {
+export const setConversationOfTeamRoomActive = (req, teamRoomId, active) => {
    return new Promise((resolve, reject) => {
-      const conversations = [];
-      getConversationsByTeamRoomId(req, teamRoomId)
-         .then((dbConversations) => {
-            const updateConversations = [];
-            dbConversations.forEach((dbConversation) => {
-               const { conversationInfo } = dbConversation;
-               conversationInfo.active = active;
-               updateConversations.push(
-                  updateItem(
-                     req,
-                     -1,
-                     `${config.tablePrefix}conversations`,
-                     'conversationId',
-                     dbConversation.conversationId,
-                     { conversationInfo: { active } }
-                  )
-               );
-               conversations.push(_.merge({ conversationId: dbConversation.conversationId }, conversationInfo));
-            });
-            return Promise.all(updateConversations);
+      let conversation;
+      conversationsTable.getConversationByTeamRoomId(req, teamRoomId)
+         .then((retrievedConversation) => {
+            conversation = retrievedConversation;
+            conversationsTable.updateConversationActive(req, conversation.conversationId, active);
          })
          .then(() => {
             // TODO: Reconfigure socket.io channels.
@@ -174,83 +184,33 @@ export const setConversationsOfTeamRoomActive = (req, teamRoomId, active) => {
          .then(() => {
             resolve();
 
-            conversations.forEach((conversation) => {
-               conversationUpdated(req, conversation);
-            });
+            conversationUpdated(req, conversation);
          })
          .catch(err => reject(err));
    });
 };
 
-export const addUserToConversation = (req, user, conversationId) => {
-   const conversationParticipantId = uuid.v4();
-   const conversationParticipant = {
-      conversationId,
-      userId: user.userId,
-      created: req.now.format(),
-      lastModified: req.now.format()
-   };
-
-   return createItem(
-      req,
-      -1,
-      `${config.tablePrefix}conversationParticipants`,
-      'conversationParticipantId',
-      conversationParticipantId,
-      'conversationParticipantInfo',
-      conversationParticipant
-   );
-};
-
 export const addUserToConversationByTeamRoomId = (req, user, teamRoomId) => {
    return new Promise((resolve, reject) => {
-      getConversationsByTeamRoomId(req, teamRoomId)
-         .then((conversations) => {
-            if (conversations.length > 0) {
-               return addUserToConversation(req, user, conversations[0].conversationId);
+      let conversationId;
+      conversationsTable.getConversationByTeamRoomId(req, teamRoomId)
+         .then((conversation) => {
+            if (conversation) {
+               conversationId = conversation.conversationId;
+               return conversationParticipantsTable.createConversationParticipant(req, conversationId, user.userId, teamRoomId);
             }
             return undefined;
          })
+         .then(() => readMessagesTable.createReadMessages(req, user.userId, conversationId))
          .then(() => resolve())
          .catch(err => reject(err));
    });
 };
 
-// TODO:
-// export const getPresenceOfParticipants = (req, conversationId) => {
-//    return new Promise((resolve, reject) => {
-//       getConversationsByIds(req, [conversationId])
-//          .then((conversations) => {
-//             if (conversations.length !== 1) {
-//                throw new ConversationNotExistError(conversationId);
-//             }
-//
-//             const conversation = conversations[0];
-//             if (userId) {
-//                const teamRoomId = conversation.conversationInfo.teamRoomId;
-//                return teamRoomSvc.getTeamRoomUsers(req, teamRoomId, userId);
-//             }
-//             return undefined;
-//          })
-//          .then(() => {
-//             return getMessagesByConversationIdFiltered(req, conversationId, { since, until, minLevel, maxLevel });
-//          })
-//          .then(messages => sortMessages(messages))
-//          .then((messages) => {
-//             if ((typeof maxCount !== 'undefined') && (messages.length > maxCount)) {
-//                return messages.slice(messages.length - maxCount, messages.length);
-//             }
-//             return messages;
-//          })
-//          .then(messages => resolve(messages))
-//          .catch(err => reject(err));
-//    });
-// };
-
 const sortMessagesArray = (messages) => {
    let sortedMessages = messages.sort((msg1, msg2) => {
-      const epoch1 = moment(msg1.messageInfo.created).unix();
-      const epoch2 = moment(msg2.messageInfo.created).unix();
+      const epoch1 = moment(msg1.created).unix();
+      const epoch2 = moment(msg2.created).unix();
       if (epoch1 === epoch2) {
          return 0;
       } else if (epoch1 < epoch2) {
@@ -277,7 +237,7 @@ const flattenMessagesArray = (messages) => {
    messages.forEach((message) => {
       flattenedMessages.push(message);
       if (message.thread) {
-         flattenedMessages = [...flattenedMessages, flattenMessagesArray(message.thread)];
+         flattenedMessages = [...flattenedMessages, ...flattenMessagesArray(message.thread)];
          delete message.thread; // eslint-disable-line no-param-reassign
       }
    });
@@ -330,21 +290,20 @@ const sortMessages = (messages) => {
  */
 export const getMessages = (req, conversationId, userId = undefined, { since, until, minLevel, maxLevel, maxCount }) => {
    return new Promise((resolve, reject) => {
-      getConversationsByIds(req, [conversationId])
-         .then((conversations) => {
-            if (conversations.length !== 1) {
+      conversationsTable.getConversationByConversationId(req, conversationId)
+         .then((conversation) => {
+            if (!conversation) {
                throw new ConversationNotExistError(conversationId);
             }
 
-            const conversation = conversations[0];
             if (userId) {
-               const teamRoomId = conversation.conversationInfo.teamRoomId;
+               const { teamRoomId } = conversation;
                return teamRoomSvc.getTeamRoomUsers(req, teamRoomId, userId);
             }
             return undefined;
          })
          .then(() => {
-            return getMessagesByConversationIdFiltered(req, conversationId, { since, until, minLevel, maxLevel });
+            return messagesTable.getMessagesByConversationIdFiltered(req, conversationId, { since, until, minLevel, maxLevel });
          })
          .then(messages => sortMessages(messages))
          .then((messages) => {
@@ -354,6 +313,135 @@ export const getMessages = (req, conversationId, userId = undefined, { since, un
             return messages;
          })
          .then(messages => resolve(messages))
+         .catch(err => reject(err));
+   });
+};
+
+export const getReadMessages = (req, userId, conversationId = undefined) => {
+   return new Promise((resolve, reject) => {
+      let checkPermissionsPromise;
+      if (conversationId) {
+         checkPermissionsPromise = conversationParticipantsTable.getConversationParticipantByConversationIdAndUserId(req, conversationId, userId);
+      } else {
+         checkPermissionsPromise = Promise.resolve();
+      }
+
+      let allReadMessages;
+      checkPermissionsPromise
+         .then((conversationParticipant) => {
+            if ((conversationId) && ((!conversationParticipant) || (conversationParticipant.userId !== userId))) {
+               throw new NoPermissionsError(conversationId);
+            }
+
+            let promise;
+            if (conversationId) {
+               promise = readMessagesTable.getReadMessagesByUserIdAndConversationId(req, userId, conversationId);
+            } else {
+               promise = readMessagesTable.getReadMessagesByUserId(req, userId);
+            }
+            return promise;
+         })
+         .then((retrievedAllReadMessages) => {
+            allReadMessages = (retrievedAllReadMessages instanceof Array) ? retrievedAllReadMessages : [retrievedAllReadMessages];
+            const transcriptStatsPromises = [];
+            allReadMessages.forEach((readMessages) => {
+               transcriptStatsPromises.push(messagesCache.getRecursiveMessageCountAndLastTimestampByConversationId(req, readMessages.conversationId));
+            });
+
+            return (transcriptStatsPromises.length > 0) ? Promise.all(transcriptStatsPromises) : undefined;
+         })
+         .then((transcriptStats) => {
+            const readMessagesResponse = { userId, conversationIds: {} };
+            let idx = 0;
+            allReadMessages.forEach((readMessages) => {
+               const transcriptStat = transcriptStats[idx];
+               const conversationStats = {
+                  messageCount: transcriptStat.messageCount,
+                  lastTimestamp: transcriptStat.lastTimestamp,
+                  lastReadMessageCount: readMessages.lastReadMessageCount,
+                  lastReadTimestamp: readMessages.lastReadTimestamp,
+                  byteCount: transcriptStat.byteCount
+               };
+
+               if (transcriptStat.parentMessages) {
+                  conversationStats.parentMessages = transcriptStat.parentMessages;
+                  Object.keys(conversationStats.parentMessages).forEach((parentMessageId) => {
+                     const messagesThread = conversationStats.parentMessages[parentMessageId];
+                     const userReadMessageThread = readMessages.parentMessageIds[parentMessageId];
+
+                     if (userReadMessageThread) {
+                        messagesThread.lastReadMessageCount = userReadMessageThread.lastReadMessageCount;
+                        messagesThread.lastReadTimestamp = userReadMessageThread.lastReadTimestamp;
+                     } else {
+                        messagesThread.lastReadMessageCount = 0;
+                        messagesThread.lastReadTimestamp = '0000-00-00T00:00:00Z';
+                     }
+
+                     conversationStats.parentMessages[parentMessageId] = messagesThread;
+                  });
+               }
+
+               readMessagesResponse.conversationIds[readMessages.conversationId] = conversationStats;
+
+               idx += 1;
+            });
+
+            resolve(readMessagesResponse);
+         })
+         .catch(err => reject(err));
+   });
+};
+
+export const readMessage = (req, userId, conversationId, messageId = undefined) => {
+   return new Promise((resolve, reject) => {
+      let readMessages;
+      messagesTable.getMessageByConversationIdAndMessageId(req, conversationId, messageId)
+         .then((message) => {
+            if (!message) {
+               throw new ConversationNotExistError(`conversationId=${conversationId}, messageId=${messageId}`);
+            }
+
+            const { replyTo: parentMessageId, messageNumber: lastReadMessageCount, created: lastReadTimestamp } = message;
+            return readMessagesTable.updateReadMessages(req, userId, conversationId, lastReadTimestamp, lastReadMessageCount, parentMessageId);
+         })
+         .then(() => readMessagesTable.getReadMessagesByUserIdAndConversationId(req, userId, conversationId))
+         .then((retrievedReadMessages) => {
+            readMessages = retrievedReadMessages;
+            return messagesCache.getRecursiveMessageCountAndLastTimestampByConversationId(req, readMessages.conversationId);
+         })
+         .then((transcriptStat) => {
+            const readMessagesResponse = { userId, conversationIds: {} };
+            const conversationStats = {
+               messageCount: transcriptStat.messageCount,
+               lastTimestamp: transcriptStat.lastTimestamp,
+               lastReadMessageCount: readMessages.lastReadMessageCount,
+               lastReadTimestamp: readMessages.lastReadTimestamp,
+               byteCount: transcriptStat.byteCount
+            };
+
+            if (transcriptStat.parentMessages) {
+               conversationStats.parentMessages = transcriptStat.parentMessages;
+               Object.keys(conversationStats.parentMessages).forEach((parentMessageId) => {
+                  const messagesThread = conversationStats.parentMessages[parentMessageId];
+                  const userReadMessageThread = readMessages.parentMessageIds[parentMessageId];
+
+                  if (userReadMessageThread) {
+                     messagesThread.lastReadMessageCount = userReadMessageThread.lastReadMessageCount;
+                     messagesThread.lastReadTimestamp = userReadMessageThread.lastReadTimestamp;
+                  } else {
+                     messagesThread.lastReadMessageCount = 0;
+                     messagesThread.lastReadTimestamp = '0000-00-00T00:00:00Z';
+                  }
+
+                  conversationStats.parentMessages[parentMessageId] = messagesThread;
+               });
+            }
+
+            readMessagesResponse.conversationIds[readMessages.conversationId] = conversationStats;
+
+            resolve(readMessagesResponse);
+            messageRead(req, readMessages.conversationId, readMessagesResponse);
+         })
          .catch(err => reject(err));
    });
 };
@@ -392,98 +480,72 @@ export const createMessage = (req, conversationId, userId, content, replyTo) => 
    return new Promise((resolve, reject) => {
       const messageId = uuid.v4();
 
+      let conversation;
       const byteCount = byteCountOfContent(content);
-      const message = {
-         conversationId,
-         createdBy: userId,
-         content,
-         replyTo,
-         byteCount,
-         created: req.now.format(),
-         lastModified: req.now.format()
-      };
-      Promise.all([getConversationsByIds(req, [conversationId]), getConversationParticipantsByConversationId(req, conversationId)])
+      let message;
+
+      Promise.all([
+         conversationParticipantsTable.getConversationParticipantsByConversationId(req, conversationId),
+         conversationsTable.getConversationByConversationId(req, conversationId)
+      ])
          .then((promiseResults) => {
-            const conversations = promiseResults[0];
-            const participants = promiseResults[1];
+            const participants = promiseResults[0];
+            conversation = promiseResults[1];
 
-            if ((conversations.length === 0) || (participants.length === 0)) {
-               throw new ConversationNotExistError(conversationId);
-            }
-            const conversation = conversations[0];
-
-            if (('active' in conversation.conversationInfo) && (conversation.conversationInfo.active === false)) {
+            if (conversation.active === false) {
                throw new NotActiveError(conversationId);
             }
 
-            const userIds = participants.map(participant => participant.conversationParticipantInfo.userId);
+            const userIds = participants.map(participant => participant.userId);
             if (userIds.indexOf(userId) < 0) {
                throw new NoPermissionsError(conversationId);
             }
 
-            if (message.replyTo) {
-               return getMessageById(req, message.replyTo);
+            if (replyTo) {
+               return conversationsTable.incrementConversationByteCount(req, conversationId, byteCount);
+            }
+            return conversationsTable.incrementConversationMessageCountAndByteCount(req, conversationId, byteCount);
+         })
+         .then((updatedConversation) => {
+            conversation = updatedConversation;
+            if (replyTo) {
+               return messagesTable.incrementMessageMessageCount(req, conversationId, replyTo);
             }
             return undefined;
          })
-         .then((replyToMessages) => {
-            if ((replyToMessages) && (replyToMessages.length > 0)) {
-               const replyToMessage = replyToMessages[0];
-               message.level = ((replyToMessage.messageInfo.level) ? replyToMessage.messageInfo.level : 0) + 1;
-               message.path = (replyToMessage.messageInfo.path) ? replyToMessage.messageInfo.path : '';
-               message.path = `${message.path}${MESSAGE_PATH_SEPARATOR}${messageId}`;
-            } else {
-               message.level = 0;
-               message.path = messageId;
+         .then((replyToMessage) => {
+            let level = 0;
+            let path = messageId;
+            if (replyToMessage) {
+               level = ((replyToMessage.level) ? replyToMessage.level : 0) + 1;
+               path = (replyToMessage.path) ? replyToMessage.path : '';
+               path = `${path}${MESSAGE_PATH_SEPARATOR}${messageId}`;
             }
 
-            return createMessageInDb(req, -1, messageId, message);
+            return messagesTable.createMessage(req,
+               conversationId,
+               messageId,
+               level,
+               path,
+               content,
+               (replyToMessage) ? replyToMessage.messageCount : conversation.messageCount,
+               byteCount,
+               userId,
+               replyTo);
          })
-         .then(() => getSubscriberOrgIdByConversationId(req, conversationId))
+         .then((createdMessage) => {
+            message = createdMessage;
+            return getSubscriberOrgIdByConversationId(req, conversationId);
+         })
          .then(subscriberOrgId => updateCachedByteCount(req, subscriberOrgId, byteCount))
          .then(() => {
             message.messageId = messageId;
             resolve(message);
             messageCreated(req, message);
          })
+         .then(() => {
+            messagesCache.incrementMessageCountAndLastTimestampAndByteCount(req, message.created, byteCount, conversationId, message.replyTo);
+         })
          .catch(err => reject(err));
    });
 };
-
-
-// /**
-//  *
-//  * @param req
-//  * @param userId
-//  * @param conversationId
-//  * @param until
-//  * @param parentMessageId
-//  * @returns {Promise}
-//  */
-// export function readMessages(req, userId, conversationId, until, parentMessageId = undefined) {
-//    return new Promise((resolve, reject) => {
-//
-//    });
-// }
-//
-// export function getReadMessages(req, userId, conversationIds = undefined) {
-//
-// }
-//
-// export function unreadMessages(req, userId, conversationId, since, parentMessageId = undefined) {
-//
-// }
-
-// const readMessages = {
-//    readMessages: [
-//       {
-//          conversationId, // required
-//          until,
-//          parentMessages: {
-//             parentMessageId: {
-//                until
-//             }
-//          }
-//       }
-//    ]
-// }

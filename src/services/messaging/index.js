@@ -213,6 +213,12 @@ export const messageCreated = (req, message) => {
    ]);
 };
 
+export const messageRead = (req, conversationId, readMessages) => {
+   return _broadcastEvent(req, EventTypes.messageRead, publishByApiVersion(req, apiVersionedVisibility.publicReadMessages, readMessages), [
+      ChannelFactory.conversationChannel(conversationId)
+   ]);
+};
+
 
 // EventType = integration
 
