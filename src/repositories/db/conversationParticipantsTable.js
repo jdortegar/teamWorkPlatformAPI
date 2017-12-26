@@ -11,11 +11,11 @@ import * as util from './util';
  * created
  * lastModified
  *
- * Index: userIdConversationIdIdx
+ * GSI: userIdConversationIdIdx
  * hash: userId
  * range: conversationId
  *
- * Index: teamRoomIdUserIdIdx
+ * GSI: teamRoomIdUserIdIdx
  * hash: teamRoomId
  * range: userId
  *
@@ -34,19 +34,23 @@ const upgradeSchema = (req, dbObjects) => {
 };
 
 export const createConversationParticipant = (req, conversationId, userId, teamRoomId = undefined) => {
-   const params = {
-      TableName: tableName(),
-      Item: {
-         conversationId,
-         userId,
-         v,
-         teamRoomId,
-         created: req.now.format(),
-         lastModified: req.now.format()
-      }
-   };
+   return new Promise((resolve, reject) => {
+      const params = {
+         TableName: tableName(),
+         Item: {
+            conversationId,
+            userId,
+            v,
+            teamRoomId,
+            created: req.now.format(),
+            lastModified: req.now.format()
+         }
+      };
 
-   return req.app.locals.docClient.put(params).promise();
+      req.app.locals.docClient.put(params).promise()
+         .then(result => resolve(result.$response.request.rawParams.Item))
+         .catch(err => reject(err));
+   });
 };
 
 export const getConversationParticipantsByConversationId = (req, conversationId) => {

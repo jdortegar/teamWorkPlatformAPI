@@ -22,19 +22,23 @@ const upgradeSchema = (req, dbObjects) => {
 };
 
 export const createReadMessages = (req, userId, conversationId) => {
-   const params = {
-      TableName: tableName(),
-      Item: {
-         userId,
-         conversationId,
-         v,
-         lastReadMessageCount: 0,
-         lastReadTimestamp: req.now.format(),
-         parentMessageIds: {}
-      }
-   };
+   return new Promise((resolve, reject) => {
+      const params = {
+         TableName: tableName(),
+         Item: {
+            userId,
+            conversationId,
+            v,
+            lastReadMessageCount: 0,
+            lastReadTimestamp: req.now.format(),
+            parentMessageIds: {}
+         }
+      };
 
-   return req.app.locals.docClient.put(params).promise();
+      req.app.locals.docClient.put(params).promise()
+         .then(result => resolve(result.$response.request.rawParams.Item))
+         .catch(err => reject(err));
+   });
 };
 
 export const updateReadMessages = (req, userId, conversationId, lastReadTimestamp, lastReadMessageCount, parentMessageId = undefined) => {

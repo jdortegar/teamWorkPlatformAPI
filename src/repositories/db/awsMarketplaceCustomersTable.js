@@ -55,25 +55,29 @@ export const getAllCustomers = (req) => {
 };
 
 export const createCustomer = (req, subscriberOrgId, awsCustomerId, awsProductCode, entitlements, expiration, maxUsers, currentUsers, maxGB, currentGB) => {
-   const params = {
-      TableName: tableName(),
-      Item: {
-         awsCustomerId,
-         v,
-         subscriberOrgId,
-         awsProductCode,
-         entitlements,
-         expiration,
-         maxUsers,
-         currentUsers,
-         maxGB,
-         currentGB,
-         created: req.now.format(),
-         lastModified: req.now.format()
-      }
-   };
+   return new Promise((resolve, reject) => {
+      const params = {
+         TableName: tableName(),
+         Item: {
+            awsCustomerId,
+            v,
+            subscriberOrgId,
+            awsProductCode,
+            entitlements,
+            expiration,
+            maxUsers,
+            currentUsers,
+            maxGB,
+            currentGB,
+            created: req.now.format(),
+            lastModified: req.now.format()
+         }
+      };
 
-   return req.app.locals.docClient.put(params).promise();
+      req.app.locals.docClient.put(params).promise()
+         .then(result => resolve(result.$response.request.rawParams.Item))
+         .catch(err => reject(err));
+   });
 };
 
 export const updateCustomer = (req, awsCustomerId, updateInfo) => {

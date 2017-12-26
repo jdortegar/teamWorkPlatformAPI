@@ -55,16 +55,20 @@ export const getAllSystemProperties = (req) => {
 };
 
 export const createSystemProperty = (req, propertyName, propertyValue) => {
-   const params = {
-      TableName: tableName(),
-      Item: {
-         propertyName,
-         v,
-         propertyValue
-      }
-   };
+   return new Promise((resolve, reject) => {
+      const params = {
+         TableName: tableName(),
+         Item: {
+            propertyName,
+            v,
+            propertyValue
+         }
+      };
 
-   return req.app.locals.docClient.put(params).promise();
+      req.app.locals.docClient.put(params).promise()
+         .then(result => resolve(result.$response.request.rawParams.Item))
+         .catch(err => reject(err));
+   });
 };
 
 export const updateSystemProperty = (req, propertyName, updateInfo) => {

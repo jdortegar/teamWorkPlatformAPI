@@ -660,21 +660,3 @@ export function getTeamRoomsByTeamIdAndPrimary(req, teamId, primary) {
    return filteredScan(req, tableName, { teamRoomInfo: { teamId, primary } });
 }
 
-export function getConversationsByIds(req, conversationIds) {
-   if (conversationIds === undefined) {
-      return Promise.reject('conversationIds needs to be specified.');
-   }
-
-   const tableName = `${config.tablePrefix}conversations`;
-   return batchGetItemBySortKey(req, tableName, 'conversationId', conversationIds);
-}
-
-export function getConversationsByTeamRoomId(req, teamRoomId) {
-   if (teamRoomId === undefined) {
-      return Promise.reject('teamRoomId needs to be specified.');
-   }
-
-   const tableName = `${config.tablePrefix}conversations`;
-   return filteredScan(req, tableName, { conversationInfo: { teamRoomId } });
-}
-

@@ -4,6 +4,18 @@
 
 import config from '../../config/env';
 
+export const isStatsForConversationIdExist = (req, conversationId) => {
+   return new Promise((resolve, reject) => {
+      const messagesHashKey = `${config.redisPrefix}${conversationId}#conversationId#messages`;
+      const hashKey = messagesHashKey;
+      req.app.locals.redis.hexistsAsync(hashKey, 'messageCount')
+         .then((exists) => {
+            resolve((exists === 1));
+         })
+         .catch(err => reject(err));
+   });
+};
+
 export const getRecursiveMessageCountAndLastTimestampByConversationId = (req, conversationId) => {
    return new Promise((resolve, reject) => {
       let ret;
@@ -83,13 +95,17 @@ export const setMessageCountAndLastTimestampAndByteCountIfNotExist = (req, messa
          .then((exists) => {
             if (exists === 0) {
                isNew = true;
-               const promises = [
-                  req.app.locals.redis.hmsetAsync(hashKey,
+               const promises = [];
+               if (byteCount) {
+                  promises.push(req.app.locals.redis.hmsetAsync(hashKey,
                      'messageCount', messageCount,
                      'lastTimestamp', lastTimestamp,
-                     'byteCount', byteCount),
-                  req.app.locals.redis.hincrbyAsync(messagesHashKey, 'byteCount', byteCount)
-               ];
+                     'byteCount', byteCount));
+               } else {
+                  promises.push(req.app.locals.redis.hmsetAsync(hashKey,
+                     'messageCount', messageCount,
+                     'lastTimestamp', lastTimestamp));
+               }
 
                if (parentMessageId) {
                   const parentsHashKey = `${config.redisPrefix}${conversationId}#conversationId#parentMessageIds}`;

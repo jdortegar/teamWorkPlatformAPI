@@ -8,10 +8,12 @@ import * as util from './util';
  * teamRoomId
  * active
  * messageCount
+ * byteCount
+ * lastCreated (optional.  Only if there's messages in this thread)
  * created
  * lastModified
  *
- * Index: teamRoomIdIdx
+ * GSI: teamRoomIdIdx
  * hash: teamRoomId
  */
 const tableName = () => {
@@ -37,6 +39,7 @@ export const createConversation = (req, conversationId, subscriberOrgId, teamRoo
             teamRoomId,
             active: true,
             messageCount: 0,
+            byteCount: 0,
             created: req.now.format(),
             lastModified: req.now.format()
          }
@@ -52,9 +55,10 @@ export const updateConversationActive = (req, conversationId, active) => {
    const params = {
       TableName: tableName(),
       Key: { conversationId },
-      UpdateExpression: 'set active = :active',
+      UpdateExpression: 'set active = :active, lastModified = :lastModified',
       ExpressionAttributeValues: {
-         ':active': active
+         ':active': active,
+         ':lastModified': req.now.format()
       }
    };
 
@@ -77,35 +81,58 @@ export const getConversationByConversationId = (req, conversationId) => {
    });
 };
 
-const updateConversationMessageCount = (req, conversationId, messageCount) => {
+const updateConversationMessageCountAndByteCount = (req, conversationId, currentMessageCount, newMessageCount, byteCount) => {
    const params = {
       TableName: tableName(),
       Key: { conversationId },
-      UpdateExpression: 'set messageCount = :messageCount',
+      UpdateExpression: 'set messageCount = :messageCount, byteCount = :byteCount, lastCreated = :lastCreated',
       ConditionExpression: 'messageCount = :currentMessageCount',
       ExpressionAttributeValues: {
-         ':currentMessageCount': messageCount - 1,
-         ':messageCount': messageCount
+         ':currentMessageCount': currentMessageCount,
+         ':messageCount': newMessageCount,
+         ':byteCount': byteCount,
+         ':lastCreated': req.now.format()
       }
    };
 
    return req.app.locals.docClient.update(params).promise();
 };
 
-export const incrementConversationMessageCount = (req, conversationId) => {
+export const incrementConversationByteCount = (req, conversationId, byteCount) => {
    return new Promise((resolve) => {
       let conversation;
       getConversationByConversationId(req, conversationId)
          .then((retrievedConversation) => {
             conversation = retrievedConversation;
             const { messageCount } = conversation;
-            return updateConversationMessageCount(req, conversationId, messageCount + 1);
+            return updateConversationMessageCountAndByteCount(req, conversationId, messageCount, messageCount, conversation.byteCount + byteCount);
+         })
+         .then(() => {
+            conversation.byteCount += byteCount;
+            conversation.lastCreated = req.now.format();
+            resolve(conversation);
+         })
+         .catch(() => incrementConversationByteCount(req, conversationId, byteCount))
+         .then(updatedConversation => resolve(updatedConversation));
+   });
+};
+
+export const incrementConversationMessageCountAndByteCount = (req, conversationId, byteCount) => {
+   return new Promise((resolve) => {
+      let conversation;
+      getConversationByConversationId(req, conversationId)
+         .then((retrievedConversation) => {
+            conversation = retrievedConversation;
+            const { messageCount } = conversation;
+            return updateConversationMessageCountAndByteCount(req, conversationId, messageCount, messageCount + 1, conversation.byteCount + byteCount);
          })
          .then(() => {
             conversation.messageCount += 1;
+            conversation.byteCount += byteCount;
+            conversation.lastCreated = req.now.format();
             resolve(conversation);
          })
-         .catch(() => incrementConversationMessageCount(req, conversationId))
+         .catch(() => incrementConversationMessageCountAndByteCount(req, conversationId, byteCount))
          .then(updatedConversation => resolve(updatedConversation));
    });
 };
