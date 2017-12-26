@@ -8,7 +8,7 @@ import * as conversationParticipantsTable from '../repositories/db/conversationP
 import * as messagesTable from '../repositories/db/messagesTable';
 import * as readMessagesTable from '../repositories/db/readMessagesTable';
 import * as messagesCache from '../repositories/cache/messagesCache';
-import { conversationCreated, conversationUpdated, messageCreated } from './messaging';
+import { conversationCreated, conversationUpdated, messageCreated, messageRead } from './messaging';
 import { updateCachedByteCount } from './awsMarketplaceService';
 import { ConversationNotExistError, NoPermissionsError, NotActiveError } from './errors';
 import {
@@ -394,6 +394,7 @@ export const getReadMessages = (req, userId, conversationId = undefined) => {
 
 export const readMessage = (req, userId, conversationId, messageId = undefined) => {
    return new Promise((resolve, reject) => {
+      let readMessages;
       messagesTable.getMessageByConversationIdAndMessageId(req, conversationId, messageId)
          .then((message) => {
             if (!message) {
@@ -403,7 +404,44 @@ export const readMessage = (req, userId, conversationId, messageId = undefined) 
             const { replyTo: parentMessageId, messageNumber: lastReadMessageCount, created: lastReadTimestamp } = message;
             return readMessagesTable.updateReadMessages(req, userId, conversationId, lastReadTimestamp, lastReadMessageCount, parentMessageId);
          })
-         .then(() => resolve())
+         .then(() => readMessagesTable.getReadMessagesByUserIdAndConversationId(req, userId, conversationId))
+         .then((retrievedReadMessages) => {
+            readMessages = retrievedReadMessages;
+            return messagesCache.getRecursiveMessageCountAndLastTimestampByConversationId(req, readMessages.conversationId);
+         })
+         .then((transcriptStat) => {
+            const readMessagesResponse = { userId, conversationIds: {} };
+            const conversationStats = {
+               messageCount: transcriptStat.messageCount,
+               lastTimestamp: transcriptStat.lastTimestamp,
+               lastReadMessageCount: readMessages.lastReadMessageCount,
+               lastReadTimestamp: readMessages.lastReadTimestamp,
+               byteCount: transcriptStat.byteCount
+            };
+
+            if (transcriptStat.parentMessages) {
+               conversationStats.parentMessages = transcriptStat.parentMessages;
+               Object.keys(conversationStats.parentMessages).forEach((parentMessageId) => {
+                  const messagesThread = conversationStats.parentMessages[parentMessageId];
+                  const userReadMessageThread = readMessages.parentMessageIds[parentMessageId];
+
+                  if (userReadMessageThread) {
+                     messagesThread.lastReadMessageCount = userReadMessageThread.lastReadMessageCount;
+                     messagesThread.lastReadTimestamp = userReadMessageThread.lastReadTimestamp;
+                  } else {
+                     messagesThread.lastReadMessageCount = 0;
+                     messagesThread.lastReadTimestamp = '0000-00-00T00:00:00Z';
+                  }
+
+                  conversationStats.parentMessages[parentMessageId] = messagesThread;
+               });
+            }
+
+            readMessagesResponse.conversationIds[readMessages.conversationId] = conversationStats;
+
+            resolve(readMessagesResponse);
+            messageRead(req, readMessages.conversationId, readMessagesResponse);
+         })
          .catch(err => reject(err));
    });
 };
