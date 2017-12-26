@@ -42,23 +42,6 @@ export const getTranscript = (req, res, next) => {
       });
 };
 
-export const getReadMessages = (req, res, next) => {
-   const userId = req.user._id;
-   const conversationId = req.query.conversationId;
-
-   conversationsSvc.getReadMessages(req, userId, conversationId)
-      .then((readMessages) => {
-         res.status(httpStatus.OK).json({ readMessages: publishByApiVersion(req, apiVersionedVisibility.publicReadMessages, readMessages) });
-      })
-      .catch((err) => {
-         if (err instanceof NoPermissionsError) {
-            res.status(httpStatus.FORBIDDEN).end();
-         } else {
-            next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
-         }
-      });
-};
-
 export const createMessage = (req, res, next) => {
    const userId = req.user._id;
    const conversationId = req.params.conversationId;
@@ -88,6 +71,23 @@ export const createMessage = (req, res, next) => {
       });
 };
 
+export const getReadMessages = (req, res, next) => {
+   const userId = req.user._id;
+   const conversationId = req.query.conversationId;
+
+   conversationsSvc.getReadMessages(req, userId, conversationId)
+      .then((readMessages) => {
+         res.status(httpStatus.OK).json({ readMessages: publishByApiVersion(req, apiVersionedVisibility.publicReadMessages, readMessages) });
+      })
+      .catch((err) => {
+         if (err instanceof NoPermissionsError) {
+            res.status(httpStatus.FORBIDDEN).end();
+         } else {
+            next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
+         }
+      });
+};
+
 export const readMessage = (req, res, next) => {
    const userId = req.user._id;
    const { conversationId } = req.params;
@@ -105,4 +105,3 @@ export const readMessage = (req, res, next) => {
          }
       });
 };
-

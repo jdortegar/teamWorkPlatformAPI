@@ -10,13 +10,13 @@ router.route('/getConversations')
 router.route('/getTranscript/:conversationId')
    .get(conversations.getTranscript);
 
-router.route('/getReadMessages')
-   .get(conversations.getReadMessages);
+router.route('/:conversationId/createMessage')
+   .post(validateByApiVersion(apiVersionedValidators.createMessage), conversations.createMessage);
 
 router.route('/:conversationId/readMessage')
    .post(validateByApiVersion(apiVersionedValidators.readMessage), conversations.readMessage);
 
-router.route('/:conversationId/createMessage')
-   .post(validateByApiVersion(apiVersionedValidators.createMessage), conversations.createMessage);
+router.route('/getReadMessages')
+   .get(conversations.getReadMessages);
 
 export default router;
