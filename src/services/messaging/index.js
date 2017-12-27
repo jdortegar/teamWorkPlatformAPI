@@ -213,9 +213,10 @@ export const messageCreated = (req, message) => {
    ]);
 };
 
-export const messageRead = (req, conversationId, readMessages) => {
+export const messageRead = (req, readMessages) => {
+   const { userId } = readMessages;
    return _broadcastEvent(req, EventTypes.messageRead, publishByApiVersion(req, apiVersionedVisibility.publicReadMessages, readMessages), [
-      ChannelFactory.conversationChannel(conversationId)
+      ChannelFactory.personalChannel(userId)
    ]);
 };
 

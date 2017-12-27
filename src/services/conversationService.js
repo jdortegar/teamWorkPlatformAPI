@@ -440,7 +440,7 @@ export const readMessage = (req, userId, conversationId, messageId = undefined) 
             readMessagesResponse.conversationIds[readMessages.conversationId] = conversationStats;
 
             resolve(readMessagesResponse);
-            messageRead(req, readMessages.conversationId, readMessagesResponse);
+            messageRead(req, readMessagesResponse);
          })
          .catch(err => reject(err));
    });

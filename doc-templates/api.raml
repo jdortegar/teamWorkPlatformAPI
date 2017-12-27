@@ -2387,6 +2387,15 @@ documentation:
                securedBy: [oauth_2_0]
                description: |
                   Mark a message as read by the user, which includes previous messages within that same thread (which can be the main thread).
+               body:
+                  properties:
+                     messageId:
+                        type: string
+                        required: true
+               example: |
+                  {
+                     "messageId": "bfefa47e-bde6-4dbf-816c-bc231a7320b1"
+                  }
                responses:
                   204:
                      description: |
