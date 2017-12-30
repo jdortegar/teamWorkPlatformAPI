@@ -8,7 +8,7 @@ import * as conversationParticipantsTable from '../repositories/db/conversationP
 import * as messagesTable from '../repositories/db/messagesTable';
 import * as readMessagesTable from '../repositories/db/readMessagesTable';
 import * as messagesCache from '../repositories/cache/messagesCache';
-import { conversationCreated, conversationUpdated, messageCreated, messageRead } from './messaging';
+import { conversationCreated, conversationUpdated, messageCreated, messageRead, messageUpdated, messageDeleted } from './messaging';
 import { updateCachedByteCount } from './awsMarketplaceService';
 import { ConversationNotExistError, NoPermissionsError, NotActiveError } from './errors';
 import {
@@ -545,6 +545,90 @@ export const createMessage = (req, conversationId, userId, content, replyTo) => 
          })
          .then(() => {
             messagesCache.incrementMessageCountAndLastTimestampAndByteCount(req, message.created, byteCount, conversationId, message.replyTo);
+         })
+         .catch(err => reject(err));
+   });
+};
+
+export const updateMessage = (req, conversationId, messageId, userId, content) => {
+   return new Promise((resolve, reject) => {
+      const byteCount = byteCountOfContent(content);
+      let message;
+      let updatedMessage;
+
+      Promise.all([
+         conversationsTable.getConversationByConversationId(req, conversationId),
+         messagesTable.getMessageByConversationIdAndMessageId(req, conversationId, messageId)
+      ])
+         .then((results) => {
+            const conversation = results[0];
+            message = results[1];
+
+            if ((!conversation) || (!message)) {
+               throw new ConversationNotExistError(conversationId);
+            }
+            if (conversation.active === false) {
+               throw new NotActiveError(conversationId);
+            }
+            if (message.createdBy !== userId) {
+               throw new NoPermissionsError(messageId);
+            }
+
+            return conversationsTable.incrementConversationByteCount(req, conversationId, byteCount - message.byteCount);
+         })
+         .then(() => messagesTable.updateMessageContent(req, message, content, byteCount))
+         .then((updatedMessageFromDb) => {
+            updatedMessage = updatedMessageFromDb;
+            return getSubscriberOrgIdByConversationId(req, conversationId);
+         })
+         .then(subscriberOrgId => updateCachedByteCount(req, subscriberOrgId, byteCount - message.byteCount))
+         .then(() => {
+            resolve(updatedMessage);
+            messageUpdated(req, updatedMessage);
+         })
+         .then(() => {
+            messagesCache.incrementByteCount(req, byteCount - message.byteCount, conversationId);
+         })
+         .catch(err => reject(err));
+   });
+};
+
+export const deleteMessage = (req, conversationId, messageId, userId) => {
+   return new Promise((resolve, reject) => {
+      let message;
+      let updatedMessage;
+
+      Promise.all([
+         conversationsTable.getConversationByConversationId(req, conversationId),
+         messagesTable.getMessageByConversationIdAndMessageId(req, conversationId, messageId)
+      ])
+         .then((results) => {
+            const conversation = results[0];
+            message = results[1];
+
+            if ((!conversation) || (!message)) {
+               throw new ConversationNotExistError(conversationId);
+            }
+            if (conversation.active === false) {
+               throw new NotActiveError(conversationId);
+            }
+            if (message.createdBy !== userId) {
+               throw new NoPermissionsError(messageId);
+            }
+         })
+         .then(() => conversationsTable.incrementConversationByteCount(req, conversationId, -message.byteCount))
+         .then(() => messagesTable.deleteMessage(req, conversationId, messageId))
+         .then((updatedMessageFromDb) => {
+            updatedMessage = updatedMessageFromDb;
+            return getSubscriberOrgIdByConversationId(req, conversationId);
+         })
+         .then(subscriberOrgId => updateCachedByteCount(req, subscriberOrgId, -message.byteCount))
+         .then(() => {
+            resolve(updatedMessage);
+            messageDeleted(req, updatedMessage);
+         })
+         .then(() => {
+            messagesCache.incrementByteCount(req, -message.byteCount, conversationId);
          })
          .catch(err => reject(err));
    });

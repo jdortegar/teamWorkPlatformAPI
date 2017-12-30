@@ -13,6 +13,12 @@ router.route('/getTranscript/:conversationId')
 router.route('/:conversationId/createMessage')
    .post(validateByApiVersion(apiVersionedValidators.createMessage), conversations.createMessage);
 
+router.route('/:conversationId/updateMessage/:messageId')
+   .patch(validateByApiVersion(apiVersionedValidators.updateMessage), conversations.updateMessage);
+
+router.route('/:conversationId/deleteMessage/:messageId')
+   .delete(conversations.deleteMessage);
+
 router.route('/:conversationId/readMessage')
    .post(validateByApiVersion(apiVersionedValidators.readMessage), conversations.readMessage);
 

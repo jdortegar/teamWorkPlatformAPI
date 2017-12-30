@@ -220,6 +220,18 @@ export const messageRead = (req, readMessages) => {
    ]);
 };
 
+export const messageUpdated = (req, message) => {
+   return _broadcastEvent(req, EventTypes.messageUpdated, publishByApiVersion(req, apiVersionedVisibility.publicMessage, message), [
+      ChannelFactory.conversationChannel(message.conversationId)
+   ]);
+};
+
+export const messageDeleted = (req, message) => {
+   return _broadcastEvent(req, EventTypes.messageDeleted, publishByApiVersion(req, apiVersionedVisibility.publicMessage, message), [
+      ChannelFactory.conversationChannel(message.conversationId)
+   ]);
+};
+
 
 // EventType = integration
 

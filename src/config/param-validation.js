@@ -168,6 +168,21 @@ const validationSchemas = {
          replyTo: Joi.string().min(1).allow(null)
       }
    },
+   updateMessage: {
+      body: {
+         content: Joi.array().min(1).items(
+            Joi.object().keys({
+               type: Joi.string().min(1).required(),
+               text: Joi.string().min(1),
+               resourceId: Joi.string().min(1),
+               meta: Joi.object().keys({
+                  fileName: Joi.string().min(1),
+                  fileSize: Joi.number().min(1)
+               })
+            })
+         ).required()
+      }
+   },
    readMessage: {
       body: {
          messageId: Joi.string().min(1).required()
@@ -241,6 +256,10 @@ export const apiVersionedValidators = {
    createMessage: {
       0: validate(validationSchemas.createMessage),
       1: validate(validationSchemas.createMessage_v1)
+   },
+   updateMessage: {
+      0: validate(validationSchemas.updateMessage),
+      1: validate(validationSchemas.updateMessage)
    },
    readMessage: {
       0: validate(validationSchemas.readMessage),

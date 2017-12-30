@@ -58,6 +58,15 @@ export const getRecursiveMessageCountAndLastTimestampByConversationId = (req, co
    });
 };
 
+export const incrementByteCount = (req, byteCount, conversationId) => {
+   return new Promise((resolve, reject) => {
+      const messagesHashKey = `${config.redisPrefix}${conversationId}#conversationId#messages`;
+      req.app.locals.redis.hincrbyAsync(messagesHashKey, 'byteCount', byteCount)
+         .then(() => resolve())
+         .catch(err => reject(err));
+   });
+};
+
 export const incrementMessageCountAndLastTimestampAndByteCount = (req, lastTimestamp, byteCount, conversationId, parentMessageId = undefined) => {
    return new Promise((resolve, reject) => {
       const messagesHashKey = `${config.redisPrefix}${conversationId}#conversationId#messages`;

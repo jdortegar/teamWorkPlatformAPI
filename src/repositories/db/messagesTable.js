@@ -1,3 +1,4 @@
+import _ from 'lodash';
 import config from '../../config/env';
 import * as util from './util';
 
@@ -204,38 +205,35 @@ export const incrementMessageMessageCount = (req, conversationId, messageId) => 
    });
 };
 
-export const updateMessageContent = (req, conversationId, messageId, content, byteCount) => {
+export const updateMessageContent = (req, message, content, byteCount) => {
    return new Promise((resolve, reject) => {
-      let message;
-      getMessageByConversationIdAndMessageId(req, conversationId, messageId)
-         .then((retrievedMessage) => {
-            message = retrievedMessage;
-            let { history } = message;
-            if (!history) {
-               history = {};
-               message.history = history;
-            }
+      const updatedMessage = _.cloneDeep(message);
+      let { history } = message;
+      if (!history) {
+         history = {};
+         updatedMessage.history = history;
+      }
 
-            history[message.lastModified] = message.content;
-            message.byteCount = 0;
-            message.content = content;
-            message.lastModified = req.now.format();
+      history[updatedMessage.lastModified] = updatedMessage.content;
+      updatedMessage.byteCount = 0;
+      updatedMessage.content = content;
+      updatedMessage.lastModified = req.now.format();
+      const { conversationId, messageId } = updatedMessage;
 
-            const params = {
-               TableName: tableName(),
-               Key: { conversationId, messageId },
-               UpdateExpression: 'set history = :history, byteCount  :byteCount, content = :content, lastModified = :lastModified',
-               ExpressionAttributeValues: {
-                  ':history': history,
-                  ':byteCount': byteCount,
-                  ':content': content,
-                  ':lastModified': message.lastModified
-               }
-            };
+      const params = {
+         TableName: tableName(),
+         Key: { conversationId, messageId },
+         UpdateExpression: 'set history = :history, byteCount = :byteCount, content = :content, lastModified = :lastModified',
+         ExpressionAttributeValues: {
+            ':history': history,
+            ':byteCount': byteCount,
+            ':content': content,
+            ':lastModified': updatedMessage.lastModified
+         }
+      };
 
-            return req.app.locals.docClient.update(params).promise();
-         })
-         .then(() => resolve(message))
+      req.app.locals.docClient.update(params).promise()
+         .then(() => resolve(updatedMessage))
          .catch(err => reject(err));
    });
 };

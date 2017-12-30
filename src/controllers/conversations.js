@@ -105,3 +105,46 @@ export const readMessage = (req, res, next) => {
          }
       });
 };
+
+export const updateMessage = (req, res, next) => {
+   const userId = req.user._id;
+   const { conversationId, messageId } = req.params;
+   const { content } = req.body;
+
+   conversationsSvc.updateMessage(req, conversationId, messageId, userId, content)
+      .then((updatedMessage) => {
+         res.status(httpStatus.OK).json({ message: publishByApiVersion(req, apiVersionedVisibility.publicMessage, updatedMessage) });
+      })
+      .catch((err) => {
+         if (err instanceof ConversationNotExistError) {
+            res.status(httpStatus.NOT_FOUND).end();
+         } else if (err instanceof NoPermissionsError) {
+            res.status(httpStatus.FORBIDDEN).end();
+         } else if (err instanceof NotActiveError) {
+            res.status(httpStatus.METHOD_NOT_ALLOWED).end();
+         } else {
+            next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE));
+         }
+      });
+};
+
+export const deleteMessage = (req, res, next) => {
+   const userId = req.user._id;
+   const { conversationId, messageId } = req.params;
+
+   conversationsSvc.deleteMessage(req, conversationId, messageId, userId)
+      .then(() => {
+         res.status(httpStatus.NO_CONTENT).end();
+      })
+      .catch((err) => {
+         if (err instanceof ConversationNotExistError) {
+            res.status(httpStatus.NOT_FOUND).end();
+         } else if (err instanceof NoPermissionsError) {
+            res.status(httpStatus.FORBIDDEN).end();
+         } else if (err instanceof NotActiveError) {
+            res.status(httpStatus.METHOD_NOT_ALLOWED).end();
+         } else {
+            next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE));
+         }
+      });
+};

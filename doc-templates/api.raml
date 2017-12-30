@@ -2342,10 +2342,44 @@ documentation:
                                        type: string
                                        required: false
                responses:
-                  204:
+                  200:
                      description: |
-                        NO_CONTENT<br />
+                        OK<br />
                         The message was updated successfully.
+                     body:
+                        properties:
+                           messageId:
+                              type: string
+                              required: true
+                           created:
+                              description: The format is in [RFC339](https://xml2rfc.tools.ietf.org/public/rfc/html/rfc3339.html#anchor14), which is a profile of [ISO 8601].
+                              type: datetime
+                              required: true
+                           createdBy:
+                              description: |
+                                 `userId`
+                              type: string
+                              required: true
+                           messageType:
+                              enum: [ text ]
+                              required: true
+                           text:
+                              type: string
+                              required: true
+                           replyTo:
+                              description: |
+                                 `messageId` this messages is attached to.  This is for threaded messages support.
+                              type: string
+                              required: false
+                        example: |
+                           {
+                              "messageId": "9dec8947-0381-4809-a053-b56777f782f4",
+                              "created": "2017-04-12T23:20:50.52Z",
+                              "createdBy": "9dec8947-0381-4809-a053-b56777f782f4",
+                              "messageType": "text",
+                              "text": "Alright.",
+                              "replyTo": "9dec8947-0381-4809-a053-b56777f782f5"
+                           }
                   404:
                      description: |
                         NOT_FOUND<br />
