@@ -183,6 +183,21 @@ const validationSchemas = {
          ).required()
       }
    },
+   likeMessage: {
+      body: {
+         like: Joi.boolean().required()
+      }
+   },
+   dislikeMessage: {
+      body: {
+         dislike: Joi.boolean().required()
+      }
+   },
+   flagMessage: {
+      body: {
+         flag: Joi.boolean().required()
+      }
+   },
    readMessage: {
       body: {
          messageId: Joi.string().min(1).required()
@@ -260,6 +275,18 @@ export const apiVersionedValidators = {
    updateMessage: {
       0: validate(validationSchemas.updateMessage),
       1: validate(validationSchemas.updateMessage)
+   },
+   likeMessage: {
+      0: validate(validationSchemas.likeMessage),
+      1: validate(validationSchemas.likeMessage)
+   },
+   dislikeMessage: {
+      0: validate(validationSchemas.dislikeMessage),
+      1: validate(validationSchemas.dislikeMessage)
+   },
+   flagMessage: {
+      0: validate(validationSchemas.flagMessage),
+      1: validate(validationSchemas.flagMessage)
    },
    readMessage: {
       0: validate(validationSchemas.readMessage),

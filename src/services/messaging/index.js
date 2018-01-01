@@ -226,6 +226,39 @@ export const messageUpdated = (req, message) => {
    ]);
 };
 
+export const messageLiked = (req, conversationId, messageId, like) => {
+   const payload = {
+      conversationId,
+      messageId,
+      like
+   };
+   return _broadcastEvent(req, EventTypes.messageLiked, publishByApiVersion(req, apiVersionedVisibility.publicMessageLike, payload), [
+      ChannelFactory.conversationChannel(conversationId)
+   ]);
+};
+
+export const messageDisliked = (req, conversationId, messageId, dislike) => {
+   const payload = {
+      conversationId,
+      messageId,
+      dislike
+   };
+   return _broadcastEvent(req, EventTypes.messageDisliked, publishByApiVersion(req, apiVersionedVisibility.publicMessageDislike, payload), [
+      ChannelFactory.conversationChannel(conversationId)
+   ]);
+};
+
+export const messageFlagged = (req, conversationId, messageId, flag) => {
+   const payload = {
+      conversationId,
+      messageId,
+      flag
+   };
+   return _broadcastEvent(req, EventTypes.messageFlagged, publishByApiVersion(req, apiVersionedVisibility.publicMessageFlag, payload), [
+      ChannelFactory.conversationChannel(conversationId)
+   ]);
+};
+
 export const messageDeleted = (req, message) => {
    return _broadcastEvent(req, EventTypes.messageDeleted, publishByApiVersion(req, apiVersionedVisibility.publicMessage, message), [
       ChannelFactory.conversationChannel(message.conversationId)

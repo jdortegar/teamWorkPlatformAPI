@@ -44,6 +44,9 @@ export const EventTypes = Object.freeze({
    messageRead: 'messageRead',
    messageUpdated: 'messageUpdated',
    messageDeleted: 'messageDeleted',
+   messageLiked: 'messageLiked',
+   messageDisliked: 'messageDisliked',
+   messageFlagged: 'messageFlagged',
 
    typing: 'typing',
    location: 'location',

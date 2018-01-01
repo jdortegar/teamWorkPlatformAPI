@@ -2412,6 +2412,78 @@ documentation:
                         FORBIDDEN<br />
                         The user is not allowed to delete the specified message.
 
+      /likeMessage:
+         /{messageId}:
+            uriParameters:
+               messageId:
+                  description: Like a message.
+            post:
+               securedBy: [oauth_2_0]
+               description: |
+                  Like a message in Habla.
+               body:
+                  properties:
+                     like:
+                        type: boolean
+                        required: true
+               responses:
+                  200:
+                     description: |
+                        OK<br />
+                        The message was marked as liked by the user.
+                  404:
+                     description: |
+                        NOT_FOUND<br />
+                        The `message` with the specified ID was not found.
+
+      /unlikeMessage:
+         /{messageId}:
+            uriParameters:
+               messageId:
+                  description: Unlike a message.
+            post:
+               securedBy: [oauth_2_0]
+               description: |
+                  Unlike a message in Habla.
+               body:
+                  properties:
+                     like:
+                        type: boolean
+                        required: true
+               responses:
+                  200:
+                     description: |
+                        OK<br />
+                        The message was marked as unliked by the user.
+                  404:
+                     description: |
+                        NOT_FOUND<br />
+                        The `message` with the specified ID was not found.
+
+      /flagMessage:
+         /{messageId}:
+            uriParameters:
+               messageId:
+                  description: Flag a message.
+            post:
+               securedBy: [oauth_2_0]
+               description: |
+                  Flag a message in Habla.
+               body:
+                  properties:
+                     flag:
+                        type: boolean
+                        required: true
+               responses:
+                  200:
+                     description: |
+                        OK<br />
+                        The message was flagged by the user.
+                  404:
+                     description: |
+                        NOT_FOUND<br />
+                        The `message` with the specified ID was not found.
+
       /readMessage:
          /{messageId}:
             uriParameters:

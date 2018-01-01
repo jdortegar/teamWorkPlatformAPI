@@ -2,7 +2,7 @@ import httpStatus from 'http-status';
 import APIError from '../helpers/APIError';
 import { apiVersionedVisibility, publishByApiVersion } from '../helpers/publishedVisibility';
 import * as conversationsSvc from '../services/conversationService';
-import { NotActiveError, ConversationNotExistError, NoPermissionsError } from '../services/errors';
+import { NotActiveError, ConversationNotExistError, NoPermissionsError, MessageNotExistError } from '../services/errors';
 
 
 export const getConversations = (req, res, next) => {
@@ -12,6 +12,18 @@ export const getConversations = (req, res, next) => {
    conversationsSvc.getConversations(req, userId, teamRoomId)
       .then((conversations) => {
          res.status(httpStatus.OK).json({ conversations: publishByApiVersion(req, apiVersionedVisibility.publicConversations, conversations) });
+      })
+      .catch((err) => {
+         next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
+      });
+};
+
+export const getBookmarkedMessages = (req, res, next) => {
+   const userId = req.user._id;
+
+   conversationsSvc.getBookmarkedMessages(req, userId)
+      .then((messages) => {
+         res.status(httpStatus.OK).json({ conversations: publishByApiVersion(req, apiVersionedVisibility.publicMessages, messages) });
       })
       .catch((err) => {
          next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
@@ -143,6 +155,60 @@ export const deleteMessage = (req, res, next) => {
             res.status(httpStatus.FORBIDDEN).end();
          } else if (err instanceof NotActiveError) {
             res.status(httpStatus.METHOD_NOT_ALLOWED).end();
+         } else {
+            next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE));
+         }
+      });
+};
+
+export const likeMessage = (req, res, next) => {
+   const userId = req.user._id;
+   const { conversationId, messageId } = req.params;
+   const { like } = req.body;
+
+   conversationsSvc.likeMessage(req, conversationId, messageId, userId, like)
+      .then(() => {
+         res.status(httpStatus.OK).end();
+      })
+      .catch((err) => {
+         if (err instanceof MessageNotExistError) {
+            res.status(httpStatus.NOT_FOUND).end();
+         } else {
+            next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE));
+         }
+      });
+};
+
+export const dislikeMessage = (req, res, next) => {
+   const userId = req.user._id;
+   const { conversationId, messageId } = req.params;
+   const { dislike } = req.body;
+
+   conversationsSvc.dislikeMessage(req, conversationId, messageId, userId, dislike)
+      .then(() => {
+         res.status(httpStatus.OK).end();
+      })
+      .catch((err) => {
+         if (err instanceof MessageNotExistError) {
+            res.status(httpStatus.NOT_FOUND).end();
+         } else {
+            next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE));
+         }
+      });
+};
+
+export const flagMessage = (req, res, next) => {
+   const userId = req.user._id;
+   const { conversationId, messageId } = req.params;
+   const { flag } = req.body;
+
+   conversationsSvc.flagMessage(req, conversationId, messageId, userId, flag)
+      .then(() => {
+         res.status(httpStatus.OK).end();
+      })
+      .catch((err) => {
+         if (err instanceof MessageNotExistError) {
+            res.status(httpStatus.NOT_FOUND).end();
          } else {
             next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE));
          }

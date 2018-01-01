@@ -230,6 +230,33 @@ const publicMessages = (dbMessages) => {
    });
 };
 
+const publicMessageLike = (messageLike) => {
+   const { conversationId, messageId, like } = messageLike;
+   return {
+      conversationId,
+      messageId,
+      like
+   };
+};
+
+const publicMessageDislike = (messageDislike) => {
+   const { conversationId, messageId, dislike } = messageDislike;
+   return {
+      conversationId,
+      messageId,
+      dislike
+   };
+};
+
+const publicMessageFlag = (messageFlag) => {
+   const { conversationId, messageId, flag } = messageFlag;
+   return {
+      conversationId,
+      messageId,
+      flag
+   };
+};
+
 const publicReadMessages = (readMessages) => {
    const ret = _.cloneDeep(readMessages);
    if (ret.conversationIds) {
@@ -318,6 +345,15 @@ export const apiVersionedVisibility = {
    },
    publicMessages: {
       latest: publicMessages
+   },
+   publicMessageLike: {
+      latest: publicMessageLike
+   },
+   publicMessageDislike: {
+      latest: publicMessageDislike
+   },
+   publicMessageFlag: {
+      latest: publicMessageFlag
    },
    publicReadMessages: {
       latest: publicReadMessages

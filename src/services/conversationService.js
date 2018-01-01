@@ -7,10 +7,21 @@ import * as conversationsTable from '../repositories/db/conversationsTable';
 import * as conversationParticipantsTable from '../repositories/db/conversationParticipantsTable';
 import * as messagesTable from '../repositories/db/messagesTable';
 import * as readMessagesTable from '../repositories/db/readMessagesTable';
+import * as userMessageTable from '../repositories/db/userMessageTable';
 import * as messagesCache from '../repositories/cache/messagesCache';
-import { conversationCreated, conversationUpdated, messageCreated, messageRead, messageUpdated, messageDeleted } from './messaging';
+import {
+   conversationCreated,
+   conversationUpdated,
+   messageCreated,
+   messageRead,
+   messageUpdated,
+   messageDeleted,
+   messageLiked,
+   messageDisliked,
+   messageFlagged
+} from './messaging';
 import { updateCachedByteCount } from './awsMarketplaceService';
-import { ConversationNotExistError, NoPermissionsError, NotActiveError } from './errors';
+import { ConversationNotExistError, NoPermissionsError, NotActiveError, MessageNotExistError } from './errors';
 import {
    getUsersByIds,
 } from '../repositories/util';
@@ -275,6 +286,12 @@ const sortMessages = (messages) => {
    const flattenedMessages = flattenMessagesArray(sortedMessages);
 
    return flattenedMessages;
+};
+
+// TODO:
+export const getBookmarkedMessages = (req, userId) => { // eslint-disable-line no-unused-vars
+   return new Promise((resolve, reject) => { // eslint-disable-line no-unused-vars
+   });
 };
 
 /**
@@ -629,6 +646,103 @@ export const deleteMessage = (req, conversationId, messageId, userId) => {
          })
          .then(() => {
             messagesCache.incrementByteCount(req, -message.byteCount, conversationId);
+         })
+         .catch(err => reject(err));
+   });
+};
+
+export const likeMessage = (req, conversationId, messageId, userId, like = true) => {
+   return new Promise((resolve, reject) => {
+      messagesTable.getMessageByConversationIdAndMessageId(req, conversationId, messageId)
+         .then((message) => {
+            if (!message) {
+               throw new MessageNotExistError(messageId);
+            }
+            return userMessageTable.getUserMessageByUserIdAndMessageId(req, userId, messageId);
+         })
+         .then((userMessage) => {
+            if (userMessage) {
+               if (userMessage.like !== like) {
+                  return userMessageTable.likeMessage(req, userId, messageId, like);
+               }
+               return undefined;
+            }
+            return userMessageTable.createUserMessage(req, userId, messageId, conversationId, { like });
+         })
+         .then((result) => {
+            if (result) {
+               return messagesTable.updateMessageLikes(req, conversationId, messageId, userId, like);
+            }
+            return undefined;
+         })
+         .then(() => {
+            resolve();
+            messageLiked(req, conversationId, messageId, like);
+         })
+         .catch(err => reject(err));
+   });
+};
+
+export const dislikeMessage = (req, conversationId, messageId, userId, dislike = true) => {
+   return new Promise((resolve, reject) => {
+      messagesTable.getMessageByConversationIdAndMessageId(req, conversationId, messageId)
+         .then((message) => {
+            if (!message) {
+               throw new MessageNotExistError(messageId);
+            }
+            return userMessageTable.getUserMessageByUserIdAndMessageId(req, userId, messageId);
+         })
+         .then((userMessage) => {
+            if (userMessage) {
+               if (userMessage.dislike !== dislike) {
+                  return userMessageTable.dislikeMessage(req, userId, messageId, dislike);
+               }
+               return undefined;
+            }
+            return userMessageTable.createUserMessage(req, userId, messageId, conversationId, { dislike });
+         })
+         .then((result) => {
+            if (result) {
+               return messagesTable.updateMessageDisikes(req, conversationId, messageId, userId, dislike);
+            }
+            return undefined;
+         })
+         .then(() => {
+            resolve();
+            messageDisliked(req, conversationId, messageId, dislike);
+         })
+         .catch(err => reject(err));
+   });
+};
+
+
+export const flagMessage = (req, conversationId, messageId, userId, flag = true) => {
+   return new Promise((resolve, reject) => {
+      messagesTable.getMessageByConversationIdAndMessageId(req, conversationId, messageId)
+         .then((message) => {
+            if (!message) {
+               throw new MessageNotExistError(messageId);
+            }
+            return userMessageTable.getUserMessageByUserIdAndMessageId(req, userId, messageId);
+         })
+         .then((userMessage) => {
+            if (userMessage) {
+               if (userMessage.flag !== flag) {
+                  return userMessageTable.flagMessage(req, userId, messageId, flag);
+               }
+               return undefined;
+            }
+            return userMessageTable.createUserMessage(req, userId, messageId, conversationId, { flag });
+         })
+         .then((result) => {
+            if (result) {
+               return messagesTable.updateMessageFlags(req, conversationId, messageId, userId, flag);
+            }
+            return undefined;
+         })
+         .then(() => {
+            resolve();
+            messageFlagged(req, conversationId, messageId, flag);
          })
          .catch(err => reject(err));
    });
