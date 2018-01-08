@@ -63,6 +63,8 @@ app.use(jwtMiddleware.unless({
       /^\/(v\d+\/)?users\/registerUser/,
       /^\/(v\d+\/)?users\/validateEmail/,
       /^\/(v\d+\/)?users\/createUser/,
+      /^\/(v\d+\/)?users\/forgotPassword/,
+      /^\/(v\d+\/)?users\/resetPassword/,
       /^\/(v\d+\/)?auth\/registerAWSCustomer/,
       /^\/(v\d+\/)?auth\/handleAWSEntitlementEvent/,
       /^\/(v\d+\/)?auth\/login/,

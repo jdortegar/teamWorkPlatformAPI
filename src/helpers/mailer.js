@@ -77,6 +77,20 @@ export const sendActivationLink = (email, rid) => {
    });
 };
 
+export const sendResetPassword = (email, rid) => {
+   const cid = uuid.v4();
+   const html = htmlContents(cid,
+      `<br>Reset Password<br>
+        <br>Please click on the following link to reset your password:<br>
+         <br> <a href="${config.webappBaseUri}/verifyAccount/${rid}">${config.webappBaseUri}/verifyAccount/${rid}</a><br>`);
+   return sendMail(cid, {
+      from: 'habla-mailer-dev@habla.ai',
+      to: email,
+      subject: 'Reset Password',
+      html
+   });
+};
+
 export const sendSubscriberOrgInviteToExternalUser = (email, subscriberOrgName, byUserInfo, rid) => {
    const cid = uuid.v4();
    const html = htmlContents(cid,
