@@ -42,6 +42,30 @@ export const createReservation = (req, res) => {
    }
 };
 
+export const forgotPassword = (req, res) => {
+   const email = req.body.email || '';
+
+   // Add new reservation to cache
+
+   req.logger.debug(`createForgotPasswordReservation: user ${email}`);
+   const rid = uuid.v4(); // get a uid to represent the reservation
+   req.logger.debug(`createForgotPasswordReservation: new rid: ${rid}`);
+   req.app.locals.redis.set(`${config.redisPrefix}${rid}`, email, 'EX', 1800, (err) => {
+      if (err) {
+         req.logger.debug('createForgotPasswordReservation: hset status - redis error');
+      } else {
+         req.logger.debug(`createReservation: created reservation for email: ${email}`);
+         mailer.sendResetPassword(email, rid).then(() => {
+            const response = {
+               status: 'SUCCESS',
+               uuid: rid
+            };
+            res.status(httpStatus.CREATED).json(response);
+         });
+      }
+   });
+};
+
 export const deleteRedisKey = (rid) => {
    return new Promise((resolve, reject) => {
       app.locals.redis.delAsync(`${config.redisPrefix}${rid}`)
@@ -89,6 +113,41 @@ export const validateEmail = (req, res) => {
    });
 };
 
+export const resetPassword = (req, res) => {
+   const rid = req.params.rid || '';
+   const password = req.body.password;
+
+   delete req.body.password;
+   delete req.body.confirmPassword;
+
+   // Find reservation in cache
+   req.logger.debug(`find Reservation: id = ${rid}`);
+   req.app.locals.redis.get(`${config.redisPrefix}${rid}`, (err, reply) => {
+      if (err) {
+         req.logger.debug('validateEmail: get status - redis error');
+      } else if (reply) {
+         req.logger.debug(`validateEmail: found reservation for email: ${reply}`);
+         const response = {
+            status: 'SUCCESS',
+            email: reply
+         };
+         userSvc.resetPassword(req, reply, password)
+            .then(() => {
+               if (req.accepts('json')) {
+                  res.status(httpStatus.OK).json(response);
+               } else {
+                  res.status(httpStatus.BAD_REQUEST).end();
+               }
+            });
+      } else {
+         const response = {
+            status: 'ERR_RESERVATION_NOT_FOUND'
+         };
+         res.status(httpStatus.NOT_FOUND).json(response);
+      }
+   });
+};
+
 export const createUser = (req, res, next) => {
    userSvc.createUser(req, req.body)
       .then(() => res.status(httpStatus.CREATED).end())
@@ -116,6 +175,27 @@ export const updateUser = (req, res, next) => {
          }
       });
 };
+
+export const updatePassword = (req, res, next) => {
+   const userId = req.user._id;
+   const oldPassword = req.body.oldPassword;
+   const newPassword = req.body.newPassword;
+
+   delete req.body.oldPassword;
+   delete req.body.newPassword;
+
+   userSvc.updatePassword(req, userId, oldPassword, newPassword)
+      .then(() => {
+         res.status(httpStatus.NO_CONTENT).end();
+      })
+      .catch((err) => {
+         if (err instanceof UserNotExistError) {
+            res.status(httpStatus.NOT_FOUND).end();
+         } else {
+            next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE));
+         }
+      });
+}
 
 export const updatePublicPreferences = (req, res, next) => {
    const userId = req.user._id;
