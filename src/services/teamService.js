@@ -81,7 +81,7 @@ export const createTeamNoCheck = (req, subscriberOrgId, teamInfo, subscriberUser
    if (preferences.private === undefined) {
       preferences.private = {};
    }
-   preferences.iconColor = preferences.iconColor || getRandomColor();
+   preferences.iconColor = preferences.iconColor || '#FBBC12';
    const team = {
       subscriberOrgId,
       subscriberOrgEnabled: true,

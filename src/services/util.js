@@ -5,9 +5,26 @@ const getRandomIntInclusive = (min, max) => {
 };
 
 export const getRandomColor = () => { // eslint-disable-line import/prefer-default-export
-   const randR = getRandomIntInclusive(1, 20) * 10;
-   const randG = getRandomIntInclusive(1, 20) * 10;
-   const randB = getRandomIntInclusive(1, 20) * 10;
-   return `rgba(${randR},${randG},${randB},1)`;
+   const randNumber = getRandomIntInclusive(1, 6);
+   let color;
+   switch (randNumber) {
+      case 1:
+         color = '#FBBC12';
+         break;
+      case 2:
+         color = '#EB4435';
+         break;
+      case 3:
+         color = '#557DBF';
+         break;
+      case 4:
+         color = '#32A953';
+         break;
+      case 5:
+      default:
+         color = '#cccccc';
+         break;
+   }
+   return color;
 };
 
