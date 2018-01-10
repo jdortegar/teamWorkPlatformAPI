@@ -13,8 +13,18 @@ import {
    TeamRoomNotExistError,
    UserNotExistError
 } from './errors';
-import { deleteRedisInvitation, InvitationKeys, inviteExistingUsersToTeamRoom } from './invitations';
-import { teamRoomCreated, teamRoomMemberAdded, teamRoomPrivateInfoUpdated, teamRoomUpdated, userInvitationDeclined } from './messaging';
+import InvitationKeys from '../repositories/InvitationKeys';
+import * as invitationsTable from '../repositories/db/invitationsTable';
+import { deleteInvitation } from '../repositories/cache/invitationsCache';
+import { inviteExistingUsersToTeamRoom } from './invitationsUtil';
+import {
+   teamRoomCreated,
+   teamRoomMemberAdded,
+   teamRoomPrivateInfoUpdated,
+   teamRoomUpdated,
+   userInvitationAccepted,
+   userInvitationDeclined
+} from './messaging';
 import { getPresence } from './messaging/presence';
 import {
    createItem,
@@ -463,6 +473,7 @@ export const replyToInvite = (req, teamRoomId, accept, userId) => {
    return new Promise((resolve, reject) => {
       let user;
       let teamRoom;
+      let invitation;
       Promise.all([getUsersByIds(req, [userId]), getTeamRoomsByIds(req, [teamRoomId])])
          .then((promiseResults) => {
             const users = promiseResults[0];
@@ -478,12 +489,14 @@ export const replyToInvite = (req, teamRoomId, accept, userId) => {
             }
             teamRoom = teamRooms[0];
 
-            return deleteRedisInvitation(req, user.userInfo.emailAddress, InvitationKeys.teamRoomId, teamRoomId);
+            return deleteInvitation(req, user.userInfo.emailAddress, InvitationKeys.teamRoomId, teamRoomId);
          })
-         .then((invitation) => {
+         .then((cachedInvitation) => {
+            invitation = cachedInvitation;
             if ((invitation) && ((!('teamActive' in teamRoom.teamRoomInfo)) || (teamRoom.teamRoomInfo.teamActive))) {
                if ((teamRoom.teamRoomInfo.active) && (accept)) {
                   const { teamId } = invitation;
+                  userInvitationAccepted(req, invitation, userId);
                   return getTeamMembersByUserIdAndTeamId(req, userId, teamId);
                } else if (!accept) {
                   userInvitationDeclined(req, invitation, userId);
@@ -498,6 +511,10 @@ export const replyToInvite = (req, teamRoomId, accept, userId) => {
                return addUserToTeamRoom(req, user, teamMemberId, teamRoomId, Roles.user);
             }
             return undefined;
+         })
+         .then(() => {
+            const state = (accept) ? 'ACCEPTED' : 'DECLINED';
+            return invitationsTable.updateInvitationStateByInviterUserIdAndCreated(req, invitation.byUserId, invitation.created, state);
          })
          .then(() => resolve())
          .catch(err => reject(err));

@@ -12,8 +12,18 @@ import {
    TeamNotExistError,
    UserNotExistError
 } from './errors';
-import { deleteRedisInvitation, InvitationKeys, inviteExistingUsersToTeam } from './invitations';
-import { teamCreated, teamMemberAdded, teamPrivateInfoUpdated, teamUpdated, userInvitationDeclined } from './messaging';
+import InvitationKeys from '../repositories/InvitationKeys';
+import * as invitationsTable from '../repositories/db/invitationsTable';
+import { deleteInvitation } from '../repositories/cache/invitationsCache';
+import { inviteExistingUsersToTeam } from './invitationsUtil';
+import {
+   teamCreated,
+   teamMemberAdded,
+   teamPrivateInfoUpdated,
+   teamUpdated,
+   userInvitationAccepted,
+   userInvitationDeclined
+} from './messaging';
 import { getPresence } from './messaging/presence';
 import Roles from './roles';
 import * as teamRoomSvc from './teamRoomService';
@@ -451,6 +461,7 @@ export function replyToInvite(req, teamId, accept, userId) {
    return new Promise((resolve, reject) => {
       let user;
       let team;
+      let invitation;
       Promise.all([getUsersByIds(req, [userId]), getTeamsByIds(req, [teamId])])
          .then((promiseResults) => {
             const users = promiseResults[0];
@@ -466,12 +477,14 @@ export function replyToInvite(req, teamId, accept, userId) {
             }
             team = teams[0];
 
-            return deleteRedisInvitation(req, user.userInfo.emailAddress, InvitationKeys.teamId, teamId);
+            return deleteInvitation(req, user.userInfo.emailAddress, InvitationKeys.teamId, teamId);
          })
-         .then((invitation) => {
+         .then((cachedInvitation) => {
+            invitation = cachedInvitation;
             if ((invitation) && ((!('subscriberOrgEnabled' in team.teamInfo)) || (team.teamInfo.subscriberOrgEnabled))) {
                if ((team.teamInfo.active) && (accept)) {
                   const { subscriberOrgId } = invitation;
+                  userInvitationAccepted(req, invitation, userId);
                   return getSubscriberUsersByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId);
                } else if (!accept) {
                   userInvitationDeclined(req, invitation, userId);
@@ -486,6 +499,10 @@ export function replyToInvite(req, teamId, accept, userId) {
                return addUserToTeam(req, user, subscriberUserId, teamId, Roles.user);
             }
             return undefined;
+         })
+         .then(() => {
+            const state = (accept) ? 'ACCEPTED' : 'DECLINED';
+            return invitationsTable.updateInvitationStateByInviterUserIdAndCreated(req, invitation.byUserId, invitation.created, state);
          })
          .then(() => resolve())
          .catch(err => reject(err));

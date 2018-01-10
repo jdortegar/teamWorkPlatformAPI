@@ -32,6 +32,13 @@ export const userInvited = (req, userId, invitation) => {
    ]);
 };
 
+export const userInvitationAccepted = (req, invitation, toEmailOrUserId) => {
+   const event = _.merge({}, invitation, { inviteeUserIdOrEmail: toEmailOrUserId });
+   return _broadcastEvent(req, EventTypes.userInvitationAccepted, event, [
+      ChannelFactory.personalChannel(invitation.byUserId)
+   ]);
+};
+
 export const userInvitationDeclined = (req, invitation, toEmailOrUserId) => {
    const event = _.merge({}, invitation, { inviteeUserIdOrEmail: toEmailOrUserId });
    return _broadcastEvent(req, EventTypes.userInvitationDeclined, event, [

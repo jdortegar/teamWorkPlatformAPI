@@ -2,8 +2,18 @@ import _ from 'lodash';
 import uuid from 'uuid';
 import config from '../config/env';
 import { CannotInviteError, InvitationNotExistError, NoPermissionsError, SubscriberOrgExistsError, SubscriberOrgNotExistError, UserNotExistError } from './errors';
-import { deleteRedisInvitation, InvitationKeys, inviteExistingUsersToSubscriberOrg, inviteExternalUsersToSubscriberOrg } from './invitations';
-import { subscriberAdded, subscriberOrgCreated, subscriberOrgPrivateInfoUpdated, subscriberOrgUpdated, userInvitationDeclined } from './messaging';
+import InvitationKeys from '../repositories/InvitationKeys';
+import * as invitationsTable from '../repositories/db/invitationsTable';
+import { deleteInvitation } from '../repositories/cache/invitationsCache';
+import { inviteExistingUsersToSubscriberOrg, inviteExternalUsersToSubscriberOrg } from './invitationsUtil';
+import {
+   subscriberAdded,
+   subscriberOrgCreated,
+   subscriberOrgPrivateInfoUpdated,
+   subscriberOrgUpdated,
+   userInvitationAccepted,
+   userInvitationDeclined
+} from './messaging';
 import { getPresence } from './messaging/presence';
 import Roles from './roles';
 import * as teamSvc from './teamService';
@@ -378,6 +388,7 @@ export const replyToInvite = (req, subscriberOrgId, accept, userId) => {
    return new Promise((resolve, reject) => {
       let user;
       let subscriberOrg;
+      let invitation;
       Promise.all([getUsersByIds(req, [userId]), getSubscriberOrgsByIds(req, [subscriberOrgId])])
          .then((promiseResults) => {
             const users = promiseResults[0];
@@ -393,12 +404,14 @@ export const replyToInvite = (req, subscriberOrgId, accept, userId) => {
             }
             subscriberOrg = subscriberOrgs[0];
 
-            return deleteRedisInvitation(req, user.userInfo.emailAddress, InvitationKeys.subscriberOrgId, subscriberOrgId);
+            return deleteInvitation(req, user.userInfo.emailAddress, InvitationKeys.subscriberOrgId, subscriberOrgId);
          })
-         .then((invitation) => {
+         .then((cachedInvitation) => {
+            invitation = cachedInvitation;
             if (invitation) {
                if (accept) {
                   if (subscriberOrg.subscriberOrgInfo.enabled === true) {
+                     userInvitationAccepted(req, invitation, user.userInfo.emailAddress);
                      return addUserToSubscriberOrg(req, user, subscriberOrgId, Roles.user);
                   }
                } else {
@@ -407,6 +420,10 @@ export const replyToInvite = (req, subscriberOrgId, accept, userId) => {
                return undefined;
             }
             throw new InvitationNotExistError(subscriberOrgId);
+         })
+         .then(() => {
+            const state = (accept) ? 'ACCEPTED' : 'DECLINED';
+            return invitationsTable.updateInvitationStateByInviterUserIdAndCreated(req, invitation.byUserId, invitation.created, state);
          })
          .then(() => resolve())
          .catch(err => reject(err));

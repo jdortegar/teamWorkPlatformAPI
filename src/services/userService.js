@@ -2,7 +2,7 @@ import _ from 'lodash';
 import uuid from 'uuid';
 import config from '../config/env';
 import { NoPermissionsError, UserNotExistError, CustomerExistsError } from './errors';
-import { getRedisInvitations } from './invitations';
+import { getInvitationsByInviteeEmail } from './invitationsUtil';
 import { userCreated, userUpdated, userPrivateInfoUpdated } from './messaging';
 import * as subscriberOrgSvc from './subscriberOrgService';
 import { createItem, getUsersByIds, getUsersByEmailAddresses, updateItem } from '../repositories/util';
@@ -172,7 +172,7 @@ export function updateUser(req, userId, updateInfo, requestorUserId = undefined)
 
 export const getInvitations = (req, email) => {
    return new Promise((resolve, reject) => {
-      getRedisInvitations(req, email)
+      getInvitationsByInviteeEmail(req, email)
          .then((invitations) => {
             if (invitations === null) {
                resolve([]);

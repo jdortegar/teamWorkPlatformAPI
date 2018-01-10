@@ -390,6 +390,50 @@ function createReadMessagesTable() {
 }
 createReadMessagesTable();
 
+
+function createInvitationsTable() {
+   var params = {
+      TableName : tablePrefix + 'invitations',
+      KeySchema: [
+         { AttributeName: 'inviterUserId', KeyType: 'HASH'},  //Partition key
+         { AttributeName: 'created', KeyType: 'RANGE' }  //Sort key
+      ],
+      AttributeDefinitions: [
+         { AttributeName: 'inviterUserId', AttributeType: 'S' },
+         { AttributeName: 'created', AttributeType: 'S' },
+         { AttributeName: 'inviteeEmail', AttributeType: 'S' }
+      ],
+      ProvisionedThroughput: {
+         ReadCapacityUnits: 10,
+         WriteCapacityUnits: 10
+      },
+      GlobalSecondaryIndexes: [
+         {
+            IndexName: 'inviteeEmailCreatedIdx',
+            KeySchema: [
+               { AttributeName: 'inviteeEmail', KeyType: 'HASH' },
+               { AttributeName: 'created', KeyType: 'RANGE' }
+            ],
+            Projection: { ProjectionType: 'ALL' },
+            ProvisionedThroughput: {
+               ReadCapacityUnits: 10,
+               WriteCapacityUnits: 10
+            }
+         }
+      ]
+   };
+
+   dynamodb.createTable(params, function(err, data) {
+      if (err) {
+         console.error('Unable to create InvitationsTable. Error JSON:', JSON.stringify(err, null, 2));
+      } else {
+         // console.log('Created table. Table description JSON:', JSON.stringify(data, null, 2));
+      }
+   });
+}
+createInvitationsTable();
+
+
 function createAwsMarketplaceCustomerTable() {
    var params = {
       TableName : tablePrefix + 'awsMarketplaceCustomers',

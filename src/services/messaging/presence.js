@@ -30,7 +30,7 @@ export const getPresence = (req, userId) => {
 export const setPresence = (req, userId, presence) => {
    return new Promise((resolve, reject) => {
       const hash = hashKey(userId);
-      const ttl = req.now.add(defaultExpirationMinutes, 'minutes').unix();
+      const ttl = moment(req.now).add(defaultExpirationMinutes, 'minutes').unix();
       let previousLocation;
       getPresence(req, userId)
          .then((presences) => {

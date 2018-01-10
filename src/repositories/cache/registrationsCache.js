@@ -1,9 +1,9 @@
 import uuid from 'uuid';
-import config from '../config/env';
+import config from '../../config/env/index';
 
 const defaultExpiration = 30 * 60; // 30 minutes.
 
-const createRedisRegistration = (req, email, expiration = undefined) => {
+const createRegistration = (req, email, expiration = undefined) => {
    return new Promise((resolve, reject) => {
       const rid = uuid.v4();
       req.app.locals.redis.set(`${config.redisPrefix}${rid}`, email, 'EX', expiration || defaultExpiration, (error) => {
@@ -15,4 +15,4 @@ const createRedisRegistration = (req, email, expiration = undefined) => {
       });
    });
 };
-export default createRedisRegistration;
+export default createRegistration;

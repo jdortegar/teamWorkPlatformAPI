@@ -1,107 +1,20 @@
 import moment from 'moment';
 import { sendSubscriberOrgInviteToExternalUser, sendSubscriberOrgInviteToExistingUser, sendTeamInviteToExistingUser, sendTeamRoomInviteToExistingUser } from '../helpers/mailer';
-import config from '../config/env';
-import { userInvited } from './messaging';
-import createRedisRegistration from './registrations';
-
-export const InvitationKeys = Object.freeze({
-   subscriberOrgId: 'subscriberOrgId',
-   teamId: 'teamId',
-   teamRoomId: 'teamRoomId',
-   from(value) { return (this[value]); }
-});
+import { userInvited } from './messaging/index';
+import InvitationKeys from '../repositories/InvitationKeys';
+import * as invitationsRepo from '../repositories/invitationsRepo';
+import createRegistration from '../repositories/cache/registrationsCache';
 
 const defaultExpirationMinutes = 7 * 24 * 60; // 1 week in minutes.
-// const defaultExpirationOrgInviteMinutes = defaultExpirationMinutes;
-
-const hashKey = (email) => {
-   return `${email}#pendingInvites`;
-};
 
 const toInvitationKey = (invitationKey, invitationValue) => {
    return `${invitationKey}=${invitationValue}`;
 };
 
-/**
- *
- * @param req
- * @param email
- * @returns {Promise}
- */
-export const getRedisInvitations = (req, email) => {
-   return new Promise((resolve, reject) => {
-      req.app.locals.redis.zremrangebyscoreAsync(`${config.redisPrefix}${hashKey(email)}`, 0, req.now.unix())
-         .then(() => {
-            return req.app.locals.redis.zrangebyscoreAsync(
-               `${config.redisPrefix}${hashKey(email)}`,
-               req.now.unix(),
-               moment(req.now).add(defaultExpirationMinutes, 'minutes').unix()
-            );
-         })
-         .then((invitations) => {
-            const invitationsAsObjects = (invitations) ? invitations.map(invitation => JSON.parse(invitation)) : null;
-            resolve(invitationsAsObjects);
-         })
-         .catch(err => reject(err));
-   });
+
+export const getInvitationsByInviteeEmail = (req, email) => {
+   return invitationsRepo.getInvitationsByInviteeEmail(req, email);
 };
-
-const createRedisInvitation = (req, email, invitation, expiration) => {
-   return new Promise((resolve, reject) => {
-      const hash = hashKey(email);
-      const ttl = req.now.add(expiration, 'minutes').unix();
-      req.app.locals.redis.zremrangebyscoreAsync(`${config.redisPrefix}${hash}`, 0, req.now.unix())
-         .then(() => req.app.locals.redis.zaddAsync(`${config.redisPrefix}${hash}`, ttl, JSON.stringify(invitation)))
-         .then(() => resolve())
-         .catch(err => reject(err));
-   });
-};
-
-export const deleteRedisInvitation = (req, email, invitationKey, invitationValue) => {
-   return new Promise((resolve, reject) => {
-      let invitation;
-      getRedisInvitations(req, email)
-         .then((invitations) => {
-            if (invitations === null) {
-               return undefined;
-            }
-
-            const filteredInvitations = invitations.filter((invite) => {
-               let inviteFound = false;
-               const inviteValue = invite[invitationKey];
-               if ((inviteValue) && (inviteValue === invitationValue)) {
-                  switch (invitationKey) {
-                     case InvitationKeys.teamRoomId:
-                        inviteFound = true;
-                        break;
-                     case InvitationKeys.teamId:
-                        inviteFound = !(invite[InvitationKeys.teamRoomId]);
-                        break;
-                     case InvitationKeys.subscriberOrgId:
-                        inviteFound = !(invite[InvitationKeys.teamId]);
-                        break;
-                     default:
-                  }
-               }
-               return inviteFound;
-            });
-
-            if (filteredInvitations.length > 0) {
-               invitation = filteredInvitations[0];
-               const hash = hashKey(email);
-               if (invitations.length <= 1) {
-                  return req.app.locals.redis.del(`${config.redisPrefix}${hash}`);
-               }
-               return req.app.locals.redis.zremAsync(`${config.redisPrefix}${hash}`, invitation);
-            }
-
-            return undefined;
-         })
-         .then(() => resolve(invitation))
-         .catch(err => reject(err));
-   });
-};
-
 
 export const inviteExistingUsersToSubscriberOrg = (req, invitingDbUser, existingDbUsers, subscriberOrg) => {
    return new Promise((resolve, reject) => {
@@ -116,9 +29,11 @@ export const inviteExistingUsersToSubscriberOrg = (req, invitingDbUser, existing
          subscriberOrgName: subscriberOrg.subscriberOrgInfo.name
       };
 
+      let createdOffset = 0;
       existingDbUsers.forEach((dbUser) => {
          const email = dbUser.userInfo.emailAddress;
-         const promise = createRedisInvitation(req, dbUser.userInfo.emailAddress, invitation, defaultExpirationMinutes)
+         const created = moment(req.now).add(createdOffset, 'milliseconds');
+         const promise = invitationsRepo.createInvitation(req, dbUser.userInfo.emailAddress, invitation, created, defaultExpirationMinutes)
             .then(() => {
                return Promise.all([
                   sendSubscriberOrgInviteToExistingUser(email, subscriberOrg.subscriberOrgInfo.name, invitingDbUser.userInfo, key),
@@ -126,6 +41,7 @@ export const inviteExistingUsersToSubscriberOrg = (req, invitingDbUser, existing
                ]);
             });
          promises.push(promise);
+         createdOffset += 1;
       });
       Promise.all(promises)
          .then(() => resolve())
@@ -148,9 +64,11 @@ export const inviteExistingUsersToTeam = (req, invitingDbUser, existingDbUsers, 
          teamName: team.teamInfo.name
       };
 
+      let createdOffset = 0;
       existingDbUsers.forEach((dbUser) => {
          const email = dbUser.userInfo.emailAddress;
-         const promise = createRedisInvitation(req, dbUser.userInfo.emailAddress, invitation, defaultExpirationMinutes)
+         const created = moment(req.now).add(createdOffset, 'milliseconds');
+         const promise = invitationsRepo.createInvitation(req, dbUser.userInfo.emailAddress, invitation, created, defaultExpirationMinutes)
             .then(() => {
                return Promise.all([
                   sendTeamInviteToExistingUser(email, subscriberOrg.subscriberOrgInfo.name, team.teamInfo.name, invitingDbUser.userInfo, key),
@@ -158,6 +76,7 @@ export const inviteExistingUsersToTeam = (req, invitingDbUser, existingDbUsers, 
                ]);
             });
          promises.push(promise);
+         createdOffset += 1;
       });
       Promise.all(promises)
          .then(() => resolve())
@@ -182,9 +101,11 @@ export const inviteExistingUsersToTeamRoom = (req, invitingDbUser, existingDbUse
       };
 
       const promises = [];
+      let createdOffset = 0;
       existingDbUsers.forEach((dbUser) => {
          const email = dbUser.userInfo.emailAddress;
-         const promise = createRedisInvitation(req, dbUser.userInfo.emailAddress, invitation, defaultExpirationMinutes)
+         const created = moment(req.now).add(createdOffset, 'milliseconds');
+         const promise = invitationsRepo.createInvitation(req, dbUser.userInfo.emailAddress, invitation, created, defaultExpirationMinutes)
             .then(() => {
                return Promise.all([
                   sendTeamRoomInviteToExistingUser(
@@ -199,6 +120,7 @@ export const inviteExistingUsersToTeamRoom = (req, invitingDbUser, existingDbUse
                ]);
             });
          promises.push(promise);
+         createdOffset += 1;
       });
       Promise.all(promises)
          .then(() => resolve())
@@ -222,15 +144,17 @@ export const inviteExternalUsersToSubscriberOrg = (req, invitingDbUser, emails, 
          subscriberOrgName: subscriberOrg.subscriberOrgInfo.name
       };
 
+      let createdOffset = 0;
       emails.forEach((email) => {
-         const promise = createRedisInvitation(req, email, invitation, defaultExpirationMinutes, 'minutes')
-            .then(() => createRedisRegistration(req, email, defaultExpirationMinutes))
+         const created = moment(req.now).add(createdOffset, 'milliseconds');
+         const promise = invitationsRepo.createInvitation(req, email, invitation, created, defaultExpirationMinutes)
+            .then(() => createRegistration(req, email, defaultExpirationMinutes))
             .then(rid => sendSubscriberOrgInviteToExternalUser(email, subscriberOrg.subscriberOrgInfo.name, invitingDbUser.userInfo, rid));
          promises.push(promise);
+         createdOffset += 1;
       });
       Promise.all(promises)
          .then(() => resolve())
          .catch(err => reject(err));
    });
 };
-
