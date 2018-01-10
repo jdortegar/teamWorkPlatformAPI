@@ -17,8 +17,17 @@ router.route('/createUser')
 router.route('/updateUser')
    .patch(validateByApiVersion(apiVersionedValidators.updateUser), users.updateUser);
 
+router.route('/updatePassword')
+   .patch(validateByApiVersion(apiVersionedValidators.updatePassword), users.updatePassword);
+
 router.route('/updatePublicPreferences/:userId')
    .patch(validateByApiVersion(apiVersionedValidators.updateUserPublicPreferences), users.updatePublicPreferences);
+
+router.route('/forgotPassword')
+   .post(validateByApiVersion(apiVersionedValidators.forgotPassword), users.forgotPassword);
+
+router.route('/resetPassword/:rid')
+   .post(validateByApiVersion(apiVersionedValidators.resetPassword), users.resetPassword);
 
 router.route('/getInvitations')
    .get(users.getInvitations);

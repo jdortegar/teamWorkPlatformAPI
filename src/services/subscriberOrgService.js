@@ -28,7 +28,6 @@ import {
    getUsersByIds,
    updateItem
 } from '../repositories/util';
-import { getRandomColor } from './util';
 
 
 export function getUserSubscriberOrgs(req, userId) {
@@ -59,7 +58,7 @@ export function createSubscriberOrgNoCheck(req, subscriberOrgInfo, user, subscri
    if (preferences.private === undefined) {
       preferences.private = {};
    }
-   preferences.iconColor = preferences.iconColor || getRandomColor();
+   preferences.iconColor = preferences.iconColor || '#EB4435'; // default color for team room;
    const subscriberOrg = {
       name: subscriberOrgInfo.name,
       icon,

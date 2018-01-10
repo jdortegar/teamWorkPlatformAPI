@@ -7,7 +7,7 @@ import { userCreated, userUpdated, userPrivateInfoUpdated } from './messaging';
 import * as subscriberOrgSvc from './subscriberOrgService';
 import { createItem, getUsersByIds, getUsersByEmailAddresses, updateItem } from '../repositories/util';
 import { getRandomColor } from './util';
-import { hashPassword } from '../models/user';
+import { hashPassword, passwordMatch } from '../models/user';
 import * as awsMarketplaceSvc from './awsMarketplaceService';
 
 export function addUserToCache(req, email, uid, status) {
@@ -166,6 +166,53 @@ export function updateUser(req, userId, updateInfo, requestorUserId = undefined)
                userPrivateInfoUpdated(req, user);
             }
          })
+         .catch(err => reject(err));
+   });
+}
+
+export function updatePassword(req, userId, oldPassword, newPassword) {
+   return new Promise((resolve, reject) => {
+      let user;
+      const hashedPassword = hashPassword(newPassword);
+      const timestampedUpdateInfo = { password: hashedPassword };
+      timestampedUpdateInfo.lastModified = req.now.format();
+      getUsersByIds(req, [userId])
+         .then((dbUsers) => {
+            if (dbUsers.length < 1) {
+               throw new UserNotExistError(userId);
+            }
+
+            user = dbUsers[0].userInfo;
+            if ((user) && (passwordMatch(user, oldPassword))) {
+               return updateItem(req, -1, `${config.tablePrefix}users`, 'userId', userId, { userInfo: timestampedUpdateInfo });
+            }
+            throw new Error('Incorrect Password!');
+         })
+         .then(() => {
+            resolve();
+
+            _.merge(user, timestampedUpdateInfo);
+            user.userId = userId;
+            userUpdated(req, user);
+         })
+         .catch(err => reject(err));
+   });
+}
+
+export function resetPassword(req, email, password) {
+   return new Promise((resolve, reject) => {
+      let dbUser;
+      getUsersByEmailAddresses(req, [email])
+         .then((users) => {
+            if (users.length > 0) {
+               dbUser = users[0];
+            }
+            const hashedPassword = hashPassword(password);
+            const timestampedUpdateInfo = { password: hashedPassword };
+            timestampedUpdateInfo.lastModified = req.now.format();
+            return updateItem(req, -1, `${config.tablePrefix}users`, 'userId', dbUser.userId, { userInfo: timestampedUpdateInfo });
+         })
+         .then(() => resolve(dbUser))
          .catch(err => reject(err));
    });
 }

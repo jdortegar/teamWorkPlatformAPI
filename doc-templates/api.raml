@@ -479,6 +479,104 @@ documentation:
                   NOT_FOUND<br />
                   The user was not found.
 
+   /updatePassword:
+      patch:
+         securedBy: [oauth_2_0]
+         description: |
+            Update a user's password in Habla.
+         body:
+            properties:
+               oldPasword:
+                  description: The current user's password.
+                  type: string
+                  required: true
+                  example: HelloWorld#123
+               newPasword:
+                  description: The new password to update.
+                  type: string
+                  required: true
+                  example: HelloWorld#123!
+               confirmNewPasword:
+                  description: Must match newPassword.
+                  type: string
+                  required: true
+                  example: HelloWorld#123!
+            example: |
+               {
+                  "oldPassword": "Hello123"
+                  "newPassword": "Bye123#"
+                  "confirmNewPassword": "Bye123#"
+               }
+         responses:
+            204:
+               description: |
+                  NO_CONTENT<br />
+                  The password was updated successfully.
+            404:
+               description: |
+                  NOT_FOUND<br />
+                  The user was not found.
+
+   /forgotPassword:
+      post:
+         description: |
+            Submit user email address to initiate password reset process
+         body:
+            properties:
+               email:
+                  type: string
+                  required: true
+            example: |
+               {
+                  "email": "john_doe@habla.ai"
+               }
+         responses:
+            201:
+               description: |
+                  CREATED<br />
+                  The uuid is the Reservation ID (rid).
+                  TODO: Was 200 OK.
+            400:
+               description: |
+                  BAD_REQUEST<br />
+                  No reason is given for privacy purposes, but could be an unknown username.
+
+   /resetPassword:
+      /{rid}:
+         uriParameters:
+            rid:
+               description: Reservation ID (rid).
+         post:
+            description: |
+               Reset the user's password
+            body:
+               properties:
+                  pasword:
+                     description: The new password to update.
+                     type: string
+                     required: true
+                     example: Bye123#!
+                  confirmPasword:
+                     description: Must match password.
+                     type: string
+                     required: true
+                     example: Bye123#!
+               example: |
+                  {
+                     "password": "Bye123#"
+                     "confirmPassword": "Bye123#"
+                  }
+            responses:
+               204:
+                  description: |
+                     NO_CONTENT<br />
+                     The password was reset successfully.
+               404:
+                  description: |
+                     NOT_FOUND<br />
+                     The user was not found.
+
+
    /updatePublicPreferences:
       /{userId}:
          uriParameters:
