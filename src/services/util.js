@@ -6,25 +6,18 @@ const getRandomIntInclusive = (min, max) => {
 
 export const getRandomColor = () => { // eslint-disable-line import/prefer-default-export
    const randNumber = getRandomIntInclusive(1, 6);
-   let color;
    switch (randNumber) {
       case 1:
-         color = '#FBBC12';
-         break;
+         return '#FBBC12';
       case 2:
-         color = '#EB4435';
-         break;
+         return '#EB4435';
       case 3:
-         color = '#557DBF';
-         break;
+         return '#557DBF';
       case 4:
-         color = '#32A953';
-         break;
+         return '#32A953';
       case 5:
       default:
-         color = '#cccccc';
-         break;
+         return '#cccccc';
    }
-   return color;
 };
 
