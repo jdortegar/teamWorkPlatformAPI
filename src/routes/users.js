@@ -32,6 +32,9 @@ router.route('/resetPassword/:rid')
 router.route('/getInvitations')
    .get(users.getInvitations);
 
+router.route('/getSentInvitations')
+   .get(users.getSentInvitations);
+
 /*
 router.route('/:userId')
   .put(users.update);

@@ -6,12 +6,12 @@ export const getInvitationsByInviteeEmail = (req, email) => {
    return invitationsCache.getInvitationsByInviteeEmail(req, email);
 };
 
-export const createInvitation = (req, email, invitation, created, expirationMinutes) => {
+export const createInvitation = (req, email, inviteeUserId = undefined, invitation, created, expirationMinutes) => {
    const expires = moment(created).add(expirationMinutes, 'minutes');
    return Promise.all([
       invitationsCache.createInvitation(req, email, invitation, created, expirationMinutes),
       invitationsTable.createInvitation(req, invitation.byUserId, invitation.byUserFirstName,
-         invitation.byUserLastName, invitation.byUserDisplayName, email, created, expires,
+         invitation.byUserLastName, invitation.byUserDisplayName, email, inviteeUserId, created, expires,
          {
             subscriberOrgId: invitation.subscriberOrgId,
             subscriberOrgName: invitation.subscriberOrgName,
@@ -24,6 +24,6 @@ export const createInvitation = (req, email, invitation, created, expirationMinu
    ]);
 };
 
-export const getInvitationsByInviterUserId = (req, inviterUserId) => {
-   return invitationsTable.getInvitationsByInviterUserId(req, inviterUserId);
+export const getInvitationsByInviterUserId = (req, inviterUserId, { since, state }) => {
+   return invitationsTable.getInvitationsByInviterUserId(req, inviterUserId, { since, state });
 };

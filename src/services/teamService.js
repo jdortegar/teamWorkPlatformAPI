@@ -22,7 +22,8 @@ import {
    teamPrivateInfoUpdated,
    teamUpdated,
    userInvitationAccepted,
-   userInvitationDeclined
+   userInvitationDeclined,
+   sentInvitationStatus
 } from './messaging';
 import { getPresence } from './messaging/presence';
 import Roles from './roles';
@@ -460,7 +461,7 @@ export function replyToInvite(req, teamId, accept, userId) {
    return new Promise((resolve, reject) => {
       let user;
       let team;
-      let invitation;
+      let cachedInvitation;
       Promise.all([getUsersByIds(req, [userId]), getTeamsByIds(req, [teamId])])
          .then((promiseResults) => {
             const users = promiseResults[0];
@@ -478,15 +479,15 @@ export function replyToInvite(req, teamId, accept, userId) {
 
             return deleteInvitation(req, user.userInfo.emailAddress, InvitationKeys.teamId, teamId);
          })
-         .then((cachedInvitation) => {
-            invitation = cachedInvitation;
-            if ((invitation) && ((!('subscriberOrgEnabled' in team.teamInfo)) || (team.teamInfo.subscriberOrgEnabled))) {
+         .then((retrievedCachedInvitation) => {
+            cachedInvitation = retrievedCachedInvitation;
+            if ((cachedInvitation) && ((!('subscriberOrgEnabled' in team.teamInfo)) || (team.teamInfo.subscriberOrgEnabled))) {
                if ((team.teamInfo.active) && (accept)) {
-                  const { subscriberOrgId } = invitation;
-                  userInvitationAccepted(req, invitation, userId);
+                  const { subscriberOrgId } = cachedInvitation;
+                  userInvitationAccepted(req, cachedInvitation, userId);
                   return getSubscriberUsersByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId);
                } else if (!accept) {
-                  userInvitationDeclined(req, invitation, userId);
+                  userInvitationDeclined(req, cachedInvitation, userId);
                }
                return undefined;
             }
@@ -501,9 +502,12 @@ export function replyToInvite(req, teamId, accept, userId) {
          })
          .then(() => {
             const state = (accept) ? 'ACCEPTED' : 'DECLINED';
-            return invitationsTable.updateInvitationStateByInviterUserIdAndCreated(req, invitation.byUserId, invitation.created, state);
+            return invitationsTable.updateInvitationStateByInviterUserIdAndCreated(req, cachedInvitation.byUserId, cachedInvitation.created, state);
          })
-         .then(() => resolve())
+         .then((invitation) => {
+            resolve();
+            sentInvitationStatus(req, invitation);
+         })
          .catch(err => reject(err));
    });
 }

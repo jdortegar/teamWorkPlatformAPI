@@ -65,6 +65,54 @@ const publicUsers = (dbUsers) => {
 };
 
 
+const publicInvitation = (invitation) => {
+   // Use inviteeEmail only if a subscriberOrg invite.
+   const inviteeEmail = (invitation.teamId) ? undefined : invitation.inviteeEmail;
+
+   const {
+      inviterUserId,
+      created,
+      inviterFirstName,
+      inviterLastName,
+      inviterDisplayName,
+      inviteeUserId,
+      expires,
+      state,
+      lastModified,
+      subscriberOrgId,
+      subscriberOrgName,
+      teamId,
+      teamName,
+      teamRoomId,
+      teamRoomName
+   } = invitation;
+   return {
+      inviterUserId,
+      created,
+      inviterFirstName,
+      inviterLastName,
+      inviterDisplayName,
+      inviteeEmail,
+      inviteeUserId,
+      expires,
+      state,
+      lastModified,
+      subscriberOrgId,
+      subscriberOrgName,
+      teamId,
+      teamName,
+      teamRoomId,
+      teamRoomName
+   };
+};
+
+const publicInvitations = (invitations) => {
+   return invitations.map((invitation) => {
+      return publicInvitation(invitation);
+   });
+};
+
+
 const privateSubscriberOrg = (dbSubscriberOrg) => {
    const subscriberOrgId = dbSubscriberOrg.subscriberOrgId;
    const { name, icon, enabled, preferences, created, lastModified } = dbSubscriberOrg.subscriberOrgInfo || dbSubscriberOrg;
@@ -297,6 +345,12 @@ export const apiVersionedVisibility = {
    },
    publicUsers: {
       latest: publicUsers
+   },
+   publicInvitation: {
+      latest: publicInvitation
+   },
+   publicInvitations: {
+      latest: publicInvitations
    },
    privateSubscriberOrg: {
       latest: privateSubscriberOrg

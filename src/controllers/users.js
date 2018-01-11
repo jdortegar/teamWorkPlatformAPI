@@ -7,6 +7,7 @@ import * as mailer from '../helpers/mailer';
 import { NoPermissionsError, UserNotExistError } from '../services/errors';
 import * as userSvc from '../services/userService';
 import { AWS_CUSTOMER_ID_HEADER_NAME } from './auth';
+import { apiVersionedVisibility, publishByApiVersion } from '../helpers/publishedVisibility';
 
 /**
 * Create a reservation for a user.
@@ -224,3 +225,11 @@ export const getInvitations = (req, res, next) => {
       .catch(err => next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE)));
 };
 
+export const getSentInvitations = (req, res, next) => {
+   const userId = req.user._id;
+   const { since, state } = req.query;
+
+   userSvc.getSentInvitations(req, userId, { since, state })
+      .then(invitations => res.status(httpStatus.OK).json({ invitations: publishByApiVersion(req, apiVersionedVisibility.publicInvitations, invitations) }))
+      .catch(err => next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE)));
+};

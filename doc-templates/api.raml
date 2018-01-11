@@ -669,7 +669,8 @@ documentation:
                               "byUserLastName": "Daga",
                               "byUserDisplayName": "Anthony Daga",
                               "subscriberOrgId": "ea794510-cea6-4132-0008-a7ae1d32abb2",
-                              "subscriberOrgName": "Acme"
+                              "subscriberOrgName": "Acme",
+                              "created": "2018-01-10T19:05:16Z"
                            },
                            {
                               "byUserId": "ea794510-cea6-4132-0008-a7ae1d32abb1",
@@ -681,7 +682,103 @@ documentation:
                               "teamId": "ea794510-cea6-4132-0008-a7ae1d32abb3",
                               "teamName": "All",
                               "teamRoomId": "ea794510-cea6-4132-0008-a7ae1d32abb4",
-                              "teamRoomName": "Lobby"
+                              "teamRoomName": "Lobby",
+                              "created": "2018-01-10T19:06:17Z"
+                           }
+                        ]
+                     }
+
+   /getSentInvitations:
+      get:
+         securedBy: [oauth_2_0]
+         description: |
+            Retrieve all invitations that the user sent.
+         queryParameters:
+            since:
+               description: The messages returned are `created` greater than or equal to this value, in RFC339 format.
+               type: string
+               required: false
+               example: "2017-04-12T23:20:50.52Z"
+            state:
+               description: The state of the invitation, null | ACCEPTED | DECLINED | EXPIRED, where null means pending.
+         responses:
+            200:
+               description: |
+                  OK
+               body:
+                  properties:
+                     invitations:
+                        type: array
+                        required: true
+                        items:
+                           properties:
+                              inviterUserId:
+                                 type: string
+                                 required: true
+                              created:
+                                 type: datetime
+                                 required: true
+                              inviterFirstName:
+                                 type: string
+                                 required: true
+                              inviterLastName:
+                                 type: string
+                                 required: true
+                              inviterDisplayName:
+                                 type: string
+                                 required: true
+                              inviteeEmail:
+                                 description: Only available for a subscriberOrg invite.
+                                 type: string
+                                 required: false
+                              inviteeUserId:
+                                 type: string
+                                 required: false
+                                 description: Only available if the invite is for an existing Habla AI user.
+                              expires:
+                                 type: string
+                                 required: true
+                              state:
+                                 type: string
+                                 required: true
+                                 description: null | ACCEPTED | DECLINED | EXPIRED, where null means pending.
+                              lastModified:
+                                 type: datetime
+                                 required: true
+                              subscriberOrgId:
+                                 type: string
+                                 required: true
+                              subscriberOrgName:
+                                 type: string
+                                 required: true
+                              teamId:
+                                 type: string
+                                 required: false
+                              teamName:
+                                 type: string
+                                 required: false
+                              teamRoomId:
+                                 type: string
+                                 required: false
+                              teamRoomName:
+                                 type: string
+                                 required: false
+                  example: |
+                     {
+                        "invitations": [
+                           {
+                              "inviterUserId": "02c44319-074b-4787-b149-808fa53b53c3",
+                              "created": "2018-01-11T06:38:16Z",
+                              "inviterFirstName": "Anthony",
+                              "inviterLastName": "Daga",
+                              "inviterDisplayName": "a.d@habla.io",
+                              "inviteeEmail": "anthony.daga@habla.ai",
+                              "inviteeUserId": "65ba9c90-d584-4ec1-aed5-950f1ffe39db",
+                              "expires": "2018-01-18T06:38:16Z",
+                              "state": null,
+                              "lastModified": "2018-01-11T06:38:16Z",
+                              "subscriberOrgId": "3e5485b2-64a9-489c-be21-b4b40861cbae",
+                              "subscriberOrgName": "a.d@habla.io"
                            }
                         ]
                      }

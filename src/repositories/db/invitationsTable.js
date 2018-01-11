@@ -10,6 +10,7 @@ import * as util from './util';
  * inviterLastName
  * inviterDisplayName
  * inviteeEmail
+ * inviteeUserId
  * expires
  * state (null, ACCEPTED, DECLINED, EXPIRED)
  * lastModified
@@ -36,7 +37,7 @@ const upgradeSchema = (req, dbObjects) => {
    return Promise.resolve(dbObjects);
 };
 
-export const createInvitation = (req, inviterUserId, inviterFirstName, inviterLastName, inviterDisplayName, inviteeEmail, created, expires,
+export const createInvitation = (req, inviterUserId, inviterFirstName, inviterLastName, inviterDisplayName, inviteeEmail, inviteeUserId, created, expires,
    { subscriberOrgId, subscriberOrgName, teamId = undefined, teamName = undefined, teamRoomId = undefined, teamRoomName = undefined }) => {
    return new Promise((resolve, reject) => {
       const params = {
@@ -49,6 +50,7 @@ export const createInvitation = (req, inviterUserId, inviterFirstName, inviterLa
             inviterLastName,
             inviterDisplayName,
             inviteeEmail,
+            inviteeUserId,
             expires: expires.format(),
             state: null,
             lastModified: req.now.format(),
@@ -63,6 +65,24 @@ export const createInvitation = (req, inviterUserId, inviterFirstName, inviterLa
 
       req.app.locals.docClient.put(params).promise()
          .then(result => resolve(result.$response.request.rawParams.Item))
+         .catch(err => reject(err));
+   });
+};
+
+export const getInvitationByInviterUserIdAndCreated = (req, inviterUserId, created) => {
+   return new Promise((resolve, reject) => {
+      const params = {
+         TableName: tableName(),
+         KeyConditionExpression: 'inviterUserId = :inviterUserId and created = :created',
+         ExpressionAttributeValues: {
+            ':inviterUserId': inviterUserId,
+            ':created': created
+         }
+      };
+
+      util.query(req, params)
+         .then(originalResults => upgradeSchema(req, originalResults))
+         .then(latestResults => resolve((latestResults.length > 0) ? latestResults[0] : undefined))
          .catch(err => reject(err));
    });
 };
@@ -83,12 +103,25 @@ export const updateInvitationStateByInviterUserIdAndCreated = (req, inviterUserI
    };
 
    return new Promise((resolve, reject) => {
-      req.app.locals.docClient.update(params).promise()
-         .then(() => resolve())
+      let invitation;
+      getInvitationByInviterUserIdAndCreated(req, inviterUserId, created)
+         .then((retrievedInvitation) => {
+            invitation = retrievedInvitation;
+            return req.app.locals.docClient.update(params).promise();
+         })
+         .then(() => resolve(_.merge({}, invitation, { state, lastModified })))
          .catch(err => reject(err));
    });
 };
 
+/**
+ *
+ * @param req
+ * @param invitation If undefined, it will be retrieved and then updated.
+ * @param state
+ * @param lastModified
+ * @returns {Promise<any>}
+ */
 export const updateInvitationState = (req, invitation, state, lastModified = undefined) => {
    const { inviterUserId, created } = invitation;
    const setLastModified = lastModified || req.now.format();
@@ -111,7 +144,7 @@ export const updateInvitationState = (req, invitation, state, lastModified = und
    });
 };
 
-export const getInvitationsByInviterUserId = (req, inviterUserId) => {
+export const getInvitationsByInviterUserId = (req, inviterUserId, { since = undefined, state = undefined }) => {
    return new Promise((resolve, reject) => {
       const params = {
          TableName: tableName(),
@@ -120,6 +153,17 @@ export const getInvitationsByInviterUserId = (req, inviterUserId) => {
             ':inviterUserId': inviterUserId
          }
       };
+
+      if (since) {
+         params.KeyConditionExpression += ' and created >= :created';
+         params.ExpressionAttributeValues[':created'] = since;
+      }
+      if (state) {
+         params.FilterExpression = '#state = :state';
+         params.ExpressionAttributeNames = { '#state': 'state' };
+         params.ExpressionAttributeValues[':state'] = state;
+      }
+
       util.query(req, params)
          .then(originalResults => upgradeSchema(req, originalResults))
          .then(latestResults => resolve(latestResults))

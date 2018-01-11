@@ -2,13 +2,13 @@ import _ from 'lodash';
 import uuid from 'uuid';
 import config from '../config/env';
 import { NoPermissionsError, UserNotExistError, CustomerExistsError } from './errors';
-import { getInvitationsByInviteeEmail } from './invitationsUtil';
 import { userCreated, userUpdated, userPrivateInfoUpdated } from './messaging';
 import * as subscriberOrgSvc from './subscriberOrgService';
 import { createItem, getUsersByIds, getUsersByEmailAddresses, updateItem } from '../repositories/util';
 import { getRandomColor } from './util';
 import { hashPassword, passwordMatch } from '../models/user';
 import * as awsMarketplaceSvc from './awsMarketplaceService';
+import * as invitationsRepo from '../repositories/invitationsRepo';
 
 export function addUserToCache(req, email, uid, status) {
    return new Promise((resolve, reject) => {
@@ -219,7 +219,21 @@ export function resetPassword(req, email, password) {
 
 export const getInvitations = (req, email) => {
    return new Promise((resolve, reject) => {
-      getInvitationsByInviteeEmail(req, email)
+      invitationsRepo.getInvitationsByInviteeEmail(req, email)
+         .then((invitations) => {
+            if (invitations === null) {
+               resolve([]);
+            } else {
+               resolve(invitations);
+            }
+         })
+         .catch(err => reject(err));
+   });
+};
+
+export const getSentInvitations = (req, userId, { since = undefined, state = undefined }) => {
+   return new Promise((resolve, reject) => {
+      invitationsRepo.getInvitationsByInviterUserId(req, userId, { since, state })
          .then((invitations) => {
             if (invitations === null) {
                resolve([]);
