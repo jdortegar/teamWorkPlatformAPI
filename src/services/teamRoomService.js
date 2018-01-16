@@ -15,6 +15,7 @@ import {
 } from './errors';
 import InvitationKeys from '../repositories/InvitationKeys';
 import * as invitationsTable from '../repositories/db/invitationsTable';
+import * as usersTable from '../repositories/db/usersTable';
 import { deleteInvitation } from '../repositories/cache/invitationsCache';
 import { inviteExistingUsersToTeamRoom } from './invitationsUtil';
 import {
@@ -43,7 +44,6 @@ import {
    getTeamRoomsByTeamId,
    getTeamRoomsByTeamIdAndName,
    getTeamRoomsByTeamIdAndPrimary,
-   getUsersByIds,
    updateItem
 } from '../repositories/util';
 import Roles from './roles';
@@ -174,12 +174,12 @@ export const createTeamRoom = (req, teamId, teamRoomInfo, userId, teamRoomId = u
             teamMemberId = teamMembers[0].teamMemberId;
             return Promise.all([
                getTeamRoomsByTeamIdAndName(req, teamId, teamRoomInfo.name),
-               getUsersByIds(req, [userId])
+               usersTable.getUserByUserId(req, userId)
             ]);
          })
          .then((promiseResults) => {
             const teamRooms = promiseResults[0];
-            const user = promiseResults[1][0];
+            const user = promiseResults[1];
             if (teamRooms.length > 0) {
                throw new TeamRoomExistsError(teamRoomInfo.name);
             }
@@ -307,13 +307,13 @@ export const getTeamRoomUsers = (req, teamRoomId, userId = undefined) => {
                throw new NoPermissionsError(teamRoomId);
             }
 
-            return getUsersByIds(req, userIds);
+            return usersTable.getUsersByUserIds(req, userIds);
          })
          .then((users) => {
             usersWithRoles = users.map((user) => {
                const ret = _.cloneDeep(user);
-               ret.userInfo.role = userIdsRoles[user.userId];
-               ret.userInfo.teamRoomMemberId = userIdsTeamRoomMemberIds[user.userId];
+               ret.role = userIdsRoles[user.userId];
+               ret.teamRoomMemberId = userIdsTeamRoomMemberIds[user.userId];
                return ret;
             });
 
@@ -337,7 +337,7 @@ export const getTeamRoomUsers = (req, teamRoomId, userId = undefined) => {
             });
             usersWithRoles = usersWithRoles.map((userWithRoles) => {
                const clone = _.cloneDeep(userWithRoles);
-               clone.userInfo.presence = userIdPresences[userWithRoles.userId];
+               clone.presence = userIdPresences[userWithRoles.userId];
                return clone;
             });
             resolve(usersWithRoles);
@@ -387,7 +387,7 @@ export const inviteMembers = (req, teamRoomId, userIds, userId) => {
             }, []);
 
             return Promise.all([
-               getUsersByIds(req, [userId, ...uniqueUserIds]),
+               usersTable.getUsersByUserIds(req, [userId, ...uniqueUserIds]),
                getSubscriberOrgsByIds(req, [teams[0].teamInfo.subscriberOrgId])
             ]);
          })
@@ -474,22 +474,21 @@ export const replyToInvite = (req, teamRoomId, accept, userId) => {
       let user;
       let teamRoom;
       let cachedInvitation;
-      Promise.all([getUsersByIds(req, [userId]), getTeamRoomsByIds(req, [teamRoomId])])
+      Promise.all([usersTable.getUserByUserId(req, userId), getTeamRoomsByIds(req, [teamRoomId])])
          .then((promiseResults) => {
-            const users = promiseResults[0];
+            user = promiseResults[0];
             const teamRooms = promiseResults[1];
 
-            if (users.length === 0) {
+            if (!user) {
                throw new UserNotExistError();
             }
-            user = users[0];
 
             if (teamRooms.length === 0) {
                throw new TeamRoomNotExistError(teamRoomId);
             }
             teamRoom = teamRooms[0];
 
-            return deleteInvitation(req, user.userInfo.emailAddress, InvitationKeys.teamRoomId, teamRoomId);
+            return deleteInvitation(req, user.emailAddress, InvitationKeys.teamRoomId, teamRoomId);
          })
          .then((retrievedCachedInvitation) => {
             cachedInvitation = retrievedCachedInvitation;

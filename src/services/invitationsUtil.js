@@ -13,27 +13,31 @@ const toInvitationKey = (invitationKey, invitationValue) => {
 
 
 export const inviteExistingUsersToSubscriberOrg = (req, invitingDbUser, existingDbUsers, subscriberOrg) => {
+   if (existingDbUsers.length === 0) {
+      return Promise.resolve();
+   }
+
    return new Promise((resolve, reject) => {
       const promises = [];
       const key = toInvitationKey(InvitationKeys.subscriberOrgId, subscriberOrg.subscriberOrgId);
       const invitation = {
          byUserId: invitingDbUser.userId,
-         byUserFirstName: invitingDbUser.userInfo.firstName,
-         byUserLastName: invitingDbUser.userInfo.lastName,
-         byUserDisplayName: invitingDbUser.userInfo.displayName,
+         byUserFirstName: invitingDbUser.firstName,
+         byUserLastName: invitingDbUser.lastName,
+         byUserDisplayName: invitingDbUser.displayName,
          subscriberOrgId: subscriberOrg.subscriberOrgId,
          subscriberOrgName: subscriberOrg.subscriberOrgInfo.name
       };
 
       let createdOffset = 0;
       existingDbUsers.forEach((dbUser) => {
-         const email = dbUser.userInfo.emailAddress;
+         const email = dbUser.emailAddress;
          const created = moment(req.now).add(createdOffset, 'milliseconds');
-         const promise = invitationsRepo.createInvitation(req, dbUser.userInfo.emailAddress, dbUser.userId, invitation, created, defaultExpirationMinutes)
+         const promise = invitationsRepo.createInvitation(req, dbUser.emailAddress, dbUser.userId, invitation, created, defaultExpirationMinutes)
             .then((createdInvitations) => {
                const dbinvitation = createdInvitations[1];
                return Promise.all([
-                  sendSubscriberOrgInviteToExistingUser(email, subscriberOrg.subscriberOrgInfo.name, invitingDbUser.userInfo, key),
+                  sendSubscriberOrgInviteToExistingUser(email, subscriberOrg.subscriberOrgInfo.name, invitingDbUser, key),
                   userInvited(req, dbUser.userId, invitation),
                   sentInvitationStatus(req, dbinvitation)
                ]);
@@ -53,9 +57,9 @@ export const inviteExistingUsersToTeam = (req, invitingDbUser, existingDbUsers, 
       const key = toInvitationKey(InvitationKeys.teamId, team.teamId);
       const invitation = {
          byUserId: invitingDbUser.userId,
-         byUserFirstName: invitingDbUser.userInfo.firstName,
-         byUserLastName: invitingDbUser.userInfo.lastName,
-         byUserDisplayName: invitingDbUser.userInfo.displayName,
+         byUserFirstName: invitingDbUser.firstName,
+         byUserLastName: invitingDbUser.lastName,
+         byUserDisplayName: invitingDbUser.displayName,
          subscriberOrgId: team.teamInfo.subscriberOrgId,
          subscriberOrgName: subscriberOrg.subscriberOrgInfo.name,
          teamId: team.teamId,
@@ -64,13 +68,13 @@ export const inviteExistingUsersToTeam = (req, invitingDbUser, existingDbUsers, 
 
       let createdOffset = 0;
       existingDbUsers.forEach((dbUser) => {
-         const email = dbUser.userInfo.emailAddress;
+         const email = dbUser.emailAddress;
          const created = moment(req.now).add(createdOffset, 'milliseconds');
-         const promise = invitationsRepo.createInvitation(req, dbUser.userInfo.emailAddress, dbUser.userId, invitation, created, defaultExpirationMinutes)
+         const promise = invitationsRepo.createInvitation(req, dbUser.emailAddress, dbUser.userId, invitation, created, defaultExpirationMinutes)
             .then((createdInvitations) => {
                const dbinvitation = createdInvitations[1];
                return Promise.all([
-                  sendTeamInviteToExistingUser(email, subscriberOrg.subscriberOrgInfo.name, team.teamInfo.name, invitingDbUser.userInfo, key),
+                  sendTeamInviteToExistingUser(email, subscriberOrg.subscriberOrgInfo.name, team.teamInfo.name, invitingDbUser, key),
                   userInvited(req, dbUser.userId, invitation),
                   sentInvitationStatus(req, dbinvitation)
                ]);
@@ -89,9 +93,9 @@ export const inviteExistingUsersToTeamRoom = (req, invitingDbUser, existingDbUse
       const key = toInvitationKey(InvitationKeys.teamRoomId, teamRoom.teamRoomId);
       const invitation = {
          byUserId: invitingDbUser.userId,
-         byUserFirstName: invitingDbUser.userInfo.firstName,
-         byUserLastName: invitingDbUser.userInfo.lastName,
-         byUserDisplayName: invitingDbUser.userInfo.displayName,
+         byUserFirstName: invitingDbUser.firstName,
+         byUserLastName: invitingDbUser.lastName,
+         byUserDisplayName: invitingDbUser.displayName,
          subscriberOrgId: team.teamInfo.subscriberOrgId,
          subscriberOrgName: subscriberOrg.subscriberOrgInfo.name,
          teamId: team.teamId,
@@ -103,9 +107,9 @@ export const inviteExistingUsersToTeamRoom = (req, invitingDbUser, existingDbUse
       const promises = [];
       let createdOffset = 0;
       existingDbUsers.forEach((dbUser) => {
-         const email = dbUser.userInfo.emailAddress;
+         const email = dbUser.emailAddress;
          const created = moment(req.now).add(createdOffset, 'milliseconds');
-         const promise = invitationsRepo.createInvitation(req, dbUser.userInfo.emailAddress, dbUser.userId, invitation, created, defaultExpirationMinutes)
+         const promise = invitationsRepo.createInvitation(req, dbUser.emailAddress, dbUser.userId, invitation, created, defaultExpirationMinutes)
             .then((createdInvitations) => {
                const dbinvitation = createdInvitations[1];
                return Promise.all([
@@ -114,7 +118,7 @@ export const inviteExistingUsersToTeamRoom = (req, invitingDbUser, existingDbUse
                      subscriberOrg.subscriberOrgInfo.name,
                      team.teamInfo.name,
                      teamRoom.teamRoomInfo.name,
-                     invitingDbUser.userInfo,
+                     invitingDbUser,
                      key
                   ),
                   userInvited(req, dbUser.userId, invitation),
@@ -135,13 +139,17 @@ export const inviteExistingUsersToTeamRoom = (req, invitingDbUser, existingDbUse
 };
 
 export const inviteExternalUsersToSubscriberOrg = (req, invitingDbUser, emails, subscriberOrg) => {
+   if (emails.size === 0) {
+      return Promise.resolve();
+   }
+
    return new Promise((resolve, reject) => {
       const promises = [];
       const invitation = {
          byUserId: invitingDbUser.userId,
-         byUserFirstName: invitingDbUser.userInfo.firstName,
-         byUserLastName: invitingDbUser.userInfo.lastName,
-         byUserDisplayName: invitingDbUser.userInfo.displayName,
+         byUserFirstName: invitingDbUser.firstName,
+         byUserLastName: invitingDbUser.lastName,
+         byUserDisplayName: invitingDbUser.displayName,
          subscriberOrgId: subscriberOrg.subscriberOrgId,
          subscriberOrgName: subscriberOrg.subscriberOrgInfo.name
       };
@@ -155,7 +163,7 @@ export const inviteExternalUsersToSubscriberOrg = (req, invitingDbUser, emails, 
                sentInvitationStatus(req, dbinvitation);
                return createRegistration(req, email, defaultExpirationMinutes);
             })
-            .then(rid => sendSubscriberOrgInviteToExternalUser(email, subscriberOrg.subscriberOrgInfo.name, invitingDbUser.userInfo, rid));
+            .then(rid => sendSubscriberOrgInviteToExternalUser(email, subscriberOrg.subscriberOrgInfo.name, invitingDbUser, rid));
          promises.push(promise);
          createdOffset += 1;
       });

@@ -18,6 +18,7 @@ import {
 import { getPresence } from './messaging/presence';
 import Roles from './roles';
 import * as teamSvc from './teamService';
+import * as usersTable from '../repositories/db/usersTable';
 import {
    createItem,
    getSubscriberOrgsByIds,
@@ -25,13 +26,11 @@ import {
    getSubscriberUsersBySubscriberOrgId,
    getSubscriberUsersByUserIdAndSubscriberOrgIdAndRole,
    getSubscriberUsersByUserIds,
-   getUsersByEmailAddresses,
-   getUsersByIds,
    updateItem
 } from '../repositories/util';
 
 
-export function getUserSubscriberOrgs(req, userId) {
+export const getUserSubscriberOrgs = (req, userId) => {
    return new Promise((resolve, reject) => {
       getSubscriberUsersByUserIds(req, [userId])
          .then((subscriberUsers) => {
@@ -50,9 +49,9 @@ export function getUserSubscriberOrgs(req, userId) {
          })
          .catch(err => reject(err));
    });
-}
+};
 
-export function createSubscriberOrgNoCheck(req, subscriberOrgInfo, user, subscriberOrgId = undefined) {
+export const createSubscriberOrgNoCheck = (req, subscriberOrgInfo, user, subscriberOrgId = undefined) => {
    const actualSubscriberOrgId = subscriberOrgId || uuid.v4();
    const icon = subscriberOrgInfo.icon || null;
    const preferences = subscriberOrgInfo.preferences || { private: {} };
@@ -92,19 +91,19 @@ export function createSubscriberOrgNoCheck(req, subscriberOrgInfo, user, subscri
          .then(() => resolve(subscriberOrg))
          .catch(err => reject(err));
    });
-}
+};
 
 export const createSubscriberOrg = (req, subscriberOrgInfo, userId, subscriberOrgId = undefined, dbUser = undefined) => {
    return new Promise((resolve, reject) => {
       // TODO: if (userId), check canCreateSubscriberOrg() -> false, throw NoPermissionsError
       const promises = [getSubscriberOrgsByName(req, subscriberOrgInfo.name)];
       if (userId) {
-         promises.push(getUsersByIds(req, [userId]));
+         promises.push(usersTable.getUserByUserId(req, userId));
       }
       Promise.all(promises)
          .then((promiseResults) => {
             const existingSubscriberOrgs = promiseResults[0];
-            const user = (promises.length > 1) ? promiseResults[1][0] : dbUser;
+            const user = (promises.length > 1) ? promiseResults[1] : dbUser;
 
             if (existingSubscriberOrgs.length > 0) {
                throw new SubscriberOrgExistsError(subscriberOrgInfo.name);
@@ -125,18 +124,18 @@ export const createSubscriberOrg = (req, subscriberOrgInfo, userId, subscriberOr
  * @param subscriberOrgName
  * @param appendNumber (optional)
  */
-export const createSubscriberOrgUsingBaseName = (req, info, dbUser, subscriberOrgId = undefined, appendNumber = undefined) => {
+export const createSubscriberOrgUsingBaseName = (req, info, user, subscriberOrgId = undefined, appendNumber = undefined) => {
    const tryInfo = {
       name: info.name + ((appendNumber) ? ` (${appendNumber})` : ''),
       preferences: info.preferences
    };
    return new Promise((resolve, reject) => {
-      createSubscriberOrg(req, tryInfo, undefined, subscriberOrgId, dbUser)
+      createSubscriberOrg(req, tryInfo, undefined, subscriberOrgId, user)
          .then(createdSubscriberOrg => resolve(createdSubscriberOrg))
          .catch((err) => {
             if (err instanceof SubscriberOrgExistsError) {
                const tryNumber = (appendNumber) ? appendNumber + 1 : 1;
-               createSubscriberOrgUsingBaseName(req, info, dbUser, subscriberOrgId, tryNumber)
+               createSubscriberOrgUsingBaseName(req, info, user, subscriberOrgId, tryNumber)
                   .then(createdSubscriberOrg => resolve(createdSubscriberOrg))
                   .catch(err2 => reject(err2));
             } else {
@@ -219,13 +218,13 @@ export const getSubscriberOrgUsers = (req, subscriberOrgId, userId = undefined) 
                throw new NoPermissionsError(subscriberOrgId);
             }
 
-            return getUsersByIds(req, userIds);
+            return usersTable.getUsersByUserIds(req, userIds);
          })
          .then((users) => {
             usersWithRoles = users.map((user) => {
                const ret = _.cloneDeep(user);
-               ret.userInfo.role = userIdsRoles[user.userId];
-               ret.userInfo.subscriberUserId = userIdsSubscriberUserIds[user.userId];
+               ret.role = userIdsRoles[user.userId];
+               ret.subscriberUserId = userIdsSubscriberUserIds[user.userId];
                return ret;
             });
 
@@ -249,7 +248,7 @@ export const getSubscriberOrgUsers = (req, subscriberOrgId, userId = undefined) 
             });
             usersWithRoles = usersWithRoles.map((userWithRoles) => {
                const clone = _.cloneDeep(userWithRoles);
-               clone.userInfo.presence = userIdPresences[userWithRoles.userId];
+               clone.presence = userIdPresences[userWithRoles.userId];
                return clone;
             });
             resolve(usersWithRoles);
@@ -297,8 +296,8 @@ export const inviteSubscribers = (req, subscriberOrgId, subscriberUserIdEmails, 
 
             // See who we already have in the system.
             return Promise.all([
-               getUsersByIds(req, [userId, ...userIds]),
-               getUsersByEmailAddresses(req, [...emails])
+               usersTable.getUsersByUserIds(req, [userId, ...userIds]),
+               usersTable.getUsersByEmailAddresses(req, [...emails])
             ]);
          })
          .then((promiseResults) => {
@@ -320,7 +319,7 @@ export const inviteSubscribers = (req, subscriberOrgId, subscriberUserIdEmails, 
             if (retrievedUsersByEmail.length > 0) {
                retrievedUsersByEmail.forEach((user) => {
                   existingDbUsers.push(user);
-                  emails.delete(user.userInfo.emailAddress);
+                  emails.delete(user.emailAddress);
                });
             }
 
@@ -389,33 +388,32 @@ export const replyToInvite = (req, subscriberOrgId, accept, userId) => {
       let user;
       let subscriberOrg;
       let cachedInvitation;
-      Promise.all([getUsersByIds(req, [userId]), getSubscriberOrgsByIds(req, [subscriberOrgId])])
+      Promise.all([usersTable.getUserByUserId(req, userId), getSubscriberOrgsByIds(req, [subscriberOrgId])])
          .then((promiseResults) => {
-            const users = promiseResults[0];
+            user = promiseResults[0];
             const subscriberOrgs = promiseResults[1];
 
-            if (users.length === 0) {
+            if (!user) {
                throw new UserNotExistError();
             }
-            user = users[0];
 
             if (subscriberOrgs.length === 0) {
                throw new SubscriberOrgNotExistError(subscriberOrgId);
             }
             subscriberOrg = subscriberOrgs[0];
 
-            return deleteInvitation(req, user.userInfo.emailAddress, InvitationKeys.subscriberOrgId, subscriberOrgId);
+            return deleteInvitation(req, user.emailAddress, InvitationKeys.subscriberOrgId, subscriberOrgId);
          })
          .then((retrievedCachedInvitation) => {
             cachedInvitation = retrievedCachedInvitation;
             if (cachedInvitation) {
                if (accept) {
                   if (subscriberOrg.subscriberOrgInfo.enabled === true) {
-                     userInvitationAccepted(req, cachedInvitation, user.userInfo.emailAddress);
+                     userInvitationAccepted(req, cachedInvitation, user.emailAddress);
                      return addUserToSubscriberOrg(req, user, subscriberOrgId, Roles.user);
                   }
                } else {
-                  userInvitationDeclined(req, cachedInvitation, user.userInfo.emailAddress);
+                  userInvitationDeclined(req, cachedInvitation, user.emailAddress);
                }
                return undefined;
             }

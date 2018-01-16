@@ -8,6 +8,7 @@ import * as conversationParticipantsTable from '../repositories/db/conversationP
 import * as messagesTable from '../repositories/db/messagesTable';
 import * as readMessagesTable from '../repositories/db/readMessagesTable';
 import * as userMessageTable from '../repositories/db/userMessageTable';
+import * as usersTable from '../repositories/db/usersTable';
 import * as messagesCache from '../repositories/cache/messagesCache';
 import {
    conversationCreated,
@@ -22,9 +23,6 @@ import {
 } from './messaging';
 import { updateCachedByteCount } from './awsMarketplaceService';
 import { ConversationNotExistError, NoPermissionsError, NotActiveError, MessageNotExistError } from './errors';
-import {
-   getUsersByIds,
-} from '../repositories/util';
 
 const MESSAGE_PATH_SEPARATOR = '##';
 
@@ -36,7 +34,7 @@ const convertParticipantsToUsers = (req, conversationParticipantsUserIds) => {
    });
 
    return new Promise((resolve, reject) => {
-      getUsersByIds(req, Array.from(userIds))
+      usersTable.getUsersByUserIds(req, Array.from(userIds))
          .then((users) => {
             const usersMap = {};
             users.forEach((user) => {
@@ -160,9 +158,9 @@ export const createConversationNoCheck = (req, subscriberOrgId, teamRoomId, user
             conversation = retrievedConversation;
             return conversationParticipantsTable.createConversationParticipant(req, actualConversationId, userId, teamRoomId);
          })
-         .then(() => getUsersByIds(req, [userId]))
-         .then((dbUsers) => {
-            const { userInfo: participant } = dbUsers[0];
+         .then(() => usersTable.getUserByUserId(req, userId))
+         .then((user) => {
+            const participant = user;
             participant.userId = userId;
             conversation.participants = [participant];
             conversation.conversationId = actualConversationId;

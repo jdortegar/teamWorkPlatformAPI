@@ -14,6 +14,7 @@ import {
 } from './errors';
 import InvitationKeys from '../repositories/InvitationKeys';
 import * as invitationsTable from '../repositories/db/invitationsTable';
+import * as usersTable from '../repositories/db/usersTable';
 import { deleteInvitation } from '../repositories/cache/invitationsCache';
 import { inviteExistingUsersToTeam } from './invitationsUtil';
 import {
@@ -42,7 +43,6 @@ import {
    getTeamsBySubscriberOrgId,
    getTeamBySubscriberOrgIdAndName,
    getTeamBySubscriberOrgIdAndPrimary,
-   getUsersByIds,
    updateItem
 } from '../repositories/util';
 
@@ -168,12 +168,12 @@ export function createTeam(req, subscriberOrgId, teamInfo, userId, teamId = unde
             subscriberUserId = subscriberUsers[0].subscriberUserId;
             return Promise.all([
                getTeamBySubscriberOrgIdAndName(req, subscriberOrgId, teamInfo.name),
-               getUsersByIds(req, [userId])
+               usersTable.getUserByUserId(req, userId)
             ]);
          })
          .then((promiseResults) => {
             const existingTeams = promiseResults[0];
-            const user = promiseResults[1][0];
+            const user = promiseResults[1];
 
             if (existingTeams.length > 0) {
                throw new TeamExistsError(teamInfo.name);
@@ -296,13 +296,13 @@ export function getTeamUsers(req, teamId, userId = undefined) {
                throw new NoPermissionsError(teamId);
             }
 
-            return getUsersByIds(req, userIds);
+            return usersTable.getUsersByUserIds(req, userIds);
          })
          .then((users) => {
             usersWithRoles = users.map((user) => {
                const ret = _.cloneDeep(user);
-               ret.userInfo.role = userIdsRoles[user.userId];
-               ret.userInfo.teamMemberId = userIdsTeamMemberIds[user.userId];
+               ret.role = userIdsRoles[user.userId];
+               ret.teamMemberId = userIdsTeamMemberIds[user.userId];
                return ret;
             });
 
@@ -326,7 +326,7 @@ export function getTeamUsers(req, teamId, userId = undefined) {
             });
             usersWithRoles = usersWithRoles.map((userWithRoles) => {
                const clone = _.cloneDeep(userWithRoles);
-               clone.userInfo.presence = userIdPresences[userWithRoles.userId];
+               clone.presence = userIdPresences[userWithRoles.userId];
                return clone;
             });
             resolve(usersWithRoles);
@@ -374,7 +374,7 @@ export function inviteMembers(req, teamId, userIds, userId) {
             }
 
             return Promise.all([
-               getUsersByIds(req, [userId, ...uniqueUserIds]),
+               usersTable.getUsersByUserIds(req, [userId, ...uniqueUserIds]),
                getSubscriberOrgsByIds(req, [teams[0].teamInfo.subscriberOrgId])
             ]);
          })
@@ -462,22 +462,21 @@ export function replyToInvite(req, teamId, accept, userId) {
       let user;
       let team;
       let cachedInvitation;
-      Promise.all([getUsersByIds(req, [userId]), getTeamsByIds(req, [teamId])])
+      Promise.all([usersTable.getUserByUserId(req, userId), getTeamsByIds(req, [teamId])])
          .then((promiseResults) => {
-            const users = promiseResults[0];
+            user = promiseResults[0];
             const teams = promiseResults[1];
 
-            if (users.length === 0) {
+            if (!user) {
                throw new UserNotExistError();
             }
-            user = users[0];
 
             if (teams.length === 0) {
                throw new TeamNotExistError(teamId);
             }
             team = teams[0];
 
-            return deleteInvitation(req, user.userInfo.emailAddress, InvitationKeys.teamId, teamId);
+            return deleteInvitation(req, user.emailAddress, InvitationKeys.teamId, teamId);
          })
          .then((retrievedCachedInvitation) => {
             cachedInvitation = retrievedCachedInvitation;

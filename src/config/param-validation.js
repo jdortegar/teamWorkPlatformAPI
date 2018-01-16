@@ -18,6 +18,7 @@ const validationSchemas = {
          country: Joi.string().min(1).required(),
          timeZone: Joi.string().min(1).required(),
          icon: Joi.string().base64().allow(null),
+         defaultLocale: Joi.string().min(1),
          preferences: Joi.object().keys({
             iconColor: Joi.string().min(1),
             private: Joi.object()
@@ -26,13 +27,17 @@ const validationSchemas = {
    },
    updateUser: {
       body: {
-         active: Joi.boolean(),
          firstName: Joi.string().min(1),
          lastName: Joi.string().min(1),
          displayName: Joi.string().min(1),
          country: Joi.string().min(1),
          timeZone: Joi.string().min(1),
          icon: Joi.string().base64().allow(null),
+         defaultLocale: Joi.string().min(1),
+         presenceStatus: Joi.string().min(1),
+         bookmarks: Joi.array().min(1).items(
+            Joi.string().min(1).required()
+         ),
          preferences: Joi.object().keys({
             iconColor: Joi.string().min(1),
             private: Joi.object()

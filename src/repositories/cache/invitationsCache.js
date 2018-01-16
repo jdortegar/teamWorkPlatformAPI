@@ -4,7 +4,7 @@ import config from '../../config/env/index';
 import InvitationKeys from '../InvitationKeys';
 
 const hashKey = (email) => {
-   return `${email}#pendingInvites`;
+   return `${config.redisPrefix}${email}#pendingInvites`;
 };
 
 /**

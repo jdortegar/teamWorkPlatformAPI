@@ -198,24 +198,25 @@ export const updatePassword = (req, res, next) => {
       });
 };
 
-export const updatePublicPreferences = (req, res, next) => {
-   const userId = req.user._id;
-   const updateUserId = req.params.userId;
-
-   userSvc.updateUser(req, updateUserId, req.body, userId)
-      .then(() => {
-         res.status(httpStatus.NO_CONTENT).end();
-      })
-      .catch((err) => {
-         if (err instanceof UserNotExistError) {
-            res.status(httpStatus.NOT_FOUND).end();
-         } else if (err instanceof NoPermissionsError) {
-            res.status(httpStatus.FORBIDDEN).end();
-         } else {
-            next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE));
-         }
-      });
-};
+// TODO: remove from API docs before removing.
+// export const updatePublicPreferences = (req, res, next) => {
+//    const userId = req.user._id;
+//    const updateUserId = req.params.userId;
+//
+//    userSvc.updateUser(req, updateUserId, req.body, userId)
+//       .then(() => {
+//          res.status(httpStatus.NO_CONTENT).end();
+//       })
+//       .catch((err) => {
+//          if (err instanceof UserNotExistError) {
+//             res.status(httpStatus.NOT_FOUND).end();
+//          } else if (err instanceof NoPermissionsError) {
+//             res.status(httpStatus.FORBIDDEN).end();
+//          } else {
+//             next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE));
+//          }
+//       });
+// };
 
 export const getInvitations = (req, res, next) => {
    const email = req.user.email;

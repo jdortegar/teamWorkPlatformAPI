@@ -43,7 +43,7 @@ export const setPresence = (req, userId, presence) => {
             // Should be at most 1 presence for address/userAgent combo.
             if (foundPresences.length > 0) {
                previousLocation = foundPresences[0].location;
-               return req.app.locals.redis.zremAsync(`${config.redisPrefix}${hash}`, foundPresences[0]);
+               return req.app.locals.redis.zremAsync(`${config.redisPrefix}${hash}`, JSON.stringify(foundPresences[0]));
             }
             return undefined;
          })

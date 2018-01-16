@@ -411,25 +411,6 @@ export function scan(params) {
 }
 
 
-export function getUsersByIds(req, userIds) {
-   if (userIds === undefined) {
-      return Promise.reject('userIds needs to be specified.');
-   }
-
-   const tableName = `${config.tablePrefix}users`;
-   return batchGetItemBySortKey(req, tableName, 'userId', userIds);
-}
-
-export function getUsersByEmailAddresses(req, emails) {
-   if (emails === undefined) {
-      return Promise.reject('emails needs to be specified.');
-   }
-
-   const tableName = `${config.tablePrefix}users`;
-   return filteredScanValueIn(req, tableName, 'userInfo.emailAddress', emails);
-}
-
-
 export function getSubscriberUsersByUserIds(req, userIds) {
    if (userIds === undefined) {
       return Promise.reject('userIds needs to be specified.');

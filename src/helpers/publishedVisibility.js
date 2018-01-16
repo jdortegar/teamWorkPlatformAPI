@@ -1,7 +1,7 @@
 import _ from 'lodash';
 
-const privateUser = (dbUser) => {
-   const userId = dbUser.userId;
+const privateUser = (user) => {
+   const userId = user.userId;
    const {
       emailAddress,
       firstName,
@@ -10,6 +10,9 @@ const privateUser = (dbUser) => {
       country,
       timeZone,
       icon,
+      defaultLocale,
+      presenceStatus,
+      bookmarks,
       enabled,
       preferences,
       created,
@@ -19,7 +22,7 @@ const privateUser = (dbUser) => {
       teamMemberId,
       teamRoomMemberId,
       presence
-   } = dbUser.userInfo || dbUser;
+   } = user;
    return {
       userId,
       username: emailAddress,
@@ -30,6 +33,9 @@ const privateUser = (dbUser) => {
       country,
       timeZone,
       icon,
+      defaultLocale,
+      presenceStatus,
+      bookmarks,
       enabled,
       preferences: _.cloneDeep(preferences),
       created,
@@ -41,12 +47,12 @@ const privateUser = (dbUser) => {
       presence,
       // roleMemberships: dbUser.roleMemberships,
       // defaultPage: dbUser.defaultPage,
-      userType: dbUser.userType || 'hablaUser'
+      userType: user.userType || 'hablaUser'
    };
 };
 
-const publicUser = (dbUser) => {
-   const ret = privateUser(dbUser);
+const publicUser = (user) => {
+   const ret = privateUser(user);
    delete ret.username;
    delete ret.email;
    if ((ret.preferences) && (ret.preferences.private)) {
@@ -58,9 +64,9 @@ const publicUser = (dbUser) => {
    return ret;
 };
 
-const publicUsers = (dbUsers) => {
-   return dbUsers.map((dbUser) => {
-      return publicUser(dbUser);
+const publicUsers = (users) => {
+   return users.map((user) => {
+      return publicUser(user);
    });
 };
 
@@ -113,9 +119,9 @@ const publicInvitations = (invitations) => {
 };
 
 
-const privateSubscriberOrg = (dbSubscriberOrg) => {
-   const subscriberOrgId = dbSubscriberOrg.subscriberOrgId;
-   const { name, icon, enabled, preferences, created, lastModified } = dbSubscriberOrg.subscriberOrgInfo || dbSubscriberOrg;
+const privateSubscriberOrg = (subscriberOrg) => {
+   const subscriberOrgId = subscriberOrg.subscriberOrgId;
+   const { name, icon, enabled, preferences, created, lastModified } = subscriberOrg.subscriberOrgInfo || subscriberOrg;
    return {
       subscriberOrgId,
       name,
@@ -127,31 +133,31 @@ const privateSubscriberOrg = (dbSubscriberOrg) => {
    };
 };
 
-const publicSubscriberOrg = (dbSubscriberOrg) => {
-   const ret = privateSubscriberOrg(dbSubscriberOrg);
+const publicSubscriberOrg = (subscriberOrg) => {
+   const ret = privateSubscriberOrg(subscriberOrg);
    if ((ret.preferences) && (ret.preferences.private)) {
       delete ret.preferences.private;
    }
    return ret;
 };
 
-const publicSubscriberOrgs = (dbSubscriberOrgs) => {
-   return dbSubscriberOrgs.map((dbSubscriberOrg) => {
-      return publicSubscriberOrg(dbSubscriberOrg);
+const publicSubscriberOrgs = (subscriberOrgs) => {
+   return subscriberOrgs.map((subscriberOrg) => {
+      return publicSubscriberOrg(subscriberOrg);
    });
 };
 
-const publicSubscriber = (subscriberOrgId, dbUser) => {
+const publicSubscriber = (subscriberOrgId, user) => {
    return {
       subscriberOrgId,
-      user: publicUser(dbUser)
+      user: publicUser(user)
    };
 };
 
 
-const privateTeam = (dbTeam) => {
-   const teamId = dbTeam.teamId;
-   const { subscriberOrgId, name, icon, active, primary, preferences, created, lastModified } = dbTeam.teamInfo || dbTeam;
+const privateTeam = (team) => {
+   const teamId = team.teamId;
+   const { subscriberOrgId, name, icon, active, primary, preferences, created, lastModified } = team.teamInfo || team;
    return {
       teamId,
       subscriberOrgId,
@@ -165,31 +171,31 @@ const privateTeam = (dbTeam) => {
    };
 };
 
-const publicTeam = (dbTeam) => {
-   const ret = privateTeam(dbTeam);
+const publicTeam = (team) => {
+   const ret = privateTeam(team);
    if ((ret.preferences) && (ret.preferences.private)) {
       delete ret.preferences.private;
    }
    return ret;
 };
 
-const publicTeams = (dbTeams) => {
-   return dbTeams.map((dbTeam) => {
-      return publicTeam(dbTeam);
+const publicTeams = (teams) => {
+   return teams.map((team) => {
+      return publicTeam(team);
    });
 };
 
-const publicTeamMember = (teamId, dbUser) => {
+const publicTeamMember = (teamId, user) => {
    return {
       teamId,
-      user: publicUser(dbUser)
+      user: publicUser(user)
    };
 };
 
 
-const privateTeamRoom = (dbTeamRoom) => {
-   const teamRoomId = dbTeamRoom.teamRoomId;
-   const { teamId, name, purpose, publish, icon, active, primary, preferences, created, lastModified } = dbTeamRoom.teamRoomInfo || dbTeamRoom;
+const privateTeamRoom = (teamRoom) => {
+   const teamRoomId = teamRoom.teamRoomId;
+   const { teamId, name, purpose, publish, icon, active, primary, preferences, created, lastModified } = teamRoom.teamRoomInfo || teamRoom;
    return {
       teamRoomId,
       teamId,
@@ -205,32 +211,32 @@ const privateTeamRoom = (dbTeamRoom) => {
    };
 };
 
-const publicTeamRoom = (dbTeamRoom) => {
-   const ret = privateTeamRoom(dbTeamRoom);
+const publicTeamRoom = (teamRoom) => {
+   const ret = privateTeamRoom(teamRoom);
    if ((ret.preferences) && (ret.preferences.private)) {
       delete ret.preferences.private;
    }
    return ret;
 };
 
-const publicTeamRooms = (dbTeamRooms) => {
-   return dbTeamRooms.map((dbTeamRoom) => {
-      return publicTeamRoom(dbTeamRoom);
+const publicTeamRooms = (teamRooms) => {
+   return teamRooms.map((teamRoom) => {
+      return publicTeamRoom(teamRoom);
    });
 };
 
-const publicTeamRoomMember = (teamRoomId, dbUser) => {
+const publicTeamRoomMember = (teamRoomId, user) => {
    return {
       teamRoomId,
-      user: publicUser(dbUser)
+      user: publicUser(user)
    };
 };
 
 
-const publicConversation = (dbConversation) => {
-   const conversationId = dbConversation.conversationId;
-   const { teamRoomId, created, lastModified } = dbConversation.conversationInfo || dbConversation;
-   const participants = (dbConversation.participants) ? publicUsers(dbConversation.participants) : undefined;
+const publicConversation = (conversation) => {
+   const conversationId = conversation.conversationId;
+   const { teamRoomId, created, lastModified } = conversation;
+   const participants = (conversation.participants) ? publicUsers(conversation.participants) : undefined;
    return {
       conversationId,
       teamRoomId,
@@ -240,16 +246,16 @@ const publicConversation = (dbConversation) => {
    };
 };
 
-const publicConversations = (dbConversations) => {
-   return dbConversations.map((dbConversation) => {
-      return publicConversation(dbConversation);
+const publicConversations = (conversations) => {
+   return conversations.map((conversation) => {
+      return publicConversation(conversation);
    });
 };
 
 
-const publicMessage = (dbMessage) => {
-   const messageId = dbMessage.messageId;
-   const { conversationId, createdBy, content, replyTo, path, level, created, lastModified } = dbMessage.messageInfo || dbMessage;
+const publicMessage = (message) => {
+   const messageId = message.messageId;
+   const { conversationId, createdBy, content, replyTo, path, level, created, lastModified } = message.messageInfo || message;
    const messageType = 'text';
    let text = 'No message text.';
    content.forEach((contentEntry) => {
@@ -272,9 +278,9 @@ const publicMessage = (dbMessage) => {
    };
 };
 
-const publicMessages = (dbMessages) => {
-   return dbMessages.map((dbMessage) => {
-      return publicMessage(dbMessage);
+const publicMessages = (messages) => {
+   return messages.map((message) => {
+      return publicMessage(message);
    });
 };
 

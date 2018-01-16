@@ -362,6 +362,11 @@ documentation:
                   type: string | nil
                   required: false
                   default: nil
+               defaultLocale:
+                  description: The locale to use when the user is offline (ex. email notifications, etc.).
+                  type: string
+                  required: false
+                  default: en
                preferences:
                   type: object
                   required: false
@@ -438,6 +443,22 @@ documentation:
                   description: The user's avatar, base64 of image.
                   type: string | nil
                   required: false
+               defaultLocale:
+                  description: The locale to use when the user is offline (ex. email notifications, etc.).
+                  type: string
+                  required: false
+               presenceStatus:
+                  description: Status of the user, like "In a meeting", "Out sick", etc.
+                  type: string
+                  required: false
+               bookmarks:
+                  type: array
+                  required: false
+                  items:
+                     properties:
+                        messageId:
+                           type: string
+                           required: true
                preferences:
                   type: object
                   required: false
@@ -993,6 +1014,9 @@ documentation:
                                     type: string | nil
                                     required: false
                                     default: nil
+                                 presenceStatus:
+                                    type: string
+                                    required: false
                                  userType:
                                     type: string
                                     required: true
@@ -1059,6 +1083,7 @@ documentation:
                                  "lastName": "Daga",
                                  "displayName": "Anthony Dude Daga",
                                  "icon": null,
+                                 "presenceStatus": "Out and about",
                                  "userType": "hablaUser",
                                  "enabled": true,
                                  "preferences": {
@@ -1082,6 +1107,7 @@ documentation:
                                  "lastName": "Goodacre",
                                  "displayName": "Jill Goodacre",
                                  "icon": null,
+                                 "presenceStatus": null,
                                  "userType": "hablaUser",
                                  "enabled": true,
                                  "preferences": {
@@ -1444,6 +1470,9 @@ documentation:
                                     type: string | nil
                                     required: false
                                     default: nil
+                                 presenceStatus:
+                                    type: string
+                                    required: false
                                  userType:
                                     type: string
                                     required: true
@@ -1503,6 +1532,7 @@ documentation:
                                  "lastName": "Daga",
                                  "displayName": "Anthony Dude Daga",
                                  "icon": null,
+                                 "presenceStatus": "Out and about",
                                  "userType": "hablaUser",
                                  "enabled": true,
                                  "preferences": {
@@ -1516,6 +1546,7 @@ documentation:
                                  "lastName": "Goodacre",
                                  "displayName": "Jill Goodacre",
                                  "icon": null,
+                                 "presenceStatus": null,
                                  "userType": "hablaUser",
                                  "enabled": true,
                                  "preferences": {
@@ -1910,6 +1941,9 @@ documentation:
                                     type: string | nil
                                     required: false
                                     default: nil
+                                 presenceStatus:
+                                    type: string
+                                    required: false
                                  userType:
                                     type: string
                                     required: true
@@ -1969,6 +2003,7 @@ documentation:
                                  "lastName": "Daga",
                                  "displayName": "Anthony Dude Daga",
                                  "icon": null,
+                                 "presenceStatus": "Out and about",
                                  "userType": "hablaUser",
                                  "enabled": true,
                                  "preferences": {
@@ -1982,6 +2017,7 @@ documentation:
                                  "lastName": "Goodacre",
                                  "displayName": "Jill Goodacre",
                                  "icon": null,
+                                 "presenceStatus": null,
                                  "userType": "hablaUser",
                                  "enabled": true,
                                  "preferences": {
