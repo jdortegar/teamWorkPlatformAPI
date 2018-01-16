@@ -47,8 +47,7 @@ const validationSchemas = {
    updatePassword: {
       body: {
          oldPassword: Joi.string().min(1).required(),
-         newPassword: Joi.string().min(1).required(),
-         confirmNewPassword: Joi.any().valid(Joi.ref('newPassword')).required().options({ language: { any: { allowOnly: 'Passwords must match' } } })
+         newPassword: Joi.string().min(1).required()
       }
    },
    forgotPassword: {
@@ -59,7 +58,6 @@ const validationSchemas = {
    resetPassword: {
       body: {
          password: Joi.string().min(1).required(),
-         confirmPassword: Joi.any().valid(Joi.ref('password')).required().options({ language: { any: { allowOnly: 'Passwords must match' } } })
       }
    },
    updateUserPublicPreferences: {

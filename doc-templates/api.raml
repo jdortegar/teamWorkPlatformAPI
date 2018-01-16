@@ -517,16 +517,10 @@ documentation:
                   type: string
                   required: true
                   example: HelloWorld#123!
-               confirmNewPasword:
-                  description: Must match newPassword.
-                  type: string
-                  required: true
-                  example: HelloWorld#123!
             example: |
                {
                   "oldPassword": "Hello123"
                   "newPassword": "Bye123#"
-                  "confirmNewPassword": "Bye123#"
                }
          responses:
             204:
@@ -577,15 +571,9 @@ documentation:
                      type: string
                      required: true
                      example: Bye123#!
-                  confirmPasword:
-                     description: Must match password.
-                     type: string
-                     required: true
-                     example: Bye123#!
                example: |
                   {
                      "password": "Bye123#"
-                     "confirmPassword": "Bye123#"
                   }
             responses:
                204:

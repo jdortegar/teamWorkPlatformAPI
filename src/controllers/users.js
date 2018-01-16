@@ -119,7 +119,6 @@ export const resetPassword = (req, res) => {
    const password = req.body.password;
 
    delete req.body.password;
-   delete req.body.confirmPassword;
 
    // Find reservation in cache
    req.logger.debug(`find Reservation: id = ${rid}`);
