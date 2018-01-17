@@ -230,7 +230,7 @@ export const updateInvitationsStateByInviteeEmail = (req, inviteeEmail, invitati
 
             return Promise.all(invitations.map(invitation => updateInvitationState(req, invitation, state)));
          })
-         .then(() => resolve())
+         .then(changedInvitations => resolve(changedInvitations))
          .catch(err => reject(err));
    });
 };

@@ -423,9 +423,9 @@ export const replyToInvite = (req, subscriberOrgId, accept, userId) => {
             const state = (accept) ? 'ACCEPTED' : 'DECLINED';
             return invitationsTable.updateInvitationsStateByInviteeEmail(req, user.emailAddress, InvitationKeys.subscriberOrgId, subscriberOrgId, state);
          })
-         .then((invitation) => {
+         .then((changedInvitations) => {
             resolve();
-            sentInvitationStatus(req, invitation);
+            sentInvitationStatus(req, changedInvitations);
          })
          .catch(err => reject(err));
    });

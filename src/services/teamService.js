@@ -503,9 +503,9 @@ export function replyToInvite(req, teamId, accept, userId) {
             const state = (accept) ? 'ACCEPTED' : 'DECLINED';
             return invitationsTable.updateInvitationsStateByInviteeEmail(req, user.emailAddress, InvitationKeys.teamId, teamId, state);
          })
-         .then((invitation) => {
+         .then((changedInvitations) => {
             resolve();
-            sentInvitationStatus(req, invitation);
+            sentInvitationStatus(req, changedInvitations);
          })
          .catch(err => reject(err));
    });

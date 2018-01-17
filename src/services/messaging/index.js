@@ -46,10 +46,11 @@ export const userInvitationDeclined = (req, invitation, toEmailOrUserId) => {
    ]);
 };
 
-export const sentInvitationStatus = (req, sentInvitation) => {
-   return _broadcastEvent(req, EventTypes.sentInvitationStatus, publishByApiVersion(req, apiVersionedVisibility.publicInvitation, sentInvitation), [
-      ChannelFactory.personalChannel(sentInvitation.inviterUserId)
-   ]);
+export const sentInvitationStatus = (req, sentInvitations) => {
+   return Promise.all(sentInvitations.map(sentInvitation =>
+      _broadcastEvent(req, EventTypes.sentInvitationStatus, publishByApiVersion(req, apiVersionedVisibility.publicInvitation, sentInvitation), [
+         ChannelFactory.personalChannel(sentInvitation.inviterUserId)
+      ])));
 };
 
 
