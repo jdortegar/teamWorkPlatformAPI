@@ -1,6 +1,7 @@
 import _ from 'lodash';
 import config from '../../config/env';
 import * as util from './util';
+import InvitationKeys from '../InvitationKeys';
 
 /**
  * hash: inviterUserId
@@ -87,7 +88,16 @@ export const getInvitationByInviterUserIdAndCreated = (req, inviterUserId, creat
    });
 };
 
-export const updateInvitationStateByInviterUserIdAndCreated = (req, inviterUserId, created, state, lastModified = undefined) => {
+/**
+ *
+ * @param req
+ * @param invitation If undefined, it will be retrieved and then updated.
+ * @param state
+ * @param lastModified
+ * @returns {Promise<any>}
+ */
+const updateInvitationState = (req, invitation, state, lastModified = undefined) => {
+   const { inviterUserId, created } = invitation;
    const setLastModified = lastModified || req.now.format();
    const params = {
       TableName: tableName(),
@@ -103,43 +113,25 @@ export const updateInvitationStateByInviterUserIdAndCreated = (req, inviterUserI
    };
 
    return new Promise((resolve, reject) => {
-      let invitation;
-      getInvitationByInviterUserIdAndCreated(req, inviterUserId, created)
-         .then((retrievedInvitation) => {
-            invitation = retrievedInvitation;
-            return req.app.locals.docClient.update(params).promise();
-         })
-         .then(() => resolve(_.merge({}, invitation, { state, lastModified })))
-         .catch(err => reject(err));
-   });
-};
-
-/**
- *
- * @param req
- * @param invitation If undefined, it will be retrieved and then updated.
- * @param state
- * @param lastModified
- * @returns {Promise<any>}
- */
-export const updateInvitationState = (req, invitation, state, lastModified = undefined) => {
-   const { inviterUserId, created } = invitation;
-   const setLastModified = lastModified || req.now.format();
-   const params = {
-      TableName: tableName(),
-      Key: { inviterUserId, created },
-      UpdateExpression: 'set state = :state, lastModified = :lastModified',
-      ExpressionAttributeValues: {
-         ':state': state,
-         ':lastModified': setLastModified
-      }
-   };
-
-   return new Promise((resolve, reject) => {
       req.app.locals.docClient.update(params).promise()
          .then(() => {
             resolve(_.merge({}, invitation, { state, lastModified }));
          })
+         .catch(err => reject(err));
+   });
+};
+
+const expireExpired = (req, invitations) => {
+   return new Promise((resolve, reject) => {
+      const now = req.now.format();
+      const cleanInvitationPromises = invitations.map((invitation) => {
+         if ((invitation.state === null) && (invitation.expires < now)) {
+            return updateInvitationState(req, invitation, 'EXPIRED', invitation.expires);
+         }
+         return Promise.resolve(invitation);
+      });
+      Promise.all(cleanInvitationPromises)
+         .then((cleanInvitations => resolve(cleanInvitations)))
          .catch(err => reject(err));
    });
 };
@@ -166,22 +158,8 @@ export const getInvitationsByInviterUserId = (req, inviterUserId, { since = unde
 
       util.query(req, params)
          .then(originalResults => upgradeSchema(req, originalResults))
+         .then(latestResults => expireExpired(req, latestResults))
          .then(latestResults => resolve(latestResults))
-         .catch(err => reject(err));
-   });
-};
-
-const expireExpired = (req, invitations) => {
-   return new Promise((resolve, reject) => {
-      const now = req.now.format();
-      const cleanInvitationPromises = invitations.map((invitation) => {
-         if (invitation.expires < now) {
-            return updateInvitationState(req, invitation, 'EXPIRED', invitation.expires);
-         }
-         return Promise.resolve(invitation);
-      });
-      Promise.all(cleanInvitationPromises)
-         .then((cleanInvitations => resolve(cleanInvitations)))
          .catch(err => reject(err));
    });
 };
@@ -190,7 +168,7 @@ export const getInvitationsByInviteeEmail = (req, inviteeEmail) => {
    return new Promise((resolve, reject) => {
       const params = {
          TableName: tableName(),
-         IndexName: 'inviteeEmailStateIdx',
+         IndexName: 'inviteeEmailCreatedIdx',
          KeyConditionExpression: 'inviteeEmail = :inviteeEmail',
          ExpressionAttributeValues: {
             ':inviteeEmail': inviteeEmail
@@ -199,7 +177,7 @@ export const getInvitationsByInviteeEmail = (req, inviteeEmail) => {
 
       util.query(req, params)
          .then(originalResults => upgradeSchema(req, originalResults))
-         .then(latestResults => expireExpired(latestResults))
+         .then(latestResults => expireExpired(req, latestResults))
          .then(cleanResults => resolve(cleanResults))
          .catch(err => reject(err));
    });
@@ -211,7 +189,10 @@ export const getInvitationsByInviteeEmailAndState = (req, inviteeEmail, state) =
          TableName: tableName(),
          IndexName: 'inviteeEmailStateIdx',
          KeyConditionExpression: 'inviteeEmail = :inviteeEmail',
-         FilterExpression: 'state = :state',
+         FilterExpression: '#state = :state',
+         ExpressionAttributeNames: {
+            '#state': 'state'
+         },
          ExpressionAttributeValues: {
             ':inviteeEmail': inviteeEmail,
             ':state': state
@@ -220,8 +201,36 @@ export const getInvitationsByInviteeEmailAndState = (req, inviteeEmail, state) =
 
       util.query(req, params)
          .then(originalResults => upgradeSchema(req, originalResults))
-         .then(latestResults => expireExpired(latestResults))
+         .then(latestResults => expireExpired(req, latestResults))
          .then(cleanResults => resolve(cleanResults))
+         .catch(err => reject(err));
+   });
+};
+
+export const updateInvitationsStateByInviteeEmail = (req, inviteeEmail, invitationKey, invitationValue, state) => {
+   return new Promise((resolve, reject) => {
+      getInvitationsByInviteeEmail(req, inviteeEmail)
+         .then(allInvitations => expireExpired(req, allInvitations))
+         .then((allInvitations) => {
+            // Reduce to invitations to a specific org, team, or room.
+            const invitations = allInvitations.filter((invitation) => {
+               if (invitation.state === null) {
+                  switch (invitationKey) {
+                     case InvitationKeys.teamRoomId:
+                        return (invitation[invitationKey] === invitationValue);
+                     case InvitationKeys.teamId:
+                        return ((invitation[invitationKey] === invitationValue) && (!invitation.teamRoomId));
+                     case InvitationKeys.subscriberOrgId:
+                        return ((invitation[invitationKey] === invitationValue) && (!invitation.teamRoomId) && (!invitation.teamId));
+                     default:
+                  }
+               }
+               return false;
+            });
+
+            return Promise.all(invitations.map(invitation => updateInvitationState(req, invitation, state)));
+         })
+         .then(() => resolve())
          .catch(err => reject(err));
    });
 };

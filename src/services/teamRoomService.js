@@ -513,7 +513,7 @@ export const replyToInvite = (req, teamRoomId, accept, userId) => {
          })
          .then(() => {
             const state = (accept) ? 'ACCEPTED' : 'DECLINED';
-            return invitationsTable.updateInvitationStateByInviterUserIdAndCreated(req, cachedInvitation.byUserId, cachedInvitation.created, state);
+            return invitationsTable.updateInvitationsStateByInviteeEmail(req, user.emailAddress, InvitationKeys.teamRoomId, teamRoomId, state);
          })
          .then((invitation) => {
             resolve();

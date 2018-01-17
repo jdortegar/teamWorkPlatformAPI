@@ -68,12 +68,17 @@ export const deleteInvitation = (req, email, invitationKey, invitationValue) => 
             });
 
             if (filteredInvitations.length > 0) {
-               invitation = filteredInvitations[0];
+               invitation = filteredInvitations[filteredInvitations.length - 1];
                const hash = hashKey(email);
-               if (invitations.length <= 1) {
+               if (invitations.length === filteredInvitations.length) {
                   return req.app.locals.redis.del(`${config.redisPrefix}${hash}`);
                }
-               return req.app.locals.redis.zremAsync(`${config.redisPrefix}${hash}`, invitation);
+
+               const promises = [];
+               filteredInvitations.forEach((filteredInvitation) => {
+                  promises.push(req.app.locals.redis.zremAsync(`${config.redisPrefix}${hash}`, filteredInvitation));
+               });
+               return Promise.all(promises);
             }
 
             return undefined;

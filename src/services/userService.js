@@ -1,3 +1,4 @@
+import _ from 'lodash';
 import uuid from 'uuid';
 import config from '../config/env';
 import { NoPermissionsError, UserNotExistError, CustomerExistsError } from './errors';
@@ -160,7 +161,19 @@ export const getInvitations = (req, email) => {
             if (invitations === null) {
                resolve([]);
             } else {
-               resolve(invitations);
+               // Multiple invitations get be sent out to a person for a specific org/team/room.  Only need the last one.
+               const uniqueInvitations = [];
+               invitations.forEach((invitation) => {
+                  _.remove(uniqueInvitations, (uniqueInvitation) => {
+                     return (
+                        (uniqueInvitation.subscriberOrgId === invitation.subscriberOrgId) &&
+                        (uniqueInvitation.teamId === invitation.teamId) &&
+                        (uniqueInvitation.teamRoomId === invitation.teamRoomId)
+                     );
+                  });
+                  uniqueInvitations.push(invitation);
+               });
+               resolve(uniqueInvitations);
             }
          })
          .catch(err => reject(err));
