@@ -1,3 +1,4 @@
+import _ from 'lodash';
 import SocketIO from 'socket.io';
 import socketioJwt from 'socketio-jwt';
 import SocketIORedisAdapter from 'socket.io-redis';
@@ -394,7 +395,15 @@ export default messagingService;
 // };
 
 export const _broadcastEvent = (req, eventType, event, channels = undefined) => {
-   messagingService._broadcastEvent(req, eventType, event, channels);
+   const sendEvent = _.clone(event);
+   if (req.user) {
+      sendEvent._src = {
+         userId: req.user._id,
+         address: req.ip,
+         userAgent: req.headers['user-agent']
+      };
+   }
+   messagingService._broadcastEvent(req, eventType, sendEvent, channels);
 };
 
 export const _joinChannels = (req, userId, channels) => {

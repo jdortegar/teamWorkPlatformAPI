@@ -28,7 +28,7 @@ export const login = (req, res, next) => {
                .then(() => {
                   res.status(httpStatus.OK).json({
                      status: 'SUCCESS',
-                     token: jwt.sign(getAuthData(user, user.userId), config.jwtSecret),
+                     token: jwt.sign(getAuthData(req, user, user.userId), config.jwtSecret),
                      user: publishByApiVersion(req, apiVersionedVisibility.privateUser, user),
                      websocketUrl: config.apiEndpoint,
                      resourcesBaseUrl: config.resourcesBaseUrl
@@ -38,7 +38,7 @@ export const login = (req, res, next) => {
                   if (err instanceof CustomerExistsError) {
                      res.status(httpStatus.OK).json({
                         status: 'SUCCESS',
-                        token: jwt.sign(getAuthData(user, user.userId), config.jwtSecret),
+                        token: jwt.sign(getAuthData(req, user, user.userId), config.jwtSecret),
                         user: publishByApiVersion(req, apiVersionedVisibility.privateUser, user),
                         websocketUrl: config.apiEndpoint,
                         resourcesBaseUrl: config.resourcesBaseUrl,
@@ -51,7 +51,7 @@ export const login = (req, res, next) => {
          } else {
             res.status(httpStatus.OK).json({
                status: 'SUCCESS',
-               token: jwt.sign(getAuthData(user, user.userId), config.jwtSecret),
+               token: jwt.sign(getAuthData(req, user, user.userId), config.jwtSecret),
                user: publishByApiVersion(req, apiVersionedVisibility.privateUser, user),
                websocketUrl: config.apiEndpoint,
                resourcesBaseUrl: config.resourcesBaseUrl
