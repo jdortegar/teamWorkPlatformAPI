@@ -3,6 +3,7 @@ import uuid from 'uuid';
 import config from '../config/env';
 import { CannotInviteError, InvitationNotExistError, NoPermissionsError, SubscriberOrgExistsError, SubscriberOrgNotExistError, UserNotExistError } from './errors';
 import InvitationKeys from '../repositories/InvitationKeys';
+import * as subscriberOrgsTable from '../repositories/db/subscriberOrgsTable';
 import * as invitationsTable from '../repositories/db/invitationsTable';
 import { deleteInvitation } from '../repositories/cache/invitationsCache';
 import { inviteExistingUsersToSubscriberOrg, inviteExternalUsersToSubscriberOrg } from './invitationsUtil';
@@ -21,12 +22,9 @@ import * as teamSvc from './teamService';
 import * as usersTable from '../repositories/db/usersTable';
 import {
    createItem,
-   getSubscriberOrgsByIds,
-   getSubscriberOrgsByName,
    getSubscriberUsersBySubscriberOrgId,
    getSubscriberUsersByUserIdAndSubscriberOrgIdAndRole,
-   getSubscriberUsersByUserIds,
-   updateItem
+   getSubscriberUsersByUserIds
 } from '../repositories/util';
 
 
@@ -35,44 +33,31 @@ export const getUserSubscriberOrgs = (req, userId) => {
       getSubscriberUsersByUserIds(req, [userId])
          .then((subscriberUsers) => {
             const subscriberOrgIds = subscriberUsers.map(subscriberUser => subscriberUser.subscriberUserInfo.subscriberOrgId);
-            return getSubscriberOrgsByIds(req, subscriberOrgIds);
+            return subscriberOrgsTable.getSubscriberOrgsBySubscriberOrgIds(req, subscriberOrgIds);
          })
          .then((subscriberOrgs) => {
-            // Remove partitionId.
-            const retSubscriberOrgs = [];
-            subscriberOrgs.forEach((subscriberOrg) => {
-               const subscriberOrgClone = _.cloneDeep(subscriberOrg);
-               delete subscriberOrgClone.partitionId;
-               retSubscriberOrgs.push(subscriberOrgClone);
-            });
-            resolve(retSubscriberOrgs);
+            resolve(subscriberOrgs);
          })
          .catch(err => reject(err));
    });
 };
 
 export const createSubscriberOrgNoCheck = (req, subscriberOrgInfo, user, subscriberOrgId = undefined) => {
-   const actualSubscriberOrgId = subscriberOrgId || uuid.v4();
-   const icon = subscriberOrgInfo.icon || null;
-   const preferences = subscriberOrgInfo.preferences || { private: {} };
-   if (preferences.private === undefined) {
-      preferences.private = {};
-   }
-   preferences.iconColor = preferences.iconColor || '#EB4435'; // default color for team room;
-   const subscriberOrg = {
-      name: subscriberOrgInfo.name,
-      icon,
-      enabled: true,
-      preferences,
-      created: req.now.format(),
-      lastModified: req.now.format()
-   };
-   const subscriberUserId = uuid.v4();
-
    return new Promise((resolve, reject) => {
+      const actualSubscriberOrgId = subscriberOrgId || uuid.v4();
+      const icon = subscriberOrgInfo.icon || null;
+      const preferences = subscriberOrgInfo.preferences || { private: {} };
+      if (preferences.private === undefined) {
+         preferences.private = {};
+      }
+      preferences.iconColor = preferences.iconColor || '#EB4435'; // default color for team room;
+      let subscriberOrg;
+      const subscriberUserId = uuid.v4();
       const role = Roles.admin;
-      createItem(req, -1, `${config.tablePrefix}subscriberOrgs`, 'subscriberOrgId', actualSubscriberOrgId, 'subscriberOrgInfo', subscriberOrg)
-         .then(() => {
+
+      subscriberOrgsTable.createSubscriberOrg(req, actualSubscriberOrgId, subscriberOrgInfo.name, icon, preferences)
+         .then((createdSubscriberOrg) => {
+            subscriberOrg = createdSubscriberOrg;
             const subscriberUser = {
                userId: user.userId,
                subscriberOrgId: actualSubscriberOrgId,
@@ -83,7 +68,6 @@ export const createSubscriberOrgNoCheck = (req, subscriberOrgInfo, user, subscri
             return createItem(req, -1, `${config.tablePrefix}subscriberUsers`, 'subscriberUserId', subscriberUserId, 'subscriberUserInfo', subscriberUser);
          })
          .then(() => {
-            subscriberOrg.subscriberOrgId = actualSubscriberOrgId;
             subscriberOrgCreated(req, subscriberOrg, user.userId);
             subscriberAdded(req, actualSubscriberOrgId, user, role, subscriberUserId);
             return teamSvc.createTeamNoCheck(req, actualSubscriberOrgId, { name: teamSvc.defaultTeamName, primary: true }, subscriberUserId, user, [subscriberUserId]);
@@ -93,24 +77,20 @@ export const createSubscriberOrgNoCheck = (req, subscriberOrgInfo, user, subscri
    });
 };
 
-export const createSubscriberOrg = (req, subscriberOrgInfo, userId, subscriberOrgId = undefined, dbUser = undefined) => {
+export const createSubscriberOrg = (req, subscriberOrgInfo, userOrUserId, subscriberOrgId = undefined) => {
    return new Promise((resolve, reject) => {
-      // TODO: if (userId), check canCreateSubscriberOrg() -> false, throw NoPermissionsError
-      const promises = [getSubscriberOrgsByName(req, subscriberOrgInfo.name)];
-      if (userId) {
-         promises.push(usersTable.getUserByUserId(req, userId));
-      }
-      Promise.all(promises)
-         .then((promiseResults) => {
-            const existingSubscriberOrgs = promiseResults[0];
-            const user = (promises.length > 1) ? promiseResults[1] : dbUser;
-
-            if (existingSubscriberOrgs.length > 0) {
+      subscriberOrgsTable.getSubscriberOrgByName(req, subscriberOrgInfo.name)
+         .then((subscriberOrg) => {
+            if (subscriberOrg) {
                throw new SubscriberOrgExistsError(subscriberOrgInfo.name);
             }
 
-            return createSubscriberOrgNoCheck(req, subscriberOrgInfo, user, subscriberOrgId);
+            if (_.isString(userOrUserId)) {
+               return usersTable.getUserByUserId(req, userOrUserId);
+            }
+            return userOrUserId;
          })
+         .then(user => createSubscriberOrgNoCheck(req, subscriberOrgInfo, user, subscriberOrgId))
          .then(subscriberOrg => resolve(subscriberOrg))
          .catch(err => reject(err));
    });
@@ -130,7 +110,7 @@ export const createSubscriberOrgUsingBaseName = (req, info, user, subscriberOrgI
       preferences: info.preferences
    };
    return new Promise((resolve, reject) => {
-      createSubscriberOrg(req, tryInfo, undefined, subscriberOrgId, user)
+      createSubscriberOrg(req, tryInfo, user, subscriberOrgId)
          .then(createdSubscriberOrg => resolve(createdSubscriberOrg))
          .catch((err) => {
             if (err instanceof SubscriberOrgExistsError) {
@@ -147,37 +127,41 @@ export const createSubscriberOrgUsingBaseName = (req, info, user, subscriberOrgI
 
 export const updateSubscriberOrg = (req, subscriberOrgId, updateInfo, userId) => {
    return new Promise((resolve, reject) => {
-      const timestampedUpdateInfo = _.cloneDeep(updateInfo);
-      timestampedUpdateInfo.lastModified = req.now.format();
-      let dbSubscriberOrg;
-      getSubscriberOrgsByIds(req, [subscriberOrgId])
-         .then((subscriberOrgs) => {
-            if (subscriberOrgs.length === 0) {
+      let originalSubscriberOrg;
+      subscriberOrgsTable.getSubscriberOrgBySubscriberOrgId(req, subscriberOrgId)
+         .then((retrievedOriginalSubscriberOrg) => {
+            originalSubscriberOrg = retrievedOriginalSubscriberOrg;
+            if (!originalSubscriberOrg) {
                throw new SubscriberOrgNotExistError(subscriberOrgId);
             }
-
-            dbSubscriberOrg = subscriberOrgs[0];
-            return getSubscriberUsersByUserIdAndSubscriberOrgIdAndRole(req, userId, subscriberOrgId, Roles.admin);
          })
+         .then(() => getSubscriberUsersByUserIdAndSubscriberOrgIdAndRole(req, userId, subscriberOrgId, Roles.admin))
          .then((subscriberUsers) => {
             if (subscriberUsers.length === 0) {
                throw new NoPermissionsError(subscriberOrgId);
             }
 
-            return updateItem(req, -1, `${config.tablePrefix}subscriberOrgs`, 'subscriberOrgId', subscriberOrgId, { subscriberOrgInfo: timestampedUpdateInfo });
+            if (updateInfo.name) {
+               return subscriberOrgsTable.getSubscriberOrgByName(req, updateInfo.name);
+            }
+            return undefined;
          })
-         .then(() => {
+         .then((duplicateName) => {
+            if (duplicateName) {
+               throw new NoPermissionsError(updateInfo.name);
+            }
+
+            return subscriberOrgsTable.updateSubscriberOrg(req, subscriberOrgId, updateInfo);
+         })
+         .then((subscriberOrg) => {
             resolve();
 
-            const subscriberOrg = dbSubscriberOrg.subscriberOrgInfo;
-            const previousEnabled = subscriberOrg.enabled;
-            _.merge(subscriberOrg, timestampedUpdateInfo); // Eventual consistency, so might be old.
-            subscriberOrg.subscriberOrgId = subscriberOrgId;
             subscriberOrgUpdated(req, subscriberOrg);
             if ((updateInfo.preferences) && (updateInfo.preferences.private)) {
                subscriberOrgPrivateInfoUpdated(req, subscriberOrg);
             }
 
+            const { enabled: previousEnabled } = originalSubscriberOrg;
             if (('enabled' in updateInfo) && (previousEnabled !== updateInfo.enabled)) {
                // Enable/disable children.
                teamSvc.setTeamsOfSubscriberOrgActive(req, subscriberOrgId, updateInfo.enabled);
@@ -266,23 +250,22 @@ export const inviteSubscribers = (req, subscriberOrgId, subscriberUserIdEmails, 
       let inviteDbUsers;
 
       Promise.all([
-         getSubscriberOrgsByIds(req, [subscriberOrgId]),
+         subscriberOrgsTable.getSubscriberOrgBySubscriberOrgId(req, subscriberOrgId),
          getSubscriberUsersByUserIdAndSubscriberOrgIdAndRole(req, userId, subscriberOrgId, Roles.admin)
       ])
          .then((promiseResults) => {
-            const subscriberOrgs = promiseResults[0];
+            subscriberOrg = promiseResults[0];
             const subscriberUsers = promiseResults[1];
 
-            if (subscriberOrgs.length === 0) {
+            if (!subscriberOrg) {
                throw new SubscriberOrgNotExistError(subscriberOrgId);
             }
-            subscriberOrg = subscriberOrgs[0];
 
             if (subscriberUsers.length === 0) {
                throw new NoPermissionsError(subscriberOrgId);
             }
 
-            if (('enabled' in subscriberOrg.subscriberOrgInfo) && (subscriberOrg.subscriberOrgInfo.enabled === false)) {
+            if (('enabled' in subscriberOrg) && (subscriberOrg.enabled === false)) {
                throw new CannotInviteError(subscriberOrgId);
             }
 
@@ -359,9 +342,9 @@ export const inviteSubscribers = (req, subscriberOrgId, subscriberUserIdEmails, 
 const addUserToSubscriberOrg = (req, user, subscriberOrgId, role) => {
    return new Promise((resolve, reject) => {
       const subscriberUserId = uuid.v4();
-      getSubscriberOrgsByIds(req, [subscriberOrgId])
-         .then((subscriberOrgs) => {
-            if (subscriberOrgs.length === 0) {
+      subscriberOrgsTable.getSubscriberOrgBySubscriberOrgId(req, subscriberOrgId)
+         .then((subscriberOrg) => {
+            if (!subscriberOrg) {
                throw new SubscriberOrgNotExistError(subscriberOrgId);
             }
 
@@ -388,19 +371,18 @@ export const replyToInvite = (req, subscriberOrgId, accept, userId) => {
       let user;
       let subscriberOrg;
       let cachedInvitation;
-      Promise.all([usersTable.getUserByUserId(req, userId), getSubscriberOrgsByIds(req, [subscriberOrgId])])
+      Promise.all([usersTable.getUserByUserId(req, userId), subscriberOrgsTable.getSubscriberOrgBySubsriberOrgId(req, subscriberOrgId)])
          .then((promiseResults) => {
             user = promiseResults[0];
-            const subscriberOrgs = promiseResults[1];
+            subscriberOrg = promiseResults[1];
 
             if (!user) {
                throw new UserNotExistError();
             }
 
-            if (subscriberOrgs.length === 0) {
+            if (!subscriberOrg) {
                throw new SubscriberOrgNotExistError(subscriberOrgId);
             }
-            subscriberOrg = subscriberOrgs[0];
 
             return deleteInvitation(req, user.emailAddress, InvitationKeys.subscriberOrgId, subscriberOrgId);
          })
@@ -408,7 +390,7 @@ export const replyToInvite = (req, subscriberOrgId, accept, userId) => {
             cachedInvitation = retrievedCachedInvitation;
             if (cachedInvitation) {
                if (accept) {
-                  if (subscriberOrg.subscriberOrgInfo.enabled === true) {
+                  if (subscriberOrg.enabled === true) {
                      userInvitationAccepted(req, cachedInvitation, user.emailAddress);
                      return addUserToSubscriberOrg(req, user, subscriberOrgId, Roles.user);
                   }

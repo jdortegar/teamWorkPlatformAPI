@@ -121,7 +121,7 @@ const publicInvitations = (invitations) => {
 
 const privateSubscriberOrg = (subscriberOrg) => {
    const subscriberOrgId = subscriberOrg.subscriberOrgId;
-   const { name, icon, enabled, preferences, created, lastModified } = subscriberOrg.subscriberOrgInfo || subscriberOrg;
+   const { name, icon, enabled, preferences, created, lastModified } = subscriberOrg;
    return {
       subscriberOrgId,
       name,

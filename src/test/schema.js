@@ -2,8 +2,8 @@ var AWS = require('aws-sdk');
 
 AWS.config.update({
    region: 'us-west-2',
-   endpoint: 'dynamodb.us-west-2.amazonaws.com'
-   // endpoint: 'http://localhost:8000'
+   //endpoint: 'dynamodb.us-west-2.amazonaws.com'
+    endpoint: 'http://localhost:8000'
 });
 
 var dynamodb = new AWS.DynamoDB();
@@ -20,22 +20,6 @@ function createTable(params) {
    });
 }
 
-
-var subscriberOrgsParams = {
-   TableName : tablePrefix + 'subscriberOrgs',
-   KeySchema: [
-      { AttributeName: 'partitionId', KeyType: 'HASH'},  //Partition key
-      { AttributeName: 'subscriberOrgId', KeyType: 'RANGE' }  //Sort key
-   ],
-   AttributeDefinitions: [
-      { AttributeName: 'partitionId', AttributeType: 'N' },
-      { AttributeName: 'subscriberOrgId', AttributeType: 'S' }
-   ],
-   ProvisionedThroughput: {
-      ReadCapacityUnits: 10,
-      WriteCapacityUnits: 10
-   }
-};
 
 var subscriberUsersParams = {
    TableName : tablePrefix + 'subscriberUsers',
@@ -118,7 +102,6 @@ var teamRoomMembersParams = {
 };
 
 
-createTable(subscriberOrgsParams);
 createTable(subscriberUsersParams);
 createTable(teamsParams);
 createTable(teamMembersParams);
@@ -150,6 +133,46 @@ function createSystemPropertiesTable() {
    });
 }
 createSystemPropertiesTable();
+
+
+function createSubscriberOrgsTable() {
+   var params = {
+      TableName : tablePrefix + 'subscriberOrgs',
+      KeySchema: [
+         { AttributeName: 'subscriberOrgId', KeyType: 'HASH'}  //Partition key
+      ],
+      AttributeDefinitions: [
+         { AttributeName: 'subscriberOrgId', AttributeType: 'S' },
+         { AttributeName: 'name', AttributeType: 'S' }
+      ],
+      ProvisionedThroughput: {
+         ReadCapacityUnits: 10,
+         WriteCapacityUnits: 10
+      },
+      GlobalSecondaryIndexes: [
+         {
+            IndexName: 'nameIdx',
+            KeySchema: [
+               { AttributeName: 'name', KeyType: 'HASH' },
+            ],
+            Projection: { ProjectionType: 'ALL' },
+            ProvisionedThroughput: {
+               ReadCapacityUnits: 10,
+               WriteCapacityUnits: 10
+            }
+         }
+      ]
+   };
+
+   dynamodb.createTable(params, function(err, data) {
+      if (err) {
+         console.error('Unable to create UsersTable. Error JSON:', JSON.stringify(err, null, 2));
+      } else {
+         // console.log('Created table. Table description JSON:', JSON.stringify(data, null, 2));
+      }
+   });
+}
+createSubscriberOrgsTable();
 
 
 function createUsersTable() {

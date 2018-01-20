@@ -457,25 +457,6 @@ export function getSubscriberUsersByUserIdAndSubscriberOrgIdAndRole(req, userId,
 }
 
 
-export function getSubscriberOrgsByIds(req, subscriberOrgIds) {
-   if (subscriberOrgIds === undefined) {
-      return Promise.reject('subscriberOrgIds needs to be specified.');
-   }
-
-   const tableName = `${config.tablePrefix}subscriberOrgs`;
-   return batchGetItemBySortKey(req, tableName, 'subscriberOrgId', subscriberOrgIds);
-}
-
-export function getSubscriberOrgsByName(req, subscriberOrgName) {
-   if (subscriberOrgName === undefined) {
-      return Promise.reject('subscriberOrgName needs to be specified.');
-   }
-
-   const tableName = `${config.tablePrefix}subscriberOrgs`;
-   return filteredScanValueIn(req, tableName, 'subscriberOrgInfo.name', [subscriberOrgName]);
-}
-
-
 export function getTeamsByIds(req, teamIds) {
    if (teamIds === undefined) {
       return Promise.reject('teamIds needs to be specified.');
