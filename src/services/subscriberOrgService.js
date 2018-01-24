@@ -1,9 +1,9 @@
 import _ from 'lodash';
 import uuid from 'uuid';
-import config from '../config/env';
 import { CannotInviteError, InvitationNotExistError, NoPermissionsError, SubscriberOrgExistsError, SubscriberOrgNotExistError, UserNotExistError } from './errors';
 import InvitationKeys from '../repositories/InvitationKeys';
 import * as subscriberOrgsTable from '../repositories/db/subscriberOrgsTable';
+import * as subscriberUsersTable from '../repositories/db/subscriberUsersTable';
 import * as invitationsTable from '../repositories/db/invitationsTable';
 import { deleteInvitation } from '../repositories/cache/invitationsCache';
 import { inviteExistingUsersToSubscriberOrg, inviteExternalUsersToSubscriberOrg } from './invitationsUtil';
@@ -20,19 +20,12 @@ import { getPresence } from './messaging/presence';
 import Roles from './roles';
 import * as teamSvc from './teamService';
 import * as usersTable from '../repositories/db/usersTable';
-import {
-   createItem,
-   getSubscriberUsersBySubscriberOrgId,
-   getSubscriberUsersByUserIdAndSubscriberOrgIdAndRole,
-   getSubscriberUsersByUserIds
-} from '../repositories/util';
-
 
 export const getUserSubscriberOrgs = (req, userId) => {
    return new Promise((resolve, reject) => {
-      getSubscriberUsersByUserIds(req, [userId])
+      subscriberUsersTable.getSubscriberUsersByUserId(req, userId)
          .then((subscriberUsers) => {
-            const subscriberOrgIds = subscriberUsers.map(subscriberUser => subscriberUser.subscriberUserInfo.subscriberOrgId);
+            const subscriberOrgIds = subscriberUsers.map(subscriberUser => subscriberUser.subscriberOrgId);
             return subscriberOrgsTable.getSubscriberOrgsBySubscriberOrgIds(req, subscriberOrgIds);
          })
          .then((subscriberOrgs) => {
@@ -58,14 +51,7 @@ export const createSubscriberOrgNoCheck = (req, subscriberOrgInfo, user, subscri
       subscriberOrgsTable.createSubscriberOrg(req, actualSubscriberOrgId, subscriberOrgInfo.name, icon, preferences)
          .then((createdSubscriberOrg) => {
             subscriberOrg = createdSubscriberOrg;
-            const subscriberUser = {
-               userId: user.userId,
-               subscriberOrgId: actualSubscriberOrgId,
-               role,
-               created: req.now.format(),
-               lastModified: req.now.format()
-            };
-            return createItem(req, -1, `${config.tablePrefix}subscriberUsers`, 'subscriberUserId', subscriberUserId, 'subscriberUserInfo', subscriberUser);
+            return subscriberUsersTable.createSubscriberUser(req, subscriberUserId, user.userId, actualSubscriberOrgId, role);
          })
          .then(() => {
             subscriberOrgCreated(req, subscriberOrg, user.userId);
@@ -135,9 +121,9 @@ export const updateSubscriberOrg = (req, subscriberOrgId, updateInfo, userId) =>
                throw new SubscriberOrgNotExistError(subscriberOrgId);
             }
          })
-         .then(() => getSubscriberUsersByUserIdAndSubscriberOrgIdAndRole(req, userId, subscriberOrgId, Roles.admin))
-         .then((subscriberUsers) => {
-            if (subscriberUsers.length === 0) {
+         .then(() => subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgIdAndRole(req, userId, subscriberOrgId, Roles.admin))
+         .then((subscriberUser) => {
+            if (!subscriberUser) {
                throw new NoPermissionsError(subscriberOrgId);
             }
 
@@ -187,16 +173,16 @@ export const getSubscriberOrgUsers = (req, subscriberOrgId, userId = undefined) 
    const userIdsSubscriberUserIds = {};
    let usersWithRoles;
    return new Promise((resolve, reject) => {
-      getSubscriberUsersBySubscriberOrgId(req, subscriberOrgId)
+      subscriberUsersTable.getSubscriberUsersBySubscriberOrgId(req, subscriberOrgId)
          .then((subscriberUsers) => {
             if (subscriberUsers.length === 0) {
                throw new SubscriberOrgNotExistError(subscriberOrgId);
             }
 
             const userIds = subscriberUsers.map((subscriberUser) => {
-               userIdsRoles[subscriberUser.subscriberUserInfo.userId] = subscriberUser.subscriberUserInfo.role;
-               userIdsSubscriberUserIds[subscriberUser.subscriberUserInfo.userId] = subscriberUser.subscriberUserId;
-               return subscriberUser.subscriberUserInfo.userId;
+               userIdsRoles[subscriberUser.userId] = subscriberUser.role;
+               userIdsSubscriberUserIds[subscriberUser.userId] = subscriberUser.subscriberUserId;
+               return subscriberUser.userId;
             });
             if ((userId) && (userIds.indexOf(userId)) < 0) {
                throw new NoPermissionsError(subscriberOrgId);
@@ -251,17 +237,17 @@ export const inviteSubscribers = (req, subscriberOrgId, subscriberUserIdEmails, 
 
       Promise.all([
          subscriberOrgsTable.getSubscriberOrgBySubscriberOrgId(req, subscriberOrgId),
-         getSubscriberUsersByUserIdAndSubscriberOrgIdAndRole(req, userId, subscriberOrgId, Roles.admin)
+         subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgIdAndRole(req, userId, subscriberOrgId, Roles.admin)
       ])
          .then((promiseResults) => {
             subscriberOrg = promiseResults[0];
-            const subscriberUsers = promiseResults[1];
+            const subscriberUser = promiseResults[1];
 
             if (!subscriberOrg) {
                throw new SubscriberOrgNotExistError(subscriberOrgId);
             }
 
-            if (subscriberUsers.length === 0) {
+            if (!subscriberUser) {
                throw new NoPermissionsError(subscriberOrgId);
             }
 
@@ -321,12 +307,12 @@ export const inviteSubscribers = (req, subscriberOrgId, subscriberUserIdEmails, 
             const inviteDbUserIds = inviteDbUsers.map(inviteDbUser => inviteDbUser.userId);
 
             // Make sure invitees are not already in here.
-            return getSubscriberUsersByUserIds(req, inviteDbUserIds);
+            return subscriberUsersTable.getSubscriberUsersByUserIdsAndSubscriberOrgId(req, inviteDbUserIds, subscriberOrgId);
          })
          .then((subscriberUsers) => {
-            const subscriberUsersOfOrg = subscriberUsers.filter(subscriberUser => subscriberUser.subscriberUserInfo.subscriberOrgId === subscriberOrgId);
+            const subscriberUsersOfOrg = subscriberUsers.filter(subscriberUser => subscriberUser.subscriberOrgId === subscriberOrgId);
             if (subscriberUsersOfOrg.length !== 0) {
-               const doNotInviteUserIds = subscriberUsersOfOrg.map(subscriberUser => subscriberUser.subscriberUserInfo.userId);
+               const doNotInviteUserIds = subscriberUsersOfOrg.map(subscriberUser => subscriberUser.userId);
                inviteDbUsers = inviteDbUsers.filter(inviteDbUser => doNotInviteUserIds.indexOf(inviteDbUser.userId) < 0);
             }
             return Promise.all([
@@ -348,14 +334,7 @@ const addUserToSubscriberOrg = (req, user, subscriberOrgId, role) => {
                throw new SubscriberOrgNotExistError(subscriberOrgId);
             }
 
-            const subscriberUser = {
-               userId: user.userId,
-               subscriberOrgId,
-               role,
-               created: req.now.format(),
-               lastModified: req.now.format()
-            };
-            return createItem(req, -1, `${config.tablePrefix}subscriberUsers`, 'subscriberUserId', subscriberUserId, 'subscriberUserInfo', subscriberUser);
+            subscriberUsersTable.createSubscriberUser(req, subscriberUserId, user.userId, subscriberOrgId, role);
          })
          .then(() => {
             subscriberAdded(req, subscriberOrgId, user, role, subscriberUserId);

@@ -21,22 +21,6 @@ function createTable(params) {
 }
 
 
-var subscriberUsersParams = {
-   TableName : tablePrefix + 'subscriberUsers',
-   KeySchema: [
-      { AttributeName: 'partitionId', KeyType: 'HASH'},  //Partition key
-      { AttributeName: 'subscriberUserId', KeyType: 'RANGE' }  //Sort key
-   ],
-   AttributeDefinitions: [
-      { AttributeName: 'partitionId', AttributeType: 'N' },
-      { AttributeName: 'subscriberUserId', AttributeType: 'S' }
-   ],
-   ProvisionedThroughput: {
-      ReadCapacityUnits: 10,
-      WriteCapacityUnits: 10
-   }
-};
-
 var teamsParams = {
    TableName : tablePrefix + 'teams',
    KeySchema: [
@@ -102,7 +86,6 @@ var teamRoomMembersParams = {
 };
 
 
-createTable(subscriberUsersParams);
 createTable(teamsParams);
 createTable(teamMembersParams);
 createTable(teamRoomsParams);
@@ -133,6 +116,46 @@ function createSystemPropertiesTable() {
    });
 }
 createSystemPropertiesTable();
+
+
+function createUsersTable() {
+   var params = {
+      TableName : tablePrefix + 'users',
+      KeySchema: [
+         { AttributeName: 'userId', KeyType: 'HASH'}  //Partition key
+      ],
+      AttributeDefinitions: [
+         { AttributeName: 'userId', AttributeType: 'S' },
+         { AttributeName: 'emailAddress', AttributeType: 'S' }
+      ],
+      ProvisionedThroughput: {
+         ReadCapacityUnits: 10,
+         WriteCapacityUnits: 10
+      },
+      GlobalSecondaryIndexes: [
+         {
+            IndexName: 'emailAddressIdx',
+            KeySchema: [
+               { AttributeName: 'emailAddress', KeyType: 'HASH' },
+            ],
+            Projection: { ProjectionType: 'ALL' },
+            ProvisionedThroughput: {
+               ReadCapacityUnits: 10,
+               WriteCapacityUnits: 10
+            }
+         }
+      ]
+   };
+
+   dynamodb.createTable(params, function(err, data) {
+      if (err) {
+         console.error('Unable to create UsersTable. Error JSON:', JSON.stringify(err, null, 2));
+      } else {
+         // console.log('Created table. Table description JSON:', JSON.stringify(data, null, 2));
+      }
+   });
+}
+createUsersTable();
 
 
 function createSubscriberOrgsTable() {
@@ -175,15 +198,16 @@ function createSubscriberOrgsTable() {
 createSubscriberOrgsTable();
 
 
-function createUsersTable() {
+function createSubscriberUsersTable() {
    var params = {
-      TableName : tablePrefix + 'users',
+      TableName : tablePrefix + 'subscriberUsers',
       KeySchema: [
-         { AttributeName: 'userId', KeyType: 'HASH'}  //Partition key
+         { AttributeName: 'subscriberUserId', KeyType: 'HASH'}  //Partition key
       ],
       AttributeDefinitions: [
+         { AttributeName: 'subscriberUserId', AttributeType: 'S' },
          { AttributeName: 'userId', AttributeType: 'S' },
-         { AttributeName: 'emailAddress', AttributeType: 'S' }
+         { AttributeName: 'subscriberOrgId', AttributeType: 'S' }
       ],
       ProvisionedThroughput: {
          ReadCapacityUnits: 10,
@@ -191,9 +215,22 @@ function createUsersTable() {
       },
       GlobalSecondaryIndexes: [
          {
-            IndexName: 'emailAddressIdx',
+            IndexName: 'userIdSubscriberOrgIdIdx',
             KeySchema: [
-               { AttributeName: 'emailAddress', KeyType: 'HASH' },
+               { AttributeName: 'userId', KeyType: 'HASH' },
+               { AttributeName: 'subscriberOrgId', KeyType: 'RANGE' }
+            ],
+            Projection: { ProjectionType: 'ALL' },
+            ProvisionedThroughput: {
+               ReadCapacityUnits: 10,
+               WriteCapacityUnits: 10
+            }
+         },
+         {
+            IndexName: 'subscriberOrgIdUserIdIdx',
+            KeySchema: [
+               { AttributeName: 'subscriberOrgId', KeyType: 'HASH' },
+               { AttributeName: 'userId', KeyType: 'RANGE' }
             ],
             Projection: { ProjectionType: 'ALL' },
             ProvisionedThroughput: {
@@ -206,13 +243,13 @@ function createUsersTable() {
 
    dynamodb.createTable(params, function(err, data) {
       if (err) {
-         console.error('Unable to create UsersTable. Error JSON:', JSON.stringify(err, null, 2));
+         console.error('Unable to create SubscriberUsersTable. Error JSON:', JSON.stringify(err, null, 2));
       } else {
          // console.log('Created table. Table description JSON:', JSON.stringify(data, null, 2));
       }
    });
 }
-createUsersTable();
+createSubscriberUsersTable();
 
 
 function createConversationsTable() {

@@ -411,52 +411,6 @@ export function scan(params) {
 }
 
 
-export function getSubscriberUsersByUserIds(req, userIds) {
-   if (userIds === undefined) {
-      return Promise.reject('userIds needs to be specified.');
-   }
-
-   const tableName = `${config.tablePrefix}subscriberUsers`;
-   return filteredScanValueIn(req, tableName, 'subscriberUserInfo.userId', userIds);
-}
-
-export function getSubscriberUsersByIds(req, subscriberUserIds) {
-   if (subscriberUserIds === undefined) {
-      return Promise.reject('subscriberUserIds needs to be specified.');
-   }
-
-   const tableName = `${config.tablePrefix}subscriberUsers`;
-   return batchGetItemBySortKey(req, tableName, 'subscriberUserId', subscriberUserIds);
-}
-
-export function getSubscriberUsersBySubscriberOrgId(req, subscriberOrgId) {
-   if (subscriberOrgId === undefined) {
-      return Promise.reject('subscriberOrgId needs to be specified.');
-   }
-
-   const tableName = `${config.tablePrefix}subscriberUsers`;
-   return filteredScanValueIn(req, tableName, 'subscriberUserInfo.subscriberOrgId', [subscriberOrgId]);
-}
-
-export function getSubscriberUsersByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId) {
-   if ((userId === undefined) || (subscriberOrgId === undefined)) {
-      return Promise.reject('userId and subscriberOrgId needs to be specified.');
-   }
-
-   const tableName = `${config.tablePrefix}subscriberUsers`;
-   return filteredScan(req, tableName, { subscriberUserInfo: { userId, subscriberOrgId } });
-}
-
-export function getSubscriberUsersByUserIdAndSubscriberOrgIdAndRole(req, userId, subscriberOrgId, role) {
-   if ((userId === undefined) || (subscriberOrgId === undefined) || (role === undefined)) {
-      return Promise.reject('userId, subscriberOrgId, and role needs to be specified.');
-   }
-
-   const tableName = `${config.tablePrefix}subscriberUsers`;
-   return filteredScan(req, tableName, { subscriberUserInfo: { userId, subscriberOrgId, role } });
-}
-
-
 export function getTeamsByIds(req, teamIds) {
    if (teamIds === undefined) {
       return Promise.reject('teamIds needs to be specified.');

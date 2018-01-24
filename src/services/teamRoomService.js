@@ -1,6 +1,8 @@
 import _ from 'lodash';
 import uuid from 'uuid';
 import config from '../config/env';
+import * as subscriberOrgsTable from '../repositories/db/subscriberOrgsTable';
+import * as subscriberUsersTable from '../repositories/db/subscriberUsersTable';
 import * as conversationSvc from './conversationService';
 import {
    CannotDeactivateError,
@@ -30,8 +32,6 @@ import {
 import { getPresence } from './messaging/presence';
 import {
    createItem,
-   getSubscriberOrgsByIds,
-   getSubscriberUsersByUserIds,
    getTeamsByIds,
    getTeamMembersBySubscriberUserIds,
    getTeamMembersByUserIdAndTeamId,
@@ -51,15 +51,20 @@ import Roles from './roles';
 export const defaultTeamRoomName = 'Lobby';
 
 export const getUserTeamRooms = (req, userId, { teamId, subscriberOrgId } = {}) => {
-   const filterSubscriberOrgId = (teamId) ? undefined : subscriberOrgId;
    return new Promise((resolve, reject) => {
-      getSubscriberUsersByUserIds(req, [userId])
+      let promise;
+      if (!subscriberOrgId) {
+         promise = subscriberUsersTable.getSubscriberUsersByUserId(req, userId);
+      } else {
+         promise = subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId);
+      }
+      promise
          .then((subscriberUsers) => {
             let filteredSubscriberUsers;
-            if (filterSubscriberOrgId) {
-               filteredSubscriberUsers = subscriberUsers.filter(subscriberUser => subscriberUser.subscriberUserInfo.subscriberOrgId === filterSubscriberOrgId);
-            } else {
+            if (subscriberUsers instanceof Array) {
                filteredSubscriberUsers = subscriberUsers;
+            } else {
+               filteredSubscriberUsers = [subscriberUsers];
             }
             const subscriberUserIds = filteredSubscriberUsers.map(subscriberUser => subscriberUser.subscriberUserId);
             return getTeamMembersBySubscriberUserIds(req, subscriberUserIds);
@@ -388,7 +393,7 @@ export const inviteMembers = (req, teamRoomId, userIds, userId) => {
 
             return Promise.all([
                usersTable.getUsersByUserIds(req, [userId, ...uniqueUserIds]),
-               getSubscriberOrgsByIds(req, [teams[0].teamInfo.subscriberOrgId])
+               subscriberOrgsTable.getSubscriberOrgBySubscriberOrgId(req, [teams[0].teamInfo.subscriberOrgId])
             ]);
          })
          .then((promiseResults) => {
@@ -399,7 +404,7 @@ export const inviteMembers = (req, teamRoomId, userIds, userId) => {
                }
                return true;
             });
-            subscriberOrg = promiseResults[1][0];
+            subscriberOrg = promiseResults[1];
 
             // If any of the userIds are bad, fail.
             if (existingDbUsers.length !== userIds.length) {

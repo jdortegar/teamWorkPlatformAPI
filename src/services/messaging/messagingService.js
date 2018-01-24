@@ -4,11 +4,11 @@ import socketioJwt from 'socketio-jwt';
 import SocketIORedisAdapter from 'socket.io-redis';
 import SocketIOWildcard from 'socketio-wildcard';
 import config from '../../config/env';
+import * as subscriberUsersTable from '../../repositories/db/subscriberUsersTable';
 import * as conversationSvc from '../conversationService';
 import logger, { createPseudoRequest } from '../../logger';
 import { setPresence } from './presence';
 import {
-   getSubscriberUsersByUserIds,
    getTeamMembersByUserIds,
    getTeamRoomMembersByUserIds
 } from '../../repositories/util';
@@ -117,10 +117,10 @@ const joinCurrentChannels = (req, socket, userId) => {
 
    // Get subscribers/members instead of subscriberOrgs/teams/teamRooms, as we need the role also.
 
-   getSubscriberUsersByUserIds(req, [userId])
+   subscriberUsersTable.getSubscriberUsersByUserId(req, userId)
       .then((subscribers) => {
          subscribers.forEach((subscriber) => {
-            const { subscriberOrgId, role } = subscriber.subscriberUserInfo;
+            const { subscriberOrgId, role } = subscriber;
 
             const subscriberOrgChannel = ChannelFactory.subscriberOrgChannel(subscriberOrgId);
             socket.join(subscriberOrgChannel);

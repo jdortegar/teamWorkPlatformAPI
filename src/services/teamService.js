@@ -15,6 +15,8 @@ import {
 import InvitationKeys from '../repositories/InvitationKeys';
 import * as invitationsTable from '../repositories/db/invitationsTable';
 import * as usersTable from '../repositories/db/usersTable';
+import * as subscriberOrgsTable from '../repositories/db/subscriberOrgsTable';
+import * as subscriberUsersTable from '../repositories/db/subscriberUsersTable';
 import { deleteInvitation } from '../repositories/cache/invitationsCache';
 import { inviteExistingUsersToTeam } from './invitationsUtil';
 import {
@@ -31,10 +33,6 @@ import Roles from './roles';
 import * as teamRoomSvc from './teamRoomService';
 import {
    createItem,
-   getSubscriberOrgsByIds,
-   getSubscriberUsersByUserIdAndSubscriberOrgId,
-   getSubscriberUsersByUserIdAndSubscriberOrgIdAndRole,
-   getSubscriberUsersByUserIds,
    getTeamMembersByUserIds,
    getTeamMembersBySubscriberUserIds,
    getTeamMembersByTeamIdAndUserIdAndRole,
@@ -50,14 +48,21 @@ export const defaultTeamName = 'All';
 
 export function getUserTeams(req, userId, subscriberOrgId = undefined) {
    return new Promise((resolve, reject) => {
-      getSubscriberUsersByUserIds(req, [userId])
+      let promise;
+      if (subscriberOrgId) {
+         promise = subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId);
+      } else {
+         promise = subscriberUsersTable.getSubscriberUsersByUserId(req, userId);
+      }
+      promise
          .then((subscriberUsers) => {
             let filteredSubscriberUsers;
-            if (subscriberOrgId) {
-               filteredSubscriberUsers = subscriberUsers.filter(subscriberUser => subscriberUser.subscriberUserInfo.subscriberOrgId === subscriberOrgId);
-            } else {
+            if (subscriberUsers instanceof Array) {
                filteredSubscriberUsers = subscriberUsers;
+            } else {
+               filteredSubscriberUsers = [subscriberUsers];
             }
+
             const subscriberUserIds = filteredSubscriberUsers.map(subscriberUser => subscriberUser.subscriberUserId);
             return getTeamMembersBySubscriberUserIds(req, subscriberUserIds);
          })
@@ -143,15 +148,17 @@ export function createTeam(req, subscriberOrgId, teamInfo, userId, teamId = unde
       let subscriberUserId;
       let subscriberOrgAdminUserIds;
 
-      Promise.all([getSubscriberOrgsByIds(req, [subscriberOrgId]), getSubscriberUsersByUserIdAndSubscriberOrgIdAndRole(req, userId, subscriberOrgId, Roles.admin)])
+      Promise.all([
+         subscriberOrgsTable.getSubscriberOrgBySubscriberOrgId(req, subscriberOrgId),
+         subscriberUsersTable.getSubscriberUsersBySubscriberOrgIdAndRole(req, subscriberOrgId, Roles.admin)
+      ])
          .then((promiseResults) => {
-            const subscriberOrgs = promiseResults[0];
+            const subscriberOrg = promiseResults[0];
             const subscriberUsers = promiseResults[1];
 
-            if (subscriberOrgs.length === 0) {
+            if (!subscriberOrg) {
                throw new SubscriberOrgNotExistError(subscriberOrgId);
             }
-            const subscriberOrg = subscriberOrgs[0];
             if (('enabled' in subscriberOrg) && (subscriberOrg.enabled === false)) {
                throw new NotActiveError(subscriberOrgId);
             }
@@ -159,13 +166,16 @@ export function createTeam(req, subscriberOrgId, teamInfo, userId, teamId = unde
             if (subscriberUsers.length === 0) {
                throw new NoPermissionsError(subscriberOrgId);
             }
+            subscriberOrgAdminUserIds = subscriberUsers.map((adminSubscriberUser) => {
+               if (adminSubscriberUser.userId === userId) {
+                  subscriberUserId = adminSubscriberUser.subscriberUserId;
+               }
+               return adminSubscriberUser.userId;
+            });
+            if (!subscriberUserId) {
+               throw new NoPermissionsError(subscriberOrgId);
+            }
 
-            // Add all subscriberOrg admins to new team.
-            const adminSubscriberUsers = subscriberUsers.filter(subscriberUser => subscriberUser.subscriberUserInfo.role === Roles.admin);
-            subscriberOrgAdminUserIds = adminSubscriberUsers.map(adminSubscriberUser => adminSubscriberUser.subscriberUserInfo.userId);
-            subscriberOrgAdminUserIds.push(userId);
-
-            subscriberUserId = subscriberUsers[0].subscriberUserId;
             return Promise.all([
                getTeamBySubscriberOrgIdAndName(req, subscriberOrgId, teamInfo.name),
                usersTable.getUserByUserId(req, userId)
@@ -375,7 +385,7 @@ export function inviteMembers(req, teamId, userIds, userId) {
 
             return Promise.all([
                usersTable.getUsersByUserIds(req, [userId, ...uniqueUserIds]),
-               getSubscriberOrgsByIds(req, [teams[0].teamInfo.subscriberOrgId])
+               subscriberOrgsTable.getSubscriberOrgBySubscriberOrgId(req, teams[0].teamInfo.subscriberOrgId)
             ]);
          })
          .then((promiseResults) => {
@@ -386,7 +396,7 @@ export function inviteMembers(req, teamId, userIds, userId) {
                }
                return true;
             });
-            subscriberOrg = promiseResults[1][0];
+            subscriberOrg = promiseResults[1];
 
             // If any of the userIds are bad, fail.
             if (existingDbUsers.length !== userIds.length) {
@@ -484,7 +494,7 @@ export function replyToInvite(req, teamId, accept, userId) {
                if ((team.teamInfo.active) && (accept)) {
                   const { subscriberOrgId } = cachedInvitation;
                   userInvitationAccepted(req, cachedInvitation, userId);
-                  return getSubscriberUsersByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId);
+                  return subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId);
                } else if (!accept) {
                   userInvitationDeclined(req, cachedInvitation, userId);
                }
@@ -492,9 +502,9 @@ export function replyToInvite(req, teamId, accept, userId) {
             }
             throw new InvitationNotExistError(teamId);
          })
-         .then((subscriberUsers) => {
-            if ((subscriberUsers) && (subscriberUsers.length > 0)) {
-               const { subscriberUserId } = subscriberUsers[0];
+         .then((subscriberUser) => {
+            if (subscriberUser) {
+               const { subscriberUserId } = subscriberUser;
                return addUserToTeam(req, user, subscriberUserId, teamId, Roles.user);
             }
             return undefined;
