@@ -127,11 +127,11 @@ export const updateSubscriberOrg = (req, subscriberOrgId, { name, icon, enabled,
                params.ExpressionAttributeValues[':icon'] = icon;
             }
             if (enabled) {
-               params.UpdateExpression = 'set enabled = :enabled';
+               params.UpdateExpression += ', enabled = :enabled';
                params.ExpressionAttributeValues[':enabled'] = enabled;
             }
             if (preferences) {
-               params.UpdateExpression = 'set preferences = :preferences';
+               params.UpdateExpression += ', preferences = :preferences';
                params.ExpressionAttributeValues[':preferences'] = preferences;
             }
 
@@ -140,6 +140,7 @@ export const updateSubscriberOrg = (req, subscriberOrgId, { name, icon, enabled,
          .then(() => {
             resolve(_.merge({}, subscriberOrg, {
                name,
+               icon,
                enabled,
                lastModified,
                preferences

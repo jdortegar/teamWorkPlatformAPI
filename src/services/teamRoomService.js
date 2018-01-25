@@ -3,6 +3,7 @@ import uuid from 'uuid';
 import config from '../config/env';
 import * as subscriberOrgsTable from '../repositories/db/subscriberOrgsTable';
 import * as subscriberUsersTable from '../repositories/db/subscriberUsersTable';
+import * as teamsTable from '../repositories/db/teamsTable';
 import * as conversationSvc from './conversationService';
 import {
    CannotDeactivateError,
@@ -32,7 +33,6 @@ import {
 import { getPresence } from './messaging/presence';
 import {
    createItem,
-   getTeamsByIds,
    getTeamMembersBySubscriberUserIds,
    getTeamMembersByUserIdAndTeamId,
    getTeamMembersByTeamIdAndUserIdAndRole,
@@ -154,17 +154,13 @@ export const createTeamRoom = (req, teamId, teamRoomInfo, userId, teamRoomId = u
       let teamMemberId;
       let teamAdminUserIds;
 
-      Promise.all([getTeamsByIds(req, [teamId]), getTeamMembersByTeamIdAndUserIdAndRole(req, teamId, userId, Roles.admin)])
-         .then((promiseResults) => {
-            const teams = promiseResults[0];
-            const teamMembers = promiseResults[1];
-
-            if (teams.length === 0) {
+      Promise.all([teamsTable.getTeamByTeamId(req, teamId), getTeamMembersByTeamIdAndUserIdAndRole(req, teamId, userId, Roles.admin)])
+         .then(([team, teamMembers]) => {
+            if (!team) {
                throw new TeamNotExistError(teamId);
             }
-            const team = teams[0];
             subscriberOrgId = team.subscriberOrgId;
-            if ((('subscriberOrgEnabled' in team) && (team.subscriberOrgEnabled === false)) || (team.active === false)) {
+            if ((team.subscriberOrgEnabled === false) || (team.active === false)) {
                throw new NotActiveError(teamId);
             }
 
@@ -379,11 +375,10 @@ export const inviteMembers = (req, teamRoomId, userIds, userId) => {
                throw new CannotInviteError(teamRoomId);
             }
 
-            return getTeamsByIds(req, [teamRoom.teamRoomInfo.teamId]);
+            return teamsTable.getTeamByTeamId(req, teamRoom.teamRoomInfo.teamId);
          })
-         .then((teams) => {
-            team = teams[0];
-
+         .then((retrievedTeam) => {
+            team = retrievedTeam;
             const uniqueUserIds = userIds.reduce((prevList, userIdEntry) => {
                if (prevList.indexOf(userIdEntry) < 0) {
                   prevList.push(userIdEntry);
@@ -393,7 +388,7 @@ export const inviteMembers = (req, teamRoomId, userIds, userId) => {
 
             return Promise.all([
                usersTable.getUsersByUserIds(req, [userId, ...uniqueUserIds]),
-               subscriberOrgsTable.getSubscriberOrgBySubscriberOrgId(req, [teams[0].teamInfo.subscriberOrgId])
+               subscriberOrgsTable.getSubscriberOrgBySubscriberOrgId(req, team.subscriberOrgId)
             ]);
          })
          .then((promiseResults) => {

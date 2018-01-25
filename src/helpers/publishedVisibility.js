@@ -157,7 +157,7 @@ const publicSubscriber = (subscriberOrgId, user) => {
 
 const privateTeam = (team) => {
    const teamId = team.teamId;
-   const { subscriberOrgId, name, icon, active, primary, preferences, created, lastModified } = team.teamInfo || team;
+   const { subscriberOrgId, name, icon, active, primary, preferences, created, lastModified } = team;
    return {
       teamId,
       subscriberOrgId,

@@ -239,10 +239,8 @@ export const inviteSubscribers = (req, subscriberOrgId, subscriberUserIdEmails, 
          subscriberOrgsTable.getSubscriberOrgBySubscriberOrgId(req, subscriberOrgId),
          subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgIdAndRole(req, userId, subscriberOrgId, Roles.admin)
       ])
-         .then((promiseResults) => {
-            subscriberOrg = promiseResults[0];
-            const subscriberUser = promiseResults[1];
-
+         .then(([retrievedSubscriberOrg, subscriberUser]) => {
+            subscriberOrg = retrievedSubscriberOrg;
             if (!subscriberOrg) {
                throw new SubscriberOrgNotExistError(subscriberOrgId);
             }
@@ -310,7 +308,7 @@ export const inviteSubscribers = (req, subscriberOrgId, subscriberUserIdEmails, 
             return subscriberUsersTable.getSubscriberUsersByUserIdsAndSubscriberOrgId(req, inviteDbUserIds, subscriberOrgId);
          })
          .then((subscriberUsers) => {
-            const subscriberUsersOfOrg = subscriberUsers.filter(subscriberUser => subscriberUser.subscriberOrgId === subscriberOrgId);
+            const subscriberUsersOfOrg = subscriberUsers.filter(subscriberUser => ((subscriberUser) && (subscriberUser.subscriberOrgId === subscriberOrgId)));
             if (subscriberUsersOfOrg.length !== 0) {
                const doNotInviteUserIds = subscriberUsersOfOrg.map(subscriberUser => subscriberUser.userId);
                inviteDbUsers = inviteDbUsers.filter(inviteDbUser => doNotInviteUserIds.indexOf(inviteDbUser.userId) < 0);
@@ -350,7 +348,7 @@ export const replyToInvite = (req, subscriberOrgId, accept, userId) => {
       let user;
       let subscriberOrg;
       let cachedInvitation;
-      Promise.all([usersTable.getUserByUserId(req, userId), subscriberOrgsTable.getSubscriberOrgBySubsriberOrgId(req, subscriberOrgId)])
+      Promise.all([usersTable.getUserByUserId(req, userId), subscriberOrgsTable.getSubscriberOrgBySubscriberOrgId(req, subscriberOrgId)])
          .then((promiseResults) => {
             user = promiseResults[0];
             subscriberOrg = promiseResults[1];

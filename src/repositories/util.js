@@ -420,33 +420,6 @@ export function getTeamsByIds(req, teamIds) {
    return batchGetItemBySortKey(req, tableName, 'teamId', teamIds);
 }
 
-export function getTeamsBySubscriberOrgId(req, subscriberOrgId) {
-   if (subscriberOrgId === undefined) {
-      return Promise.reject('subscriberOrgId needs to be specified.');
-   }
-
-   const tableName = `${config.tablePrefix}teams`;
-   return filteredScan(req, tableName, { teamInfo: { subscriberOrgId } });
-}
-
-export function getTeamBySubscriberOrgIdAndName(req, subscriberOrgId, name) {
-   if ((subscriberOrgId === undefined) || (name === undefined)) {
-      return Promise.reject('subscriberOrgId and name needs to be specified.');
-   }
-
-   const tableName = `${config.tablePrefix}teams`;
-   return filteredScan(req, tableName, { teamInfo: { subscriberOrgId, name } });
-}
-
-export function getTeamBySubscriberOrgIdAndPrimary(req, subscriberOrgId, primary) {
-   if ((subscriberOrgId === undefined) || (primary === undefined)) {
-      return Promise.reject('subscriberOrgId and primary needs to be specified.');
-   }
-
-   const tableName = `${config.tablePrefix}teams`;
-   return filteredScan(req, tableName, { teamInfo: { subscriberOrgId, primary } });
-}
-
 
 export function getTeamMembersByTeamIdAndUserIdAndRole(req, teamId, userId, role) {
    if ((teamId === undefined) || (userId === undefined) || (role === undefined)) {

@@ -60,10 +60,10 @@ export const inviteExistingUsersToTeam = (req, invitingDbUser, existingDbUsers, 
          byUserFirstName: invitingDbUser.firstName,
          byUserLastName: invitingDbUser.lastName,
          byUserDisplayName: invitingDbUser.displayName,
-         subscriberOrgId: team.teamInfo.subscriberOrgId,
+         subscriberOrgId: team.subscriberOrgId,
          subscriberOrgName: subscriberOrg.name,
          teamId: team.teamId,
-         teamName: team.teamInfo.name
+         teamName: team.name
       };
 
       let createdOffset = 0;
@@ -74,7 +74,7 @@ export const inviteExistingUsersToTeam = (req, invitingDbUser, existingDbUsers, 
             .then((createdInvitations) => {
                const dbinvitation = createdInvitations[1];
                return Promise.all([
-                  sendTeamInviteToExistingUser(email, subscriberOrg.name, team.teamInfo.name, invitingDbUser, key),
+                  sendTeamInviteToExistingUser(email, subscriberOrg.name, team.name, invitingDbUser, key),
                   userInvited(req, dbUser.userId, invitation),
                   sentInvitationStatus(req, dbinvitation)
                ]);
@@ -96,10 +96,10 @@ export const inviteExistingUsersToTeamRoom = (req, invitingDbUser, existingDbUse
          byUserFirstName: invitingDbUser.firstName,
          byUserLastName: invitingDbUser.lastName,
          byUserDisplayName: invitingDbUser.displayName,
-         subscriberOrgId: team.teamInfo.subscriberOrgId,
+         subscriberOrgId: team.subscriberOrgId,
          subscriberOrgName: subscriberOrg.name,
          teamId: team.teamId,
-         teamName: team.teamInfo.name,
+         teamName: team.name,
          teamRoomId: teamRoom.teamRoomId,
          teamRoomName: teamRoom.teamRoomInfo.name
       };
@@ -116,7 +116,7 @@ export const inviteExistingUsersToTeamRoom = (req, invitingDbUser, existingDbUse
                   sendTeamRoomInviteToExistingUser(
                      email,
                      subscriberOrg.name,
-                     team.teamInfo.name,
+                     team.name,
                      teamRoom.teamRoomInfo.name,
                      invitingDbUser,
                      key
