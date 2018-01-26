@@ -5,11 +5,11 @@ import SocketIORedisAdapter from 'socket.io-redis';
 import SocketIOWildcard from 'socketio-wildcard';
 import config from '../../config/env';
 import * as subscriberUsersTable from '../../repositories/db/subscriberUsersTable';
+import * as teamMembersTable from '../../repositories/db/teamMembersTable';
 import * as conversationSvc from '../conversationService';
 import logger, { createPseudoRequest } from '../../logger';
 import { setPresence } from './presence';
 import {
-   getTeamMembersByUserIds,
    getTeamRoomMembersByUserIds
 } from '../../repositories/util';
 import { disconnectFromRedis } from '../../redis-connection';
@@ -135,10 +135,10 @@ const joinCurrentChannels = (req, socket, userId) => {
       })
       .catch(err => logger.error(err));
 
-   getTeamMembersByUserIds(req, [userId])
+   teamMembersTable.getTeamMembersByUserId(req, userId)
       .then((teamMembers) => {
          teamMembers.forEach((teamMember) => {
-            const { teamId, role } = teamMember.teamMemberInfo;
+            const { teamId, role } = teamMember;
 
             const teamChannel = ChannelFactory.teamChannel(teamId);
             socket.join(teamChannel);

@@ -1,6 +1,5 @@
 import _ from 'lodash';
 import uuid from 'uuid';
-import config from '../config/env';
 import {
    CannotDeactivateError,
    CannotInviteError,
@@ -18,6 +17,7 @@ import * as usersTable from '../repositories/db/usersTable';
 import * as subscriberOrgsTable from '../repositories/db/subscriberOrgsTable';
 import * as subscriberUsersTable from '../repositories/db/subscriberUsersTable';
 import * as teamsTable from '../repositories/db/teamsTable';
+import * as teamMembersTable from '../repositories/db/teamMembersTable';
 import { deleteInvitation } from '../repositories/cache/invitationsCache';
 import { inviteExistingUsersToTeam } from './invitationsUtil';
 import {
@@ -32,13 +32,6 @@ import {
 import { getPresence } from './messaging/presence';
 import Roles from './roles';
 import * as teamRoomSvc from './teamRoomService';
-import {
-   createItem,
-   getTeamMembersByUserIds,
-   getTeamMembersBySubscriberUserIds,
-   getTeamMembersByTeamIdAndUserIdAndRole,
-   getTeamMembersByTeamId
-} from '../repositories/util';
 
 export const defaultTeamName = 'All';
 
@@ -46,34 +39,20 @@ export function getUserTeams(req, userId, subscriberOrgId = undefined) {
    return new Promise((resolve, reject) => {
       let promise;
       if (subscriberOrgId) {
-         promise = subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId);
+         promise = teamMembersTable.getTeamMembersByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId);
       } else {
-         promise = subscriberUsersTable.getSubscriberUsersByUserId(req, userId);
+         promise = teamMembersTable.getTeamMembersByUserId(req, userId);
       }
       promise
-         .then((subscriberUsers) => {
-            let filteredSubscriberUsers;
-            if (subscriberUsers instanceof Array) {
-               filteredSubscriberUsers = subscriberUsers;
-            } else {
-               filteredSubscriberUsers = [subscriberUsers];
-            }
-
-            const subscriberUserIds = filteredSubscriberUsers.map(subscriberUser => subscriberUser.subscriberUserId);
-            return getTeamMembersBySubscriberUserIds(req, subscriberUserIds);
-         })
          .then((teamMembers) => {
-            const teamIds = teamMembers.map((teamMember) => {
-               return teamMember.teamMemberInfo.teamId;
-            });
+            const teamIds = teamMembers.map(teamMember => teamMember.teamId);
             return teamsTable.getTeamsByTeamIds(req, teamIds);
          })
          .then((teams) => {
-            const retTeams = [];
-            teams.forEach((team) => {
+            const retTeams = teams.map((team) => {
                const teamClone = _.cloneDeep(team);
                teamClone.active = (teamClone.subscriberOrgEnabled === false) ? false : teamClone.active;
-               retTeams.push(teamClone);
+               return teamClone;
             });
             resolve(retTeams);
          })
@@ -99,15 +78,7 @@ export const createTeamNoCheck = (req, subscriberOrgId, teamInfo, subscriberUser
          .then((createdTeam) => {
             team = createdTeam;
 
-            const teamMember = {
-               subscriberUserId,
-               teamId: actualTeamId,
-               userId: user.userId,
-               role: Roles.admin,
-               created: req.now.format(),
-               lastModified: req.now.format()
-            };
-            return createItem(req, -1, `${config.tablePrefix}teamMembers`, 'teamMemberId', teamMemberId, 'teamMemberInfo', teamMember);
+            return teamMembersTable.createTeamMember(req, teamMemberId, user.userId, actualTeamId, subscriberUserId, subscriberOrgId, Roles.admin);
          })
          .then(() => {
             teamCreated(req, team, teamAdminUserIds);
@@ -184,10 +155,10 @@ export function updateTeam(req, teamId, updateInfo, userId) {
                throw new TeamNotExistError(teamId);
             }
 
-            return getTeamMembersByTeamIdAndUserIdAndRole(req, teamId, userId, Roles.admin);
+            return teamMembersTable.getTeamMemberByTeamIdAndUserIdAndRole(req, teamId, userId, Roles.admin);
          })
-         .then((teamMembers) => {
-            if (teamMembers.length === 0) {
+         .then((teamMember) => {
+            if (!teamMember) {
                throw new NoPermissionsError(teamId);
             }
 
@@ -254,16 +225,16 @@ export function getTeamUsers(req, teamId, userId = undefined) {
    let usersWithRoles;
 
    return new Promise((resolve, reject) => {
-      getTeamMembersByTeamId(req, teamId)
+      teamMembersTable.getTeamMembersByTeamId(req, teamId)
          .then((teamMembers) => {
             if (teamMembers.length === 0) {
                throw new TeamNotExistError(teamId);
             }
 
             const userIds = teamMembers.map((teamMember) => {
-               userIdsRoles[teamMember.teamMemberInfo.userId] = teamMember.teamMemberInfo.role;
-               userIdsTeamMemberIds[teamMember.teamMemberInfo.userId] = teamMember.teamMemberId;
-               return teamMember.teamMemberInfo.userId;
+               userIdsRoles[teamMember.userId] = teamMember.role;
+               userIdsTeamMemberIds[teamMember.userId] = teamMember.teamMemberId;
+               return teamMember.userId;
             });
             if ((userId) && (userIds.indexOf(userId)) < 0) {
                throw new NoPermissionsError(teamId);
@@ -316,15 +287,15 @@ export function inviteMembers(req, teamId, userIds, userId) {
       let subscriberOrg;
       Promise.all([
          teamsTable.getTeamByTeamId(req, teamId),
-         getTeamMembersByTeamIdAndUserIdAndRole(req, teamId, userId, Roles.admin)
+         teamMembersTable.getTeamMemberByTeamIdAndUserIdAndRole(req, teamId, userId, Roles.admin)
       ])
-         .then(([retrievedTeam, teamMembers]) => {
+         .then(([retrievedTeam, teamMember]) => {
             team = retrievedTeam;
             if (!team) {
                throw new TeamNotExistError(teamId);
             }
 
-            if (teamMembers.length === 0) {
+            if (!teamMember) {
                throw new NoPermissionsError(teamId);
             }
 
@@ -368,12 +339,12 @@ export function inviteMembers(req, teamId, userIds, userId) {
             const inviteDbUserIds = inviteDbUsers.map(inviteDbUser => inviteDbUser.userId);
 
             // Make sure invitees are not already in here.
-            return getTeamMembersByUserIds(req, inviteDbUserIds);
+            return teamMembersTable.getTeamMembersByUserIds(req, inviteDbUserIds);
          })
          .then((teamMembers) => {
-            const teamMembersOfTeam = teamMembers.filter(teamMember => teamMember.teamMemberInfo.teamId === teamId);
+            const teamMembersOfTeam = teamMembers.filter(teamMember => teamMember.teamId === teamId);
             if (teamMembersOfTeam.length !== 0) {
-               const doNotInviteUserIds = teamMembersOfTeam.map(teamMember => teamMember.teamMemberInfo.userId);
+               const doNotInviteUserIds = teamMembersOfTeam.map(teamMember => teamMember.userId);
                inviteDbUsers = inviteDbUsers.filter(inviteDbUser => doNotInviteUserIds.indexOf(inviteDbUser.userId) < 0);
             }
             return inviteExistingUsersToTeam(req, dbUser, inviteDbUsers, subscriberOrg, team);
@@ -391,16 +362,7 @@ export function addUserToTeam(req, user, subscriberUserId, teamId, role) {
             if (!team) {
                throw new TeamNotExistError(teamId);
             }
-
-            const teamMember = {
-               subscriberUserId,
-               teamId,
-               userId: user.userId,
-               role,
-               created: req.now.format(),
-               lastModified: req.now.format()
-            };
-            return createItem(req, -1, `${config.tablePrefix}teamMembers`, 'teamMemberId', teamMemberId, 'teamMemberInfo', teamMember);
+            return teamMembersTable.createTeamMember(req, teamMemberId, user.userId, teamId, subscriberUserId, team.subscriberOrgId, role);
          })
          .then(() => {
             teamMemberAdded(req, teamId, user, role, teamMemberId);
