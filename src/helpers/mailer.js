@@ -82,7 +82,7 @@ export const sendResetPassword = (email, rid) => {
    const html = htmlContents(cid,
       `<br>Reset Password<br>
         <br>Please click on the following link to reset your password:<br>
-         <br> <a href="${config.webappBaseUri}/verifyAccount/${rid}">${config.webappBaseUri}/verifyAccount/${rid}</a><br>`);
+         <br> <a href="${config.webappBaseUri}/resetPassword/${rid}">${config.webappBaseUri}/resetPassword/${rid}</a><br>`);
    return sendMail(cid, {
       from: 'habla-mailer-dev@habla.ai',
       to: email,
