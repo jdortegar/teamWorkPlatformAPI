@@ -8,6 +8,7 @@ import * as util from './util';
  * v
  * level
  * path
+ * topic
  * content: []
  * messageNumber
  * messageCount (> 0 means this is a parent of thread)
@@ -57,6 +58,7 @@ export const createMessage = (req, conversationId, messageId, level, path, conte
             v,
             level,
             path,
+            topic: null,
             content,
             messageNumber,
             messageCount: 0,

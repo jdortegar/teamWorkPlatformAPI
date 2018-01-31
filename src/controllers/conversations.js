@@ -57,7 +57,7 @@ export const getTranscript = (req, res, next) => {
 export const createMessage = (req, res, next) => {
    const userId = req.user._id;
    const conversationId = req.params.conversationId;
-   const { messageType, text, replyTo } = req.body; // eslint-disable-line no-unused-vars
+   const { text, replyTo } = req.body;
    let { content } = req.body;
 
    // TODO: deprecated in v1.  messageType, text

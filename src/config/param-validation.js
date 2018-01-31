@@ -137,7 +137,6 @@ const validationSchemas = {
       body: {
          name: Joi.string().min(1).required(),
          purpose: Joi.string().min(1),
-         publish: Joi.boolean().required(),
          active: Joi.boolean().required(),
          icon: Joi.string().base64().allow(null),
          preferences: Joi.object().keys({

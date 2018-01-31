@@ -87,7 +87,6 @@ export const createTeamNoCheck = (req, subscriberOrgId, teamInfo, subscriberUser
             const teamRoom = {
                name: teamRoomSvc.defaultTeamRoomName,
                purpose: undefined,
-               publish: true,
                active: true,
                primary: true,
             };

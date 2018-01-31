@@ -195,13 +195,12 @@ const publicTeamMember = (teamId, user) => {
 
 const privateTeamRoom = (teamRoom) => {
    const teamRoomId = teamRoom.teamRoomId;
-   const { teamId, name, purpose, publish, icon, active, primary, preferences, created, lastModified } = teamRoom.teamRoomInfo || teamRoom;
+   const { teamId, name, purpose, icon, active, primary, preferences, created, lastModified } = teamRoom;
    return {
       teamRoomId,
       teamId,
       name,
       purpose,
-      publish,
       icon,
       active,
       primary,
@@ -235,9 +234,10 @@ const publicTeamRoomMember = (teamRoomId, user) => {
 
 const publicConversation = (conversation) => {
    const conversationId = conversation.conversationId;
-   const { teamRoomId, created, lastModified } = conversation;
+   const { topic, teamRoomId, created, lastModified } = conversation;
    const participants = (conversation.participants) ? publicUsers(conversation.participants) : undefined;
    return {
+      topic,
       conversationId,
       teamRoomId,
       participants,
@@ -255,7 +255,7 @@ const publicConversations = (conversations) => {
 
 const publicMessage = (message) => {
    const messageId = message.messageId;
-   const { conversationId, createdBy, content, replyTo, path, level, created, lastModified } = message.messageInfo || message;
+   const { conversationId, createdBy, topic, content, replyTo, path, level, created, lastModified } = message.messageInfo || message;
    const messageType = 'text';
    let text = 'No message text.';
    content.forEach((contentEntry) => {
@@ -269,6 +269,7 @@ const publicMessage = (message) => {
       createdBy,
       messageType, // TODO: deprecated in v1
       text, // TODO: deprecated in v1
+      topic,
       content,
       replyTo,
       path,

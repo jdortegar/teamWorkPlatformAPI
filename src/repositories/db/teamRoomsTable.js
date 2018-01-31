@@ -1,24 +1,29 @@
 import _ from 'lodash';
 import config from '../../config/env';
 import * as util from './util';
-import { SubscriberOrgNotExistError } from '../../services/errors';
+import { TeamRoomNotExistError } from '../../services/errors';
 
 
 /**
- * hash: subscriberOrgId
+ * hash: teamRoomId
  * v
+ * teamId
+ * subscriberOrgId
  * name
  * icon
- * enabled
+ * primary
+ * active
+ * teamActive
  * created
  * lastModified
  * preferences
  *
- * GSI: nameIdx
- * hash: name
+ * GSI: teamIdUserIdIdx
+ * hash: teamId
+ * range: userId
  */
 const tableName = () => {
-   return `${config.tablePrefix}subscriberOrgs`;
+   return `${config.tablePrefix}teamRooms`;
 };
 
 // Schema Version for readMessages table.
@@ -29,16 +34,20 @@ const upgradeSchema = (req, dbObjects) => {
    return Promise.resolve(dbObjects);
 };
 
-export const createSubscriberOrg = (req, subscriberOrgId, name, icon, preferences) => {
+export const createTeamRoom = (req, teamRoomId, teamId, subscriberOrgId, name, icon, primary, preferences) => {
    return new Promise((resolve, reject) => {
       const params = {
          TableName: tableName(),
          Item: {
-            subscriberOrgId,
+            teamRoomId,
             v,
+            teamId,
+            subscriberOrgId,
             name,
             icon,
-            enabled: true,
+            primary,
+            active: true,
+            teamActive: true,
             created: req.now.format(),
             lastModified: req.now.format(),
             preferences
@@ -51,13 +60,13 @@ export const createSubscriberOrg = (req, subscriberOrgId, name, icon, preference
    });
 };
 
-export const getSubscriberOrgBySubscriberOrgId = (req, subscriberOrgId) => {
+export const getTeamRoomByTeamRoomId = (req, teamRoomId) => {
    return new Promise((resolve, reject) => {
       const params = {
          TableName: tableName(),
-         KeyConditionExpression: 'subscriberOrgId = :subscriberOrgId',
+         KeyConditionExpression: 'teamRoomId = :teamRoomId',
          ExpressionAttributeValues: {
-            ':subscriberOrgId': subscriberOrgId
+            ':teamRoomId': teamRoomId
          }
       };
       util.query(req, params)
@@ -67,25 +76,27 @@ export const getSubscriberOrgBySubscriberOrgId = (req, subscriberOrgId) => {
    });
 };
 
-export const getSubscriberOrgsBySubscriberOrgIds = (req, subscriberOrgIds) => {
+export const getTeamRoomsByTeamRoomIds = (req, teamRoomIds) => {
    return new Promise((resolve, reject) => {
-      util.batchGet(req, tableName(), 'subscriberOrgId', subscriberOrgIds)
+      util.batchGet(req, tableName(), 'teamRoomId', teamRoomIds)
          .then(originalResults => upgradeSchema(req, originalResults))
          .then(latestResults => resolve(latestResults))
          .catch(err => reject(err));
    });
 };
 
-export const getSubscriberOrgByName = (req, name) => {
+export const getTeamRoomByTeamIdAndName = (req, teamId, name) => {
    return new Promise((resolve, reject) => {
       const params = {
          TableName: tableName(),
-         IndexName: 'nameIdx',
-         KeyConditionExpression: '#name = :name',
+         IndexName: 'teamIdUserIdIdx',
+         KeyConditionExpression: 'teamId = :teamId',
+         FilterExpression: '#name = :name',
          ExpressionAttributeNames: {
             '#name': 'name'
          },
          ExpressionAttributeValues: {
+            ':teamId': teamId,
             ':name': name
          }
       };
@@ -96,20 +107,42 @@ export const getSubscriberOrgByName = (req, name) => {
    });
 };
 
-export const updateSubscriberOrg = (req, subscriberOrgId, { name, icon, enabled, preferences } = {}) => {
+export const getTeamRoomByTeamIdAndPrimary = (req, teamId, primary) => {
+   return new Promise((resolve, reject) => {
+      const params = {
+         TableName: tableName(),
+         IndexName: 'teamIdUserIdIdx',
+         KeyConditionExpression: 'teamId = :teamId',
+         FilterExpression: '#primary = :primary',
+         ExpressionAttributeNames: {
+            '#primary': 'primary'
+         },
+         ExpressionAttributeValues: {
+            ':teamId': teamId,
+            ':primary': primary
+         }
+      };
+      util.query(req, params)
+         .then(originalResults => upgradeSchema(req, originalResults))
+         .then(latestResults => resolve((latestResults.length > 0) ? latestResults[0] : undefined))
+         .catch(err => reject(err));
+   });
+};
+
+export const updateTeamRoom = (req, teamRoomId, { name, icon, primary, active, teamActive, preferences } = {}) => {
    return new Promise((resolve, reject) => {
       const lastModified = req.now.format();
-      let subscriberOrg;
-      getSubscriberOrgBySubscriberOrgId(req, subscriberOrgId)
-         .then((retrievedSubscriberOrg) => {
-            subscriberOrg = retrievedSubscriberOrg;
-            if (!subscriberOrg) {
-               throw new SubscriberOrgNotExistError(subscriberOrgId);
+      let teamRoom;
+      getTeamRoomByTeamRoomId(req, teamRoomId)
+         .then((retrievedTeamRoom) => {
+            teamRoom = retrievedTeamRoom;
+            if (!teamRoom) {
+               throw new TeamRoomNotExistError(teamRoomId);
             }
 
             const params = {
                TableName: tableName(),
-               Key: { subscriberOrgId },
+               Key: { teamRoomId },
                UpdateExpression: 'set lastModified = :lastModified',
                ExpressionAttributeNames: {},
                ExpressionAttributeValues: {
@@ -126,9 +159,18 @@ export const updateSubscriberOrg = (req, subscriberOrgId, { name, icon, enabled,
                params.UpdateExpression += ', icon = :icon';
                params.ExpressionAttributeValues[':icon'] = icon;
             }
-            if (_.isBoolean(enabled)) {
-               params.UpdateExpression += ', enabled = :enabled';
-               params.ExpressionAttributeValues[':enabled'] = enabled;
+            if (_.isBoolean(primary)) {
+               params.UpdateExpression += ', #primary = :primary';
+               params.ExpressionAttributeNames['#primary'] = 'primary';
+               params.ExpressionAttributeValues[':primary'] = primary;
+            }
+            if (_.isBoolean(active)) {
+               params.UpdateExpression += ', active = :active';
+               params.ExpressionAttributeValues[':active'] = active;
+            }
+            if (_.isBoolean(teamActive)) {
+               params.UpdateExpression += ', teamActive = :teamActive';
+               params.ExpressionAttributeValues[':teamActive'] = teamActive;
             }
             if (preferences) {
                params.UpdateExpression += ', preferences = :preferences';
@@ -138,10 +180,12 @@ export const updateSubscriberOrg = (req, subscriberOrgId, { name, icon, enabled,
             return req.app.locals.docClient.update(params).promise();
          })
          .then(() => {
-            resolve(_.merge({}, subscriberOrg, {
+            resolve(_.merge({}, teamActive, {
                name,
                icon,
-               enabled,
+               primary,
+               active,
+               teamActive,
                lastModified,
                preferences
             }));

@@ -148,12 +148,12 @@ export const getConversations = (req, userId, teamRoomId = undefined) => {
    });
 };
 
-export const createConversationNoCheck = (req, subscriberOrgId, teamRoomId, userId, conversationParticipantUserIds, conversationId = undefined) => {
-   const actualConversationId = conversationId || uuid.v4();
+export const createConversationNoCheck = (req, subscriberOrgId, teamRoomId, userId, conversationParticipantUserIds, topic = undefined) => {
+   const actualConversationId = uuid.v4();
 
    return new Promise((resolve, reject) => {
       let conversation;
-      conversationsTable.createConversation(req, actualConversationId, subscriberOrgId, teamRoomId)
+      conversationsTable.createConversation(req, actualConversationId, subscriberOrgId, teamRoomId, topic)
          .then((retrievedConversation) => {
             conversation = retrievedConversation;
             return conversationParticipantsTable.createConversationParticipant(req, actualConversationId, userId, teamRoomId);
@@ -701,7 +701,7 @@ export const dislikeMessage = (req, conversationId, messageId, userId, dislike =
          })
          .then((result) => {
             if (result) {
-               return messagesTable.updateMessageDisikes(req, conversationId, messageId, userId, dislike);
+               return messagesTable.updateMessageDislikes(req, conversationId, messageId, userId, dislike);
             }
             return undefined;
          })

@@ -101,7 +101,7 @@ export const inviteExistingUsersToTeamRoom = (req, invitingDbUser, existingDbUse
          teamId: team.teamId,
          teamName: team.name,
          teamRoomId: teamRoom.teamRoomId,
-         teamRoomName: teamRoom.teamRoomInfo.name
+         teamRoomName: teamRoom.name
       };
 
       const promises = [];
@@ -117,7 +117,7 @@ export const inviteExistingUsersToTeamRoom = (req, invitingDbUser, existingDbUse
                      email,
                      subscriberOrg.name,
                      team.name,
-                     teamRoom.teamRoomInfo.name,
+                     teamRoom.name,
                      invitingDbUser,
                      key
                   ),
