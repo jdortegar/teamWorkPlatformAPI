@@ -6,12 +6,10 @@ import SocketIOWildcard from 'socketio-wildcard';
 import config from '../../config/env';
 import * as subscriberUsersTable from '../../repositories/db/subscriberUsersTable';
 import * as teamMembersTable from '../../repositories/db/teamMembersTable';
+import * as teamRoomMembersTable from '../../repositories/db/teamRoomMembersTable';
 import * as conversationSvc from '../conversationService';
 import logger, { createPseudoRequest } from '../../logger';
 import { setPresence } from './presence';
-import {
-   getTeamRoomMembersByUserIds
-} from '../../repositories/util';
 import { disconnectFromRedis } from '../../redis-connection';
 import Roles from '../roles';
 
@@ -153,10 +151,10 @@ const joinCurrentChannels = (req, socket, userId) => {
       })
       .catch(err => logger.error(err));
 
-   getTeamRoomMembersByUserIds(req, [userId])
+   teamRoomMembersTable.getTeamRoomMembersByUserId(req, userId)
       .then((teamRoomMembers) => {
          teamRoomMembers.forEach((teamRoomMember) => {
-            const { teamRoomId, role } = teamRoomMember.teamRoomMemberInfo;
+            const { teamRoomId, role } = teamRoomMember;
 
             const teamRoomChannel = ChannelFactory.teamRoomChannel(teamRoomId);
             socket.join(teamRoomChannel);

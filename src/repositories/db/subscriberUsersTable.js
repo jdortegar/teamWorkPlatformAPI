@@ -116,7 +116,7 @@ export const getSubscriberUserByUserIdAndSubscriberOrgIdAndRole = (req, userId, 
          TableName: tableName(),
          IndexName: 'userIdSubscriberOrgIdIdx',
          KeyConditionExpression: 'userId = :userId and subscriberOrgId = :subscriberOrgId',
-         FilterExpression: '#role >= :role',
+         FilterExpression: '#role = :role',
          ExpressionAttributeNames: {
             '#role': 'role'
          },
@@ -156,7 +156,7 @@ export const getSubscriberUsersBySubscriberOrgIdAndRole = (req, subscriberOrgId,
          TableName: tableName(),
          IndexName: 'subscriberOrgIdUserIdIdx',
          KeyConditionExpression: 'subscriberOrgId = :subscriberOrgId',
-         FilterExpression: '#role >= :role',
+         FilterExpression: '#role = :role',
          ExpressionAttributeNames: {
             '#role': 'role'
          },

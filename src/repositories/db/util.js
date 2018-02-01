@@ -57,6 +57,10 @@ const batchGetSet = (req, tableName, setsOf100, retrievedItems) => {
 };
 
 export const batchGet = (req, tableName, hashKeyName, hashKeys) => {
+   if (!hashKeys || (hashKeys.length === 0)) {
+      return Promise.resolve([]);
+   }
+
    // Break it up in <= 100 per DynamoDB rules for batchGetItem.
    const setsOf100 = [];
    let currentSet = [];

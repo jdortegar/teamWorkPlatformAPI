@@ -2,9 +2,11 @@ import config from '../../config/env';
 import * as util from './util';
 
 /**
- * hash: teamMemberId
+ * hash: teamRoomMemberId
  * v
  * userId
+ * teamRoomId
+ * teamMemberId
  * teamId
  * subscriberUserId
  * subscriberOrgId
@@ -13,16 +15,16 @@ import * as util from './util';
  * created
  * lastModified
  *
- * GSI: teamIdUserIdIdx
- * hash: teamId
+ * GSI: teamRoomIdUserIdIdx
+ * hash: teamRoomId
  * range: userId
  *
- * GSI: userIdSubscriberOrgIdIdx
+ * GSI: userIdTeamIdIdx
  * hash: userId
- * range: subscriberOrgId
+ * range: teamId
  */
 const tableName = () => {
-   return `${config.tablePrefix}teamMembers`;
+   return `${config.tablePrefix}teamRoomMembers`;
 };
 
 // Schema Version for readMessages table.
@@ -33,14 +35,16 @@ const upgradeSchema = (req, dbObjects) => {
    return Promise.resolve(dbObjects);
 };
 
-export const createTeamMember = (req, teamMemberId, userId, teamId, subscriberUserId, subscriberOrgId, role) => {
+export const createTeamRoomMember = (req, teamRoomMemberId, userId, teamRoomId, teamMemberId, teamId, subscriberUserId, subscriberOrgId, role) => {
    return new Promise((resolve, reject) => {
       const params = {
          TableName: tableName(),
          Item: {
-            teamMemberId,
+            teamRoomMemberId,
             v,
             userId,
+            teamRoomId,
+            teamMemberId,
             teamId,
             subscriberUserId,
             subscriberOrgId,
@@ -57,13 +61,13 @@ export const createTeamMember = (req, teamMemberId, userId, teamId, subscriberUs
    });
 };
 
-export const getTeamMemberByTeamMemberId = (req, teamMemberId) => {
+export const getTeamRoomMemberByTeamRoomMemberId = (req, teamRoomMemberId) => {
    return new Promise((resolve, reject) => {
       const params = {
          TableName: tableName(),
-         KeyConditionExpression: 'teamMemberId = :teamMemberId',
+         KeyConditionExpression: 'teamRoomMemberId = :teamRoomMemberId',
          ExpressionAttributeValues: {
-            ':teamMemberId': teamMemberId
+            ':teamRoomMemberId': teamRoomMemberId
          }
       };
       util.query(req, params)
@@ -73,14 +77,14 @@ export const getTeamMemberByTeamMemberId = (req, teamMemberId) => {
    });
 };
 
-export const getTeamMembersByTeamId = (req, teamId) => {
+export const getTeamRoomMembersByTeamRoomId = (req, teamRoomId) => {
    return new Promise((resolve, reject) => {
       const params = {
          TableName: tableName(),
-         IndexName: 'teamIdUserIdIdx',
-         KeyConditionExpression: 'teamId = :teamId',
+         IndexName: 'teamRoomIdUserIdIdx',
+         KeyConditionExpression: 'teamRoomId = :teamRoomId',
          ExpressionAttributeValues: {
-            ':teamId': teamId
+            ':teamRoomId': teamRoomId
          }
       };
       util.query(req, params)
@@ -90,14 +94,14 @@ export const getTeamMembersByTeamId = (req, teamId) => {
    });
 };
 
-export const getTeamMemberByTeamIdAndUserId = (req, teamId, userId) => {
+export const getTeamRoomMemberByTeamRoomIdAndUserId = (req, teamRoomId, userId) => {
    return new Promise((resolve, reject) => {
       const params = {
          TableName: tableName(),
-         IndexName: 'teamIdUserIdIdx',
-         KeyConditionExpression: 'teamId = :teamId and userId = :userId',
+         IndexName: 'teamRoomIdUserIdIdx',
+         KeyConditionExpression: 'teamRoomId = :teamRoomId and userId = :userId',
          ExpressionAttributeValues: {
-            ':teamId': teamId,
+            ':teamRoomId': teamRoomId,
             ':userId': userId
          }
       };
@@ -108,18 +112,18 @@ export const getTeamMemberByTeamIdAndUserId = (req, teamId, userId) => {
    });
 };
 
-export const getTeamMemberByTeamIdAndUserIdAndRole = (req, teamId, userId, role) => {
+export const getTeamRoomMemberByTeamRoomIdAndUserIdAndRole = (req, teamRoomId, userId, role) => {
    return new Promise((resolve, reject) => {
       const params = {
          TableName: tableName(),
-         IndexName: 'teamIdUserIdIdx',
-         KeyConditionExpression: 'teamId = :teamId and userId = :userId',
+         IndexName: 'teamRoomIdUserIdIdx',
+         KeyConditionExpression: 'teamRoomId = :teamRoomId and userId = :userId',
          FilterExpression: '#role = :role',
          ExpressionAttributeNames: {
             '#role': 'role'
          },
          ExpressionAttributeValues: {
-            ':teamId': teamId,
+            ':teamRoomId': teamRoomId,
             ':userId': userId,
             ':role': role
          }
@@ -131,18 +135,18 @@ export const getTeamMemberByTeamIdAndUserIdAndRole = (req, teamId, userId, role)
    });
 };
 
-export const getTeamMembersByTeamIdAndRole = (req, teamId, role) => {
+export const getTeamRoomMembersByTeamRoomIdAndRole = (req, teamRoomId, role) => {
    return new Promise((resolve, reject) => {
       const params = {
          TableName: tableName(),
-         IndexName: 'teamIdUserIdIdx',
-         KeyConditionExpression: 'teamId = :teamId',
+         IndexName: 'teamRoomIdUserIdIdx',
+         KeyConditionExpression: 'teamRoomId = :teamRoomId',
          FilterExpression: '#role = :role',
          ExpressionAttributeNames: {
             '#role': 'role'
          },
          ExpressionAttributeValues: {
-            ':teamId': teamId,
+            ':teamRoomId': teamRoomId,
             ':role': role
          }
       };
@@ -153,11 +157,11 @@ export const getTeamMembersByTeamIdAndRole = (req, teamId, role) => {
    });
 };
 
-export const getTeamMembersByUserId = (req, userId) => {
+export const getTeamRoomMembersByUserId = (req, userId) => {
    return new Promise((resolve, reject) => {
       const params = {
          TableName: tableName(),
-         IndexName: 'userIdSubscriberOrgIdIdx',
+         IndexName: 'userIdTeamIdIdx',
          KeyConditionExpression: 'userId = :userId',
          ExpressionAttributeValues: {
             ':userId': userId
@@ -170,7 +174,44 @@ export const getTeamMembersByUserId = (req, userId) => {
    });
 };
 
-export const getTeamMembersByUserIds = (req, userIds) => {
+export const getTeamRoomMembersByUserIdAndTeamId = (req, userId, teamId) => {
+   return new Promise((resolve, reject) => {
+      const params = {
+         TableName: tableName(),
+         IndexName: 'userIdTeamIdIdx',
+         KeyConditionExpression: 'userId = :userId and teamId = :teamId',
+         ExpressionAttributeValues: {
+            ':userId': userId,
+            ':teamId': teamId
+         }
+      };
+      util.query(req, params)
+         .then(originalResults => upgradeSchema(req, originalResults))
+         .then(latestResults => resolve(latestResults))
+         .catch(err => reject(err));
+   });
+};
+export const getTeamRoomMembersByUserIdAndSubscriberOrgId = (req, userId, subscriberOrgId) => {
+   return new Promise((resolve, reject) => {
+      const params = {
+         TableName: tableName(),
+         IndexName: 'userIdTeamIdIdx',
+         KeyConditionExpression: 'userId = :userId',
+         FilterExpression: 'subscriberOrgId >= :subscriberOrgId',
+         ExpressionAttributeValues: {
+            ':userId': userId,
+            ':subscriberOrgId': subscriberOrgId
+         }
+      };
+      util.query(req, params)
+         .then(originalResults => upgradeSchema(req, originalResults))
+         .then(latestResults => resolve(latestResults))
+         .catch(err => reject(err));
+   });
+};
+
+
+export const getTeamRoomMembersByUserIds = (req, userIds) => {
    return new Promise((resolve, reject) => {
       util.batchGet(req, tableName(), 'userId', userIds)
          .then(originalResults => upgradeSchema(req, originalResults))
@@ -179,15 +220,15 @@ export const getTeamMembersByUserIds = (req, userIds) => {
    });
 };
 
-export const getTeamMembersByUserIdAndSubscriberOrgId = (req, userId, subscriberOrgId) => {
+export const getTeamMembersByUserIdAndTeamId = (req, userId, teamId) => {
    return new Promise((resolve, reject) => {
       const params = {
          TableName: tableName(),
-         IndexName: 'userIdSubscriberOrgIdIdx',
-         KeyConditionExpression: 'userId = :userId and subscriberOrgId = :subscriberOrgId',
+         IndexName: 'userIdTeamIdIdx',
+         KeyConditionExpression: 'userId = :userId and teamId = :teamId',
          ExpressionAttributeValues: {
             ':userId': userId,
-            ':subscriberOrgId': subscriberOrgId
+            ':teamId': teamId
          }
       };
       util.query(req, params)
