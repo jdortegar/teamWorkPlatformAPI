@@ -1,22 +1,23 @@
 import _ from 'lodash';
-import { getSubscriberUsersByUserIdAndSubscriberOrgId, getSubscriberUsersByUserIds } from '../repositories/util';
+import * as subscriberUsersTable from '../repositories/db/subscriberUsersTable';
 
 export const getIntegrations = (req, userId, subscriberOrgId = undefined) => { // eslint-disable-line import/prefer-default-export
    return new Promise((resolve, reject) => {
       let getSubscriberUsers;
       if (subscriberOrgId) {
-         getSubscriberUsers = getSubscriberUsersByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId);
+         getSubscriberUsers = subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId);
       } else {
-         getSubscriberUsers = getSubscriberUsersByUserIds(req, [userId]);
+         getSubscriberUsers = subscriberUsersTable.getSubscriberUsersByUserId(req, userId);
       }
 
       getSubscriberUsers
-         .then((subscriberUsers) => {
+         .then((retrievedSubscriberUsers) => {
+            const subscriberUsers = (retrievedSubscriberUsers instanceof Array) ? retrievedSubscriberUsers : [retrievedSubscriberUsers];
             const integrations = [];
             subscriberUsers.forEach((subscriberUser) => {
-               if (subscriberUser.subscriberUserInfo.integrations) {
-                  const orgIntegrations = _.cloneDeep(subscriberUser.subscriberUserInfo.integrations);
-                  _.merge(orgIntegrations, { subscriberOrgId: subscriberUser.subscriberUserInfo.subscriberOrgId });
+               if (subscriberUser.integrations) {
+                  const orgIntegrations = _.cloneDeep(subscriberUser.integrations);
+                  _.merge(orgIntegrations, { subscriberOrgId: subscriberUser.subscriberOrgId });
                   integrations.push(orgIntegrations);
                }
             });

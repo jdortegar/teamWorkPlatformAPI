@@ -1,6 +1,5 @@
 import _ from 'lodash';
 import uuid from 'uuid';
-import config from '../config/env';
 import {
    CannotDeactivateError,
    CannotInviteError,
@@ -12,61 +11,48 @@ import {
    TeamNotExistError,
    UserNotExistError
 } from './errors';
-import { deleteRedisInvitation, InvitationKeys, inviteExistingUsersToTeam } from './invitations';
-import { teamCreated, teamMemberAdded, teamPrivateInfoUpdated, teamUpdated, userInvitationDeclined } from './messaging';
+import InvitationKeys from '../repositories/InvitationKeys';
+import * as invitationsTable from '../repositories/db/invitationsTable';
+import * as usersTable from '../repositories/db/usersTable';
+import * as subscriberOrgsTable from '../repositories/db/subscriberOrgsTable';
+import * as subscriberUsersTable from '../repositories/db/subscriberUsersTable';
+import * as teamsTable from '../repositories/db/teamsTable';
+import * as teamMembersTable from '../repositories/db/teamMembersTable';
+import { deleteInvitation } from '../repositories/cache/invitationsCache';
+import { inviteExistingUsersToTeam } from './invitationsUtil';
+import {
+   teamCreated,
+   teamMemberAdded,
+   teamPrivateInfoUpdated,
+   teamUpdated,
+   userInvitationAccepted,
+   userInvitationDeclined,
+   sentInvitationStatus
+} from './messaging';
 import { getPresence } from './messaging/presence';
 import Roles from './roles';
 import * as teamRoomSvc from './teamRoomService';
-import {
-   createItem,
-   getSubscriberOrgsByIds,
-   getSubscriberUsersByUserIdAndSubscriberOrgId,
-   getSubscriberUsersByUserIdAndSubscriberOrgIdAndRole,
-   getSubscriberUsersByUserIds,
-   getTeamMembersByUserIds,
-   getTeamMembersBySubscriberUserIds,
-   getTeamMembersByTeamIdAndUserIdAndRole,
-   getTeamMembersByTeamId,
-   getTeamsByIds,
-   getTeamsBySubscriberOrgId,
-   getTeamBySubscriberOrgIdAndName,
-   getTeamBySubscriberOrgIdAndPrimary,
-   getUsersByIds,
-   updateItem
-} from '../repositories/util';
-import { getRandomColor } from './util';
 
 export const defaultTeamName = 'All';
 
 export function getUserTeams(req, userId, subscriberOrgId = undefined) {
    return new Promise((resolve, reject) => {
-      getSubscriberUsersByUserIds(req, [userId])
-         .then((subscriberUsers) => {
-            let filteredSubscriberUsers;
-            if (subscriberOrgId) {
-               filteredSubscriberUsers = subscriberUsers.filter(subscriberUser => subscriberUser.subscriberUserInfo.subscriberOrgId === subscriberOrgId);
-            } else {
-               filteredSubscriberUsers = subscriberUsers;
-            }
-            const subscriberUserIds = filteredSubscriberUsers.map(subscriberUser => subscriberUser.subscriberUserId);
-            return getTeamMembersBySubscriberUserIds(req, subscriberUserIds);
-         })
+      let promise;
+      if (subscriberOrgId) {
+         promise = teamMembersTable.getTeamMembersByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId);
+      } else {
+         promise = teamMembersTable.getTeamMembersByUserId(req, userId);
+      }
+      promise
          .then((teamMembers) => {
-            const teamIds = teamMembers.map((teamMember) => {
-               return teamMember.teamMemberInfo.teamId;
-            });
-            return getTeamsByIds(req, teamIds);
+            const teamIds = teamMembers.map(teamMember => teamMember.teamId);
+            return teamsTable.getTeamsByTeamIds(req, teamIds);
          })
          .then((teams) => {
-            // Remove partitionId.
-            const retTeams = [];
-            teams.forEach((team) => {
+            const retTeams = teams.map((team) => {
                const teamClone = _.cloneDeep(team);
-               delete teamClone.partitionId;
-               teamClone.teamInfo.active =
-                  (('subscriberOrgEnabled' in teamClone.teamInfo) && (teamClone.teamInfo.subscriberOrgEnabled === false))
-                     ? false : teamClone.teamInfo.active;
-               retTeams.push(teamClone);
+               teamClone.active = (teamClone.subscriberOrgEnabled === false) ? false : teamClone.active;
+               return teamClone;
             });
             resolve(retTeams);
          })
@@ -75,53 +61,36 @@ export function getUserTeams(req, userId, subscriberOrgId = undefined) {
 }
 
 export const createTeamNoCheck = (req, subscriberOrgId, teamInfo, subscriberUserId, user, teamAdminUserIds, teamId = undefined) => {
-   const actualTeamId = teamId || uuid.v4();
-   const icon = teamInfo.icon || null;
-   const preferences = teamInfo.preferences || { private: {} };
-   if (preferences.private === undefined) {
-      preferences.private = {};
-   }
-   preferences.iconColor = preferences.iconColor || '#FBBC12';
-   const team = {
-      subscriberOrgId,
-      subscriberOrgEnabled: true,
-      name: teamInfo.name,
-      icon,
-      active: true,
-      primary: teamInfo.primary || false,
-      preferences,
-      created: req.now.format(),
-      lastModified: req.now.format()
-   };
-   const teamMemberId = uuid.v4();
-
    return new Promise((resolve, reject) => {
+      const actualTeamId = teamId || uuid.v4();
+      const icon = teamInfo.icon || null;
+      const primary = (teamInfo.primary === undefined) ? false : teamInfo.primary;
+      const preferences = teamInfo.preferences || { private: {} };
+      if (preferences.private === undefined) {
+         preferences.private = {};
+      }
+      preferences.iconColor = preferences.iconColor || '#FBBC12';
+      let team;
+      const teamMemberId = uuid.v4();
       const role = Roles.admin;
-      createItem(req, -1, `${config.tablePrefix}teams`, 'teamId', actualTeamId, 'teamInfo', team)
-         .then(() => {
-            const teamMember = {
-               subscriberUserId,
-               teamId: actualTeamId,
-               userId: user.userId,
-               role,
-               created: req.now.format(),
-               lastModified: req.now.format()
-            };
-            return createItem(req, -1, `${config.tablePrefix}teamMembers`, 'teamMemberId', teamMemberId, 'teamMemberInfo', teamMember);
+
+      teamsTable.createTeam(req, actualTeamId, subscriberOrgId, teamInfo.name, icon, primary, preferences)
+         .then((createdTeam) => {
+            team = createdTeam;
+
+            return teamMembersTable.createTeamMember(req, teamMemberId, user.userId, actualTeamId, subscriberUserId, subscriberOrgId, Roles.admin);
          })
          .then(() => {
-            team.teamId = actualTeamId;
             teamCreated(req, team, teamAdminUserIds);
             teamMemberAdded(req, actualTeamId, user, role, teamMemberId);
 
             const teamRoom = {
                name: teamRoomSvc.defaultTeamRoomName,
                purpose: undefined,
-               publish: true,
                active: true,
                primary: true,
             };
-            return teamRoomSvc.createTeamRoomNoCheck(req, subscriberOrgId, actualTeamId, teamRoom, teamMemberId, user, [user.userId]);
+            return teamRoomSvc.createTeamRoomNoCheck(req, subscriberOrgId, subscriberUserId, actualTeamId, teamRoom, teamMemberId, user, [user.userId]);
          })
          .then(() => resolve(team))
          .catch(err => reject(err));
@@ -133,39 +102,38 @@ export function createTeam(req, subscriberOrgId, teamInfo, userId, teamId = unde
       let subscriberUserId;
       let subscriberOrgAdminUserIds;
 
-      Promise.all([getSubscriberOrgsByIds(req, [subscriberOrgId]), getSubscriberUsersByUserIdAndSubscriberOrgIdAndRole(req, userId, subscriberOrgId, Roles.admin)])
-         .then((promiseResults) => {
-            const subscriberOrgs = promiseResults[0];
-            const subscriberUsers = promiseResults[1];
-
-            if (subscriberOrgs.length === 0) {
+      Promise.all([
+         subscriberOrgsTable.getSubscriberOrgBySubscriberOrgId(req, subscriberOrgId),
+         subscriberUsersTable.getSubscriberUsersBySubscriberOrgIdAndRole(req, subscriberOrgId, Roles.admin)
+      ])
+         .then(([subscriberOrg, subscriberUsers]) => {
+            if (!subscriberOrg) {
                throw new SubscriberOrgNotExistError(subscriberOrgId);
             }
-            const subscriberOrg = subscriberOrgs[0];
-            if (('enabled' in subscriberOrg) && (subscriberOrg.enabled === false)) {
+            if (subscriberOrg.enabled === false) {
                throw new NotActiveError(subscriberOrgId);
             }
 
             if (subscriberUsers.length === 0) {
                throw new NoPermissionsError(subscriberOrgId);
             }
+            subscriberOrgAdminUserIds = subscriberUsers.map((adminSubscriberUser) => {
+               if (adminSubscriberUser.userId === userId) {
+                  subscriberUserId = adminSubscriberUser.subscriberUserId;
+               }
+               return adminSubscriberUser.userId;
+            });
+            if (!subscriberUserId) {
+               throw new NoPermissionsError(subscriberOrgId);
+            }
 
-            // Add all subscriberOrg admins to new team.
-            const adminSubscriberUsers = subscriberUsers.filter(subscriberUser => subscriberUser.subscriberUserInfo.role === Roles.admin);
-            subscriberOrgAdminUserIds = adminSubscriberUsers.map(adminSubscriberUser => adminSubscriberUser.subscriberUserInfo.userId);
-            subscriberOrgAdminUserIds.push(userId);
-
-            subscriberUserId = subscriberUsers[0].subscriberUserId;
             return Promise.all([
-               getTeamBySubscriberOrgIdAndName(req, subscriberOrgId, teamInfo.name),
-               getUsersByIds(req, [userId])
+               teamsTable.getTeamBySubscriberOrgIdAndName(req, subscriberOrgId, teamInfo.name),
+               usersTable.getUserByUserId(req, userId)
             ]);
          })
-         .then((promiseResults) => {
-            const existingTeams = promiseResults[0];
-            const user = promiseResults[1][0];
-
-            if (existingTeams.length > 0) {
+         .then(([existingTeam, user]) => {
+            if (existingTeam) {
                throw new TeamExistsError(teamInfo.name);
             }
 
@@ -178,36 +146,34 @@ export function createTeam(req, subscriberOrgId, teamInfo, userId, teamId = unde
 
 export function updateTeam(req, teamId, updateInfo, userId) {
    return new Promise((resolve, reject) => {
-      const timestampedUpdateInfo = _.cloneDeep(updateInfo);
-      timestampedUpdateInfo.lastModified = req.now.format();
-      let dbTeam;
-      getTeamsByIds(req, [teamId])
-         .then((teams) => {
-            if (teams.length === 0) {
+      let originalTeam;
+      teamsTable.getTeamByTeamId(req, teamId)
+         .then((retrievedTeam) => {
+            originalTeam = retrievedTeam;
+            if (!originalTeam) {
                throw new TeamNotExistError(teamId);
             }
 
-            dbTeam = teams[0];
-            return getTeamMembersByTeamIdAndUserIdAndRole(req, teamId, userId, Roles.admin);
+            return teamMembersTable.getTeamMemberByTeamIdAndUserIdAndRole(req, teamId, userId, Roles.admin);
          })
-         .then((teamMembers) => {
-            if (teamMembers.length === 0) {
+         .then((teamMember) => {
+            if (!teamMember) {
                throw new NoPermissionsError(teamId);
             }
 
-            if ((dbTeam.teamInfo.primary) && (updateInfo.active === false)) {
+            if ((originalTeam.primary) && (updateInfo.active === false)) {
                throw new CannotDeactivateError(teamId);
             }
 
-            return updateItem(req, -1, `${config.tablePrefix}teams`, 'teamId', teamId, { teamInfo: timestampedUpdateInfo });
+            const { name, icon, active, preferences } = updateInfo;
+            return teamsTable.updateTeam(req, teamId, { name, icon, active, preferences });
          })
-         .then(() => {
+         .then((updatedTeam) => {
             resolve();
 
-            const team = dbTeam.teamInfo;
-            const previousActive = team.active;
-            _.merge(team, timestampedUpdateInfo); // Eventual consistency, so might be old.
-            team.teamId = teamId;
+            const previousActive = originalTeam.active;
+            const team = _.cloneDeep(updatedTeam);
+            team.active = (team.subscriberOrgEnabled === false) ? false : team.active;
             teamUpdated(req, team);
             if ((updateInfo.preferences) && (updateInfo.preferences.private)) {
                teamPrivateInfoUpdated(req, team);
@@ -224,24 +190,11 @@ export function updateTeam(req, teamId, updateInfo, userId) {
 
 export function setTeamsOfSubscriberOrgActive(req, subscriberOrgId, active) {
    return new Promise((resolve, reject) => {
-      const teams = [];
-      getTeamsBySubscriberOrgId(req, subscriberOrgId)
-         .then((dbTeams) => {
-            const updateTeams = [];
-            dbTeams.forEach((dbTeam) => {
-               const { teamInfo } = dbTeam;
-               teamInfo.subscriberOrgEnabled = active;
-               updateTeams.push(updateItem(req, -1, `${config.tablePrefix}teams`, 'teamId', dbTeam.teamId, { teamInfo: { subscriberOrgEnabled: active } }));
-               teams.push(_.merge({ teamId: dbTeam.teamId }, teamInfo));
-            });
-            return Promise.all(updateTeams);
-         })
-         .then(() => {
-            const updateTeamRooms = [];
-            teams.forEach((team) => {
-               updateTeamRooms.push(teamRoomSvc.setTeamRoomsOfTeamActive(req, team.teamId, active));
-            });
-            return Promise.all(updateTeamRooms);
+      let teams;
+      teamsTable.updateTeamsBySubscriberOrgId(req, subscriberOrgId, { subscriberOrgEnabled: active })
+         .then((updatedTeams) => {
+            teams = updatedTeams;
+            return Promise.all(teams.map(team => teamRoomSvc.setTeamRoomsOfTeamActive(req, team.teamId, active)));
          })
          .then(() => {
             resolve();
@@ -271,28 +224,28 @@ export function getTeamUsers(req, teamId, userId = undefined) {
    let usersWithRoles;
 
    return new Promise((resolve, reject) => {
-      getTeamMembersByTeamId(req, teamId)
+      teamMembersTable.getTeamMembersByTeamId(req, teamId)
          .then((teamMembers) => {
             if (teamMembers.length === 0) {
                throw new TeamNotExistError(teamId);
             }
 
             const userIds = teamMembers.map((teamMember) => {
-               userIdsRoles[teamMember.teamMemberInfo.userId] = teamMember.teamMemberInfo.role;
-               userIdsTeamMemberIds[teamMember.teamMemberInfo.userId] = teamMember.teamMemberId;
-               return teamMember.teamMemberInfo.userId;
+               userIdsRoles[teamMember.userId] = teamMember.role;
+               userIdsTeamMemberIds[teamMember.userId] = teamMember.teamMemberId;
+               return teamMember.userId;
             });
             if ((userId) && (userIds.indexOf(userId)) < 0) {
                throw new NoPermissionsError(teamId);
             }
 
-            return getUsersByIds(req, userIds);
+            return usersTable.getUsersByUserIds(req, userIds);
          })
          .then((users) => {
             usersWithRoles = users.map((user) => {
                const ret = _.cloneDeep(user);
-               ret.userInfo.role = userIdsRoles[user.userId];
-               ret.userInfo.teamMemberId = userIdsTeamMemberIds[user.userId];
+               ret.role = userIdsRoles[user.userId];
+               ret.teamMemberId = userIdsTeamMemberIds[user.userId];
                return ret;
             });
 
@@ -316,7 +269,7 @@ export function getTeamUsers(req, teamId, userId = undefined) {
             });
             usersWithRoles = usersWithRoles.map((userWithRoles) => {
                const clone = _.cloneDeep(userWithRoles);
-               clone.userInfo.presence = userIdPresences[userWithRoles.userId];
+               clone.presence = userIdPresences[userWithRoles.userId];
                return clone;
             });
             resolve(usersWithRoles);
@@ -332,23 +285,20 @@ export function inviteMembers(req, teamId, userIds, userId) {
       let dbUser;
       let subscriberOrg;
       Promise.all([
-         getTeamsByIds(req, [teamId]),
-         getTeamMembersByTeamIdAndUserIdAndRole(req, teamId, userId, Roles.admin)
+         teamsTable.getTeamByTeamId(req, teamId),
+         teamMembersTable.getTeamMemberByTeamIdAndUserIdAndRole(req, teamId, userId, Roles.admin)
       ])
-         .then((promiseResults) => {
-            const teams = promiseResults[0];
-            const teamMembers = promiseResults[1];
-
-            if (teams.length === 0) {
+         .then(([retrievedTeam, teamMember]) => {
+            team = retrievedTeam;
+            if (!team) {
                throw new TeamNotExistError(teamId);
             }
-            team = teams[0];
 
-            if (teamMembers.length === 0) {
+            if (!teamMember) {
                throw new NoPermissionsError(teamId);
             }
 
-            if ((('subscriberOrgEnabled' in team.teamInfo) && (team.teamInfo.subscriberOrgEnabled === false)) || (team.teamInfo.active === false)) {
+            if ((team.subscriberOrgEnabled === false) || (team.active === false)) {
                throw new CannotInviteError(teamId);
             }
 
@@ -364,8 +314,8 @@ export function inviteMembers(req, teamId, userIds, userId) {
             }
 
             return Promise.all([
-               getUsersByIds(req, [userId, ...uniqueUserIds]),
-               getSubscriberOrgsByIds(req, [teams[0].teamInfo.subscriberOrgId])
+               usersTable.getUsersByUserIds(req, [userId, ...uniqueUserIds]),
+               subscriberOrgsTable.getSubscriberOrgBySubscriberOrgId(req, team.subscriberOrgId)
             ]);
          })
          .then((promiseResults) => {
@@ -376,7 +326,7 @@ export function inviteMembers(req, teamId, userIds, userId) {
                }
                return true;
             });
-            subscriberOrg = promiseResults[1][0];
+            subscriberOrg = promiseResults[1];
 
             // If any of the userIds are bad, fail.
             if (existingDbUsers.length !== userIds.length) {
@@ -388,12 +338,12 @@ export function inviteMembers(req, teamId, userIds, userId) {
             const inviteDbUserIds = inviteDbUsers.map(inviteDbUser => inviteDbUser.userId);
 
             // Make sure invitees are not already in here.
-            return getTeamMembersByUserIds(req, inviteDbUserIds);
+            return teamMembersTable.getTeamMembersByUserIds(req, inviteDbUserIds);
          })
          .then((teamMembers) => {
-            const teamMembersOfTeam = teamMembers.filter(teamMember => teamMember.teamMemberInfo.teamId === teamId);
+            const teamMembersOfTeam = teamMembers.filter(teamMember => teamMember.teamId === teamId);
             if (teamMembersOfTeam.length !== 0) {
-               const doNotInviteUserIds = teamMembersOfTeam.map(teamMember => teamMember.teamMemberInfo.userId);
+               const doNotInviteUserIds = teamMembersOfTeam.map(teamMember => teamMember.userId);
                inviteDbUsers = inviteDbUsers.filter(inviteDbUser => doNotInviteUserIds.indexOf(inviteDbUser.userId) < 0);
             }
             return inviteExistingUsersToTeam(req, dbUser, inviteDbUsers, subscriberOrg, team);
@@ -406,21 +356,12 @@ export function inviteMembers(req, teamId, userIds, userId) {
 export function addUserToTeam(req, user, subscriberUserId, teamId, role) {
    return new Promise((resolve, reject) => {
       const teamMemberId = uuid.v4();
-      getTeamsByIds(req, [teamId])
-         .then((teams) => {
-            if (teams.length === 0) {
+      teamsTable.getTeamByTeamId(req, teamId)
+         .then((team) => {
+            if (!team) {
                throw new TeamNotExistError(teamId);
             }
-
-            const teamMember = {
-               subscriberUserId,
-               teamId,
-               userId: user.userId,
-               role,
-               created: req.now.format(),
-               lastModified: req.now.format()
-            };
-            return createItem(req, -1, `${config.tablePrefix}teamMembers`, 'teamMemberId', teamMemberId, 'teamMemberInfo', teamMember);
+            return teamMembersTable.createTeamMember(req, teamMemberId, user.userId, teamId, subscriberUserId, team.subscriberOrgId, role);
          })
          .then(() => {
             teamMemberAdded(req, teamId, user, role, teamMemberId);
@@ -433,12 +374,10 @@ export function addUserToTeam(req, user, subscriberUserId, teamId, role) {
 
 export function addUserToPrimaryTeam(req, user, subscriberOrgId, subscriberUserId, role) {
    return new Promise((resolve, reject) => {
-      let teamId;
-      getTeamBySubscriberOrgIdAndPrimary(req, subscriberOrgId, true)
-         .then((teams) => {
-            if (teams.length > 0) {
-               teamId = teams[0].teamId;
-               return addUserToTeam(req, user, subscriberUserId, teamId, role);
+      teamsTable.getTeamBySubscriberOrgIdAndPrimary(req, subscriberOrgId, true)
+         .then((team) => {
+            if (team) {
+               return addUserToTeam(req, user, subscriberUserId, team.teamId, role);
             }
             return undefined;
          })
@@ -451,43 +390,50 @@ export function replyToInvite(req, teamId, accept, userId) {
    return new Promise((resolve, reject) => {
       let user;
       let team;
-      Promise.all([getUsersByIds(req, [userId]), getTeamsByIds(req, [teamId])])
-         .then((promiseResults) => {
-            const users = promiseResults[0];
-            const teams = promiseResults[1];
-
-            if (users.length === 0) {
+      let cachedInvitation;
+      Promise.all([usersTable.getUserByUserId(req, userId), teamsTable.getTeamByTeamId(req, teamId)])
+         .then(([retrievedUser, retrievedTeam]) => {
+            user = retrievedUser;
+            team = retrievedTeam;
+            if (!user) {
                throw new UserNotExistError();
             }
-            user = users[0];
 
-            if (teams.length === 0) {
+            if (!team) {
                throw new TeamNotExistError(teamId);
             }
-            team = teams[0];
 
-            return deleteRedisInvitation(req, user.userInfo.emailAddress, InvitationKeys.teamId, teamId);
+            return deleteInvitation(req, user.emailAddress, InvitationKeys.teamId, teamId);
          })
-         .then((invitation) => {
-            if ((invitation) && ((!('subscriberOrgEnabled' in team.teamInfo)) || (team.teamInfo.subscriberOrgEnabled))) {
-               if ((team.teamInfo.active) && (accept)) {
-                  const { subscriberOrgId } = invitation;
-                  return getSubscriberUsersByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId);
+         .then((retrievedCachedInvitation) => {
+            cachedInvitation = retrievedCachedInvitation;
+            if ((cachedInvitation) && team.subscriberOrgEnabled) {
+               if ((team.active) && (accept)) {
+                  const { subscriberOrgId } = cachedInvitation;
+                  userInvitationAccepted(req, cachedInvitation, userId);
+                  return subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId);
                } else if (!accept) {
-                  userInvitationDeclined(req, invitation, userId);
+                  userInvitationDeclined(req, cachedInvitation, userId);
                }
                return undefined;
             }
             throw new InvitationNotExistError(teamId);
          })
-         .then((subscriberUsers) => {
-            if ((subscriberUsers) && (subscriberUsers.length > 0)) {
-               const { subscriberUserId } = subscriberUsers[0];
+         .then((subscriberUser) => {
+            if (subscriberUser) {
+               const { subscriberUserId } = subscriberUser;
                return addUserToTeam(req, user, subscriberUserId, teamId, Roles.user);
             }
             return undefined;
          })
-         .then(() => resolve())
+         .then(() => {
+            const state = (accept) ? 'ACCEPTED' : 'DECLINED';
+            return invitationsTable.updateInvitationsStateByInviteeEmail(req, user.emailAddress, InvitationKeys.teamId, teamId, state);
+         })
+         .then((changedInvitations) => {
+            resolve();
+            sentInvitationStatus(req, changedInvitations);
+         })
          .catch(err => reject(err));
    });
 }

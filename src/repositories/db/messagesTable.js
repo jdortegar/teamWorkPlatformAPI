@@ -8,6 +8,7 @@ import * as util from './util';
  * v
  * level
  * path
+ * topic
  * content: []
  * messageNumber
  * messageCount (> 0 means this is a parent of thread)
@@ -19,6 +20,9 @@ import * as util from './util';
  * replyTo (optional)
  * deleted
  * history: { created: content, ... } (optional)
+ * likes
+ * dislikes
+ * flags
  *
  * LSI: conversationIdCreatedIdx
  * hash: conversationId
@@ -28,7 +32,7 @@ import * as util from './util';
  * hash: conversationId
  * range: level
  *
- * * LSI: conversationIdMessageCountIdx
+ * LSI: conversationIdMessageCountIdx
  * hash: conversationId
  * range: messageCount
  */
@@ -54,6 +58,7 @@ export const createMessage = (req, conversationId, messageId, level, path, conte
             v,
             level,
             path,
+            topic: null,
             content,
             messageNumber,
             messageCount: 0,
@@ -62,7 +67,10 @@ export const createMessage = (req, conversationId, messageId, level, path, conte
             created: req.now.format(),
             lastModified: req.now.format(),
             replyTo,
-            deleted: false
+            deleted: false,
+            likes: 0,
+            dislikes: 0,
+            flags: 0
          }
       };
 
@@ -272,6 +280,63 @@ export const deleteMessage = (req, conversationId, messageId) => {
             return req.app.locals.docClient.update(params).promise();
          })
          .then(() => resolve(message))
+         .catch(err => reject(err));
+   });
+};
+
+export const updateMessageLikes = (req, conversationId, messageId, like) => {
+   return new Promise((resolve, reject) => {
+      const params = {
+         TableName: tableName(),
+         Key: { conversationId, messageId },
+         AttributeUpdates: {
+            likes: {
+               Action: 'ADD',
+               Value: (like) ? 1 : -1
+            }
+         }
+      };
+
+      req.app.locals.docClient.update(params).promise()
+         .then(() => resolve())
+         .catch(err => reject(err));
+   });
+};
+
+export const updateMessageDislikes = (req, conversationId, messageId, dislike) => {
+   return new Promise((resolve, reject) => {
+      const params = {
+         TableName: tableName(),
+         Key: { conversationId, messageId },
+         AttributeUpdates: {
+            dislikes: {
+               Action: 'ADD',
+               Value: (dislike) ? 1 : -1
+            }
+         }
+      };
+
+      req.app.locals.docClient.update(params).promise()
+         .then(() => resolve())
+         .catch(err => reject(err));
+   });
+};
+
+export const updateMessageFlags = (req, conversationId, messageId, flag) => {
+   return new Promise((resolve, reject) => {
+      const params = {
+         TableName: tableName(),
+         Key: { conversationId, messageId },
+         AttributeUpdates: {
+            flags: {
+               Action: 'ADD',
+               Value: (flag) ? 1 : -1
+            }
+         }
+      };
+
+      req.app.locals.docClient.update(params).promise()
+         .then(() => resolve())
          .catch(err => reject(err));
    });
 };

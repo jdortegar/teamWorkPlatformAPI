@@ -7,6 +7,7 @@ import * as mailer from '../helpers/mailer';
 import { NoPermissionsError, UserNotExistError } from '../services/errors';
 import * as userSvc from '../services/userService';
 import { AWS_CUSTOMER_ID_HEADER_NAME } from './auth';
+import { apiVersionedVisibility, publishByApiVersion } from '../helpers/publishedVisibility';
 
 /**
 * Create a reservation for a user.
@@ -194,26 +195,27 @@ export const updatePassword = (req, res, next) => {
             next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE));
          }
       });
-}
-
-export const updatePublicPreferences = (req, res, next) => {
-   const userId = req.user._id;
-   const updateUserId = req.params.userId;
-
-   userSvc.updateUser(req, updateUserId, req.body, userId)
-      .then(() => {
-         res.status(httpStatus.NO_CONTENT).end();
-      })
-      .catch((err) => {
-         if (err instanceof UserNotExistError) {
-            res.status(httpStatus.NOT_FOUND).end();
-         } else if (err instanceof NoPermissionsError) {
-            res.status(httpStatus.FORBIDDEN).end();
-         } else {
-            next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE));
-         }
-      });
 };
+
+// TODO: remove from API docs before removing.
+// export const updatePublicPreferences = (req, res, next) => {
+//    const userId = req.user._id;
+//    const updateUserId = req.params.userId;
+//
+//    userSvc.updateUser(req, updateUserId, req.body, userId)
+//       .then(() => {
+//          res.status(httpStatus.NO_CONTENT).end();
+//       })
+//       .catch((err) => {
+//          if (err instanceof UserNotExistError) {
+//             res.status(httpStatus.NOT_FOUND).end();
+//          } else if (err instanceof NoPermissionsError) {
+//             res.status(httpStatus.FORBIDDEN).end();
+//          } else {
+//             next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE));
+//          }
+//       });
+// };
 
 export const getInvitations = (req, res, next) => {
    const email = req.user.email;
@@ -223,3 +225,11 @@ export const getInvitations = (req, res, next) => {
       .catch(err => next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE)));
 };
 
+export const getSentInvitations = (req, res, next) => {
+   const userId = req.user._id;
+   const { since, state } = req.query;
+
+   userSvc.getSentInvitations(req, userId, { since, state })
+      .then(invitations => res.status(httpStatus.OK).json({ invitations: publishByApiVersion(req, apiVersionedVisibility.publicInvitations, invitations) }))
+      .catch(err => next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE)));
+};

@@ -6,6 +6,7 @@ import * as util from './util';
  * v
  * subscriberOrgId
  * teamRoomId
+ * topic
  * active
  * messageCount
  * byteCount
@@ -28,7 +29,7 @@ const upgradeSchema = (req, dbObjects) => {
    return Promise.resolve(dbObjects);
 };
 
-export const createConversation = (req, conversationId, subscriberOrgId, teamRoomId = undefined) => {
+export const createConversation = (req, conversationId, subscriberOrgId, teamRoomId = undefined, topic = undefined) => {
    return new Promise((resolve, reject) => {
       const params = {
          TableName: tableName(),
@@ -37,6 +38,7 @@ export const createConversation = (req, conversationId, subscriberOrgId, teamRoo
             v,
             subscriberOrgId,
             teamRoomId,
+            topic: topic || null,
             active: true,
             messageCount: 0,
             byteCount: 0,
@@ -49,6 +51,20 @@ export const createConversation = (req, conversationId, subscriberOrgId, teamRoo
          .then(result => resolve(result.$response.request.rawParams.Item))
          .catch(err => reject(err));
    });
+};
+
+export const updateConversationTopic = (req, conversationId, topic) => {
+   const params = {
+      TableName: tableName(),
+      Key: { conversationId },
+      UpdateExpression: 'set topic = :topic, lastModified = :lastModified',
+      ExpressionAttributeValues: {
+         ':topic': topic,
+         ':lastModified': req.now.format()
+      }
+   };
+
+   return req.app.locals.docClient.update(params).promise();
 };
 
 export const updateConversationActive = (req, conversationId, active) => {

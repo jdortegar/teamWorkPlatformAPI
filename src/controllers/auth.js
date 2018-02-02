@@ -6,10 +6,10 @@ import config from '../config/env';
 import { jwtMiddleware } from '../config/express';
 import APIError from '../helpers/APIError';
 import { apiVersionedVisibility, publishByApiVersion } from '../helpers/publishedVisibility';
-import { getAuthData, passwordMatch } from '../models/user';
+import { getAuthData } from '../models/user';
 import * as userSvc from '../services/userService';
 import * as awsMarketplaceSvc from '../services/awsMarketplaceService';
-import { InvalidAwsProductCodeError, CustomerExistsError } from '../services/errors';
+import { NoPermissionsError, InvalidAwsProductCodeError, CustomerExistsError } from '../services/errors';
 
 export const AWS_CUSTOMER_ID_HEADER_NAME = 'x-hablaai-awsCustomerId';
 export const AWS_CUSTOMER_ID_QUERY_NAME = 'awsCustomerId';
@@ -20,82 +20,50 @@ export const login = (req, res, next) => {
    const password = req.body.password || '';
    delete req.body.password;
 
-   // Retrieve UUID from cache.
-   req.app.locals.redis.hmgetAsync(`${config.redisPrefix}${username}`, 'uid', 'status')
-      .then((redisResponse) => { // id=redisResponse[0], status=redisResponse[1]
-         const userId = redisResponse[0];
-         const status = redisResponse[1];
-         if ((userId !== null) && (status === '1')) {
-            // Retrieve user from DB.
-            const docClient = new req.app.locals.AWS.DynamoDB.DocumentClient();
-            const usersTable = `${config.tablePrefix}users`;
-            const params = {
-               TableName: usersTable,
-               Key: {
-                  partitionId: -1,
-                  userId
-               }
-            };
-            return docClient.get(params).promise();
-         }
-
-         // User not in cache.  Check DB.
-         return userSvc.getUserByEmail(req, username, true);
-      })
-      .then((dbData) => {
-         if (dbData) {
-            let user;
-            if (dbData.Item) {
-               user = dbData.Item.userInfo;
-               user.userId = dbData.Item.userId;
-            } else {
-               user = dbData.userInfo;
-               user.userId = dbData.userId;
-            }
-
-            if ((user) && (passwordMatch(user, password))) {
-               const awsCustomerId = req.get(AWS_CUSTOMER_ID_HEADER_NAME);
-               if (awsCustomerId) {
-                  awsMarketplaceSvc.registerCustomer(req, awsCustomerId, user)
-                     .then(() => {
-                        res.status(httpStatus.OK).json({
-                           status: 'SUCCESS',
-                           token: jwt.sign(getAuthData(user, user.userId), config.jwtSecret),
-                           user: publishByApiVersion(req, apiVersionedVisibility.privateUser, user),
-                           websocketUrl: config.apiEndpoint,
-                           resourcesBaseUrl: config.resourcesBaseUrl
-                        });
-                     })
-                     .catch((err) => {
-                        if (err instanceof CustomerExistsError) {
-                           res.status(httpStatus.OK).json({
-                              status: 'SUCCESS',
-                              token: jwt.sign(getAuthData(user, user.userId), config.jwtSecret),
-                              user: publishByApiVersion(req, apiVersionedVisibility.privateUser, user),
-                              websocketUrl: config.apiEndpoint,
-                              resourcesBaseUrl: config.resourcesBaseUrl,
-                              postLoginUrl: `${config.webappBaseUri}/app/editSubscriberOrg` // TODO: customer id exists
-                           });
-                        } else {
-                           next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
-                        }
-                     });
-               } else {
+   userSvc.login(req, username, password)
+      .then((user) => {
+         const awsCustomerId = req.get(AWS_CUSTOMER_ID_HEADER_NAME);
+         if (awsCustomerId) {
+            awsMarketplaceSvc.registerCustomer(req, awsCustomerId, user)
+               .then(() => {
                   res.status(httpStatus.OK).json({
                      status: 'SUCCESS',
-                     token: jwt.sign(getAuthData(user, user.userId), config.jwtSecret),
+                     token: jwt.sign(getAuthData(req, user, user.userId), config.jwtSecret),
                      user: publishByApiVersion(req, apiVersionedVisibility.privateUser, user),
                      websocketUrl: config.apiEndpoint,
                      resourcesBaseUrl: config.resourcesBaseUrl
                   });
-               }
-               return;
-            }
+               })
+               .catch((err) => {
+                  if (err instanceof CustomerExistsError) {
+                     res.status(httpStatus.OK).json({
+                        status: 'SUCCESS',
+                        token: jwt.sign(getAuthData(req, user, user.userId), config.jwtSecret),
+                        user: publishByApiVersion(req, apiVersionedVisibility.privateUser, user),
+                        websocketUrl: config.apiEndpoint,
+                        resourcesBaseUrl: config.resourcesBaseUrl,
+                        postLoginUrl: `${config.webappBaseUri}/app/editSubscriberOrg` // TODO: customer id exists
+                     });
+                  } else {
+                     next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
+                  }
+               });
+         } else {
+            res.status(httpStatus.OK).json({
+               status: 'SUCCESS',
+               token: jwt.sign(getAuthData(req, user, user.userId), config.jwtSecret),
+               user: publishByApiVersion(req, apiVersionedVisibility.privateUser, user),
+               websocketUrl: config.apiEndpoint,
+               resourcesBaseUrl: config.resourcesBaseUrl
+            });
          }
-         next(new APIError('Invalid credentials', httpStatus.UNAUTHORIZED));
       })
       .catch((err) => {
-         next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
+         if (err instanceof NoPermissionsError) {
+            next(new APIError('Invalid credentials', httpStatus.UNAUTHORIZED));
+         } else {
+            next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
+         }
       });
 };
 

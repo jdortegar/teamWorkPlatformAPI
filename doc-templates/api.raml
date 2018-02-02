@@ -362,6 +362,11 @@ documentation:
                   type: string | nil
                   required: false
                   default: nil
+               defaultLocale:
+                  description: The locale to use when the user is offline (ex. email notifications, etc.).
+                  type: string
+                  required: false
+                  default: en
                preferences:
                   type: object
                   required: false
@@ -438,6 +443,22 @@ documentation:
                   description: The user's avatar, base64 of image.
                   type: string | nil
                   required: false
+               defaultLocale:
+                  description: The locale to use when the user is offline (ex. email notifications, etc.).
+                  type: string
+                  required: false
+               presenceStatus:
+                  description: Status of the user, like "In a meeting", "Out sick", etc.
+                  type: string
+                  required: false
+               bookmarks:
+                  type: array
+                  required: false
+                  items:
+                     properties:
+                        messageId:
+                           type: string
+                           required: true
                preferences:
                   type: object
                   required: false
@@ -657,7 +678,8 @@ documentation:
                               "byUserLastName": "Daga",
                               "byUserDisplayName": "Anthony Daga",
                               "subscriberOrgId": "ea794510-cea6-4132-0008-a7ae1d32abb2",
-                              "subscriberOrgName": "Acme"
+                              "subscriberOrgName": "Acme",
+                              "created": "2018-01-10T19:05:16Z"
                            },
                            {
                               "byUserId": "ea794510-cea6-4132-0008-a7ae1d32abb1",
@@ -669,7 +691,103 @@ documentation:
                               "teamId": "ea794510-cea6-4132-0008-a7ae1d32abb3",
                               "teamName": "All",
                               "teamRoomId": "ea794510-cea6-4132-0008-a7ae1d32abb4",
-                              "teamRoomName": "Lobby"
+                              "teamRoomName": "Lobby",
+                              "created": "2018-01-10T19:06:17Z"
+                           }
+                        ]
+                     }
+
+   /getSentInvitations:
+      get:
+         securedBy: [oauth_2_0]
+         description: |
+            Retrieve all invitations that the user sent.
+         queryParameters:
+            since:
+               description: The messages returned are `created` greater than or equal to this value, in RFC339 format.
+               type: string
+               required: false
+               example: "2017-04-12T23:20:50.52Z"
+            state:
+               description: The state of the invitation, null | ACCEPTED | DECLINED | EXPIRED, where null means pending.
+         responses:
+            200:
+               description: |
+                  OK
+               body:
+                  properties:
+                     invitations:
+                        type: array
+                        required: true
+                        items:
+                           properties:
+                              inviterUserId:
+                                 type: string
+                                 required: true
+                              created:
+                                 type: datetime
+                                 required: true
+                              inviterFirstName:
+                                 type: string
+                                 required: true
+                              inviterLastName:
+                                 type: string
+                                 required: true
+                              inviterDisplayName:
+                                 type: string
+                                 required: true
+                              inviteeEmail:
+                                 description: Only available for a subscriberOrg invite.
+                                 type: string
+                                 required: false
+                              inviteeUserId:
+                                 type: string
+                                 required: false
+                                 description: Only available if the invite is for an existing Habla AI user.
+                              expires:
+                                 type: string
+                                 required: true
+                              state:
+                                 type: string
+                                 required: true
+                                 description: null | ACCEPTED | DECLINED | EXPIRED, where null means pending.
+                              lastModified:
+                                 type: datetime
+                                 required: true
+                              subscriberOrgId:
+                                 type: string
+                                 required: true
+                              subscriberOrgName:
+                                 type: string
+                                 required: true
+                              teamId:
+                                 type: string
+                                 required: false
+                              teamName:
+                                 type: string
+                                 required: false
+                              teamRoomId:
+                                 type: string
+                                 required: false
+                              teamRoomName:
+                                 type: string
+                                 required: false
+                  example: |
+                     {
+                        "invitations": [
+                           {
+                              "inviterUserId": "02c44319-074b-4787-b149-808fa53b53c3",
+                              "created": "2018-01-11T06:38:16Z",
+                              "inviterFirstName": "Anthony",
+                              "inviterLastName": "Daga",
+                              "inviterDisplayName": "a.d@habla.io",
+                              "inviteeEmail": "anthony.daga@habla.ai",
+                              "inviteeUserId": "65ba9c90-d584-4ec1-aed5-950f1ffe39db",
+                              "expires": "2018-01-18T06:38:16Z",
+                              "state": null,
+                              "lastModified": "2018-01-11T06:38:16Z",
+                              "subscriberOrgId": "3e5485b2-64a9-489c-be21-b4b40861cbae",
+                              "subscriberOrgName": "a.d@habla.io"
                            }
                         ]
                      }
@@ -842,7 +960,7 @@ documentation:
                403:
                   description: |
                      FORBIDDEN<br />
-                     The user is not allowed to update the specified organization.
+                     The user is not allowed to update the specified organization, or the requested subscriberOrg name is a duplicate.
 
    /getSubscribers:
       /{subscriberOrgId}:
@@ -884,6 +1002,9 @@ documentation:
                                     type: string | nil
                                     required: false
                                     default: nil
+                                 presenceStatus:
+                                    type: string
+                                    required: false
                                  userType:
                                     type: string
                                     required: true
@@ -950,6 +1071,7 @@ documentation:
                                  "lastName": "Daga",
                                  "displayName": "Anthony Dude Daga",
                                  "icon": null,
+                                 "presenceStatus": "Out and about",
                                  "userType": "hablaUser",
                                  "enabled": true,
                                  "preferences": {
@@ -973,6 +1095,7 @@ documentation:
                                  "lastName": "Goodacre",
                                  "displayName": "Jill Goodacre",
                                  "icon": null,
+                                 "presenceStatus": null,
                                  "userType": "hablaUser",
                                  "enabled": true,
                                  "preferences": {
@@ -1335,6 +1458,9 @@ documentation:
                                     type: string | nil
                                     required: false
                                     default: nil
+                                 presenceStatus:
+                                    type: string
+                                    required: false
                                  userType:
                                     type: string
                                     required: true
@@ -1394,6 +1520,7 @@ documentation:
                                  "lastName": "Daga",
                                  "displayName": "Anthony Dude Daga",
                                  "icon": null,
+                                 "presenceStatus": "Out and about",
                                  "userType": "hablaUser",
                                  "enabled": true,
                                  "preferences": {
@@ -1407,6 +1534,7 @@ documentation:
                                  "lastName": "Goodacre",
                                  "displayName": "Jill Goodacre",
                                  "icon": null,
+                                 "presenceStatus": null,
                                  "userType": "hablaUser",
                                  "enabled": true,
                                  "preferences": {
@@ -1801,6 +1929,9 @@ documentation:
                                     type: string | nil
                                     required: false
                                     default: nil
+                                 presenceStatus:
+                                    type: string
+                                    required: false
                                  userType:
                                     type: string
                                     required: true
@@ -1860,6 +1991,7 @@ documentation:
                                  "lastName": "Daga",
                                  "displayName": "Anthony Dude Daga",
                                  "icon": null,
+                                 "presenceStatus": "Out and about",
                                  "userType": "hablaUser",
                                  "enabled": true,
                                  "preferences": {
@@ -1873,6 +2005,7 @@ documentation:
                                  "lastName": "Goodacre",
                                  "displayName": "Jill Goodacre",
                                  "icon": null,
+                                 "presenceStatus": null,
                                  "userType": "hablaUser",
                                  "enabled": true,
                                  "preferences": {
@@ -1995,6 +2128,9 @@ documentation:
                                  type: string
                                  required: true
                               teamRoomId:
+                                 type: string
+                                 required: false
+                              topic:
                                  type: string
                                  required: false
                               participants:
@@ -2497,6 +2633,78 @@ documentation:
                      description: |
                         FORBIDDEN<br />
                         The user is not allowed to delete the specified message.
+
+      /likeMessage:
+         /{messageId}:
+            uriParameters:
+               messageId:
+                  description: Like a message.
+            post:
+               securedBy: [oauth_2_0]
+               description: |
+                  Like a message in Habla.
+               body:
+                  properties:
+                     like:
+                        type: boolean
+                        required: true
+               responses:
+                  200:
+                     description: |
+                        OK<br />
+                        The message was marked as liked by the user.
+                  404:
+                     description: |
+                        NOT_FOUND<br />
+                        The `message` with the specified ID was not found.
+
+      /unlikeMessage:
+         /{messageId}:
+            uriParameters:
+               messageId:
+                  description: Unlike a message.
+            post:
+               securedBy: [oauth_2_0]
+               description: |
+                  Unlike a message in Habla.
+               body:
+                  properties:
+                     like:
+                        type: boolean
+                        required: true
+               responses:
+                  200:
+                     description: |
+                        OK<br />
+                        The message was marked as unliked by the user.
+                  404:
+                     description: |
+                        NOT_FOUND<br />
+                        The `message` with the specified ID was not found.
+
+      /flagMessage:
+         /{messageId}:
+            uriParameters:
+               messageId:
+                  description: Flag a message.
+            post:
+               securedBy: [oauth_2_0]
+               description: |
+                  Flag a message in Habla.
+               body:
+                  properties:
+                     flag:
+                        type: boolean
+                        required: true
+               responses:
+                  200:
+                     description: |
+                        OK<br />
+                        The message was flagged by the user.
+                  404:
+                     description: |
+                        NOT_FOUND<br />
+                        The `message` with the specified ID was not found.
 
       /readMessage:
          /{messageId}:
