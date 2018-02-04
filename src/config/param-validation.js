@@ -18,6 +18,7 @@ const validationSchemas = {
          country: Joi.string().min(1).required(),
          timeZone: Joi.string().min(1).required(),
          icon: Joi.string().base64().allow(null),
+         defaultLocale: Joi.string().min(1),
          preferences: Joi.object().keys({
             iconColor: Joi.string().min(1),
             private: Joi.object()
@@ -26,13 +27,17 @@ const validationSchemas = {
    },
    updateUser: {
       body: {
-         active: Joi.boolean(),
          firstName: Joi.string().min(1),
          lastName: Joi.string().min(1),
          displayName: Joi.string().min(1),
          country: Joi.string().min(1),
          timeZone: Joi.string().min(1),
          icon: Joi.string().base64().allow(null),
+         defaultLocale: Joi.string().min(1),
+         presenceStatus: Joi.string().min(1),
+         bookmarks: Joi.array().min(1).items(
+            Joi.string().min(1).required()
+         ),
          preferences: Joi.object().keys({
             iconColor: Joi.string().min(1),
             private: Joi.object()
@@ -132,7 +137,6 @@ const validationSchemas = {
       body: {
          name: Joi.string().min(1).required(),
          purpose: Joi.string().min(1),
-         publish: Joi.boolean().required(),
          active: Joi.boolean().required(),
          icon: Joi.string().base64().allow(null),
          preferences: Joi.object().keys({
@@ -197,6 +201,21 @@ const validationSchemas = {
                })
             })
          ).required()
+      }
+   },
+   likeMessage: {
+      body: {
+         like: Joi.boolean().required()
+      }
+   },
+   dislikeMessage: {
+      body: {
+         dislike: Joi.boolean().required()
+      }
+   },
+   flagMessage: {
+      body: {
+         flag: Joi.boolean().required()
       }
    },
    readMessage: {
@@ -276,6 +295,18 @@ export const apiVersionedValidators = {
    updateMessage: {
       0: validate(validationSchemas.updateMessage),
       1: validate(validationSchemas.updateMessage)
+   },
+   likeMessage: {
+      0: validate(validationSchemas.likeMessage),
+      1: validate(validationSchemas.likeMessage)
+   },
+   dislikeMessage: {
+      0: validate(validationSchemas.dislikeMessage),
+      1: validate(validationSchemas.dislikeMessage)
+   },
+   flagMessage: {
+      0: validate(validationSchemas.flagMessage),
+      1: validate(validationSchemas.flagMessage)
    },
    readMessage: {
       0: validate(validationSchemas.readMessage),

@@ -2,120 +2,82 @@ import _ from 'lodash';
 import uuid from 'uuid';
 import config from '../config/env';
 import { NoPermissionsError, UserNotExistError, CustomerExistsError } from './errors';
-import { getRedisInvitations } from './invitations';
-import { userCreated, userUpdated, userPrivateInfoUpdated } from './messaging';
-import * as subscriberOrgSvc from './subscriberOrgService';
-import { createItem, getUsersByIds, getUsersByEmailAddresses, updateItem } from '../repositories/util';
 import { getRandomColor } from './util';
 import { hashPassword, passwordMatch } from '../models/user';
+import * as usersTable from '../repositories/db/usersTable';
+import * as usersCache from '../repositories/cache/usersCache';
+import * as invitationsRepo from '../repositories/invitationsRepo';
 import * as awsMarketplaceSvc from './awsMarketplaceService';
+import * as subscriberOrgSvc from './subscriberOrgService';
+import { userCreated, userUpdated, userPrivateInfoUpdated } from './messaging';
 
-export function addUserToCache(req, email, uid, status) {
+const getUserByEmail = (req, email) => {
    return new Promise((resolve, reject) => {
-      req.logger.debug(`users-create: user ${email} not in cache`);
-      req.logger.debug(`users-create: new uuid: ${uid}`);
-      req.app.locals.redis.hmsetAsync(`${config.redisPrefix}${email}`, 'uid', uid, 'status', status)
-         .then((addUserToCacheResponse) => {
-            req.logger.debug(`users-create: created redis hash for email: ${email}`);
-            resolve(addUserToCacheResponse);
-         })
-         .catch((err) => {
-            req.logger.debug('users-create: hmset status - redis error');
-            reject(err);
-         });
-   });
-}
-
-
-export function getUserByEmail(req, email, cache = false) {
-   return new Promise((resolve, reject) => {
-      let dbUser;
-      getUsersByEmailAddresses(req, [email])
-         .then((users) => {
-            if (users.length > 0) {
-               dbUser = users[0];
-               if (cache) {
-                  const status = 1;
-                  addUserToCache(req, email, dbUser.userId, status)
-                     .catch(err => req.logger.error(err));
-               }
+      let user;
+      usersTable.getUserByEmailAddress(req, email)
+         .then((retrievedUser) => {
+            user = retrievedUser;
+            if (user) {
+               return usersCache.createUser(req, email, user.userId);
             }
             return undefined;
          })
-         .then(() => resolve(dbUser))
+         .then(() => resolve(user))
          .catch(err => reject(err));
    });
-}
+};
+
+export const login = (req, email, password) => {
+   return new Promise((resolve, reject) => {
+      getUserByEmail(req, email)
+         .then((user) => {
+            if ((user) && (passwordMatch(user, password))) {
+               resolve(user);
+            } else {
+               throw new NoPermissionsError(email);
+            }
+         })
+         .catch(err => reject(err));
+   });
+};
 
 export function createUser(req, userInfo) {
    return new Promise((resolve, reject) => {
-      const { email } = userInfo;
+      const { email: emailAddress } = userInfo;
       const userId = uuid.v4();
       let user;
-      const subscriberOrgId = uuid.v4();
-      const subscriberOrgName = req.body.displayName;
 
-      // First, use email addr to see if it's already in redis.
-      req.app.locals.redis.hgetallAsync(`${config.redisPrefix}${email}`)
-         .then((cachedEmail) => {
-            if (cachedEmail === null) {
-               // Otherwise, add user to cache add user table.
-               const status = 1;
-
-               const { firstName, lastName, displayName, password, country, timeZone } = userInfo;
-               const icon = userInfo.icon || null;
-               const preferences = userInfo.preferences || { private: {} };
-               if (preferences.private === undefined) {
-                  preferences.private = {};
-               }
-               preferences.iconColor = preferences.iconColor || getRandomColor();
-               user = {
-                  emailAddress: email,
-                  firstName,
-                  lastName,
-                  displayName,
-                  password: hashPassword(password),
-                  country,
-                  timeZone,
-                  icon,
-                  enabled: true,
-                  preferences,
-                  created: req.now.format(),
-                  lastModified: req.now.format()
-               };
-
-               return Promise.all([
-                  addUserToCache(req, email, userId, status),
-                  createItem(req, -1, `${config.tablePrefix}users`, 'userId', userId, 'userInfo', user)
-               ]);
+      usersTable.getUserByEmailAddress(req, emailAddress)
+         .then((existingUser) => {
+            user = existingUser;
+            if (user) {
+               throw new NoPermissionsError(emailAddress);
             }
-            return undefined;
+
+            const { firstName, lastName, displayName, country, timeZone } = userInfo;
+            const password = hashPassword(userInfo.password);
+            const icon = userInfo.icon || null;
+            const preferences = userInfo.preferences || { private: {} };
+            if (preferences.private === undefined) {
+               preferences.private = {};
+            }
+            preferences.iconColor = preferences.iconColor || getRandomColor();
+            return Promise.all([
+               usersTable.createUser(req, userId, firstName, lastName, displayName, emailAddress, password, country, timeZone, icon, preferences),
+               usersCache.createUser(req, emailAddress, userId)
+            ]);
          })
-         .then((cacheAndDbStatuses) => {
-            if (cacheAndDbStatuses) {
-               const dbResponse = cacheAndDbStatuses[1];
-               if ((dbResponse.$response) && (dbResponse.$response.error !== null)) {
-                  throw dbResponse.error;
-               }
-
-               const dbUser = { userId, userInfo: _.cloneDeep(user) };
-               user.userId = userId;
-               return subscriberOrgSvc.createSubscriberOrgUsingBaseName(req, { name: subscriberOrgName }, dbUser, subscriberOrgId);
-            }
-
-            return undefined;
+         .then((promiseResults) => {
+            user = promiseResults[0];
+            const subscriberOrgId = uuid.v4();
+            const subscriberOrgName = req.body.displayName;
+            return subscriberOrgSvc.createSubscriberOrgUsingBaseName(req, { name: subscriberOrgName }, user, subscriberOrgId);
          })
-         .then((createdSubscriberOrg) => {
-            if (createdSubscriberOrg) {
-               userCreated(req, user);
+         .then(() => {
+            userCreated(req, user);
 
-               // See if it's a new AWS customer.
-               return req.app.locals.redis.getAsync(`${config.redisPrefix}${email}#awsCustomerId`);
-            }
-
-            // Key is found in cache, user already registered.
-            req.logger.debug(`users-create: user ${email} found in cache`);
-            throw new NoPermissionsError(email);
+            // See if it's a new AWS customer. // TODO: refactor into cache dir.
+            return req.app.locals.redis.getAsync(`${config.redisPrefix}${emailAddress}#awsCustomerId`);
          })
          .then((awsCustomerId) => {
             if ((awsCustomerId) && (awsCustomerId !== null)) {
@@ -134,33 +96,15 @@ export function createUser(req, userInfo) {
             return undefined;
          })
          .then(() => resolve(user))
-         .catch((err) => {
-            req.logger.warn(err);
-            reject(err);
-         });
+         .catch(err => reject(err));
    });
 }
 
-export function updateUser(req, userId, updateInfo, requestorUserId = undefined) { // eslint-disable-line no-unused-vars
-   // TODO: if (requestorUserId) check if allowed, throw NoPermissionsError if not.
+export function updateUser(req, userId, updateInfo) {
    return new Promise((resolve, reject) => {
-      const timestampedUpdateInfo = updateInfo;
-      timestampedUpdateInfo.lastModified = req.now.format();
-      let user;
-      getUsersByIds(req, [userId])
-         .then((dbUsers) => {
-            if (dbUsers.length < 1) {
-               throw new UserNotExistError(userId);
-            }
-
-            user = dbUsers[0].userInfo;
-            return updateItem(req, -1, `${config.tablePrefix}users`, 'userId', userId, { userInfo: timestampedUpdateInfo });
-         })
-         .then(() => {
-            resolve();
-
-            _.merge(user, timestampedUpdateInfo);
-            user.userId = userId;
+      usersTable.updateUser(req, userId, updateInfo)
+         .then((user) => {
+            resolve(user);
             userUpdated(req, user);
             if ((updateInfo.preferences) && (updateInfo.preferences.private)) {
                userPrivateInfoUpdated(req, user);
@@ -172,28 +116,21 @@ export function updateUser(req, userId, updateInfo, requestorUserId = undefined)
 
 export function updatePassword(req, userId, oldPassword, newPassword) {
    return new Promise((resolve, reject) => {
-      let user;
-      const hashedPassword = hashPassword(newPassword);
-      const timestampedUpdateInfo = { password: hashedPassword };
-      timestampedUpdateInfo.lastModified = req.now.format();
-      getUsersByIds(req, [userId])
-         .then((dbUsers) => {
-            if (dbUsers.length < 1) {
+      usersTable.getUserByUserId(req, userId)
+         .then((user) => {
+            if (!user) {
                throw new UserNotExistError(userId);
             }
 
-            user = dbUsers[0].userInfo;
-            if ((user) && (passwordMatch(user, oldPassword))) {
-               return updateItem(req, -1, `${config.tablePrefix}users`, 'userId', userId, { userInfo: timestampedUpdateInfo });
+            if (passwordMatch(user, oldPassword)) {
+               const hashedPassword = hashPassword(newPassword);
+               return usersTable.updateUser(req, userId, { password: hashedPassword });
             }
             throw new Error('Incorrect Password!');
          })
-         .then(() => {
-            resolve();
-
-            _.merge(user, timestampedUpdateInfo);
-            user.userId = userId;
-            userUpdated(req, user);
+         .then((user) => {
+            resolve(user);
+            // userPasswordUpdated(req, user);
          })
          .catch(err => reject(err));
    });
@@ -201,25 +138,52 @@ export function updatePassword(req, userId, oldPassword, newPassword) {
 
 export function resetPassword(req, email, password) {
    return new Promise((resolve, reject) => {
-      let dbUser;
-      getUsersByEmailAddresses(req, [email])
-         .then((users) => {
-            if (users.length > 0) {
-               dbUser = users[0];
+      usersTable.getUserByEmailAddress(req, email)
+         .then((user) => {
+            if (!user) {
+               throw new UserNotExistError(email);
             }
+
             const hashedPassword = hashPassword(password);
-            const timestampedUpdateInfo = { password: hashedPassword };
-            timestampedUpdateInfo.lastModified = req.now.format();
-            return updateItem(req, -1, `${config.tablePrefix}users`, 'userId', dbUser.userId, { userInfo: timestampedUpdateInfo });
+            return usersTable.updateUser(req, user.userId, { password: hashedPassword });
          })
-         .then(() => resolve(dbUser))
+         .then((user) => {
+            resolve(user);
+            // userPasswordUpdated(req, user);
+         })
          .catch(err => reject(err));
    });
 }
 
 export const getInvitations = (req, email) => {
    return new Promise((resolve, reject) => {
-      getRedisInvitations(req, email)
+      invitationsRepo.getInvitationsByInviteeEmail(req, email)
+         .then((invitations) => {
+            if (invitations === null) {
+               resolve([]);
+            } else {
+               // Multiple invitations get be sent out to a person for a specific org/team/room.  Only need the last one.
+               const uniqueInvitations = [];
+               invitations.forEach((invitation) => {
+                  _.remove(uniqueInvitations, (uniqueInvitation) => {
+                     return (
+                        (uniqueInvitation.subscriberOrgId === invitation.subscriberOrgId) &&
+                        (uniqueInvitation.teamId === invitation.teamId) &&
+                        (uniqueInvitation.teamRoomId === invitation.teamRoomId)
+                     );
+                  });
+                  uniqueInvitations.push(invitation);
+               });
+               resolve(uniqueInvitations);
+            }
+         })
+         .catch(err => reject(err));
+   });
+};
+
+export const getSentInvitations = (req, userId, { since = undefined, state = undefined }) => {
+   return new Promise((resolve, reject) => {
+      invitationsRepo.getInvitationsByInviterUserId(req, userId, { since, state })
          .then((invitations) => {
             if (invitations === null) {
                resolve([]);

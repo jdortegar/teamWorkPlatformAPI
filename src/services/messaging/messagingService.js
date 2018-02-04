@@ -1,16 +1,15 @@
+import _ from 'lodash';
 import SocketIO from 'socket.io';
 import socketioJwt from 'socketio-jwt';
 import SocketIORedisAdapter from 'socket.io-redis';
 import SocketIOWildcard from 'socketio-wildcard';
 import config from '../../config/env';
+import * as subscriberUsersTable from '../../repositories/db/subscriberUsersTable';
+import * as teamMembersTable from '../../repositories/db/teamMembersTable';
+import * as teamRoomMembersTable from '../../repositories/db/teamRoomMembersTable';
 import * as conversationSvc from '../conversationService';
 import logger, { createPseudoRequest } from '../../logger';
 import { setPresence } from './presence';
-import {
-   getSubscriberUsersByUserIds,
-   getTeamMembersByUserIds,
-   getTeamRoomMembersByUserIds
-} from '../../repositories/util';
 import { disconnectFromRedis } from '../../redis-connection';
 import Roles from '../roles';
 
@@ -21,7 +20,9 @@ export const EventTypes = Object.freeze({
    userCreated: 'userCreated',
    userUpdated: 'userUpdated',
    userPrivateInfoUpdated: 'userPrivateInfoUpdated',
+   userInvitationAccepted: 'userInvitationAccepted',
    userInvitationDeclined: 'userInvitationDeclined',
+   sentInvitationStatus: 'sentInvitationStatus',
 
    subscriberOrgCreated: 'subscriberOrgCreated',
    subscriberOrgUpdated: 'subscriberOrgUpdated',
@@ -44,6 +45,9 @@ export const EventTypes = Object.freeze({
    messageRead: 'messageRead',
    messageUpdated: 'messageUpdated',
    messageDeleted: 'messageDeleted',
+   messageLiked: 'messageLiked',
+   messageDisliked: 'messageDisliked',
+   messageFlagged: 'messageFlagged',
 
    typing: 'typing',
    location: 'location',
@@ -111,10 +115,10 @@ const joinCurrentChannels = (req, socket, userId) => {
 
    // Get subscribers/members instead of subscriberOrgs/teams/teamRooms, as we need the role also.
 
-   getSubscriberUsersByUserIds(req, [userId])
+   subscriberUsersTable.getSubscriberUsersByUserId(req, userId)
       .then((subscribers) => {
          subscribers.forEach((subscriber) => {
-            const { subscriberOrgId, role } = subscriber.subscriberUserInfo;
+            const { subscriberOrgId, role } = subscriber;
 
             const subscriberOrgChannel = ChannelFactory.subscriberOrgChannel(subscriberOrgId);
             socket.join(subscriberOrgChannel);
@@ -129,10 +133,10 @@ const joinCurrentChannels = (req, socket, userId) => {
       })
       .catch(err => logger.error(err));
 
-   getTeamMembersByUserIds(req, [userId])
+   teamMembersTable.getTeamMembersByUserId(req, userId)
       .then((teamMembers) => {
          teamMembers.forEach((teamMember) => {
-            const { teamId, role } = teamMember.teamMemberInfo;
+            const { teamId, role } = teamMember;
 
             const teamChannel = ChannelFactory.teamChannel(teamId);
             socket.join(teamChannel);
@@ -147,10 +151,10 @@ const joinCurrentChannels = (req, socket, userId) => {
       })
       .catch(err => logger.error(err));
 
-   getTeamRoomMembersByUserIds(req, [userId])
+   teamRoomMembersTable.getTeamRoomMembersByUserId(req, userId)
       .then((teamRoomMembers) => {
          teamRoomMembers.forEach((teamRoomMember) => {
-            const { teamRoomId, role } = teamRoomMember.teamRoomMemberInfo;
+            const { teamRoomId, role } = teamRoomMember;
 
             const teamRoomChannel = ChannelFactory.teamRoomChannel(teamRoomId);
             socket.join(teamRoomChannel);
@@ -389,7 +393,15 @@ export default messagingService;
 // };
 
 export const _broadcastEvent = (req, eventType, event, channels = undefined) => {
-   messagingService._broadcastEvent(req, eventType, event, channels);
+   const sendEvent = _.clone(event);
+   if (req.user) {
+      sendEvent._src = {
+         userId: req.user._id,
+         address: req.ip,
+         userAgent: req.headers['user-agent']
+      };
+   }
+   messagingService._broadcastEvent(req, eventType, sendEvent, channels);
 };
 
 export const _joinChannels = (req, userId, channels) => {

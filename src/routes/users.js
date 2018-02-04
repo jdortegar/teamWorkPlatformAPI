@@ -20,8 +20,9 @@ router.route('/updateUser')
 router.route('/updatePassword')
    .patch(validateByApiVersion(apiVersionedValidators.updatePassword), users.updatePassword);
 
-router.route('/updatePublicPreferences/:userId')
-   .patch(validateByApiVersion(apiVersionedValidators.updateUserPublicPreferences), users.updatePublicPreferences);
+// TODO: never called, so @deprecate.  Remove from API docs before removing.
+// router.route('/updatePublicPreferences/:userId')
+//   .patch(validateByApiVersion(apiVersionedValidators.updateUserPublicPreferences), users.updatePublicPreferences);
 
 router.route('/forgotPassword')
    .post(validateByApiVersion(apiVersionedValidators.forgotPassword), users.forgotPassword);
@@ -31,6 +32,9 @@ router.route('/resetPassword/:rid')
 
 router.route('/getInvitations')
    .get(users.getInvitations);
+
+router.route('/getSentInvitations')
+   .get(users.getSentInvitations);
 
 /*
 router.route('/:userId')

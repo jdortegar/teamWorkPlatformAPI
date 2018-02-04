@@ -68,6 +68,13 @@ export class ConversationNotExistError extends Error {
    }
 }
 
+export class MessageNotExistError extends Error {
+   constructor(...args) {
+      super(...args);
+      Error.captureStackTrace(this, MessageNotExistError);
+   }
+}
+
 export class NotActiveError extends Error {
    constructor(...args) {
       super(...args);

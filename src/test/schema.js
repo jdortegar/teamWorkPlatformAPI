@@ -10,138 +10,6 @@ var dynamodb = new AWS.DynamoDB();
 
 var tablePrefix = 'DEV_';
 
-function createTable(params) {
-   dynamodb.createTable(params, function(err, data) {
-      if (err) {
-         console.error('Unable to create table. Error JSON:', JSON.stringify(err, null, 2));
-      } else {
-         // console.log('Created table. Table description JSON:', JSON.stringify(data, null, 2));
-      }
-   });
-}
-
-
-var usersParams = {
-   TableName : tablePrefix + 'users',
-   KeySchema: [
-      { AttributeName: 'partitionId', KeyType: 'HASH'},  //Partition key
-      { AttributeName: 'userId', KeyType: 'RANGE' }  //Sort key
-   ],
-   AttributeDefinitions: [
-      { AttributeName: 'partitionId', AttributeType: 'N' },
-      { AttributeName: 'userId', AttributeType: 'S' }
-   ],
-   ProvisionedThroughput: {
-      ReadCapacityUnits: 10,
-      WriteCapacityUnits: 10
-   }
-};
-
-var subscriberOrgsParams = {
-   TableName : tablePrefix + 'subscriberOrgs',
-   KeySchema: [
-      { AttributeName: 'partitionId', KeyType: 'HASH'},  //Partition key
-      { AttributeName: 'subscriberOrgId', KeyType: 'RANGE' }  //Sort key
-   ],
-   AttributeDefinitions: [
-      { AttributeName: 'partitionId', AttributeType: 'N' },
-      { AttributeName: 'subscriberOrgId', AttributeType: 'S' }
-   ],
-   ProvisionedThroughput: {
-      ReadCapacityUnits: 10,
-      WriteCapacityUnits: 10
-   }
-};
-
-var subscriberUsersParams = {
-   TableName : tablePrefix + 'subscriberUsers',
-   KeySchema: [
-      { AttributeName: 'partitionId', KeyType: 'HASH'},  //Partition key
-      { AttributeName: 'subscriberUserId', KeyType: 'RANGE' }  //Sort key
-   ],
-   AttributeDefinitions: [
-      { AttributeName: 'partitionId', AttributeType: 'N' },
-      { AttributeName: 'subscriberUserId', AttributeType: 'S' }
-   ],
-   ProvisionedThroughput: {
-      ReadCapacityUnits: 10,
-      WriteCapacityUnits: 10
-   }
-};
-
-var teamsParams = {
-   TableName : tablePrefix + 'teams',
-   KeySchema: [
-      { AttributeName: 'partitionId', KeyType: 'HASH'},  //Partition key
-      { AttributeName: 'teamId', KeyType: 'RANGE' }  //Sort key
-   ],
-   AttributeDefinitions: [
-      { AttributeName: 'partitionId', AttributeType: 'N' },
-      { AttributeName: 'teamId', AttributeType: 'S' }
-   ],
-   ProvisionedThroughput: {
-      ReadCapacityUnits: 10,
-      WriteCapacityUnits: 10
-   }
-};
-
-var teamMembersParams = {
-   TableName : tablePrefix + 'teamMembers',
-   KeySchema: [
-      { AttributeName: 'partitionId', KeyType: 'HASH'},  //Partition key
-      { AttributeName: 'teamMemberId', KeyType: 'RANGE' }  //Sort key
-   ],
-   AttributeDefinitions: [
-      { AttributeName: 'partitionId', AttributeType: 'N' },
-      { AttributeName: 'teamMemberId', AttributeType: 'S' }
-   ],
-   ProvisionedThroughput: {
-      ReadCapacityUnits: 10,
-      WriteCapacityUnits: 10
-   }
-};
-
-var teamRoomsParams = {
-   TableName : tablePrefix + 'teamRooms',
-   KeySchema: [
-      { AttributeName: 'partitionId', KeyType: 'HASH'},  //Partition key
-      { AttributeName: 'teamRoomId', KeyType: 'RANGE' }  //Sort key
-   ],
-   AttributeDefinitions: [
-      { AttributeName: 'partitionId', AttributeType: 'N' },
-      { AttributeName: 'teamRoomId', AttributeType: 'S' }
-   ],
-   ProvisionedThroughput: {
-      ReadCapacityUnits: 10,
-      WriteCapacityUnits: 10
-   }
-};
-
-var teamRoomMembersParams = {
-   TableName : tablePrefix + 'teamRoomMembers',
-   KeySchema: [
-      { AttributeName: 'partitionId', KeyType: 'HASH'},  //Partition key
-      { AttributeName: 'teamRoomMemberId', KeyType: 'RANGE' }  //Sort key
-   ],
-   AttributeDefinitions: [
-      { AttributeName: 'partitionId', AttributeType: 'N' },
-      { AttributeName: 'teamRoomMemberId', AttributeType: 'S' }
-   ],
-   ProvisionedThroughput: {
-      ReadCapacityUnits: 10,
-      WriteCapacityUnits: 10
-   }
-};
-
-
-createTable(usersParams);
-createTable(subscriberOrgsParams);
-createTable(subscriberUsersParams);
-createTable(teamsParams);
-createTable(teamMembersParams);
-createTable(teamRoomsParams);
-createTable(teamRoomMembersParams);
-
 
 function createSystemPropertiesTable() {
    var params = {
@@ -167,6 +35,332 @@ function createSystemPropertiesTable() {
    });
 }
 createSystemPropertiesTable();
+
+
+function createUsersTable() {
+   var params = {
+      TableName : tablePrefix + 'users',
+      KeySchema: [
+         { AttributeName: 'userId', KeyType: 'HASH'}  //Partition key
+      ],
+      AttributeDefinitions: [
+         { AttributeName: 'userId', AttributeType: 'S' },
+         { AttributeName: 'emailAddress', AttributeType: 'S' }
+      ],
+      ProvisionedThroughput: {
+         ReadCapacityUnits: 10,
+         WriteCapacityUnits: 10
+      },
+      GlobalSecondaryIndexes: [
+         {
+            IndexName: 'emailAddressIdx',
+            KeySchema: [
+               { AttributeName: 'emailAddress', KeyType: 'HASH' },
+            ],
+            Projection: { ProjectionType: 'ALL' },
+            ProvisionedThroughput: {
+               ReadCapacityUnits: 10,
+               WriteCapacityUnits: 10
+            }
+         }
+      ]
+   };
+
+   dynamodb.createTable(params, function(err, data) {
+      if (err) {
+         console.error('Unable to create UsersTable. Error JSON:', JSON.stringify(err, null, 2));
+      } else {
+         // console.log('Created table. Table description JSON:', JSON.stringify(data, null, 2));
+      }
+   });
+}
+createUsersTable();
+
+
+function createSubscriberOrgsTable() {
+   var params = {
+      TableName : tablePrefix + 'subscriberOrgs',
+      KeySchema: [
+         { AttributeName: 'subscriberOrgId', KeyType: 'HASH'}  //Partition key
+      ],
+      AttributeDefinitions: [
+         { AttributeName: 'subscriberOrgId', AttributeType: 'S' },
+         { AttributeName: 'name', AttributeType: 'S' }
+      ],
+      ProvisionedThroughput: {
+         ReadCapacityUnits: 10,
+         WriteCapacityUnits: 10
+      },
+      GlobalSecondaryIndexes: [
+         {
+            IndexName: 'nameIdx',
+            KeySchema: [
+               { AttributeName: 'name', KeyType: 'HASH' },
+            ],
+            Projection: { ProjectionType: 'ALL' },
+            ProvisionedThroughput: {
+               ReadCapacityUnits: 10,
+               WriteCapacityUnits: 10
+            }
+         }
+      ]
+   };
+
+   dynamodb.createTable(params, function(err, data) {
+      if (err) {
+         console.error('Unable to create UsersTable. Error JSON:', JSON.stringify(err, null, 2));
+      } else {
+         // console.log('Created table. Table description JSON:', JSON.stringify(data, null, 2));
+      }
+   });
+}
+createSubscriberOrgsTable();
+
+
+function createSubscriberUsersTable() {
+   var params = {
+      TableName : tablePrefix + 'subscriberUsers',
+      KeySchema: [
+         { AttributeName: 'subscriberUserId', KeyType: 'HASH'}  //Partition key
+      ],
+      AttributeDefinitions: [
+         { AttributeName: 'subscriberUserId', AttributeType: 'S' },
+         { AttributeName: 'userId', AttributeType: 'S' },
+         { AttributeName: 'subscriberOrgId', AttributeType: 'S' }
+      ],
+      ProvisionedThroughput: {
+         ReadCapacityUnits: 10,
+         WriteCapacityUnits: 10
+      },
+      GlobalSecondaryIndexes: [
+         {
+            IndexName: 'userIdSubscriberOrgIdIdx',
+            KeySchema: [
+               { AttributeName: 'userId', KeyType: 'HASH' },
+               { AttributeName: 'subscriberOrgId', KeyType: 'RANGE' }
+            ],
+            Projection: { ProjectionType: 'ALL' },
+            ProvisionedThroughput: {
+               ReadCapacityUnits: 10,
+               WriteCapacityUnits: 10
+            }
+         },
+         {
+            IndexName: 'subscriberOrgIdUserIdIdx',
+            KeySchema: [
+               { AttributeName: 'subscriberOrgId', KeyType: 'HASH' },
+               { AttributeName: 'userId', KeyType: 'RANGE' }
+            ],
+            Projection: { ProjectionType: 'ALL' },
+            ProvisionedThroughput: {
+               ReadCapacityUnits: 10,
+               WriteCapacityUnits: 10
+            }
+         }
+      ]
+   };
+
+   dynamodb.createTable(params, function(err, data) {
+      if (err) {
+         console.error('Unable to create SubscriberUsersTable. Error JSON:', JSON.stringify(err, null, 2));
+      } else {
+         // console.log('Created table. Table description JSON:', JSON.stringify(data, null, 2));
+      }
+   });
+}
+createSubscriberUsersTable();
+
+
+function createTeamsTable() {
+   var params = {
+      TableName : tablePrefix + 'teams',
+      KeySchema: [
+         { AttributeName: 'teamId', KeyType: 'HASH'}  //Partition key
+      ],
+      AttributeDefinitions: [
+         { AttributeName: 'teamId', AttributeType: 'S' },
+         { AttributeName: 'subscriberOrgId', AttributeType: 'S' }
+      ],
+      ProvisionedThroughput: {
+         ReadCapacityUnits: 10,
+         WriteCapacityUnits: 10
+      },
+      GlobalSecondaryIndexes: [
+         {
+            IndexName: 'subscriberOrgIdIdx',
+            KeySchema: [
+               { AttributeName: 'subscriberOrgId', KeyType: 'HASH' },
+            ],
+            Projection: { ProjectionType: 'ALL' },
+            ProvisionedThroughput: {
+               ReadCapacityUnits: 10,
+               WriteCapacityUnits: 10
+            }
+         }
+      ]
+   };
+
+   dynamodb.createTable(params, function(err, data) {
+      if (err) {
+         console.error('Unable to create TeamsTable. Error JSON:', JSON.stringify(err, null, 2));
+      } else {
+         // console.log('Created table. Table description JSON:', JSON.stringify(data, null, 2));
+      }
+   });
+}
+createTeamsTable();
+
+
+function createTeamMembersTable() {
+   var params = {
+      TableName : tablePrefix + 'teamMembers',
+      KeySchema: [
+         { AttributeName: 'teamMemberId', KeyType: 'HASH'}  //Partition key
+      ],
+      AttributeDefinitions: [
+         { AttributeName: 'teamMemberId', AttributeType: 'S' },
+         { AttributeName: 'teamId', AttributeType: 'S' },
+         { AttributeName: 'userId', AttributeType: 'S' },
+         { AttributeName: 'subscriberOrgId', AttributeType: 'S' }
+      ],
+      ProvisionedThroughput: {
+         ReadCapacityUnits: 10,
+         WriteCapacityUnits: 10
+      },
+      GlobalSecondaryIndexes: [
+         {
+            IndexName: 'teamIdUserIdIdx',
+            KeySchema: [
+               { AttributeName: 'teamId', KeyType: 'HASH' },
+               { AttributeName: 'userId', KeyType: 'RANGE' }
+            ],
+            Projection: { ProjectionType: 'ALL' },
+            ProvisionedThroughput: {
+               ReadCapacityUnits: 10,
+               WriteCapacityUnits: 10
+            }
+         },
+         {
+            IndexName: 'userIdSubscriberOrgIdIdx',
+            KeySchema: [
+               { AttributeName: 'userId', KeyType: 'HASH' },
+               { AttributeName: 'subscriberOrgId', KeyType: 'RANGE' }
+            ],
+            Projection: { ProjectionType: 'ALL' },
+            ProvisionedThroughput: {
+               ReadCapacityUnits: 10,
+               WriteCapacityUnits: 10
+            }
+         }
+      ]
+   };
+
+   dynamodb.createTable(params, function(err, data) {
+      if (err) {
+         console.error('Unable to create TeamMembersTable. Error JSON:', JSON.stringify(err, null, 2));
+      } else {
+         // console.log('Created table. Table description JSON:', JSON.stringify(data, null, 2));
+      }
+   });
+}
+createTeamMembersTable();
+
+
+function createTeamRoomsTable() {
+   var params = {
+      TableName : tablePrefix + 'teamRooms',
+      KeySchema: [
+         { AttributeName: 'teamRoomId', KeyType: 'HASH'}  //Partition key
+      ],
+      AttributeDefinitions: [
+         { AttributeName: 'teamRoomId', AttributeType: 'S' },
+         { AttributeName: 'teamId', AttributeType: 'S' },
+         { AttributeName: 'userId', AttributeType: 'S' }
+      ],
+      ProvisionedThroughput: {
+         ReadCapacityUnits: 10,
+         WriteCapacityUnits: 10
+      },
+      GlobalSecondaryIndexes: [
+         {
+            IndexName: 'teamIdUserIdIdx',
+            KeySchema: [
+               { AttributeName: 'teamId', KeyType: 'HASH' },
+               { AttributeName: 'userId', KeyType: 'RANGE' }
+            ],
+            Projection: { ProjectionType: 'ALL' },
+            ProvisionedThroughput: {
+               ReadCapacityUnits: 10,
+               WriteCapacityUnits: 10
+            }
+         }
+      ]
+   };
+
+   dynamodb.createTable(params, function(err, data) {
+      if (err) {
+         console.error('Unable to create TeamRoomsTable. Error JSON:', JSON.stringify(err, null, 2));
+      } else {
+         // console.log('Created table. Table description JSON:', JSON.stringify(data, null, 2));
+      }
+   });
+}
+createTeamRoomsTable();
+
+
+function createTeamRoomMembersTable() {
+   var params = {
+      TableName : tablePrefix + 'teamRoomMembers',
+      KeySchema: [
+         { AttributeName: 'teamRoomMemberId', KeyType: 'HASH'}  //Partition key
+      ],
+      AttributeDefinitions: [
+         { AttributeName: 'teamRoomMemberId', AttributeType: 'S' },
+         { AttributeName: 'teamRoomId', AttributeType: 'S' },
+         { AttributeName: 'userId', AttributeType: 'S' },
+         { AttributeName: 'teamId', AttributeType: 'S' }
+      ],
+      ProvisionedThroughput: {
+         ReadCapacityUnits: 10,
+         WriteCapacityUnits: 10
+      },
+      GlobalSecondaryIndexes: [
+         {
+            IndexName: 'teamRoomIdUserIdIdx',
+            KeySchema: [
+               { AttributeName: 'teamRoomId', KeyType: 'HASH' },
+               { AttributeName: 'userId', KeyType: 'RANGE' }
+            ],
+            Projection: { ProjectionType: 'ALL' },
+            ProvisionedThroughput: {
+               ReadCapacityUnits: 10,
+               WriteCapacityUnits: 10
+            }
+         },
+         {
+            IndexName: 'userIdTeamIdIdx',
+            KeySchema: [
+               { AttributeName: 'userId', KeyType: 'HASH' },
+               { AttributeName: 'teamId', KeyType: 'RANGE' }
+            ],
+            Projection: { ProjectionType: 'ALL' },
+            ProvisionedThroughput: {
+               ReadCapacityUnits: 10,
+               WriteCapacityUnits: 10
+            }
+         }
+      ]
+   };
+
+   dynamodb.createTable(params, function(err, data) {
+      if (err) {
+         console.error('Unable to create TeamRoomMembersTable. Error JSON:', JSON.stringify(err, null, 2));
+      } else {
+         // console.log('Created table. Table description JSON:', JSON.stringify(data, null, 2));
+      }
+   });
+}
+createTeamRoomMembersTable();
 
 
 function createConversationsTable() {
@@ -321,6 +515,48 @@ function createMessagesTable() {
 createMessagesTable();
 
 
+function createUserMessageTable() {
+   var params = {
+      TableName : tablePrefix + 'userMessage',
+      KeySchema: [
+         { AttributeName: 'userId', KeyType: 'HASH'},  //Partition key
+         { AttributeName: 'messageId', KeyType: 'RANGE' }  //Sort key
+      ],
+      AttributeDefinitions: [
+         { AttributeName: 'userId', AttributeType: 'S' },
+         { AttributeName: 'messageId', AttributeType: 'S' }
+      ],
+      ProvisionedThroughput: {
+         ReadCapacityUnits: 10,
+         WriteCapacityUnits: 10
+      },
+      GlobalSecondaryIndexes: [
+         {
+            IndexName: 'messageIdUserIdIdx',
+            KeySchema: [
+               { AttributeName: 'messageId', KeyType: 'HASH' },
+               { AttributeName: 'userId', KeyType: 'RANGE' }
+            ],
+            Projection: { ProjectionType: 'ALL' },
+            ProvisionedThroughput: {
+               ReadCapacityUnits: 10,
+               WriteCapacityUnits: 10
+            }
+         }
+      ]
+   };
+
+   dynamodb.createTable(params, function(err, data) {
+      if (err) {
+         console.error('Unable to create UserMessageTable. Error JSON:', JSON.stringify(err, null, 2));
+      } else {
+         // console.log('Created table. Table description JSON:', JSON.stringify(data, null, 2));
+      }
+   });
+}
+createUserMessageTable();
+
+
 function createReadMessagesTable() {
    var params = {
       TableName : tablePrefix + 'readMessages',
@@ -347,6 +583,50 @@ function createReadMessagesTable() {
    });
 }
 createReadMessagesTable();
+
+
+function createInvitationsTable() {
+   var params = {
+      TableName : tablePrefix + 'invitations',
+      KeySchema: [
+         { AttributeName: 'inviterUserId', KeyType: 'HASH'},  //Partition key
+         { AttributeName: 'created', KeyType: 'RANGE' }  //Sort key
+      ],
+      AttributeDefinitions: [
+         { AttributeName: 'inviterUserId', AttributeType: 'S' },
+         { AttributeName: 'created', AttributeType: 'S' },
+         { AttributeName: 'inviteeEmail', AttributeType: 'S' }
+      ],
+      ProvisionedThroughput: {
+         ReadCapacityUnits: 10,
+         WriteCapacityUnits: 10
+      },
+      GlobalSecondaryIndexes: [
+         {
+            IndexName: 'inviteeEmailCreatedIdx',
+            KeySchema: [
+               { AttributeName: 'inviteeEmail', KeyType: 'HASH' },
+               { AttributeName: 'created', KeyType: 'RANGE' }
+            ],
+            Projection: { ProjectionType: 'ALL' },
+            ProvisionedThroughput: {
+               ReadCapacityUnits: 10,
+               WriteCapacityUnits: 10
+            }
+         }
+      ]
+   };
+
+   dynamodb.createTable(params, function(err, data) {
+      if (err) {
+         console.error('Unable to create InvitationsTable. Error JSON:', JSON.stringify(err, null, 2));
+      } else {
+         // console.log('Created table. Table description JSON:', JSON.stringify(data, null, 2));
+      }
+   });
+}
+createInvitationsTable();
+
 
 function createAwsMarketplaceCustomerTable() {
    var params = {

@@ -35,3 +35,7 @@ export const googleClientId = '56229434385-er6slkc68oaklfs58oi5ej2fbbjabpc7.apps
 export const googleClientSecret = 'tQ-XvOvgGmAAJfjMWjH4Ai1T';
 
 export const awsProductCode = '8loyvo6g5k96nfobn626rwjbj';
+
+
+// export const boxClientId = 'a666hm00w8qtw6cuxutbb9et7bxvso7j'; // ngrok
+// export const boxClientSecret = 'KdRfL9bePDT4BnhYGTWQX7Uukfn7ygRU'; // ngrok

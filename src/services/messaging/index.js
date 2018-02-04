@@ -32,10 +32,23 @@ export const userInvited = (req, userId, invitation) => {
    ]);
 };
 
+export const userInvitationAccepted = (req, invitation, toEmailOrUserId) => {
+   const event = _.merge({}, invitation, { inviteeUserIdOrEmail: toEmailOrUserId });
+   return _broadcastEvent(req, EventTypes.userInvitationAccepted, event, [
+      ChannelFactory.personalChannel(invitation.byUserId)
+   ]);
+};
+
 export const userInvitationDeclined = (req, invitation, toEmailOrUserId) => {
    const event = _.merge({}, invitation, { inviteeUserIdOrEmail: toEmailOrUserId });
    return _broadcastEvent(req, EventTypes.userInvitationDeclined, event, [
       ChannelFactory.personalChannel(invitation.byUserId)
+   ]);
+};
+
+export const sentInvitationStatus = (req, sentInvitation) => {
+   return _broadcastEvent(req, EventTypes.sentInvitationStatus, publishByApiVersion(req, apiVersionedVisibility.publicInvitation, sentInvitation), [
+      ChannelFactory.personalChannel(sentInvitation.inviterUserId)
    ]);
 };
 
@@ -79,7 +92,7 @@ export const subscriberAdded = (req, subscriberOrgId, user, role, subscriberUser
 
    return _joinChannels(req, user.userId, channels)
       .then(() => {
-         const mergedUser = _.merge(user.userInfo, { userId: user.userId, role, subscriberUserId });
+         const mergedUser = _.merge(user, { userId: user.userId, role, subscriberUserId });
          _broadcastEvent(req, EventTypes.subscriberAdded, publishByApiVersion(req, apiVersionedVisibility.publicSubscriber, subscriberOrgId, mergedUser), [subscriberOrgChannel]);
       })
       .catch(err => req.logger.error({ err }));
@@ -126,7 +139,7 @@ export const teamMemberAdded = (req, teamId, user, role, teamMemberId) => {
 
    return _joinChannels(req, user.userId, channels)
       .then(() => {
-         const mergedUser = _.merge(user.userInfo, { user: user.userId, role, teamMemberId });
+         const mergedUser = _.merge(user, { user: user.userId, role, teamMemberId });
          _broadcastEvent(req, EventTypes.teamMemberAdded, publishByApiVersion(req, apiVersionedVisibility.publicTeamMember, teamId, mergedUser), [teamChannel]);
       })
       .catch(err => req.logger.error({ err }));
@@ -173,7 +186,7 @@ export const teamRoomMemberAdded = (req, teamRoomId, user, role, teamRoomMemberI
 
    return _joinChannels(req, user.userId, channels)
       .then(() => {
-         const mergedUser = _.merge(user.userInfo, { userId: user.userId, role, teamRoomMemberId });
+         const mergedUser = _.merge(user, { userId: user.userId, role, teamRoomMemberId });
          _broadcastEvent(req, EventTypes.teamRoomMemberAdded, publishByApiVersion(req, apiVersionedVisibility.publicTeamRoomMember, teamRoomId, mergedUser), [teamRoomChannel]);
       })
       .catch(err => req.logger.error({ err }));
@@ -223,6 +236,39 @@ export const messageRead = (req, readMessages) => {
 export const messageUpdated = (req, message) => {
    return _broadcastEvent(req, EventTypes.messageUpdated, publishByApiVersion(req, apiVersionedVisibility.publicMessage, message), [
       ChannelFactory.conversationChannel(message.conversationId)
+   ]);
+};
+
+export const messageLiked = (req, conversationId, messageId, like) => {
+   const payload = {
+      conversationId,
+      messageId,
+      like
+   };
+   return _broadcastEvent(req, EventTypes.messageLiked, publishByApiVersion(req, apiVersionedVisibility.publicMessageLike, payload), [
+      ChannelFactory.conversationChannel(conversationId)
+   ]);
+};
+
+export const messageDisliked = (req, conversationId, messageId, dislike) => {
+   const payload = {
+      conversationId,
+      messageId,
+      dislike
+   };
+   return _broadcastEvent(req, EventTypes.messageDisliked, publishByApiVersion(req, apiVersionedVisibility.publicMessageDislike, payload), [
+      ChannelFactory.conversationChannel(conversationId)
+   ]);
+};
+
+export const messageFlagged = (req, conversationId, messageId, flag) => {
+   const payload = {
+      conversationId,
+      messageId,
+      flag
+   };
+   return _broadcastEvent(req, EventTypes.messageFlagged, publishByApiVersion(req, apiVersionedVisibility.publicMessageFlag, payload), [
+      ChannelFactory.conversationChannel(conversationId)
    ]);
 };
 

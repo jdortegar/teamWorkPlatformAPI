@@ -1,19 +1,27 @@
 import _ from 'lodash';
 import moment from 'moment';
 import uuid from 'uuid';
-import config from '../config/env';
 import * as teamRoomSvc from './teamRoomService';
 import * as conversationsTable from '../repositories/db/conversationsTable';
 import * as conversationParticipantsTable from '../repositories/db/conversationParticipantsTable';
 import * as messagesTable from '../repositories/db/messagesTable';
 import * as readMessagesTable from '../repositories/db/readMessagesTable';
+import * as userMessageTable from '../repositories/db/userMessageTable';
+import * as usersTable from '../repositories/db/usersTable';
 import * as messagesCache from '../repositories/cache/messagesCache';
-import { conversationCreated, conversationUpdated, messageCreated, messageRead, messageUpdated, messageDeleted } from './messaging';
-import { updateCachedByteCount } from './awsMarketplaceService';
-import { ConversationNotExistError, NoPermissionsError, NotActiveError } from './errors';
 import {
-   getUsersByIds,
-} from '../repositories/util';
+   conversationCreated,
+   conversationUpdated,
+   messageCreated,
+   messageRead,
+   messageUpdated,
+   messageDeleted,
+   messageLiked,
+   messageDisliked,
+   messageFlagged
+} from './messaging';
+import { updateCachedByteCount } from './awsMarketplaceService';
+import { ConversationNotExistError, NoPermissionsError, NotActiveError, MessageNotExistError } from './errors';
 
 const MESSAGE_PATH_SEPARATOR = '##';
 
@@ -25,7 +33,7 @@ const convertParticipantsToUsers = (req, conversationParticipantsUserIds) => {
    });
 
    return new Promise((resolve, reject) => {
-      getUsersByIds(req, Array.from(userIds))
+      usersTable.getUsersByUserIds(req, Array.from(userIds))
          .then((users) => {
             const usersMap = {};
             users.forEach((user) => {
@@ -139,19 +147,19 @@ export const getConversations = (req, userId, teamRoomId = undefined) => {
    });
 };
 
-export const createConversationNoCheck = (req, subscriberOrgId, teamRoomId, userId, conversationParticipantUserIds, conversationId = undefined) => {
-   const actualConversationId = conversationId || uuid.v4();
+export const createConversationNoCheck = (req, subscriberOrgId, teamRoomId, userId, conversationParticipantUserIds, topic = undefined) => {
+   const actualConversationId = uuid.v4();
 
    return new Promise((resolve, reject) => {
       let conversation;
-      conversationsTable.createConversation(req, actualConversationId, subscriberOrgId, teamRoomId)
+      conversationsTable.createConversation(req, actualConversationId, subscriberOrgId, teamRoomId, topic)
          .then((retrievedConversation) => {
             conversation = retrievedConversation;
             return conversationParticipantsTable.createConversationParticipant(req, actualConversationId, userId, teamRoomId);
          })
-         .then(() => getUsersByIds(req, [userId]))
-         .then((dbUsers) => {
-            const { userInfo: participant } = dbUsers[0];
+         .then(() => usersTable.getUserByUserId(req, userId))
+         .then((user) => {
+            const participant = user;
             participant.userId = userId;
             conversation.participants = [participant];
             conversation.conversationId = actualConversationId;
@@ -275,6 +283,12 @@ const sortMessages = (messages) => {
    const flattenedMessages = flattenMessagesArray(sortedMessages);
 
    return flattenedMessages;
+};
+
+// TODO:
+export const getBookmarkedMessages = (req, userId) => { // eslint-disable-line no-unused-vars
+   return new Promise((resolve, reject) => { // eslint-disable-line no-unused-vars
+   });
 };
 
 /**
@@ -458,27 +472,10 @@ const byteCountOfContent = (content) => {
    return byteCount;
 };
 
-const getSubscriberOrgIdByConversationId = (req, conversationId) => {
-   return new Promise((resolve, reject) => {
-      req.app.locals.redis.getAsync(`${config.redisPrefix}${conversationId}#subscriberOrgId`)
-         .then((cachedSubscriberOrgId) => {
-            let subscriberOrgId = cachedSubscriberOrgId;
-            if ((!subscriberOrgId) || (subscriberOrgId === null)) {
-               // TODO: wait until schema change.
-               // TODO: get from DB and set cache.
-               subscriberOrgId = undefined;
-               req.app.locals.redis.setAsync(`${config.redisPrefix}${conversationId}#subscriberOrgId`, subscriberOrgId);
-            }
-            return subscriberOrgId;
-         })
-         .then(subscriberOrgId => resolve(subscriberOrgId))
-         .catch(err => reject(err));
-   });
-};
-
 export const createMessage = (req, conversationId, userId, content, replyTo) => {
    return new Promise((resolve, reject) => {
       const messageId = uuid.v4();
+      let subscriberOrgId;
 
       let conversation;
       const byteCount = byteCountOfContent(content);
@@ -495,6 +492,7 @@ export const createMessage = (req, conversationId, userId, content, replyTo) => 
             if (conversation.active === false) {
                throw new NotActiveError(conversationId);
             }
+            subscriberOrgId = conversation.subscriberOrgId;
 
             const userIds = participants.map(participant => participant.userId);
             if (userIds.indexOf(userId) < 0) {
@@ -535,9 +533,8 @@ export const createMessage = (req, conversationId, userId, content, replyTo) => 
          })
          .then((createdMessage) => {
             message = createdMessage;
-            return getSubscriberOrgIdByConversationId(req, conversationId);
+            return updateCachedByteCount(req, subscriberOrgId, byteCount);
          })
-         .then(subscriberOrgId => updateCachedByteCount(req, subscriberOrgId, byteCount))
          .then(() => {
             message.messageId = messageId;
             resolve(message);
@@ -555,6 +552,7 @@ export const updateMessage = (req, conversationId, messageId, userId, content) =
       const byteCount = byteCountOfContent(content);
       let message;
       let updatedMessage;
+      let subscriberOrgId;
 
       Promise.all([
          conversationsTable.getConversationByConversationId(req, conversationId),
@@ -574,14 +572,15 @@ export const updateMessage = (req, conversationId, messageId, userId, content) =
                throw new NoPermissionsError(messageId);
             }
 
+            subscriberOrgId = conversation.subscriberOrgId;
+
             return conversationsTable.incrementConversationByteCount(req, conversationId, byteCount - message.byteCount);
          })
          .then(() => messagesTable.updateMessageContent(req, message, content, byteCount))
          .then((updatedMessageFromDb) => {
             updatedMessage = updatedMessageFromDb;
-            return getSubscriberOrgIdByConversationId(req, conversationId);
+            updateCachedByteCount(req, subscriberOrgId, byteCount - message.byteCount);
          })
-         .then(subscriberOrgId => updateCachedByteCount(req, subscriberOrgId, byteCount - message.byteCount))
          .then(() => {
             resolve(updatedMessage);
             messageUpdated(req, updatedMessage);
@@ -597,6 +596,7 @@ export const deleteMessage = (req, conversationId, messageId, userId) => {
    return new Promise((resolve, reject) => {
       let message;
       let updatedMessage;
+      let subscriberOrgId;
 
       Promise.all([
          conversationsTable.getConversationByConversationId(req, conversationId),
@@ -615,20 +615,118 @@ export const deleteMessage = (req, conversationId, messageId, userId) => {
             if (message.createdBy !== userId) {
                throw new NoPermissionsError(messageId);
             }
+
+            subscriberOrgId = conversation.subscriberOrgId;
          })
          .then(() => conversationsTable.incrementConversationByteCount(req, conversationId, -message.byteCount))
          .then(() => messagesTable.deleteMessage(req, conversationId, messageId))
          .then((updatedMessageFromDb) => {
             updatedMessage = updatedMessageFromDb;
-            return getSubscriberOrgIdByConversationId(req, conversationId);
+            return updateCachedByteCount(req, subscriberOrgId, -message.byteCount);
          })
-         .then(subscriberOrgId => updateCachedByteCount(req, subscriberOrgId, -message.byteCount))
          .then(() => {
             resolve(updatedMessage);
             messageDeleted(req, updatedMessage);
          })
          .then(() => {
             messagesCache.incrementByteCount(req, -message.byteCount, conversationId);
+         })
+         .catch(err => reject(err));
+   });
+};
+
+export const likeMessage = (req, conversationId, messageId, userId, like = true) => {
+   return new Promise((resolve, reject) => {
+      messagesTable.getMessageByConversationIdAndMessageId(req, conversationId, messageId)
+         .then((message) => {
+            if (!message) {
+               throw new MessageNotExistError(messageId);
+            }
+            return userMessageTable.getUserMessageByUserIdAndMessageId(req, userId, messageId);
+         })
+         .then((userMessage) => {
+            if (userMessage) {
+               if (userMessage.like !== like) {
+                  return userMessageTable.likeMessage(req, userId, messageId, like);
+               }
+               return undefined;
+            }
+            return userMessageTable.createUserMessage(req, userId, messageId, conversationId, { like });
+         })
+         .then((result) => {
+            if (result) {
+               return messagesTable.updateMessageLikes(req, conversationId, messageId, userId, like);
+            }
+            return undefined;
+         })
+         .then(() => {
+            resolve();
+            messageLiked(req, conversationId, messageId, like);
+         })
+         .catch(err => reject(err));
+   });
+};
+
+export const dislikeMessage = (req, conversationId, messageId, userId, dislike = true) => {
+   return new Promise((resolve, reject) => {
+      messagesTable.getMessageByConversationIdAndMessageId(req, conversationId, messageId)
+         .then((message) => {
+            if (!message) {
+               throw new MessageNotExistError(messageId);
+            }
+            return userMessageTable.getUserMessageByUserIdAndMessageId(req, userId, messageId);
+         })
+         .then((userMessage) => {
+            if (userMessage) {
+               if (userMessage.dislike !== dislike) {
+                  return userMessageTable.dislikeMessage(req, userId, messageId, dislike);
+               }
+               return undefined;
+            }
+            return userMessageTable.createUserMessage(req, userId, messageId, conversationId, { dislike });
+         })
+         .then((result) => {
+            if (result) {
+               return messagesTable.updateMessageDislikes(req, conversationId, messageId, userId, dislike);
+            }
+            return undefined;
+         })
+         .then(() => {
+            resolve();
+            messageDisliked(req, conversationId, messageId, dislike);
+         })
+         .catch(err => reject(err));
+   });
+};
+
+
+export const flagMessage = (req, conversationId, messageId, userId, flag = true) => {
+   return new Promise((resolve, reject) => {
+      messagesTable.getMessageByConversationIdAndMessageId(req, conversationId, messageId)
+         .then((message) => {
+            if (!message) {
+               throw new MessageNotExistError(messageId);
+            }
+            return userMessageTable.getUserMessageByUserIdAndMessageId(req, userId, messageId);
+         })
+         .then((userMessage) => {
+            if (userMessage) {
+               if (userMessage.flag !== flag) {
+                  return userMessageTable.flagMessage(req, userId, messageId, flag);
+               }
+               return undefined;
+            }
+            return userMessageTable.createUserMessage(req, userId, messageId, conversationId, { flag });
+         })
+         .then((result) => {
+            if (result) {
+               return messagesTable.updateMessageFlags(req, conversationId, messageId, userId, flag);
+            }
+            return undefined;
+         })
+         .then(() => {
+            resolve();
+            messageFlagged(req, conversationId, messageId, flag);
          })
          .catch(err => reject(err));
    });
