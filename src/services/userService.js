@@ -104,6 +104,7 @@ export function updateUser(req, userId, updateInfo) {
    return new Promise((resolve, reject) => {
       usersTable.updateUser(req, userId, updateInfo)
          .then((user) => {
+            resolve(user);
             userUpdated(req, user);
             if ((updateInfo.preferences) && (updateInfo.preferences.private)) {
                userPrivateInfoUpdated(req, user);

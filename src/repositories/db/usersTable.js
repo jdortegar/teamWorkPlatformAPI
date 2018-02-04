@@ -152,7 +152,7 @@ class UpdateExpression {
    updateExpression;
    expressionAttributeValues = {};
 
-   addUpdate(field, value) {
+   addUpdate(field, value, keyword = false) {
       if (value === undefined) {
          return;
       }
@@ -162,7 +162,12 @@ class UpdateExpression {
       } else {
          this.updateExpression += ',';
       }
-      this.updateExpression = ` ${field} = :${field}`;
+
+      if (keyword) {
+         this.updateExpression += ` #${field} = :${field}`;
+      } else {
+         this.updateExpression += ` ${field} = :${field}`;
+      }
       this.expressionAttributeValues[`:${field}`] = value;
    }
 }
@@ -199,7 +204,7 @@ export const updateUser = (req, userId,
             updateExpression.addUpdate('emailAddress', emailAddress);
             updateExpression.addUpdate('password', password);
             updateExpression.addUpdate('country', country);
-            updateExpression.addUpdate('timeZone', timeZone);
+            updateExpression.addUpdate('timeZone', timeZone, true);
             updateExpression.addUpdate('icon', icon);
             updateExpression.addUpdate('defaultLocale', defaultLocale);
             updateExpression.addUpdate('presenceStatus', presenceStatus);
@@ -213,6 +218,10 @@ export const updateUser = (req, userId,
                UpdateExpression: updateExpression.updateExpression,
                ExpressionAttributeValues: updateExpression.expressionAttributeValues
             };
+            if (timeZone) {
+               params.ExpressionAttributeNames = { '#timeZone': 'timeZone' };
+            }
+
             return req.app.locals.docClient.update(params).promise();
          })
          .then(() => resolve(_.merge({}, user, {
