@@ -76,16 +76,17 @@ export const getUserInfo = (req, userAccessToken) => {
    });
 };
 
-export const revokeIntegration = (req, userAccessToken) => {
-   return new Promise((resolve, reject) => {
-      sdk.revokeTokens(userAccessToken, (err) => {
-         if (err) {
-            reject(new IntegrationAccessError(`Failed to revoke box integration: ${err}`));
-         } else {
-            resolve();
-         }
-      });
-   });
+export const revokeIntegration = (req, userAccessToken) => { // eslint-disable-line no-unused-vars
+   return Promise.resolve();
+   // return new Promise((resolve, reject) => {
+   //    sdk.revokeTokens(userAccessToken, (err) => {
+   //       if (err) {
+   //          reject(new IntegrationAccessError(`Failed to revoke box integration: ${err}`));
+   //       } else {
+   //          resolve();
+   //       }
+   //    });
+   // });
 };
 
 export const validateWebhookMessage = (req) => {
