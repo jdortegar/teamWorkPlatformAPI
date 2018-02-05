@@ -130,8 +130,8 @@ export const createTeamRoom = (req, teamId, teamRoomInfo, userId, teamRoomId = u
                usersTable.getUserByUserId(req, userId)
             ]);
          })
-         .then((teamRoom, user) => {
-            if (!teamRoom) {
+         .then(([teamRoom, user]) => {
+            if (teamRoom) {
                throw new TeamRoomExistsError(teamRoomInfo.name);
             }
 
