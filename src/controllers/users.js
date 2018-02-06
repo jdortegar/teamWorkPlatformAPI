@@ -30,8 +30,8 @@ export const createReservation = (req, res) => {
          req.logger.debug(`createReservation: created reservation for email: ${email}`);
          mailer.sendActivationLink(email, rid).then(() => {
             const response = {
-               status: 'SUCCESS',
-               uuid: rid
+               status: 'SUCCESS'
+               // uuid: rid
             };
             res.status(httpStatus.CREATED).json(response);
          });
