@@ -170,15 +170,6 @@ export const getTeamMembersByUserId = (req, userId) => {
    });
 };
 
-export const getTeamMembersByUserIds = (req, userIds) => {
-   return new Promise((resolve, reject) => {
-      util.batchGet(req, tableName(), 'userId', userIds)
-         .then(originalResults => upgradeSchema(req, originalResults))
-         .then(latestResults => resolve(latestResults))
-         .catch(err => reject(err));
-   });
-};
-
 export const getTeamMembersByUserIdAndSubscriberOrgId = (req, userId, subscriberOrgId) => {
    return new Promise((resolve, reject) => {
       const params = {

@@ -76,6 +76,7 @@ export const getUserInfo = (req, userAccessToken) => {
 
 export const revokeIntegration = (req, userAccessToken) => { // eslint-disable-line no-unused-vars
    return Promise.resolve();
+   // Moved to AI layer, since they need to do some work before actually revoking
    // return new Promise((resolve, reject) => {
    //    axios.get(`https://accounts.google.com/o/oauth2/revoke?token=${userAccessToken}`)
    //       .then((response) => {

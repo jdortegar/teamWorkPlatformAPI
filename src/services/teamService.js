@@ -338,10 +338,10 @@ export function inviteMembers(req, teamId, userIds, userId) {
             const inviteDbUserIds = inviteDbUsers.map(inviteDbUser => inviteDbUser.userId);
 
             // Make sure invitees are not already in here.
-            return teamMembersTable.getTeamMembersByUserIds(req, inviteDbUserIds);
+            return Promise.all(inviteDbUserIds.map(inviteDbUserId => teamMembersTable.getTeamMemberByTeamIdAndUserId(req, teamId, inviteDbUserId)));
          })
-         .then((teamMembers) => {
-            const teamMembersOfTeam = teamMembers.filter(teamMember => teamMember.teamId === teamId);
+         .then((retrievedTeamMembersOfTeam) => {
+            const teamMembersOfTeam = _.remove(retrievedTeamMembersOfTeam);
             if (teamMembersOfTeam.length !== 0) {
                const doNotInviteUserIds = teamMembersOfTeam.map(teamMember => teamMember.userId);
                inviteDbUsers = inviteDbUsers.filter(inviteDbUser => doNotInviteUserIds.indexOf(inviteDbUser.userId) < 0);
