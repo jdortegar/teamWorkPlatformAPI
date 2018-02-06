@@ -274,8 +274,7 @@ function createTeamRoomsTable() {
       ],
       AttributeDefinitions: [
          { AttributeName: 'teamRoomId', AttributeType: 'S' },
-         { AttributeName: 'teamId', AttributeType: 'S' },
-         { AttributeName: 'userId', AttributeType: 'S' }
+         { AttributeName: 'teamId', AttributeType: 'S' }
       ],
       ProvisionedThroughput: {
          ReadCapacityUnits: 10,
@@ -283,10 +282,9 @@ function createTeamRoomsTable() {
       },
       GlobalSecondaryIndexes: [
          {
-            IndexName: 'teamIdUserIdIdx',
+            IndexName: 'teamIdIdx',
             KeySchema: [
-               { AttributeName: 'teamId', KeyType: 'HASH' },
-               { AttributeName: 'userId', KeyType: 'RANGE' }
+               { AttributeName: 'teamId', KeyType: 'HASH' }
             ],
             Projection: { ProjectionType: 'ALL' },
             ProvisionedThroughput: {

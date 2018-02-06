@@ -18,7 +18,7 @@ import { TeamRoomNotExistError } from '../../services/errors';
  * lastModified
  * preferences
  *
- * GSI: teamIdUserIdIdx
+ * GSI: teamIdIdx
  * hash: teamId
  * range: userId
  */
@@ -89,7 +89,7 @@ export const getTeamRoomByTeamIdAndName = (req, teamId, name) => {
    return new Promise((resolve, reject) => {
       const params = {
          TableName: tableName(),
-         IndexName: 'teamIdUserIdIdx',
+         IndexName: 'teamIdIdx',
          KeyConditionExpression: 'teamId = :teamId',
          FilterExpression: '#name = :name',
          ExpressionAttributeNames: {
@@ -111,7 +111,7 @@ export const getTeamRoomByTeamIdAndPrimary = (req, teamId, primary) => {
    return new Promise((resolve, reject) => {
       const params = {
          TableName: tableName(),
-         IndexName: 'teamIdUserIdIdx',
+         IndexName: 'teamIdIdx',
          KeyConditionExpression: 'teamId = :teamId',
          FilterExpression: '#primary = :primary',
          ExpressionAttributeNames: {
