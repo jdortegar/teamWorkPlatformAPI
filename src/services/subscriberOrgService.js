@@ -267,15 +267,14 @@ export const inviteSubscribers = (req, subscriberOrgId, subscriberUserIdEmails, 
                usersTable.getUsersByEmailAddresses(req, [...emails])
             ]);
          })
-         .then((promiseResults) => {
-            let existingDbUsers = promiseResults[0].filter((existingDbUser) => {
+         .then(([users, retrievedUsersByEmail]) => {
+            let existingDbUsers = users.filter((existingDbUser) => {
                if (existingDbUser.userId === userId) {
                   dbUser = existingDbUser;
                   return false;
                }
                return true;
             });
-            const retrievedUsersByEmail = promiseResults[1];
 
             // If any of the userIds are bad, fail.
             if (existingDbUsers.length !== userIds.size) {

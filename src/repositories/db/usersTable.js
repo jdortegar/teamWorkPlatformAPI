@@ -125,23 +125,8 @@ export const getUserByEmailAddress = (req, emailAddress) => {
 
 export const getUsersByEmailAddresses = (req, emailAddresses) => {
    return new Promise((resolve, reject) => {
-      const params = {
-         TableName: tableName(),
-         IndexName: 'emailAddressIdx',
-         ExpressionAttributeValues: {}
-      };
-      let idx = 0;
-      emailAddresses.forEach((emailAddress) => {
-         if (!params.KeyConditionExpression) {
-            params.KeyConditionExpression = `emailAddress = :emailAddress${idx}`;
-         } else {
-            params.KeyConditionExpression += ` or emailAddress = :emailAddress${idx}`;
-         }
-         params.ExpressionAttributeValues[`:emailAddress${idx}`] = emailAddress;
-         idx += 1;
-      });
-
-      util.query(req, params)
+      Promise.all(emailAddresses.map(emailAddress => getUserByEmailAddress(req, emailAddress)))
+         .then(originalResults => _.remove(originalResults))
          .then(originalResults => upgradeSchema(req, originalResults))
          .then(latestResults => resolve(latestResults))
          .catch(err => reject(err));
