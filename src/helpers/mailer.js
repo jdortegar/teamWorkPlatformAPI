@@ -52,18 +52,6 @@ const htmlContents = (cid, html) => {
    `;
 };
 
-// export function sendResetPassword(email, token) {
-//   const cid = uuid.v4();
-//    return sendMail(cid, {
-//       from: 'habla-mailer-dev@habla.ai',
-//       to: email,
-//       subject: 'Reset Your Habla Password',
-//       html: htmlContents(cid, `
-//            <br>Thank you for using Habla AI.<br>
-//            <br>Please click on this <a href="http://habla.io">link</a> to reset your Habla password.<br>`)
-//    });
-// }
-
 export const sendActivationLink = (email, rid) => {
    const cid = uuid.v4();
    const html = htmlContents(cid,
@@ -105,11 +93,12 @@ export const sendSubscriberOrgInviteToExternalUser = (email, subscriberOrgName, 
    });
 };
 
-export const sendSubscriberOrgInviteToExistingUser = (email, subscriberOrgName, byUserInfo, key) => {
+export const sendSubscriberOrgInviteToExistingUser = (email, subscriberOrgName, byUserInfo, invitedUserInfo, key) => {
    const webKey = key.split('=')[1];
    const cid = uuid.v4();
    const html = htmlContents(cid,
-      `<br>${byUserInfo.firstName} ${byUserInfo.lastName} has invited you to "${subscriberOrgName}" on Habla AI.<br>
+      `<br>Hi ${invitedUserInfo.firstName},</br>
+       <br>${byUserInfo.firstName} ${byUserInfo.lastName} has invited you to "${subscriberOrgName}" on Habla AI.<br>
        <br>Please <a href="${config.webappBaseUri}/app/acceptinvitation/subscriberOrg/${webKey}">click here</a> to join them.<br>`);
    return sendMail(cid, {
       from: 'habla-mailer-dev@habla.ai',
@@ -119,11 +108,12 @@ export const sendSubscriberOrgInviteToExistingUser = (email, subscriberOrgName, 
    });
 };
 
-export const sendTeamInviteToExistingUser = (email, subscriberOrgName, teamName, byUserInfo, key) => {
+export const sendTeamInviteToExistingUser = (email, subscriberOrgName, teamName, byUserInfo, invitedUserInfo, key) => {
    const webKey = key.split('=')[1];
    const cid = uuid.v4();
    const html = htmlContents(cid,
-      `<br>${byUserInfo.firstName} ${byUserInfo.lastName} has invited you to team "${teamName}" of "${subscriberOrgName}" in Habla AI.<br>
+      `<br>Hi ${invitedUserInfo.firstName},</br>
+       <br>${byUserInfo.firstName} ${byUserInfo.lastName} has invited you to team "${teamName}" of "${subscriberOrgName}" in Habla AI.<br>
        <br>Please <a href="${config.webappBaseUri}/app/acceptinvitation/team/${webKey}">click here</a> to join them.<br>`);
    return sendMail(cid, {
       from: 'habla-mailer-dev@habla.ai',
@@ -133,11 +123,12 @@ export const sendTeamInviteToExistingUser = (email, subscriberOrgName, teamName,
    });
 };
 
-export const sendTeamRoomInviteToExistingUser = (email, subscriberOrgName, teamName, teamRoomName, byUserInfo, key) => {
+export const sendTeamRoomInviteToExistingUser = (email, subscriberOrgName, teamName, teamRoomName, byUserInfo, invitedUserInfo, key) => {
    const webKey = key.split('=')[1];
    const cid = uuid.v4();
    const html = htmlContents(cid,
-      `<br>${byUserInfo.firstName} ${byUserInfo.lastName} has invited you to team room "${teamRoomName}" of "${subscriberOrgName}" in Habla AI.<br>
+      `<br>Hi ${invitedUserInfo.firstName},</br>
+       <br>${byUserInfo.firstName} ${byUserInfo.lastName} has invited you to team room "${teamRoomName}" of "${subscriberOrgName}" in Habla AI.<br>
        <br>Please <a href="${config.webappBaseUri}/app/acceptinvitation/teamRoom/${webKey}">click here</a> to join them.<br>`);
    return sendMail(cid, {
       from: 'habla-mailer-dev@habla.ai',

@@ -37,7 +37,7 @@ export const inviteExistingUsersToSubscriberOrg = (req, invitingDbUser, existing
             .then((createdInvitations) => {
                const dbinvitation = createdInvitations[1];
                return Promise.all([
-                  sendSubscriberOrgInviteToExistingUser(email, subscriberOrg.name, invitingDbUser, key),
+                  sendSubscriberOrgInviteToExistingUser(email, subscriberOrg.name, invitingDbUser, dbUser, key),
                   userInvited(req, dbUser.userId, invitation),
                   sentInvitationStatus(req, dbinvitation)
                ]);
@@ -74,7 +74,7 @@ export const inviteExistingUsersToTeam = (req, invitingDbUser, existingDbUsers, 
             .then((createdInvitations) => {
                const dbinvitation = createdInvitations[1];
                return Promise.all([
-                  sendTeamInviteToExistingUser(email, subscriberOrg.name, team.name, invitingDbUser, key),
+                  sendTeamInviteToExistingUser(email, subscriberOrg.name, team.name, invitingDbUser, dbUser, key),
                   userInvited(req, dbUser.userId, invitation),
                   sentInvitationStatus(req, dbinvitation)
                ]);
@@ -119,6 +119,7 @@ export const inviteExistingUsersToTeamRoom = (req, invitingDbUser, existingDbUse
                      team.name,
                      teamRoom.name,
                      invitingDbUser,
+                     dbUser,
                      key
                   ),
                   userInvited(req, dbUser.userId, invitation),
