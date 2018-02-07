@@ -83,7 +83,7 @@ export const sendResetPassword = (email, rid) => {
 export const sendSubscriberOrgInviteToExternalUser = (email, subscriberOrgName, byUserInfo, rid) => {
    const cid = uuid.v4();
    const html = htmlContents(cid,
-      `<br>${byUserInfo.firstName} ${byUserInfo.lastName} has invited you to "${subscriberOrgName}" in Habla AI.<br>
+      `<br>${byUserInfo.firstName} ${byUserInfo.lastName} has invited you to the "${subscriberOrgName}" organization in Habla AI.<br>
        <br>Please <a href="${config.webappBaseUri}/signup/${rid}">click here</a> to activate your account and join them.<br>`);
    return sendMail(cid, {
       from: 'habla-mailer-dev@habla.ai',
@@ -98,7 +98,7 @@ export const sendSubscriberOrgInviteToExistingUser = (email, subscriberOrgName, 
    const cid = uuid.v4();
    const html = htmlContents(cid,
       `<br>Hi ${invitedUserInfo.firstName},</br>
-       <br>${byUserInfo.firstName} ${byUserInfo.lastName} has invited you to "${subscriberOrgName}" on Habla AI.<br>
+       <br>${byUserInfo.firstName} ${byUserInfo.lastName} has invited you to the "${subscriberOrgName}" organization in Habla AI.<br>
        <br>Please <a href="${config.webappBaseUri}/app/acceptinvitation/subscriberOrg/${webKey}">click here</a> to join them.<br>`);
    return sendMail(cid, {
       from: 'habla-mailer-dev@habla.ai',
@@ -113,7 +113,7 @@ export const sendTeamInviteToExistingUser = (email, subscriberOrgName, teamName,
    const cid = uuid.v4();
    const html = htmlContents(cid,
       `<br>Hi ${invitedUserInfo.firstName},</br>
-       <br>${byUserInfo.firstName} ${byUserInfo.lastName} has invited you to team "${teamName}" of "${subscriberOrgName}" in Habla AI.<br>
+       <br>${byUserInfo.firstName} ${byUserInfo.lastName} has invited you to the "${teamName}" team in the "${subscriberOrgName}" organization.<br>
        <br>Please <a href="${config.webappBaseUri}/app/acceptinvitation/team/${webKey}">click here</a> to join them.<br>`);
    return sendMail(cid, {
       from: 'habla-mailer-dev@habla.ai',
@@ -128,7 +128,7 @@ export const sendTeamRoomInviteToExistingUser = (email, subscriberOrgName, teamN
    const cid = uuid.v4();
    const html = htmlContents(cid,
       `<br>Hi ${invitedUserInfo.firstName},</br>
-       <br>${byUserInfo.firstName} ${byUserInfo.lastName} has invited you to team room "${teamRoomName}" of "${subscriberOrgName}" in Habla AI.<br>
+       <br>${byUserInfo.firstName} ${byUserInfo.lastName} has invited you to the "${teamName}" team's "${teamRoomName}" room in the "${subscriberOrgName}" organization.<br>
        <br>Please <a href="${config.webappBaseUri}/app/acceptinvitation/teamRoom/${webKey}">click here</a> to join them.<br>`);
    return sendMail(cid, {
       from: 'habla-mailer-dev@habla.ai',
