@@ -127,7 +127,7 @@ export const updateSubscriberOrg = (req, subscriberOrgId, updateInfo, userId) =>
                throw new NoPermissionsError(subscriberOrgId);
             }
 
-            if (updateInfo.name) {
+            if ((updateInfo.name) && (originalSubscriberOrg.name !== updateInfo.name)) {
                return subscriberOrgsTable.getSubscriberOrgByName(req, updateInfo.name);
             }
             return undefined;
