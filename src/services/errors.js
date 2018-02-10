@@ -26,6 +26,13 @@ export class SubscriberOrgNotExistError extends Error {
    }
 }
 
+export class SubscriberUserExistsError extends Error {
+   constructor(...args) {
+      super(...args);
+      Error.captureStackTrace(this, SubscriberUserExistsError);
+   }
+}
+
 export class TeamExistsError extends Error {
    constructor(...args) {
       super(...args);
@@ -40,6 +47,13 @@ export class TeamNotExistError extends Error {
    }
 }
 
+export class TeamMemberExistsError extends Error {
+   constructor(...args) {
+      super(...args);
+      Error.captureStackTrace(this, TeamMemberExistsError);
+   }
+}
+
 export class TeamRoomExistsError extends Error {
    constructor(...args) {
       super(...args);
@@ -51,6 +65,13 @@ export class TeamRoomNotExistError extends Error {
    constructor(...args) {
       super(...args);
       Error.captureStackTrace(this, TeamRoomNotExistError);
+   }
+}
+
+export class TeamRoomMemberExistsError extends Error {
+   constructor(...args) {
+      super(...args);
+      Error.captureStackTrace(this, TeamRoomMemberExistsError);
    }
 }
 
