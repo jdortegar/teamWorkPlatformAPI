@@ -13,7 +13,8 @@ import {
    TeamNotExistError,
    TeamRoomExistsError,
    TeamRoomNotExistError,
-   UserNotExistError
+   UserNotExistError,
+   TeamRoomMemberExistsError
 } from './errors';
 import InvitationKeys from '../repositories/InvitationKeys';
 import * as invitationsTable from '../repositories/db/invitationsTable';
@@ -405,8 +406,12 @@ export const replyToInvite = (req, teamRoomId, accept, userId) => {
       let user;
       let teamRoom;
       let cachedInvitation;
-      Promise.all([usersTable.getUserByUserId(req, userId), teamRoomsTable.getTeamRoomByTeamRoomId(req, teamRoomId)])
-         .then(([retrievedUser, retrievedTeamRoom]) => {
+      Promise.all([
+         usersTable.getUserByUserId(req, userId),
+         teamRoomsTable.getTeamRoomByTeamRoomId(req, teamRoomId),
+         teamRoomMembersTable.getTeamRoomMemberByTeamRoomIdAndUserId(req, teamRoomId, userId)
+      ])
+         .then(([retrievedUser, retrievedTeamRoom, teamRoomMember]) => {
             user = retrievedUser;
             teamRoom = retrievedTeamRoom;
             if (!user) {
@@ -415,6 +420,10 @@ export const replyToInvite = (req, teamRoomId, accept, userId) => {
 
             if (!teamRoom) {
                throw new TeamRoomNotExistError(teamRoomId);
+            }
+
+            if (teamRoomMember) {
+               throw new TeamRoomMemberExistsError(`teamRoomId=${teamRoomId}, userId=${userId}`);
             }
 
             return deleteInvitation(req, user.emailAddress, InvitationKeys.teamRoomId, teamRoomId);
@@ -448,6 +457,12 @@ export const replyToInvite = (req, teamRoomId, accept, userId) => {
             resolve();
             sentInvitationStatus(req, changedInvitations);
          })
-         .catch(err => reject(err));
+         .catch((err) => {
+            if (err instanceof TeamRoomMemberExistsError) {
+               resolve();
+            } else {
+               reject(err);
+            }
+         });
    });
 };
