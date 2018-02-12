@@ -331,6 +331,56 @@ export const getMessages = (req, conversationId, userId = undefined, { since, un
    });
 };
 
+const constructReadMessages = (req, userId, conversationId = undefined) => {
+   return new Promise((resolve, reject) => {
+      let readMessages;
+      let promise;
+      if (conversationId) {
+         promise = readMessagesTable.getReadMessagesByUserIdAndConversationId(req, userId, conversationId);
+      } else {
+         promise = readMessagesTable.getReadMessagesByUserId(req, userId);
+      }
+      promise
+         .then((retrievedAllReadMessages) => {
+            readMessages = (retrievedAllReadMessages instanceof Array) ? retrievedAllReadMessages : [retrievedAllReadMessages];
+            return messagesCache.getRecursiveMessageCountAndLastTimestampByConversationId(req, readMessages.conversationId);
+         })
+         .then((transcriptStat) => {
+            const readMessagesResponse = { userId, conversationIds: {} };
+            const conversationStats = {
+               messageCount: transcriptStat.messageCount,
+               lastTimestamp: transcriptStat.lastTimestamp,
+               lastReadMessageCount: readMessages.lastReadMessageCount,
+               lastReadTimestamp: readMessages.lastReadTimestamp,
+               byteCount: transcriptStat.byteCount
+            };
+
+            if (transcriptStat.parentMessages) {
+               conversationStats.parentMessages = transcriptStat.parentMessages;
+               Object.keys(conversationStats.parentMessages).forEach((parentMessageId) => {
+                  const messagesThread = conversationStats.parentMessages[parentMessageId];
+                  const userReadMessageThread = readMessages.parentMessageIds[parentMessageId];
+
+                  if (userReadMessageThread) {
+                     messagesThread.lastReadMessageCount = userReadMessageThread.lastReadMessageCount;
+                     messagesThread.lastReadTimestamp = userReadMessageThread.lastReadTimestamp;
+                  } else {
+                     messagesThread.lastReadMessageCount = 0;
+                     messagesThread.lastReadTimestamp = '0000-00-00T00:00:00Z';
+                  }
+
+                  conversationStats.parentMessages[parentMessageId] = messagesThread;
+               });
+            }
+
+            readMessagesResponse.conversationIds[readMessages.conversationId] = conversationStats;
+
+            resolve(readMessagesResponse);
+         })
+         .catch(err => reject(err));
+   });
+};
+
 export const getReadMessages = (req, userId, conversationId = undefined) => {
    return new Promise((resolve, reject) => {
       let checkPermissionsPromise;
@@ -408,7 +458,6 @@ export const getReadMessages = (req, userId, conversationId = undefined) => {
 
 export const readMessage = (req, userId, conversationId, messageId = undefined) => {
    return new Promise((resolve, reject) => {
-      let readMessages;
       messagesTable.getMessageByConversationIdAndMessageId(req, conversationId, messageId)
          .then((message) => {
             if (!message) {
@@ -418,41 +467,8 @@ export const readMessage = (req, userId, conversationId, messageId = undefined) 
             const { replyTo: parentMessageId, messageNumber: lastReadMessageCount, created: lastReadTimestamp } = message;
             return readMessagesTable.updateReadMessages(req, userId, conversationId, lastReadTimestamp, lastReadMessageCount, parentMessageId);
          })
-         .then(() => readMessagesTable.getReadMessagesByUserIdAndConversationId(req, userId, conversationId))
-         .then((retrievedReadMessages) => {
-            readMessages = retrievedReadMessages;
-            return messagesCache.getRecursiveMessageCountAndLastTimestampByConversationId(req, readMessages.conversationId);
-         })
-         .then((transcriptStat) => {
-            const readMessagesResponse = { userId, conversationIds: {} };
-            const conversationStats = {
-               messageCount: transcriptStat.messageCount,
-               lastTimestamp: transcriptStat.lastTimestamp,
-               lastReadMessageCount: readMessages.lastReadMessageCount,
-               lastReadTimestamp: readMessages.lastReadTimestamp,
-               byteCount: transcriptStat.byteCount
-            };
-
-            if (transcriptStat.parentMessages) {
-               conversationStats.parentMessages = transcriptStat.parentMessages;
-               Object.keys(conversationStats.parentMessages).forEach((parentMessageId) => {
-                  const messagesThread = conversationStats.parentMessages[parentMessageId];
-                  const userReadMessageThread = readMessages.parentMessageIds[parentMessageId];
-
-                  if (userReadMessageThread) {
-                     messagesThread.lastReadMessageCount = userReadMessageThread.lastReadMessageCount;
-                     messagesThread.lastReadTimestamp = userReadMessageThread.lastReadTimestamp;
-                  } else {
-                     messagesThread.lastReadMessageCount = 0;
-                     messagesThread.lastReadTimestamp = '0000-00-00T00:00:00Z';
-                  }
-
-                  conversationStats.parentMessages[parentMessageId] = messagesThread;
-               });
-            }
-
-            readMessagesResponse.conversationIds[readMessages.conversationId] = conversationStats;
-
+         .then(() => constructReadMessages(req, userId, conversationId))
+         .then((readMessagesResponse) => {
             resolve(readMessagesResponse);
             messageRead(req, readMessagesResponse);
          })
@@ -539,6 +555,12 @@ export const createMessage = (req, conversationId, userId, content, replyTo) => 
             message.messageId = messageId;
             resolve(message);
             messageCreated(req, message);
+
+            return constructReadMessages(req, userId, conversationId);
+         })
+         .then((readMessagesResponse) => {
+            resolve(readMessagesResponse);
+            messageRead(req, readMessagesResponse);
          })
          .then(() => {
             messagesCache.incrementMessageCountAndLastTimestampAndByteCount(req, message.created, byteCount, conversationId, message.replyTo);
