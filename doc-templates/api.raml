@@ -2702,32 +2702,28 @@ documentation:
                         The `message` with the specified ID was not found.
 
       /readMessage:
-         /{messageId}:
-            uriParameters:
-               messageId:
-                  description: Last message of thread (or main thread) that has been read by the user.
-            post:
-               securedBy: [oauth_2_0]
-               description: |
-                  Mark a message as read by the user, which includes previous messages within that same thread (which can be the main thread).
-               body:
-                  properties:
-                     messageId:
-                        type: string
-                        required: true
-               example: |
-                  {
-                     "messageId": "bfefa47e-bde6-4dbf-816c-bc231a7320b1"
-                  }
-               responses:
-                  204:
-                     description: |
-                        NO_CONTENT<br />
-                        The message, including earlier messages within that thread, has been marked as read by the user.
-                  404:
-                     description: |
-                        NOT_FOUND<br />
-                        The `conversation` and `message` doesn't exist.
+         post:
+            securedBy: [oauth_2_0]
+            description: |
+               Mark a message as read by the user, which includes previous messages within that same thread (which can be the main thread).
+            body:
+               properties:
+                  messageId:
+                     type: string
+                     required: true
+            example: |
+               {
+                  "messageId": "bfefa47e-bde6-4dbf-816c-bc231a7320b1"
+               }
+            responses:
+               204:
+                  description: |
+                     NO_CONTENT<br />
+                     The message, including earlier messages within that thread, has been marked as read by the user.
+               404:
+                  description: |
+                     NOT_FOUND<br />
+                     The `conversation` and `message` doesn't exist.
 
    /getReadMessages:
       get:

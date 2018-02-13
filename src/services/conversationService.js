@@ -333,7 +333,7 @@ export const getMessages = (req, conversationId, userId = undefined, { since, un
 
 const constructReadMessages = (req, userId, conversationId = undefined) => {
    return new Promise((resolve, reject) => {
-      let readMessages;
+      let allReadMessages;
       let promise;
       if (conversationId) {
          promise = readMessagesTable.getReadMessagesByUserIdAndConversationId(req, userId, conversationId);
@@ -341,70 +341,6 @@ const constructReadMessages = (req, userId, conversationId = undefined) => {
          promise = readMessagesTable.getReadMessagesByUserId(req, userId);
       }
       promise
-         .then((retrievedAllReadMessages) => {
-            readMessages = (retrievedAllReadMessages instanceof Array) ? retrievedAllReadMessages : [retrievedAllReadMessages];
-            return messagesCache.getRecursiveMessageCountAndLastTimestampByConversationId(req, readMessages.conversationId);
-         })
-         .then((transcriptStat) => {
-            const readMessagesResponse = { userId, conversationIds: {} };
-            const conversationStats = {
-               messageCount: transcriptStat.messageCount,
-               lastTimestamp: transcriptStat.lastTimestamp,
-               lastReadMessageCount: readMessages.lastReadMessageCount,
-               lastReadTimestamp: readMessages.lastReadTimestamp,
-               byteCount: transcriptStat.byteCount
-            };
-
-            if (transcriptStat.parentMessages) {
-               conversationStats.parentMessages = transcriptStat.parentMessages;
-               Object.keys(conversationStats.parentMessages).forEach((parentMessageId) => {
-                  const messagesThread = conversationStats.parentMessages[parentMessageId];
-                  const userReadMessageThread = readMessages.parentMessageIds[parentMessageId];
-
-                  if (userReadMessageThread) {
-                     messagesThread.lastReadMessageCount = userReadMessageThread.lastReadMessageCount;
-                     messagesThread.lastReadTimestamp = userReadMessageThread.lastReadTimestamp;
-                  } else {
-                     messagesThread.lastReadMessageCount = 0;
-                     messagesThread.lastReadTimestamp = '0000-00-00T00:00:00Z';
-                  }
-
-                  conversationStats.parentMessages[parentMessageId] = messagesThread;
-               });
-            }
-
-            readMessagesResponse.conversationIds[readMessages.conversationId] = conversationStats;
-
-            resolve(readMessagesResponse);
-         })
-         .catch(err => reject(err));
-   });
-};
-
-export const getReadMessages = (req, userId, conversationId = undefined) => {
-   return new Promise((resolve, reject) => {
-      let checkPermissionsPromise;
-      if (conversationId) {
-         checkPermissionsPromise = conversationParticipantsTable.getConversationParticipantByConversationIdAndUserId(req, conversationId, userId);
-      } else {
-         checkPermissionsPromise = Promise.resolve();
-      }
-
-      let allReadMessages;
-      checkPermissionsPromise
-         .then((conversationParticipant) => {
-            if ((conversationId) && ((!conversationParticipant) || (conversationParticipant.userId !== userId))) {
-               throw new NoPermissionsError(conversationId);
-            }
-
-            let promise;
-            if (conversationId) {
-               promise = readMessagesTable.getReadMessagesByUserIdAndConversationId(req, userId, conversationId);
-            } else {
-               promise = readMessagesTable.getReadMessagesByUserId(req, userId);
-            }
-            return promise;
-         })
          .then((retrievedAllReadMessages) => {
             allReadMessages = (retrievedAllReadMessages instanceof Array) ? retrievedAllReadMessages : [retrievedAllReadMessages];
             const transcriptStatsPromises = [];
@@ -452,6 +388,28 @@ export const getReadMessages = (req, userId, conversationId = undefined) => {
 
             resolve(readMessagesResponse);
          })
+         .catch(err => reject(err));
+   });
+};
+
+export const getReadMessages = (req, userId, conversationId = undefined) => {
+   return new Promise((resolve, reject) => {
+      let checkPermissionsPromise;
+      if (conversationId) {
+         checkPermissionsPromise = conversationParticipantsTable.getConversationParticipantByConversationIdAndUserId(req, conversationId, userId);
+      } else {
+         checkPermissionsPromise = Promise.resolve();
+      }
+
+      checkPermissionsPromise
+         .then((conversationParticipant) => {
+            if ((conversationId) && ((!conversationParticipant) || (conversationParticipant.userId !== userId))) {
+               throw new NoPermissionsError(conversationId);
+            }
+
+            return constructReadMessages(req, userId, conversationId);
+         })
+         .then(readMessagesResponse => resolve(readMessagesResponse))
          .catch(err => reject(err));
    });
 };
