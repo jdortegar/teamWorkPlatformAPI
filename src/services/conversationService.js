@@ -428,7 +428,7 @@ export const readMessage = (req, userId, conversationId, messageId = undefined) 
          .then(() => constructReadMessages(req, userId, conversationId))
          .then((readMessagesResponse) => {
             resolve(readMessagesResponse);
-            messageRead(req, readMessagesResponse);
+            messageRead(req, readMessagesResponse, userId);
          })
          .catch(err => reject(err));
    });

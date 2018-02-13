@@ -226,11 +226,12 @@ export const messageCreated = (req, message) => {
    ]);
 };
 
-export const messageRead = (req, readMessages) => {
-   const { userId } = readMessages;
-   return _broadcastEvent(req, EventTypes.messageRead, publishByApiVersion(req, apiVersionedVisibility.publicReadMessages, readMessages), [
-      ChannelFactory.personalChannel(userId)
-   ]);
+export const messageRead = (req, readMessages, userId = undefined) => {
+   let channels = [ChannelFactory.personalChannel(userId)];
+   if (!userId) {
+      channels = Object.keys(readMessages.conversationIds).map(conversationId => ChannelFactory.conversationChannel(conversationId));
+   }
+   return _broadcastEvent(req, EventTypes.messageRead, publishByApiVersion(req, apiVersionedVisibility.publicReadMessages, readMessages), channels);
 };
 
 export const messageUpdated = (req, message) => {
