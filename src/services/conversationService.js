@@ -331,14 +331,26 @@ export const getMessages = (req, conversationId, userId = undefined, { since, un
    });
 };
 
-const constructReadMessages = (req, userId, conversationId = undefined) => {
+/**
+ * One of userId or conversationId must be defined.
+ *
+ * @param req
+ * @param userId
+ * @param conversationId
+ * @returns {Promise<any>}
+ */
+const constructReadMessages = (req, userId = undefined, conversationId = undefined) => {
    return new Promise((resolve, reject) => {
       let allReadMessages;
       let promise;
-      if (conversationId) {
-         promise = readMessagesTable.getReadMessagesByUserIdAndConversationId(req, userId, conversationId);
+      if (userId) {
+         if (conversationId) {
+            promise = readMessagesTable.getReadMessagesByUserIdAndConversationId(req, userId, conversationId);
+         } else {
+            promise = readMessagesTable.getReadMessagesByUserId(req, userId);
+         }
       } else {
-         promise = readMessagesTable.getReadMessagesByUserId(req, userId);
+         promise = Promise.resolve({ conversationId });
       }
       promise
          .then((retrievedAllReadMessages) => {
@@ -360,7 +372,7 @@ const constructReadMessages = (req, userId, conversationId = undefined) => {
                   lastTimestamp: transcriptStat.lastTimestamp,
                   lastReadMessageCount: readMessages.lastReadMessageCount,
                   lastReadTimestamp: readMessages.lastReadTimestamp,
-                  byteCount: transcriptStat.byteCount
+                  byteCount: (transcriptStat.byteCount === null) ? 0 : Number(transcriptStat.byteCount)
                };
 
                if (transcriptStat.parentMessages) {
@@ -514,14 +526,11 @@ export const createMessage = (req, conversationId, userId, content, replyTo) => 
             resolve(message);
             messageCreated(req, message);
 
-            return constructReadMessages(req, userId, conversationId);
+            return messagesCache.incrementMessageCountAndLastTimestampAndByteCount(req, message.created, byteCount, conversationId, message.replyTo);
          })
+         .then(() => constructReadMessages(req, undefined, conversationId))
          .then((readMessagesResponse) => {
-            resolve(readMessagesResponse);
             messageRead(req, readMessagesResponse);
-         })
-         .then(() => {
-            messagesCache.incrementMessageCountAndLastTimestampAndByteCount(req, message.created, byteCount, conversationId, message.replyTo);
          })
          .catch(err => reject(err));
    });

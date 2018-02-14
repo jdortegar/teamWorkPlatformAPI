@@ -227,10 +227,7 @@ export const messageCreated = (req, message) => {
 };
 
 export const messageRead = (req, readMessages, userId = undefined) => {
-   let channels = [ChannelFactory.personalChannel(userId)];
-   if (!userId) {
-      channels = Object.keys(readMessages.conversationIds).map(conversationId => ChannelFactory.conversationChannel(conversationId));
-   }
+   const channels = (userId) ? [ChannelFactory.personalChannel(userId)] : Object.keys(readMessages.conversationIds).map(conversationId => ChannelFactory.conversationChannel(conversationId));
    return _broadcastEvent(req, EventTypes.messageRead, publishByApiVersion(req, apiVersionedVisibility.publicReadMessages, readMessages), channels);
 };
 
