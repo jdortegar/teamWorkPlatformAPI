@@ -142,7 +142,7 @@ export const updateSubscriberOrg = (req, subscriberOrgId, updateInfo, userId) =>
          })
          .then((duplicateName) => {
             if (duplicateName) {
-               throw new NoPermissionsError(updateInfo.name);
+               throw new SubscriberOrgExistsError(updateInfo.name);
             }
 
             return subscriberOrgsTable.updateSubscriberOrg(req, subscriberOrgId, updateInfo);
