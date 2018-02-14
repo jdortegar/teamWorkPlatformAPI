@@ -166,6 +166,16 @@ export function updateTeam(req, teamId, updateInfo, userId) {
                throw new CannotDeactivateError(teamId);
             }
 
+            if ((updateInfo.name) && (originalTeam.name !== updateInfo.name)) {
+               return teamsTable.getTeamBySubscriberOrgIdAndName(req, originalTeam.subscriberOrgId, updateInfo.name);
+            }
+            return undefined;
+         })
+         .then((duplicateName) => {
+            if (duplicateName) {
+               throw new TeamExistsError(updateInfo.name);
+            }
+
             const { name, icon, active, preferences } = updateInfo;
             return teamsTable.updateTeam(req, teamId, { name, icon, active, preferences });
          })

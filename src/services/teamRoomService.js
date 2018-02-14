@@ -162,8 +162,18 @@ export const updateTeamRoom = (req, teamRoomId, updateInfo, userId) => {
             if ((teamRoom.primary) && (updateInfo.active === false)) {
                throw new CannotDeactivateError(teamRoomId);
             }
-
             previousActive = teamRoom.active;
+
+            if ((updateInfo.name) && (teamRoom.name !== updateInfo.name)) {
+               return teamRoomsTable.getTeamRoomByTeamIdAndName(req, teamRoom.teamId, updateInfo.name);
+            }
+            return undefined;
+         })
+         .then((duplicateName) => {
+            if (duplicateName) {
+               throw new TeamRoomExistsError(updateInfo.name);
+            }
+
             const { name, icon, primary, active, teamActive, preferences } = updateInfo;
             return teamRoomsTable.updateTeamRoom(req, teamRoomId, { name, icon, primary, active, teamActive, preferences });
          })
