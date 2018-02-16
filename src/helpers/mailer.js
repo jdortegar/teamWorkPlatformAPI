@@ -84,7 +84,7 @@ export const sendSubscriberOrgInviteToExternalUser = (email, subscriberOrgName, 
    const cid = uuid.v4();
    const html = htmlContents(cid,
       `<br>${byUserInfo.firstName} ${byUserInfo.lastName} has invited you to the "${subscriberOrgName}" organization in Habla AI.<br>
-       <br>Please <a href="${config.webappBaseUri}/verifyAccount/${rid}">click here</a> to activate your account and join them.<br>`);
+       <br>Please <a href="${config.webappBaseUri}/verifyAccount/${rid}">click here</a> to create your account and join them.<br>`);
    return sendMail(cid, {
       from: 'habla-mailer-dev@habla.ai',
       to: email,
