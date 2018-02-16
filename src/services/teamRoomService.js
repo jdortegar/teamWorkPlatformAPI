@@ -162,8 +162,18 @@ export const updateTeamRoom = (req, teamRoomId, updateInfo, userId) => {
             if ((teamRoom.primary) && (updateInfo.active === false)) {
                throw new CannotDeactivateError(teamRoomId);
             }
-
             previousActive = teamRoom.active;
+
+            if ((updateInfo.name) && (teamRoom.name !== updateInfo.name)) {
+               return teamRoomsTable.getTeamRoomByTeamIdAndName(req, teamRoom.teamId, updateInfo.name);
+            }
+            return undefined;
+         })
+         .then((duplicateName) => {
+            if (duplicateName) {
+               throw new TeamRoomExistsError(updateInfo.name);
+            }
+
             const { name, icon, primary, active, teamActive, preferences } = updateInfo;
             return teamRoomsTable.updateTeamRoom(req, teamRoomId, { name, icon, primary, active, teamActive, preferences });
          })
@@ -290,8 +300,9 @@ export const inviteMembers = (req, teamRoomId, userIds, userId) => {
          teamRoomsTable.getTeamRoomByTeamRoomId(req, teamRoomId),
          teamRoomMembersTable.getTeamRoomMemberByTeamRoomIdAndUserIdAndRole(req, teamRoomId, userId, Roles.admin)
       ])
-         .then(([retrievedTeamRoom, teamRoomMember]) => {
-            teamRoom = retrievedTeamRoom;
+         .then((promiseResults) => {
+            teamRoom = promiseResults[0];
+            const teamRoomMember = promiseResults[1];
             if (!teamRoom) {
                throw new TeamRoomNotExistError(teamRoomId);
             }
@@ -340,12 +351,11 @@ export const inviteMembers = (req, teamRoomId, userIds, userId) => {
             const inviteDbUserIds = inviteDbUsers.map(inviteDbUser => inviteDbUser.userId);
 
             // Make sure invitees are not already in here.
-            return teamRoomMembersTable.getTeamRoomMembersByUserIds(req, inviteDbUserIds);
+            return teamRoomMembersTable.getTeamRoomMembersByUserIdsAndTeamRoomId(req, inviteDbUserIds, teamRoomId);
          })
          .then((teamRoomMembers) => {
-            const teamRoomMembersOfTeamRoom = teamRoomMembers.filter(teamRoomMember => teamRoomMember.teamRoomId === teamRoomId);
-            if (teamRoomMembersOfTeamRoom.length !== 0) {
-               const doNotInviteUserIds = teamRoomMembersOfTeamRoom.map(teamRoomMember => teamRoomMember.userId);
+            if (teamRoomMembers.length !== 0) {
+               const doNotInviteUserIds = teamRoomMembers.map(teamRoomMember => teamRoomMember.userId);
                inviteDbUsers = inviteDbUsers.filter(inviteDbUser => doNotInviteUserIds.indexOf(inviteDbUser.userId) < 0);
             }
             return inviteExistingUsersToTeamRoom(req, dbUser, inviteDbUsers, subscriberOrg, team, teamRoom);

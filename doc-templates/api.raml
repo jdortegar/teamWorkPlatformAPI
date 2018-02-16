@@ -955,7 +955,11 @@ documentation:
                403:
                   description: |
                      FORBIDDEN<br />
-                     The user is not allowed to update the specified organization, or the requested subscriberOrg name is a duplicate.
+                     The user is not allowed to update the specified organization.
+               409:
+                  description: |
+                     CONFLICT<br />
+                     The requested subscriberOrg name is a duplicate.
 
    /getSubscribers:
       /{subscriberOrgId}:
@@ -1406,7 +1410,7 @@ documentation:
                409:
                   description: |
                      CONFLICT<br />
-                     A primary team cannot be deactivated.
+                     The updated name is a duplicate within the subscriberOrg, or a primary team cannot be deactivated.
                404:
                   description: |
                      NOT_FOUND<br />
@@ -1877,7 +1881,7 @@ documentation:
                409:
                   description: |
                      CONFLICT<br />
-                     A primary team room cannot be deactivated.
+                     The updated name is a duplicate within the team, or a primary team room cannot be deactivated.
                404:
                   description: |
                      NOT_FOUND<br />
@@ -2702,32 +2706,28 @@ documentation:
                         The `message` with the specified ID was not found.
 
       /readMessage:
-         /{messageId}:
-            uriParameters:
-               messageId:
-                  description: Last message of thread (or main thread) that has been read by the user.
-            post:
-               securedBy: [oauth_2_0]
-               description: |
-                  Mark a message as read by the user, which includes previous messages within that same thread (which can be the main thread).
-               body:
-                  properties:
-                     messageId:
-                        type: string
-                        required: true
-               example: |
-                  {
-                     "messageId": "bfefa47e-bde6-4dbf-816c-bc231a7320b1"
-                  }
-               responses:
-                  204:
-                     description: |
-                        NO_CONTENT<br />
-                        The message, including earlier messages within that thread, has been marked as read by the user.
-                  404:
-                     description: |
-                        NOT_FOUND<br />
-                        The `conversation` and `message` doesn't exist.
+         post:
+            securedBy: [oauth_2_0]
+            description: |
+               Mark a message as read by the user, which includes previous messages within that same thread (which can be the main thread).
+            body:
+               properties:
+                  messageId:
+                     type: string
+                     required: true
+            example: |
+               {
+                  "messageId": "bfefa47e-bde6-4dbf-816c-bc231a7320b1"
+               }
+            responses:
+               204:
+                  description: |
+                     NO_CONTENT<br />
+                     The message, including earlier messages within that thread, has been marked as read by the user.
+               404:
+                  description: |
+                     NOT_FOUND<br />
+                     The `conversation` and `message` doesn't exist.
 
    /getReadMessages:
       get:

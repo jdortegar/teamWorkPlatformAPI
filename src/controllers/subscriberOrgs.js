@@ -46,6 +46,8 @@ export const updateSubscriberOrg = (req, res, next) => {
             res.status(httpStatus.NOT_FOUND).end();
          } else if (err instanceof NoPermissionsError) {
             res.status(httpStatus.FORBIDDEN).end();
+         } else if (err instanceof SubscriberOrgExistsError) {
+            res.status(httpStatus.CONFLICT).end();
          } else {
             next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE));
          }
