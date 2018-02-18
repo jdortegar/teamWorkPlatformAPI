@@ -180,7 +180,7 @@ export const updateTeamRoom = (req, teamRoomId, { name, icon, primary, active, t
             return req.app.locals.docClient.update(params).promise();
          })
          .then(() => {
-            resolve(_.merge({}, teamActive, {
+            resolve(_.merge({}, teamRoom, {
                name,
                icon,
                primary,
