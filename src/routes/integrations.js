@@ -1,6 +1,7 @@
 import express from 'express';
 import * as box from '../controllers/box';
 import * as google from '../controllers/google';
+import * as sharepoint from '../controllers/sharepoint';
 import * as integrations from '../controllers/integrations';
 
 const router = express.Router();
@@ -33,5 +34,12 @@ router.route('/google/revoke/:subscriberOrgId')
 
 router.route('/google/webhooks')
    .post(google.googleWebhooks);
+
+
+router.route('/sharepoint/integrate/:subscriberOrgId/:sharepointOrg')
+   .get(sharepoint.integrateSharepoint);
+
+router.route('/sharepoint/access')
+   .get(sharepoint.sharepointAccess);
 
 export default router;

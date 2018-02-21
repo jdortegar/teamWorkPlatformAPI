@@ -1,4 +1,3 @@
-// import axios from 'axios';
 import google from 'googleapis';
 import config from '../config/env';
 import { IntegrationAccessError } from '../services/errors';

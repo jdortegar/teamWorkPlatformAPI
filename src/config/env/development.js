@@ -34,6 +34,9 @@ export const boxWebhooksSecondaryKey = 'Q5Ht4J6nucMSxTnXKRKk1w9LwJaBefLY';
 export const googleClientId = '56229434385-er6slkc68oaklfs58oi5ej2fbbjabpc7.apps.googleusercontent.com';
 export const googleClientSecret = 'tQ-XvOvgGmAAJfjMWjH4Ai1T';
 
+export const sharepointClientId = 'f49340d4-dea4-44e0-a410-9818e1e99f3d';
+export const sharepointClientSecret = 'kdHrwacW/oHjYXsKrBSp/pkjL8oAo4kjB+ONDjBFeh8=';
+
 export const awsProductCode = '8loyvo6g5k96nfobn626rwjbj';
 
 

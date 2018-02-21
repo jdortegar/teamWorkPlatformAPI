@@ -52,6 +52,9 @@ const config = {
 
    googleClientId: process.env.GOOGLE_CLIENT_ID || defaultConfig.googleClientId,
    googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || defaultConfig.googleClientSecret,
+
+   sharepointClientId: process.env.SHAREPOINT_CLIENT_ID || defaultConfig.sharepointClientId,
+   sharepointClientSecret: process.env.SHAREPOINT_CLIENT_SECRET || defaultConfig.sharepointClientSecret
 };
 
 export const applyPropertiesFromDbToConfig = (propertiesFromDb) => {
@@ -98,6 +101,9 @@ export const applyEnvironmentToConfig = () => {
 
    config.googleClientId = process.env.GOOGLE_CLIENT_ID || config.googleClientId;
    config.googleClientSecret = process.env.GOOGLE_CLIENT_SECRET || config.googleClientSecret;
+
+   config.sharepointClientId = process.env.SHAREPOINT_CLIENT_ID || config.sharepointClientId;
+   config.sharepointClientSecret = process.env.SHAREPOINT_CLIENT_SECRET || config.sharepointClientSecret;
 
    return Promise.resolve();
 };

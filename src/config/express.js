@@ -12,6 +12,7 @@ import { errorMiddleware as loggerErrorMiddleware, preAuthMiddleware, postAuthMi
 import routes from '../routes';
 
 const app = express();
+app.enable('trust proxy');
 
 app.use(cookieParser(config.signedCookieSecret));
 

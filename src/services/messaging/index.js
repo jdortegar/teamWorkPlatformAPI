@@ -302,3 +302,7 @@ export const googleWebhookEvent = (req, body) => {
    internalQueue.sendEvent(req, EventTypes.googleWebhookEvent, body);
 };
 
+export const sharepointWebhookEvent = (req, body) => {
+   // Send to internal channel.
+   internalQueue.sendEvent(req, EventTypes.sharepointWebhookEvent, body);
+};
