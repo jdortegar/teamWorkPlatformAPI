@@ -255,27 +255,19 @@ const publicConversations = (conversations) => {
 
 const publicMessage = (message) => {
    const messageId = message.messageId;
-   const { conversationId, createdBy, topic, content, replyTo, path, level, created, lastModified } = message.messageInfo || message;
-   const messageType = 'text';
-   let text = 'No message text.';
-   content.forEach((contentEntry) => {
-      if (contentEntry.type === 'text/plain') {
-         text = contentEntry.text;
-      }
-   });
+   const { conversationId, createdBy, topic, content, replyTo, path, level, created, lastModified, deleted } = message.messageInfo || message;
    return {
       messageId,
       conversationId,
       createdBy,
-      messageType, // TODO: deprecated in v1
-      text, // TODO: deprecated in v1
       topic,
       content,
       replyTo,
       path,
       level,
       created,
-      lastModified
+      lastModified,
+      deleted
    };
 };
 
