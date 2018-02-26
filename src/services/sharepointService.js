@@ -97,7 +97,7 @@ export const sharepointAccessResponse = (req, { code, error, error_description }
             integrationInfo = tokenInfo;
             return Promise.all([
                subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId),
-               getUserInfo(req, integrationInfo.sharepointOrg, integrationInfo.accessToken)
+               getUserInfo(req, integrationInfo.sharepointOrg, integrationInfo.access_token)
             ]);
          })
          .then((promiseResults) => {
