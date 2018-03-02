@@ -125,7 +125,7 @@ export const getSites = (req, sharepointOrg, userAccessToken) => {
                   if ((cell.Key === 'SPWebUrl') && (cell.ValueType === 'Edm.String')) {
                      const value = cell.Value;
                      const toks = value.split('.sharepoint.com/sites/');
-                     if (toks.length > 1) {
+                     if ((toks.length > 1) && (toks[1] !== 'contentTypeHub')) {
                         sites.push(toks[1]);
                      }
                   }
