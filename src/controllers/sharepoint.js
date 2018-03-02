@@ -10,7 +10,7 @@ const webappIntegrationUri = `${config.webappBaseUri}/app/integrations`;
 export const integrateSharepoint = (req, res, next) => {
    const userId = req.user._id;
    const subscriberOrgId = req.params.subscriberOrgId;
-   const sharepointOrg = req.params.sharepointOrg;
+   const { sharepointOrg } = req.query;
 
    sharepointSvc.integrateSharepoint(req, userId, subscriberOrgId, sharepointOrg)
       .then((sharepointUri) => {
@@ -51,25 +51,25 @@ export const sharepointAccess = (req, res) => {
       });
 };
 
-// export const revokeBox = (req, res, next) => {
-//    const userId = req.user._id;
-//    const subscriberOrgId = req.params.subscriberOrgId;
-//
-//    boxSvc.revokeBox(req, userId, subscriberOrgId)
-//       .then(() => {
-//          res.status(httpStatus.OK).end();
-//       })
-//       .catch((err) => {
-//          if (err instanceof SubscriberOrgNotExistError) {
-//             res.status(httpStatus.NOT_FOUND).end();
-//          } else if (err instanceof IntegrationAccessError) {
-//             res.status(httpStatus.GONE).end();
-//          } else {
-//             next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
-//          }
-//       });
-// };
-//
+export const revokeSharepoint = (req, res, next) => {
+   const userId = req.user._id;
+   const subscriberOrgId = req.params.subscriberOrgId;
+
+   sharepointSvc.revokeSharepoint(req, userId, subscriberOrgId)
+      .then(() => {
+         res.status(httpStatus.OK).end();
+      })
+      .catch((err) => {
+         if (err instanceof SubscriberOrgNotExistError) {
+            res.status(httpStatus.NOT_FOUND).end();
+         } else if (err instanceof IntegrationAccessError) {
+            res.status(httpStatus.GONE).end();
+         } else {
+            next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
+         }
+      });
+};
+
 // export const boxWebhooks = (req, res) => {
 //    boxSvc.webhookEvent(req)
 //       .then(() => res.status(httpStatus.ACCEPTED).end())

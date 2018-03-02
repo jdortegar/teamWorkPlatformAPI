@@ -1,6 +1,6 @@
 import _ from 'lodash';
 import { IntegrationAccessError, SubscriberOrgNotExistError } from './errors';
-import { composeAuthorizationUrl, exchangeAuthorizationCodeForAccessToken, getUserInfo, revokeIntegration, validateWebhookMessage } from '../integrations/sharepoint';
+import { composeAuthorizationUrl, exchangeAuthorizationCodeForAccessToken, getUserInfo, getSites, revokeIntegration, validateWebhookMessage } from '../integrations/sharepoint';
 import { integrationsUpdated, sharepointWebhookEvent } from './messaging';
 import * as subscriberUsersTable from '../repositories/db/subscriberUsersTable';
 
@@ -97,18 +97,18 @@ export const sharepointAccessResponse = (req, { code, error, error_description }
             integrationInfo = tokenInfo;
             return Promise.all([
                subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId),
-               getUserInfo(req, integrationInfo.sharepointOrg, integrationInfo.access_token)
+               getUserInfo(req, integrationInfo.sharepointOrg, integrationInfo.access_token),
+               getSites(req, integrationInfo.sharepointOrg, integrationInfo.access_token)
             ]);
          })
-         .then((promiseResults) => {
-            const subscriberUser = promiseResults[0];
-            const userInfo = promiseResults[1];
+         .then(([subscriberUser, userInfo, sites]) => {
             if (!subscriberUser) {
                throw new SubscriberOrgNotExistError(subscriberOrgId);
             }
 
             const { subscriberUserId } = subscriberUser;
-            integrationInfo.userId = userInfo.id;
+            integrationInfo.userId = userInfo.UserId.NameId;
+            integrationInfo.sites = sites.map((site) => { return { site, selected: true, sites: [] }; });
             integrationInfo.expired = false;
             const sharepointInfo = {
                sharepoint: integrationInfo
@@ -146,15 +146,15 @@ export const revokeSharepoint = (req, userId, subscriberOrgId) => {
             }
 
             const { subscriberUserId, integrations } = subscriberUser;
-            const userAccessToken = ((subscriberUser.integrations) && (subscriberUser.integrations.box)) ? subscriberUser.integrations.box.accessToken : undefined;
+            const userAccessToken = ((subscriberUser.integrations) && (subscriberUser.integrations.sharepoint)) ? subscriberUser.integrations.sharepoint.access_token : undefined;
             const promises = [];
 
             if (userAccessToken) {
-               integrations.box = { revoked: true };
+               integrations.sharepoint = { revoked: true };
                promises.push(subscriberUsersTable.updateSubscriberUserIntegrations(req, subscriberUserId, integrations));
                promises.push(revokeIntegration(req, userAccessToken));
             } else {
-               throw new IntegrationAccessError('Box integration doesn\'t exist.');
+               throw new IntegrationAccessError('SharePoint integration doesn\'t exist.');
             }
             return Promise.all(promises);
          })

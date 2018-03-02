@@ -316,15 +316,23 @@ const publicReadMessages = (readMessages) => {
 
 const publicIntegration = (integration) => {
    const clone = _.cloneDeep(integration);
-   if (clone.box) {
-      delete clone.box.accessToken;
-      delete clone.box.refreshToken;
+   const integrations = (clone.integrations) ? clone.integrations : clone;
+   if (integrations.box) {
+      delete integrations.box.accessToken;
+      delete integrations.box.refreshToken;
    }
-   if (clone.google) {
-      delete clone.google.access_token;
-      delete clone.google.refresh_token;
-      delete clone.google.id_token;
-      delete clone.google.token_type;
+   if (integrations.google) {
+      delete integrations.google.access_token;
+      delete integrations.google.refresh_token;
+      delete integrations.google.id_token;
+      delete integrations.google.token_type;
+   }
+   if (integrations.sharepoint) {
+      delete integrations.sharepoint.token_type;
+      delete integrations.sharepoint.resource;
+      delete integrations.sharepoint.access_token;
+      delete integrations.sharepoint.refresh_token;
+      delete integrations.sharepoint.realm;
    }
    return clone;
 };

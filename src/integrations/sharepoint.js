@@ -11,7 +11,7 @@ const audiencePrincipalId = '00000003-0000-0ff1-ce00-000000000000'; // audience 
 export const composeAuthorizationUrl = (sharepointOrg) => {
    const paramsObject = {
       client_id: clientId,
-      scope: 'Web.Read',
+      scope: 'AllSites.Read Site.Read AllProfiles.Read Web.Read',
       response_type: 'code',
       redirect_uri: redirectUri
    };
@@ -60,7 +60,7 @@ export const exchangeAuthorizationCodeForAccessToken = (req, authorizationCode, 
                client_secret: clientSecret,
                code: authorizationCode,
                redirect_uri: redirectUri,
-               resource: `${audiencePrincipalId}/${sharepointOrg}@${realm}`
+               resource: `${audiencePrincipalId}/${sharepointOrg}.sharepoint.com@${realm}`
             };
             const params = Object.keys(paramsObject).map(key => `${key}=${encodeURIComponent(paramsObject[key])}`).join('&');
             return axios.post(uri, params);
@@ -106,7 +106,32 @@ export const getUserInfo = (req, sharepointOrg, userAccessToken) => {
    return new Promise((resolve, reject) => {
       axios.get(`https://${sharepointOrg}.sharepoint.com/_api/web/CurrentUser`, { headers: { Authorization: `Bearer ${userAccessToken}` } })
          .then((response) => {
-            req.logger.debug(response);
+            resolve(response.data);
+         })
+         .catch(err => reject(err));
+   });
+};
+
+export const getSites = (req, sharepointOrg, userAccessToken) => {
+   return new Promise((resolve, reject) => {
+      const query = "'contentclass:STS_Site contentclass:STS_Web'";
+      axios.get(`https://${sharepointOrg}.sharepoint.com/_api/search/query?querytext=${encodeURIComponent(query)}`,
+         { headers: { Authorization: `Bearer ${userAccessToken}` } }
+      )
+         .then((response) => {
+            const sites = [];
+            response.data.PrimaryQueryResult.RelevantResults.Table.Rows.forEach(({ Cells }) => {
+               Cells.forEach((cell) => {
+                  if ((cell.Key === 'SPWebUrl') && (cell.ValueType === 'Edm.String')) {
+                     const value = cell.Value;
+                     const toks = value.split('.sharepoint.com/sites/');
+                     if (toks.length > 1) {
+                        sites.push(toks[1]);
+                     }
+                  }
+               });
+            });
+            resolve(sites);
          })
          .catch(err => reject(err));
    });

@@ -2933,7 +2933,10 @@ documentation:
                               box:
                                  type: object
                                  required: false
-                              googleDrive:
+                              google:
+                                 type: object
+                                 required: false
+                              sharepoint:
                                  type: object
                                  required: false
                   example: |
@@ -2984,7 +2987,7 @@ documentation:
                   description: |
                      FOUND<br />
                      Redirect to Habla Box integration page.
-                     The query parameter `integration` is included, with current value: box | google.
+                     The query parameter `integration` is included, with current value: box | google | sharepoint.
                      The query parameter `status` is included, which contains one of the values:<br />
                      CREATED: Successfully integrated to Box.<br />
                      NOT_FOUND: The provided `subscriberOrgId` is invalid for the current user.<br />
@@ -3063,7 +3066,7 @@ documentation:
                   description: |
                      FOUND<br />
                      Redirect to Habla Google integration page.
-                     The query parameter `integration` is included, with current value: box | google.
+                     The query parameter `integration` is included, with current value: box | google | sharepoint.
                      The query parameter `status` is included, which contains one of the values:<br />
                      CREATED: Successfully integrated to Google.<br />
                      NOT_FOUND: The provided `subscriberOrgId` is invalid for the current user.<br />
@@ -3099,6 +3102,84 @@ documentation:
             headers:
                X-Goog-Channel-Token:
                   description: Specifies an arbitrary string value to use as a channel token, to verify the message as coming from Google.
+            responses:
+               202:
+                  description: |
+                     ACCEPTED<br />
+                     Habla accepted the webhook event and forwarded it to AI.
+               403:
+                  description |
+                     FORBIDDEN<br />
+                     The signature of the message is invalid, and therefore not accepted by Habla.
+
+   /sharepoint:
+
+      /integrate:
+         /{subscriberOrgId}:
+            uriParameters:
+               subscriberOrgId:
+                  description: SharePoint integration, scoped to the logged-in user and provided `subscriberOrgId`.
+            get:
+               securedBy: [oauth_2_0]
+               queryParameters:
+                  sharepointOrg:
+                     description: The SharePoint integration to integrate with, which is the subdomain of sharepoint.org.
+                     type: string
+                     required: true
+                     example: hablaaiinc (from the URL https://hablaainc.sharepoint.com).
+               description: Integrate SharePoint to Habla, scoped to the logged-in user and provided `subscriberOrgId`.
+               responses:
+                  202:
+                     description: |
+                        ACCEPTED<br />
+                        If request header `Accept` contains `application/json`, the body will contain JSON `{ location: ... }`.
+                        Manually redirect the browser to that location.
+                  302:
+                     description: |
+                        FOUND<br />
+                        Redirect to SharePoint access approval.
+
+      /access:
+         get:
+            description: Invoked by SharePoint in response to user access response.
+            responses:
+               302:
+                  description: |
+                     FOUND<br />
+                     Redirect to Habla SharePoint integration page.
+                     The query parameter `integration` is included, with current value: box | google | sharepoint.
+                     The query parameter `status` is included, which contains one of the values:<br />
+                     CREATED: Successfully integrated to Box.<br />
+                     NOT_FOUND: The provided `subscriberOrgId` is invalid for the current user.<br />
+                     INTERNAL_SERVER_ERROR: Something bad happened.
+
+      /revoke:
+         /{subscriberOrgId}:
+            uriParameters:
+               subscriberOrgId:
+                  description: SharePoint integration, scoped to the logged-in user and provided `subscriberOrgId`.
+            post:
+               securedBy: [oauth_2_0]
+               description: Revoke SharePoint access from Habla, scoped to the logged-in user and provided `subscriberOrgId`.
+               responses:
+                  200:
+                     description: |
+                        OK<br />
+                        The integration was revoked successfully, which includes clearing data in the DB as well as notifying SharePoint of revocation.
+                  410:
+                     description: |
+                        GONE<br />
+                        Clearing integration data from the DB was successful, but the remote call to Box failed.
+                        This can mean either the existing access token is no longer valid, or SharePoint isn't aware of this Habla integration.
+                        Either way, Habla no longer has access to the user's data, but having the user check on the SharePoint end might be a good idea.
+                  404:
+                     description: |
+                        NOT_FOUND<br />
+                        Invalid subscriberOrgId.
+
+      /webhooks:
+         post:
+            description: Invoked by SharePoint for webhook events.
             responses:
                202:
                   description: |

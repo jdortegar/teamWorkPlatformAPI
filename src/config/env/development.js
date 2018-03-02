@@ -34,8 +34,10 @@ export const boxWebhooksSecondaryKey = 'Q5Ht4J6nucMSxTnXKRKk1w9LwJaBefLY';
 export const googleClientId = '56229434385-er6slkc68oaklfs58oi5ej2fbbjabpc7.apps.googleusercontent.com';
 export const googleClientSecret = 'tQ-XvOvgGmAAJfjMWjH4Ai1T';
 
-export const sharepointClientId = 'f49340d4-dea4-44e0-a410-9818e1e99f3d';
-export const sharepointClientSecret = 'kdHrwacW/oHjYXsKrBSp/pkjL8oAo4kjB+ONDjBFeh8=';
+export const sharepointClientId = 'a5a13f17-353a-493c-8121-f0659cd32ab4';
+export const sharepointClientSecret = 'cYk8V8WFLk/zaa7C8G8q2bt8UV2Tun6zoZqA4rhL8Og=';
+// export const sharepointClientId = 'd0032bb6-4898-4da3-8a0f-d16f185dfe44'; // ngrok
+// export const sharepointClientSecret = 'sKtwfhTxjtBriCzu249/8BpHlptChV07zEJkG37G6WU='; // ngrok
 
 export const awsProductCode = '8loyvo6g5k96nfobn626rwjbj';
 

@@ -36,10 +36,13 @@ router.route('/google/webhooks')
    .post(google.googleWebhooks);
 
 
-router.route('/sharepoint/integrate/:subscriberOrgId/:sharepointOrg')
+router.route('/sharepoint/integrate/:subscriberOrgId')
    .get(sharepoint.integrateSharepoint);
 
 router.route('/sharepoint/access')
    .get(sharepoint.sharepointAccess);
+
+router.route('/sharepoint/revoke/:subscriberOrgId')
+   .post(sharepoint.revokeSharepoint);
 
 export default router;
