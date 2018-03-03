@@ -19,6 +19,7 @@ const deduceState = (req) => {
 const createRedisSharepointIntegrationState = (req, userId, subscriberOrgId, sharepointOrg) => {
    return new Promise((resolve, reject) => {
       const state = deduceState(req);
+      req.logger.debug(`AD: redis create, ${state}=${userId}, ${subscriberOrgId}, ${sharepointOrg}`);
       req.app.locals.redis.hmsetAsync(hashKey(state),
          'userId', userId,
          'subscriberOrgId', subscriberOrgId,
@@ -36,11 +37,13 @@ const deleteRedisSharepointIntegrationState = (req) => {
       let subscriberOrgId;
       let sharepointOrg;
 
+      req.logger.debug(`AD: redis get, ${state}`);
       req.app.locals.redis.hmgetAsync(hashKey(state), 'userId', 'subscriberOrgId', 'sharepointOrg')
          .then((redisResponse) => {
             userId = redisResponse[0];
             subscriberOrgId = redisResponse[1];
             sharepointOrg = redisResponse[2];
+            req.logger.debug(`AD: redis get response, ${state}=${userId}, ${subscriberOrgId}, ${sharepointOrg}`);
             if ((userId === null) || (subscriberOrgId === null) || (sharepointOrg === null)) {
                throw new IntegrationAccessError('No OAuth 2 state found.');
             }
@@ -50,7 +53,11 @@ const deleteRedisSharepointIntegrationState = (req) => {
          .then(() => {
             resolve({ userId, subscriberOrgId, sharepointOrg });
          })
-         .catch(err => reject(err));
+         .catch((err) => {
+            req.logger.debug('AD: redis get failed');
+            req.logger.error(err);
+            reject(err);
+         });
    });
 };
 
