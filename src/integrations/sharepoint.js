@@ -124,7 +124,7 @@ export const getSites = (req, sharepointOrg, userAccessToken) => {
                Cells.forEach((cell) => {
                   if ((cell.Key === 'SPWebUrl') && (cell.ValueType === 'Edm.String')) {
                      const value = cell.Value;
-                     if (!value.endsWith('contentTypeHub')) {
+                     if ((value.indexOf('.sharepoint.com/sites/') > 0) && (!value.endsWith('contentTypeHub'))) {
                         sites.push(value);
                      }
                   }
