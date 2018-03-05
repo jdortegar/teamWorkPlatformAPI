@@ -3,6 +3,7 @@ import * as box from '../controllers/box';
 import * as google from '../controllers/google';
 import * as sharepoint from '../controllers/sharepoint';
 import * as integrations from '../controllers/integrations';
+import { apiVersionedValidators, validateByApiVersion } from '../config/param-validation';
 
 const router = express.Router();
 
@@ -44,5 +45,8 @@ router.route('/sharepoint/access')
 
 router.route('/sharepoint/revoke/:subscriberOrgId')
    .post(sharepoint.revokeSharepoint);
+
+router.route('/:target/configure/:subscriberOrgId')
+   .patch(validateByApiVersion(apiVersionedValidators.configureIntegration), integrations.configureIntegration);
 
 export default router;

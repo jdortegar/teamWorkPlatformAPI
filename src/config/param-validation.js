@@ -223,6 +223,18 @@ const validationSchemas = {
          messageId: Joi.string().min(1).required()
       }
    },
+   configureIntegration: {
+      body: {
+         sharepoint: Joi.object().keys({
+            sites: Joi.array().min(1).items(
+               Joi.object().keys({
+                  site: Joi.string().min(1).required(),
+                  selected: Joi.boolean().required()
+               })
+            )
+         })
+      }
+   }
 };
 
 
@@ -323,6 +335,10 @@ export const apiVersionedValidators = {
    resetPassword: {
       0: validate(validationSchemas.resetPassword),
       1: validate(validationSchemas.resetPassword)
+   },
+   configureIntegration: {
+      0: validate(validationSchemas.configureIntegration),
+      1: validate(validationSchemas.configureIntegration)
    }
 };
 

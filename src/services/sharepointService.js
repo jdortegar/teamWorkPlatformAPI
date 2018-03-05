@@ -115,7 +115,7 @@ export const sharepointAccessResponse = (req, { code, error, error_description }
 
             const { subscriberUserId } = subscriberUser;
             integrationInfo.userId = userInfo.UserId.NameId;
-            integrationInfo.sites = sites.map((site) => { return { site, selected: true, sites: [] }; });
+            integrationInfo.sites = sites.map((site) => { return { site, selected: true }; });
             integrationInfo.expired = false;
             const sharepointInfo = {
                sharepoint: integrationInfo

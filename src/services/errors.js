@@ -33,6 +33,13 @@ export class SubscriberUserExistsError extends Error {
    }
 }
 
+export class SubscriberUserNotExistError extends Error {
+   constructor(...args) {
+      super(...args);
+      Error.captureStackTrace(this, SubscriberUserNotExistError);
+   }
+}
+
 export class TeamExistsError extends Error {
    constructor(...args) {
       super(...args);
@@ -123,7 +130,18 @@ export class IntegrationAccessError extends Error {
 
    constructor(subscriberOrgId, ...args) {
       super(...args);
+      this._subscriberOrgId = subscriberOrgId;
       Error.captureStackTrace(this, IntegrationAccessError);
+   }
+}
+
+export class BadIntegrationConfigurationError extends Error {
+   _configuration;
+
+   constructor(configuration, ...args) {
+      super(...args);
+      this._configuration = configuration;
+      Error.captureStackTrace(this, BadIntegrationConfigurationError);
    }
 }
 

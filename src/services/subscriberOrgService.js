@@ -59,7 +59,7 @@ export const createSubscriberOrgNoCheck = (req, subscriberOrgInfo, user, subscri
       subscriberOrgsTable.createSubscriberOrg(req, actualSubscriberOrgId, subscriberOrgInfo.name, icon, preferences)
          .then((createdSubscriberOrg) => {
             subscriberOrg = createdSubscriberOrg;
-            return subscriberUsersTable.createSubscriberUser(req, subscriberUserId, user.userId, actualSubscriberOrgId, role);
+            return subscriberUsersTable.createSubscriberUser(req, subscriberUserId, user.userId, actualSubscriberOrgId, role, user.displayName);
          })
          .then(() => {
             subscriberOrgCreated(req, subscriberOrg, user.userId);
@@ -339,7 +339,7 @@ const addUserToSubscriberOrg = (req, user, subscriberOrgId, role) => {
                throw new SubscriberOrgNotExistError(subscriberOrgId);
             }
 
-            subscriberUsersTable.createSubscriberUser(req, subscriberUserId, user.userId, subscriberOrgId, role);
+            subscriberUsersTable.createSubscriberUser(req, subscriberUserId, user.userId, subscriberOrgId, role, user.displayName);
          })
          .then(() => {
             subscriberAdded(req, subscriberOrgId, user, role, subscriberUserId);

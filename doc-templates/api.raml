@@ -2954,6 +2954,73 @@ documentation:
                         ]
                      }
 
+   /{target}:
+      uriParameters:
+         target:
+            description: |
+               box | google | sharepoint.  Currently, only sharepoint can be configured.
+      /configure:
+         /{subscriberOrgId}:
+            uriParameters:
+               subscriberOrgId:
+                  description: Scope this configuration request to a specific `subscriberOrgId`.
+            patch:
+               securedBy: [oauth_2_0]
+               description: Configure an integration for a user, scoped to the `subscriberOrgId`.
+               body:
+                  properties:
+                     sharepoint:
+                        type: object
+                        required: false
+                        properties:
+                           sites:
+                              type: array
+                              required: true
+                              items:
+                                 properties:
+                                    site:
+                                       type: string
+                                       required: true
+                                    selected:
+                                       type: boolean
+                                       required: true
+                  example: |
+                     {
+                        "sharepoint": {
+                           "sites": [
+                              {
+                                 "site": "https://hablaaiinc.sharepoint.com",
+                                 "selected": true
+                              },
+                              {
+                                 "site": "https://hablaaiinc.sharepoint.com/sites/ThomasCEO",
+                                 "selected": false
+                              },
+                              {
+                                 "site": "https://hablaaiinc.sharepoint.com/sites/PythonApp",
+                                 "selected": true
+                              },
+                              {
+                                 "site": "https://hablaaiinc.sharepoint.com/sites/ThridSharePointTest",
+                                 "selected": true
+                              }
+                           ]
+                        }
+                     }
+               responses:
+                  201:
+                     description: |
+                        NO_CONTENT<br />
+                        The configuration for `target` was successful.
+                  404:
+                     description: |
+                        NOT_FOUND<br />
+                        Invalid subscriberOrgId.
+                  400:
+                     description: |
+                        BAD_REQUEST<br />
+                        The updated configuration is invalid.
+
    /box:
 
       /integrate:

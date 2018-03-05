@@ -120,7 +120,6 @@ export const getSites = (req, sharepointOrg, userAccessToken) => {
       )
          .then((response) => {
             const sites = [];
-            console.log(response.data);
             response.data.PrimaryQueryResult.RelevantResults.Table.Rows.forEach(({ Cells }) => {
                Cells.forEach((cell) => {
                   if ((cell.Key === 'SPWebUrl') && (cell.ValueType === 'Edm.String')) {
