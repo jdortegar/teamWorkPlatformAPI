@@ -11,7 +11,9 @@ const hashKey = (state) => {
 };
 
 const deduceState = (req) => {
-   const ipAddress = req.headers['x-forwarded-for'];
+   let ipAddress = req.headers['x-forwarded-for'];
+   const ipAddresses = ipAddress.split(', ');
+   ipAddress = (ipAddresses.length > 1) ? ipAddresses[0] : ipAddress;
    const userAgent = req.headers['user-agent'];
    return `${ipAddress}_${userAgent}`;
 };
@@ -87,16 +89,20 @@ export const sharepointAccessResponse = (req, { code, error, error_description }
       let subscriberOrgId;
       let updateInfo;
 
+      req.logger.debug('AD: 1, calling deleteRedisSharepointIntegrationState...');
       deleteRedisSharepointIntegrationState(req)
          .then((integrationContext) => {
+            req.logger.debug(`AD: 2, integrationContext=${integrationContext}`);
             userId = integrationContext.userId;
             subscriberOrgId = integrationContext.subscriberOrgId;
             const { sharepointOrg } = integrationContext;
 
             if (error) {
+               req.logger.debug(`AD: 3, error=${error}`);
                throw new IntegrationAccessError(`${error}: ${error_description}`); // eslint-disable-line camelcase
             }
 
+            req.logger.debug('AD: 4, calling exchangeAuthorizationCodeForAccessToken...');
             return exchangeAuthorizationCodeForAccessToken(req, code, sharepointOrg);
          })
          .then((tokenInfo) => {
@@ -130,6 +136,7 @@ export const sharepointAccessResponse = (req, { code, error, error_description }
             resolve(subscriberOrgId);
          })
          .catch((err) => {
+            req.logger.debug(`AD: 5, err=${err}`);
             let integrationError;
             if (err instanceof IntegrationAccessError) {
                integrationError = err;
