@@ -955,7 +955,11 @@ documentation:
                403:
                   description: |
                      FORBIDDEN<br />
-                     The user is not allowed to update the specified organization, or the requested subscriberOrg name is a duplicate.
+                     The user is not allowed to update the specified organization.
+               409:
+                  description: |
+                     CONFLICT<br />
+                     The requested subscriberOrg name is a duplicate.
 
    /getSubscribers:
       /{subscriberOrgId}:
@@ -1406,7 +1410,7 @@ documentation:
                409:
                   description: |
                      CONFLICT<br />
-                     A primary team cannot be deactivated.
+                     The updated name is a duplicate within the subscriberOrg, or a primary team cannot be deactivated.
                404:
                   description: |
                      NOT_FOUND<br />
@@ -1877,7 +1881,7 @@ documentation:
                409:
                   description: |
                      CONFLICT<br />
-                     A primary team room cannot be deactivated.
+                     The updated name is a duplicate within the team, or a primary team room cannot be deactivated.
                404:
                   description: |
                      NOT_FOUND<br />
@@ -2702,32 +2706,28 @@ documentation:
                         The `message` with the specified ID was not found.
 
       /readMessage:
-         /{messageId}:
-            uriParameters:
-               messageId:
-                  description: Last message of thread (or main thread) that has been read by the user.
-            post:
-               securedBy: [oauth_2_0]
-               description: |
-                  Mark a message as read by the user, which includes previous messages within that same thread (which can be the main thread).
-               body:
-                  properties:
-                     messageId:
-                        type: string
-                        required: true
-               example: |
-                  {
-                     "messageId": "bfefa47e-bde6-4dbf-816c-bc231a7320b1"
-                  }
-               responses:
-                  204:
-                     description: |
-                        NO_CONTENT<br />
-                        The message, including earlier messages within that thread, has been marked as read by the user.
-                  404:
-                     description: |
-                        NOT_FOUND<br />
-                        The `conversation` and `message` doesn't exist.
+         post:
+            securedBy: [oauth_2_0]
+            description: |
+               Mark a message as read by the user, which includes previous messages within that same thread (which can be the main thread).
+            body:
+               properties:
+                  messageId:
+                     type: string
+                     required: true
+            example: |
+               {
+                  "messageId": "bfefa47e-bde6-4dbf-816c-bc231a7320b1"
+               }
+            responses:
+               204:
+                  description: |
+                     NO_CONTENT<br />
+                     The message, including earlier messages within that thread, has been marked as read by the user.
+               404:
+                  description: |
+                     NOT_FOUND<br />
+                     The `conversation` and `message` doesn't exist.
 
    /getReadMessages:
       get:
@@ -2933,7 +2933,10 @@ documentation:
                               box:
                                  type: object
                                  required: false
-                              googleDrive:
+                              google:
+                                 type: object
+                                 required: false
+                              sharepoint:
                                  type: object
                                  required: false
                   example: |
@@ -2950,6 +2953,69 @@ documentation:
                            }
                         ]
                      }
+
+   /{target}:
+      uriParameters:
+         target:
+            description: |
+               box | google | sharepoint.  Currently, only sharepoint can be configured.
+      /configure:
+         /{subscriberOrgId}:
+            uriParameters:
+               subscriberOrgId:
+                  description: Scope this configuration request to a specific `subscriberOrgId`.
+            patch:
+               securedBy: [oauth_2_0]
+               description: Configure an integration for a user, scoped to the `subscriberOrgId`.
+               body:
+                  properties:
+                     sharepoint:
+                        type: object
+                        required: false
+                        properties:
+                           sites:
+                              type: array
+                              required: true
+                              items:
+                                 properties:
+                                    site:
+                                       type: string
+                                       required: true
+                                    selected:
+                                       type: boolean
+                                       required: true
+                  example: |
+                     {
+                        "sharepoint": {
+                           "sites": [
+                              {
+                                 "site": "https://hablaaiinc.sharepoint.com/sites/ThomasCEO",
+                                 "selected": false
+                              },
+                              {
+                                 "site": "https://hablaaiinc.sharepoint.com/sites/PythonApp",
+                                 "selected": true
+                              },
+                              {
+                                 "site": "https://hablaaiinc.sharepoint.com/sites/ThridSharePointTest",
+                                 "selected": true
+                              }
+                           ]
+                        }
+                     }
+               responses:
+                  201:
+                     description: |
+                        NO_CONTENT<br />
+                        The configuration for `target` was successful.
+                  404:
+                     description: |
+                        NOT_FOUND<br />
+                        Invalid subscriberOrgId.
+                  400:
+                     description: |
+                        BAD_REQUEST<br />
+                        The updated configuration is invalid.
 
    /box:
 
@@ -2984,7 +3050,7 @@ documentation:
                   description: |
                      FOUND<br />
                      Redirect to Habla Box integration page.
-                     The query parameter `integration` is included, with current value: box | google.
+                     The query parameter `integration` is included, with current value: box | google | sharepoint.
                      The query parameter `status` is included, which contains one of the values:<br />
                      CREATED: Successfully integrated to Box.<br />
                      NOT_FOUND: The provided `subscriberOrgId` is invalid for the current user.<br />
@@ -3063,7 +3129,7 @@ documentation:
                   description: |
                      FOUND<br />
                      Redirect to Habla Google integration page.
-                     The query parameter `integration` is included, with current value: box | google.
+                     The query parameter `integration` is included, with current value: box | google | sharepoint.
                      The query parameter `status` is included, which contains one of the values:<br />
                      CREATED: Successfully integrated to Google.<br />
                      NOT_FOUND: The provided `subscriberOrgId` is invalid for the current user.<br />
@@ -3099,6 +3165,84 @@ documentation:
             headers:
                X-Goog-Channel-Token:
                   description: Specifies an arbitrary string value to use as a channel token, to verify the message as coming from Google.
+            responses:
+               202:
+                  description: |
+                     ACCEPTED<br />
+                     Habla accepted the webhook event and forwarded it to AI.
+               403:
+                  description |
+                     FORBIDDEN<br />
+                     The signature of the message is invalid, and therefore not accepted by Habla.
+
+   /sharepoint:
+
+      /integrate:
+         /{subscriberOrgId}:
+            uriParameters:
+               subscriberOrgId:
+                  description: SharePoint integration, scoped to the logged-in user and provided `subscriberOrgId`.
+            get:
+               securedBy: [oauth_2_0]
+               queryParameters:
+                  sharepointOrg:
+                     description: The SharePoint integration to integrate with, which is the subdomain of sharepoint.org.
+                     type: string
+                     required: true
+                     example: hablaaiinc (from the URL https://hablaainc.sharepoint.com).
+               description: Integrate SharePoint to Habla, scoped to the logged-in user and provided `subscriberOrgId`.
+               responses:
+                  202:
+                     description: |
+                        ACCEPTED<br />
+                        If request header `Accept` contains `application/json`, the body will contain JSON `{ location: ... }`.
+                        Manually redirect the browser to that location.
+                  302:
+                     description: |
+                        FOUND<br />
+                        Redirect to SharePoint access approval.
+
+      /access:
+         get:
+            description: Invoked by SharePoint in response to user access response.
+            responses:
+               302:
+                  description: |
+                     FOUND<br />
+                     Redirect to Habla SharePoint integration page.
+                     The query parameter `integration` is included, with current value: box | google | sharepoint.
+                     The query parameter `status` is included, which contains one of the values:<br />
+                     CREATED: Successfully integrated to Box.<br />
+                     NOT_FOUND: The provided `subscriberOrgId` is invalid for the current user.<br />
+                     INTERNAL_SERVER_ERROR: Something bad happened.
+
+      /revoke:
+         /{subscriberOrgId}:
+            uriParameters:
+               subscriberOrgId:
+                  description: SharePoint integration, scoped to the logged-in user and provided `subscriberOrgId`.
+            post:
+               securedBy: [oauth_2_0]
+               description: Revoke SharePoint access from Habla, scoped to the logged-in user and provided `subscriberOrgId`.
+               responses:
+                  200:
+                     description: |
+                        OK<br />
+                        The integration was revoked successfully, which includes clearing data in the DB as well as notifying SharePoint of revocation.
+                  410:
+                     description: |
+                        GONE<br />
+                        Clearing integration data from the DB was successful, but the remote call to Box failed.
+                        This can mean either the existing access token is no longer valid, or SharePoint isn't aware of this Habla integration.
+                        Either way, Habla no longer has access to the user's data, but having the user check on the SharePoint end might be a good idea.
+                  404:
+                     description: |
+                        NOT_FOUND<br />
+                        Invalid subscriberOrgId.
+
+      /webhooks:
+         post:
+            description: Invoked by SharePoint for webhook events.
             responses:
                202:
                   description: |

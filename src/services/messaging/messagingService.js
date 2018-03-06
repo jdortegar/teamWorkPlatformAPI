@@ -55,6 +55,7 @@ export const EventTypes = Object.freeze({
    integrationsUpdated: 'integrationsUpdated',
    boxWebhookEvent: 'boxWebhookEvent',
    googleWebhookEvent: 'googleWebhookEvent',
+   sharepointWebhookEvent: 'sharepointWebhookEvent',
 
    from(value) { return (this[value]); }
 });

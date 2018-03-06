@@ -26,7 +26,8 @@ export const inviteExistingUsersToSubscriberOrg = (req, invitingDbUser, existing
          byUserLastName: invitingDbUser.lastName,
          byUserDisplayName: invitingDbUser.displayName,
          subscriberOrgId: subscriberOrg.subscriberOrgId,
-         subscriberOrgName: subscriberOrg.name
+         subscriberOrgName: subscriberOrg.name,
+         created: req.now.format()
       };
 
       let createdOffset = 0;
@@ -63,7 +64,8 @@ export const inviteExistingUsersToTeam = (req, invitingDbUser, existingDbUsers, 
          subscriberOrgId: team.subscriberOrgId,
          subscriberOrgName: subscriberOrg.name,
          teamId: team.teamId,
-         teamName: team.name
+         teamName: team.name,
+         created: req.now.format()
       };
 
       let createdOffset = 0;
@@ -101,7 +103,8 @@ export const inviteExistingUsersToTeamRoom = (req, invitingDbUser, existingDbUse
          teamId: team.teamId,
          teamName: team.name,
          teamRoomId: teamRoom.teamRoomId,
-         teamRoomName: teamRoom.name
+         teamRoomName: teamRoom.name,
+         created: req.now.format()
       };
 
       const promises = [];
@@ -152,7 +155,8 @@ export const inviteExternalUsersToSubscriberOrg = (req, invitingDbUser, emails, 
          byUserLastName: invitingDbUser.lastName,
          byUserDisplayName: invitingDbUser.displayName,
          subscriberOrgId: subscriberOrg.subscriberOrgId,
-         subscriberOrgName: subscriberOrg.name
+         subscriberOrgName: subscriberOrg.name,
+         created: req.now.format()
       };
 
       let createdOffset = 0;

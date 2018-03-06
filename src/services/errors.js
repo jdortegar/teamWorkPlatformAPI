@@ -26,6 +26,20 @@ export class SubscriberOrgNotExistError extends Error {
    }
 }
 
+export class SubscriberUserExistsError extends Error {
+   constructor(...args) {
+      super(...args);
+      Error.captureStackTrace(this, SubscriberUserExistsError);
+   }
+}
+
+export class SubscriberUserNotExistError extends Error {
+   constructor(...args) {
+      super(...args);
+      Error.captureStackTrace(this, SubscriberUserNotExistError);
+   }
+}
+
 export class TeamExistsError extends Error {
    constructor(...args) {
       super(...args);
@@ -40,6 +54,13 @@ export class TeamNotExistError extends Error {
    }
 }
 
+export class TeamMemberExistsError extends Error {
+   constructor(...args) {
+      super(...args);
+      Error.captureStackTrace(this, TeamMemberExistsError);
+   }
+}
+
 export class TeamRoomExistsError extends Error {
    constructor(...args) {
       super(...args);
@@ -51,6 +72,13 @@ export class TeamRoomNotExistError extends Error {
    constructor(...args) {
       super(...args);
       Error.captureStackTrace(this, TeamRoomNotExistError);
+   }
+}
+
+export class TeamRoomMemberExistsError extends Error {
+   constructor(...args) {
+      super(...args);
+      Error.captureStackTrace(this, TeamRoomMemberExistsError);
    }
 }
 
@@ -102,7 +130,18 @@ export class IntegrationAccessError extends Error {
 
    constructor(subscriberOrgId, ...args) {
       super(...args);
+      this._subscriberOrgId = subscriberOrgId;
       Error.captureStackTrace(this, IntegrationAccessError);
+   }
+}
+
+export class BadIntegrationConfigurationError extends Error {
+   _configuration;
+
+   constructor(configuration, ...args) {
+      super(...args);
+      this._configuration = configuration;
+      Error.captureStackTrace(this, BadIntegrationConfigurationError);
    }
 }
 

@@ -62,7 +62,7 @@ export const updateTeam = (req, res, next) => {
             res.status(httpStatus.NOT_FOUND).end();
          } else if (err instanceof NoPermissionsError) {
             res.status(httpStatus.FORBIDDEN).end();
-         } else if (err instanceof CannotDeactivateError) {
+         } else if ((err instanceof TeamExistsError) || (err instanceof CannotDeactivateError)) {
             res.status(httpStatus.CONFLICT).end();
          } else {
             next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE));

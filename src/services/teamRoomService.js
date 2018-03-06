@@ -13,7 +13,8 @@ import {
    TeamNotExistError,
    TeamRoomExistsError,
    TeamRoomNotExistError,
-   UserNotExistError
+   UserNotExistError,
+   TeamRoomMemberExistsError
 } from './errors';
 import InvitationKeys from '../repositories/InvitationKeys';
 import * as invitationsTable from '../repositories/db/invitationsTable';
@@ -161,8 +162,18 @@ export const updateTeamRoom = (req, teamRoomId, updateInfo, userId) => {
             if ((teamRoom.primary) && (updateInfo.active === false)) {
                throw new CannotDeactivateError(teamRoomId);
             }
-
             previousActive = teamRoom.active;
+
+            if ((updateInfo.name) && (teamRoom.name !== updateInfo.name)) {
+               return teamRoomsTable.getTeamRoomByTeamIdAndName(req, teamRoom.teamId, updateInfo.name);
+            }
+            return undefined;
+         })
+         .then((duplicateName) => {
+            if (duplicateName) {
+               throw new TeamRoomExistsError(updateInfo.name);
+            }
+
             const { name, icon, primary, active, teamActive, preferences } = updateInfo;
             return teamRoomsTable.updateTeamRoom(req, teamRoomId, { name, icon, primary, active, teamActive, preferences });
          })
@@ -289,8 +300,9 @@ export const inviteMembers = (req, teamRoomId, userIds, userId) => {
          teamRoomsTable.getTeamRoomByTeamRoomId(req, teamRoomId),
          teamRoomMembersTable.getTeamRoomMemberByTeamRoomIdAndUserIdAndRole(req, teamRoomId, userId, Roles.admin)
       ])
-         .then(([retrievedTeamRoom, teamRoomMember]) => {
-            teamRoom = retrievedTeamRoom;
+         .then((promiseResults) => {
+            teamRoom = promiseResults[0];
+            const teamRoomMember = promiseResults[1];
             if (!teamRoom) {
                throw new TeamRoomNotExistError(teamRoomId);
             }
@@ -339,12 +351,11 @@ export const inviteMembers = (req, teamRoomId, userIds, userId) => {
             const inviteDbUserIds = inviteDbUsers.map(inviteDbUser => inviteDbUser.userId);
 
             // Make sure invitees are not already in here.
-            return teamRoomMembersTable.getTeamRoomMembersByUserIds(req, inviteDbUserIds);
+            return teamRoomMembersTable.getTeamRoomMembersByUserIdsAndTeamRoomId(req, inviteDbUserIds, teamRoomId);
          })
          .then((teamRoomMembers) => {
-            const teamRoomMembersOfTeamRoom = teamRoomMembers.filter(teamRoomMember => teamRoomMember.teamRoomId === teamRoomId);
-            if (teamRoomMembersOfTeamRoom.length !== 0) {
-               const doNotInviteUserIds = teamRoomMembersOfTeamRoom.map(teamRoomMember => teamRoomMember.userId);
+            if (teamRoomMembers.length !== 0) {
+               const doNotInviteUserIds = teamRoomMembers.map(teamRoomMember => teamRoomMember.userId);
                inviteDbUsers = inviteDbUsers.filter(inviteDbUser => doNotInviteUserIds.indexOf(inviteDbUser.userId) < 0);
             }
             return inviteExistingUsersToTeamRoom(req, dbUser, inviteDbUsers, subscriberOrg, team, teamRoom);
@@ -405,8 +416,12 @@ export const replyToInvite = (req, teamRoomId, accept, userId) => {
       let user;
       let teamRoom;
       let cachedInvitation;
-      Promise.all([usersTable.getUserByUserId(req, userId), teamRoomsTable.getTeamRoomByTeamRoomId(req, teamRoomId)])
-         .then(([retrievedUser, retrievedTeamRoom]) => {
+      Promise.all([
+         usersTable.getUserByUserId(req, userId),
+         teamRoomsTable.getTeamRoomByTeamRoomId(req, teamRoomId),
+         teamRoomMembersTable.getTeamRoomMemberByTeamRoomIdAndUserId(req, teamRoomId, userId)
+      ])
+         .then(([retrievedUser, retrievedTeamRoom, teamRoomMember]) => {
             user = retrievedUser;
             teamRoom = retrievedTeamRoom;
             if (!user) {
@@ -415,6 +430,10 @@ export const replyToInvite = (req, teamRoomId, accept, userId) => {
 
             if (!teamRoom) {
                throw new TeamRoomNotExistError(teamRoomId);
+            }
+
+            if (teamRoomMember) {
+               throw new TeamRoomMemberExistsError(`teamRoomId=${teamRoomId}, userId=${userId}`);
             }
 
             return deleteInvitation(req, user.emailAddress, InvitationKeys.teamRoomId, teamRoomId);
@@ -448,6 +467,12 @@ export const replyToInvite = (req, teamRoomId, accept, userId) => {
             resolve();
             sentInvitationStatus(req, changedInvitations);
          })
-         .catch(err => reject(err));
+         .catch((err) => {
+            if (err instanceof TeamRoomMemberExistsError) {
+               resolve();
+            } else {
+               reject(err);
+            }
+         });
    });
 };

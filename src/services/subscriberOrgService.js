@@ -1,6 +1,14 @@
 import _ from 'lodash';
 import uuid from 'uuid';
-import { CannotInviteError, InvitationNotExistError, NoPermissionsError, SubscriberOrgExistsError, SubscriberOrgNotExistError, UserNotExistError } from './errors';
+import {
+   CannotInviteError,
+   InvitationNotExistError,
+   NoPermissionsError,
+   SubscriberOrgExistsError,
+   SubscriberOrgNotExistError,
+   UserNotExistError,
+   SubscriberUserExistsError
+} from './errors';
 import InvitationKeys from '../repositories/InvitationKeys';
 import * as subscriberOrgsTable from '../repositories/db/subscriberOrgsTable';
 import * as subscriberUsersTable from '../repositories/db/subscriberUsersTable';
@@ -51,7 +59,7 @@ export const createSubscriberOrgNoCheck = (req, subscriberOrgInfo, user, subscri
       subscriberOrgsTable.createSubscriberOrg(req, actualSubscriberOrgId, subscriberOrgInfo.name, icon, preferences)
          .then((createdSubscriberOrg) => {
             subscriberOrg = createdSubscriberOrg;
-            return subscriberUsersTable.createSubscriberUser(req, subscriberUserId, user.userId, actualSubscriberOrgId, role);
+            return subscriberUsersTable.createSubscriberUser(req, subscriberUserId, user.userId, actualSubscriberOrgId, role, user.displayName);
          })
          .then(() => {
             subscriberOrgCreated(req, subscriberOrg, user.userId);
@@ -127,14 +135,14 @@ export const updateSubscriberOrg = (req, subscriberOrgId, updateInfo, userId) =>
                throw new NoPermissionsError(subscriberOrgId);
             }
 
-            if (updateInfo.name) {
+            if ((updateInfo.name) && (originalSubscriberOrg.name !== updateInfo.name)) {
                return subscriberOrgsTable.getSubscriberOrgByName(req, updateInfo.name);
             }
             return undefined;
          })
          .then((duplicateName) => {
             if (duplicateName) {
-               throw new NoPermissionsError(updateInfo.name);
+               throw new SubscriberOrgExistsError(updateInfo.name);
             }
 
             return subscriberOrgsTable.updateSubscriberOrg(req, subscriberOrgId, updateInfo);
@@ -331,7 +339,7 @@ const addUserToSubscriberOrg = (req, user, subscriberOrgId, role) => {
                throw new SubscriberOrgNotExistError(subscriberOrgId);
             }
 
-            subscriberUsersTable.createSubscriberUser(req, subscriberUserId, user.userId, subscriberOrgId, role);
+            subscriberUsersTable.createSubscriberUser(req, subscriberUserId, user.userId, subscriberOrgId, role, user.displayName);
          })
          .then(() => {
             subscriberAdded(req, subscriberOrgId, user, role, subscriberUserId);
@@ -347,17 +355,24 @@ export const replyToInvite = (req, subscriberOrgId, accept, userId) => {
       let user;
       let subscriberOrg;
       let cachedInvitation;
-      Promise.all([usersTable.getUserByUserId(req, userId), subscriberOrgsTable.getSubscriberOrgBySubscriberOrgId(req, subscriberOrgId)])
-         .then((promiseResults) => {
-            user = promiseResults[0];
-            subscriberOrg = promiseResults[1];
-
+      Promise.all([
+         usersTable.getUserByUserId(req, userId),
+         subscriberOrgsTable.getSubscriberOrgBySubscriberOrgId(req, subscriberOrgId)],
+         subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId)
+      )
+         .then(([retrievedUser, retrievedSubscriberOrg, subscriberUser]) => {
+            user = retrievedUser;
+            subscriberOrg = retrievedSubscriberOrg;
             if (!user) {
                throw new UserNotExistError();
             }
 
             if (!subscriberOrg) {
                throw new SubscriberOrgNotExistError(subscriberOrgId);
+            }
+
+            if (subscriberUser) {
+               throw new SubscriberUserExistsError(`userId=${userId}, subscriberOrgId=${subscriberOrgId}`);
             }
 
             return deleteInvitation(req, user.emailAddress, InvitationKeys.subscriberOrgId, subscriberOrgId);
@@ -385,6 +400,12 @@ export const replyToInvite = (req, subscriberOrgId, accept, userId) => {
             resolve();
             sentInvitationStatus(req, changedInvitations);
          })
-         .catch(err => reject(err));
+         .catch((err) => {
+            if (err instanceof SubscriberUserExistsError) {
+               resolve();
+            } else {
+               reject(err);
+            }
+         });
    });
 };

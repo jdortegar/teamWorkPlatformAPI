@@ -9,6 +9,7 @@ import * as util from './util';
  * subscriberOrgId
  * role
  * enabled
+ * displayName
  * integrations
  * created
  * lastModified
@@ -33,7 +34,7 @@ const upgradeSchema = (req, dbObjects) => {
    return Promise.resolve(dbObjects);
 };
 
-export const createSubscriberUser = (req, subscriberUserId, userId, subscriberOrgId, role) => {
+export const createSubscriberUser = (req, subscriberUserId, userId, subscriberOrgId, role, displayName) => {
    return new Promise((resolve, reject) => {
       const params = {
          TableName: tableName(),
@@ -44,6 +45,7 @@ export const createSubscriberUser = (req, subscriberUserId, userId, subscriberOr
             subscriberOrgId,
             role,
             enabled: true,
+            displayName,
             created: req.now.format(),
             lastModified: req.now.format()
          }

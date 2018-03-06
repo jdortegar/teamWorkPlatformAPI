@@ -61,22 +61,6 @@ export const createTeamRoomMember = (req, teamRoomMemberId, userId, teamRoomId, 
    });
 };
 
-export const getTeamRoomMemberByTeamRoomMemberId = (req, teamRoomMemberId) => {
-   return new Promise((resolve, reject) => {
-      const params = {
-         TableName: tableName(),
-         KeyConditionExpression: 'teamRoomMemberId = :teamRoomMemberId',
-         ExpressionAttributeValues: {
-            ':teamRoomMemberId': teamRoomMemberId
-         }
-      };
-      util.query(req, params)
-         .then(originalResults => upgradeSchema(req, originalResults))
-         .then(latestResults => resolve((latestResults.length > 0) ? latestResults[0] : undefined))
-         .catch(err => reject(err));
-   });
-};
-
 export const getTeamRoomMembersByTeamRoomId = (req, teamRoomId) => {
    return new Promise((resolve, reject) => {
       const params = {
@@ -135,28 +119,6 @@ export const getTeamRoomMemberByTeamRoomIdAndUserIdAndRole = (req, teamRoomId, u
    });
 };
 
-export const getTeamRoomMembersByTeamRoomIdAndRole = (req, teamRoomId, role) => {
-   return new Promise((resolve, reject) => {
-      const params = {
-         TableName: tableName(),
-         IndexName: 'teamRoomIdUserIdIdx',
-         KeyConditionExpression: 'teamRoomId = :teamRoomId',
-         FilterExpression: '#role = :role',
-         ExpressionAttributeNames: {
-            '#role': 'role'
-         },
-         ExpressionAttributeValues: {
-            ':teamRoomId': teamRoomId,
-            ':role': role
-         }
-      };
-      util.query(req, params)
-         .then(originalResults => upgradeSchema(req, originalResults))
-         .then(latestResults => resolve(latestResults))
-         .catch(err => reject(err));
-   });
-};
-
 export const getTeamRoomMembersByUserId = (req, userId) => {
    return new Promise((resolve, reject) => {
       const params = {
@@ -191,6 +153,11 @@ export const getTeamRoomMembersByUserIdAndTeamId = (req, userId, teamId) => {
          .catch(err => reject(err));
    });
 };
+
+export const getTeamRoomMembersByUserIdsAndTeamRoomId = (req, userIds, teamRoomId) => {
+   return userIds.map(userId => getTeamRoomMemberByTeamRoomIdAndUserId(req, teamRoomId, userId));
+};
+
 export const getTeamRoomMembersByUserIdAndSubscriberOrgId = (req, userId, subscriberOrgId) => {
    return new Promise((resolve, reject) => {
       const params = {
@@ -201,34 +168,6 @@ export const getTeamRoomMembersByUserIdAndSubscriberOrgId = (req, userId, subscr
          ExpressionAttributeValues: {
             ':userId': userId,
             ':subscriberOrgId': subscriberOrgId
-         }
-      };
-      util.query(req, params)
-         .then(originalResults => upgradeSchema(req, originalResults))
-         .then(latestResults => resolve(latestResults))
-         .catch(err => reject(err));
-   });
-};
-
-
-export const getTeamRoomMembersByUserIds = (req, userIds) => {
-   return new Promise((resolve, reject) => {
-      util.batchGet(req, tableName(), 'userId', userIds)
-         .then(originalResults => upgradeSchema(req, originalResults))
-         .then(latestResults => resolve(latestResults))
-         .catch(err => reject(err));
-   });
-};
-
-export const getTeamMembersByUserIdAndTeamId = (req, userId, teamId) => {
-   return new Promise((resolve, reject) => {
-      const params = {
-         TableName: tableName(),
-         IndexName: 'userIdTeamIdIdx',
-         KeyConditionExpression: 'userId = :userId and teamId = :teamId',
-         ExpressionAttributeValues: {
-            ':userId': userId,
-            ':teamId': teamId
          }
       };
       util.query(req, params)
