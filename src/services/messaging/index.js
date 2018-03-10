@@ -101,7 +101,7 @@ export const subscriberAdded = (req, subscriberOrgId, user, role, subscriberUser
 
 // EventType = team
 
-export const teamCreated = (req, team, teamAdminUserIds) => {
+export const teamCreated = (req, team, teamAdminUserIds) => { // Assume 1. a new team has 1 member.  Assume 2. org admins containing team are also part of that team.
    const joinChannelPromises = [];
    teamAdminUserIds.forEach((teamAdminUserId) => {
       joinChannelPromises.push(_joinChannels(req, teamAdminUserId, [
@@ -113,7 +113,7 @@ export const teamCreated = (req, team, teamAdminUserIds) => {
    return Promise.all(joinChannelPromises)
       .then(() => {
          return _broadcastEvent(req, EventTypes.teamCreated, publishByApiVersion(req, apiVersionedVisibility.publicTeam, team), [
-            ChannelFactory.subscriberOrgChannel(team.subscriberOrgId)
+            ChannelFactory.teamChannel(team.teamId)
          ]);
       });
 };
@@ -130,7 +130,8 @@ export const teamPrivateInfoUpdated = (req, team) => {
    ]);
 };
 
-export const teamMemberAdded = (req, teamId, user, role, teamMemberId) => {
+export const teamMemberAdded = (req, team, user, role, teamMemberId) => {
+   const { teamId } = team;
    const teamChannel = ChannelFactory.teamChannel(teamId);
    const channels = [teamChannel];
    if (role === Roles.admin) {
@@ -138,6 +139,11 @@ export const teamMemberAdded = (req, teamId, user, role, teamMemberId) => {
    }
 
    return _joinChannels(req, user.userId, channels)
+      .then(() => {
+         return _broadcastEvent(req, EventTypes.teamCreated, publishByApiVersion(req, apiVersionedVisibility.publicTeam, team), [
+            ChannelFactory.personalChannel(user.userId)
+         ]);
+      })
       .then(() => {
          const mergedUser = _.merge(user, { user: user.userId, role, teamMemberId });
          _broadcastEvent(req, EventTypes.teamMemberAdded, publishByApiVersion(req, apiVersionedVisibility.publicTeamMember, teamId, mergedUser), [teamChannel]);
@@ -160,7 +166,7 @@ export const teamRoomCreated = (req, teamRoom, teamRoomAdminUserIds) => {
    return Promise.all(joinChannelPromises)
       .then(() => {
          return _broadcastEvent(req, EventTypes.teamRoomCreated, publishByApiVersion(req, apiVersionedVisibility.publicTeamRoom, teamRoom), [
-            ChannelFactory.teamChannel(teamRoom.teamId)
+            ChannelFactory.teamRoomChannel(teamRoom.teamRoomId)
          ]);
       });
 };

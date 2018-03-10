@@ -83,7 +83,7 @@ export const createTeamNoCheck = (req, subscriberOrgId, teamInfo, subscriberUser
          })
          .then(() => {
             teamCreated(req, team, teamAdminUserIds);
-            teamMemberAdded(req, actualTeamId, user, role, teamMemberId);
+            teamMemberAdded(req, team, user, role, teamMemberId);
 
             const teamRoom = {
                name: teamRoomSvc.defaultTeamRoomName,
@@ -366,16 +366,18 @@ export function inviteMembers(req, teamId, userIds, userId) {
 
 export function addUserToTeam(req, user, subscriberUserId, teamId, role) {
    return new Promise((resolve, reject) => {
+      let team;
       const teamMemberId = uuid.v4();
       teamsTable.getTeamByTeamId(req, teamId)
-         .then((team) => {
+         .then((retrievedTeam) => {
+            team = retrievedTeam;
             if (!team) {
                throw new TeamNotExistError(teamId);
             }
             return teamMembersTable.createTeamMember(req, teamMemberId, user.userId, teamId, subscriberUserId, team.subscriberOrgId, role);
          })
          .then(() => {
-            teamMemberAdded(req, teamId, user, role, teamMemberId);
+            teamMemberAdded(req, team, user, role, teamMemberId);
             return teamRoomSvc.addUserToPrimaryTeamRoom(req, user, teamId, teamMemberId, Roles.user);
          })
          .then(() => resolve(teamMemberId))
