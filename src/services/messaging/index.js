@@ -183,7 +183,8 @@ export const teamRoomPrivateInfoUpdated = (req, teamRoom) => {
    ]);
 };
 
-export const teamRoomMemberAdded = (req, teamRoomId, user, role, teamRoomMemberId) => {
+export const teamRoomMemberAdded = (req, teamRoom, user, role, teamRoomMemberId) => {
+   const { teamRoomId } = teamRoom;
    const teamRoomChannel = ChannelFactory.teamRoomChannel(teamRoomId);
    const channels = [teamRoomChannel];
    if (role === Roles.admin) {
@@ -191,6 +192,11 @@ export const teamRoomMemberAdded = (req, teamRoomId, user, role, teamRoomMemberI
    }
 
    return _joinChannels(req, user.userId, channels)
+      .then(() => {
+         return _broadcastEvent(req, EventTypes.teamRoomCreated, publishByApiVersion(req, apiVersionedVisibility.publicTeamRoom, teamRoom), [
+            ChannelFactory.personalChannel(user.userId)
+         ]);
+      })
       .then(() => {
          const mergedUser = _.merge(user, { userId: user.userId, role, teamRoomMemberId });
          _broadcastEvent(req, EventTypes.teamRoomMemberAdded, publishByApiVersion(req, apiVersionedVisibility.publicTeamRoomMember, teamRoomId, mergedUser), [teamRoomChannel]);

@@ -85,7 +85,7 @@ export const createTeamRoomNoCheck = (req, subscriberOrgId, subscriberUserId, te
          })
          .then(() => {
             teamRoomCreated(req, teamRoom, teamRoomAdminUserIds);
-            teamRoomMemberAdded(req, actualTeamRoomId, user, role, teamRoomMemberId);
+            teamRoomMemberAdded(req, teamRoom, user, role, teamRoomMemberId);
 
             return conversationSvc.createConversationNoCheck(req, subscriberOrgId, actualTeamRoomId, user.userId, teamRoomAdminUserIds);
          })
@@ -367,12 +367,14 @@ export const inviteMembers = (req, teamRoomId, userIds, userId) => {
 
 export const addUserToTeamRoom = (req, user, teamId, teamMemberId, teamRoomId, role) => {
    return new Promise((resolve, reject) => {
+      let teamRoom;
       const teamRoomMemberId = uuid.v4();
       Promise.all([
          teamRoomsTable.getTeamRoomByTeamRoomId(req, teamRoomId),
          teamMembersTable.getTeamMemberByTeamIdAndUserId(req, teamId, user.userId)
       ])
-         .then(([teamRoom, teamMember]) => {
+         .then(([retrievedTeamRoom, teamMember]) => {
+            teamRoom = retrievedTeamRoom;
             if (!teamRoom) {
                throw new TeamRoomNotExistError(teamRoomId);
             }
@@ -388,7 +390,7 @@ export const addUserToTeamRoom = (req, user, teamId, teamMemberId, teamRoomId, r
                role);
          })
          .then(() => {
-            teamRoomMemberAdded(req, teamRoomId, user, role, teamRoomMemberId);
+            teamRoomMemberAdded(req, teamRoom, user, role, teamRoomMemberId);
             return conversationSvc.addUserToConversationByTeamRoomId(req, user, teamRoomId);
          })
          .then(() => resolve())
