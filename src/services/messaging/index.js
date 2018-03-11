@@ -26,6 +26,19 @@ export const userPrivateInfoUpdated = (req, user) => {
    ]);
 };
 
+export const userBookmarksUpdated = (req, user, bookmarks) => {
+   const publishedBookmarks = _.clone(bookmarks);
+   const messages = {};
+   Object.keys(publishedBookmarks.messages).forEach((messageId) => {
+      messages[messageId] = publishByApiVersion(req, apiVersionedVisibility.publicMessage, publishedBookmarks.messages[messageId]);
+   });
+   publishedBookmarks.messages = messages;
+
+   return _broadcastEvent(req, EventTypes.userBookmarksUpdated, publishedBookmarks, [
+      ChannelFactory.personalChannel(user.userId)
+   ]);
+};
+
 export const userInvited = (req, userId, invitation) => {
    return _broadcastEvent(req, EventTypes.userInvited, invitation, [
       ChannelFactory.personalChannel(userId)

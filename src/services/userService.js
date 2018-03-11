@@ -5,11 +5,12 @@ import { NoPermissionsError, UserNotExistError, CustomerExistsError } from './er
 import { getRandomColor } from './util';
 import { hashPassword, passwordMatch } from '../models/user';
 import * as usersTable from '../repositories/db/usersTable';
+import * as messagesTable from '../repositories/db/messagesTable';
 import * as usersCache from '../repositories/cache/usersCache';
 import * as invitationsRepo from '../repositories/invitationsRepo';
 import * as awsMarketplaceSvc from './awsMarketplaceService';
 import * as subscriberOrgSvc from './subscriberOrgService';
-import { userCreated, userUpdated, userPrivateInfoUpdated } from './messaging';
+import { userCreated, userUpdated, userPrivateInfoUpdated, userBookmarksUpdated } from './messaging';
 
 const getUserByEmail = (req, email) => {
    return new Promise((resolve, reject) => {
@@ -41,7 +42,7 @@ export const login = (req, email, password) => {
    });
 };
 
-export function createUser(req, userInfo) {
+export const createUser = (req, userInfo) => {
    return new Promise((resolve, reject) => {
       const { email: emailAddress } = userInfo;
       const userId = uuid.v4();
@@ -98,9 +99,43 @@ export function createUser(req, userInfo) {
          .then(() => resolve(user))
          .catch(err => reject(err));
    });
-}
+};
 
-export function updateUser(req, userId, updateInfo) {
+const resolveBookmarks = (req, bookmarks) => {
+   return new Promise((resolve, reject) => {
+      const messagePromises = {};
+      Object.keys(bookmarks).forEach((subscriberOrgId) => {
+         const messageIds = bookmarks[subscriberOrgId].messageIds;
+         Object.keys(messageIds).forEach((messageId) => {
+            const bookmark = messageIds[messageId];
+            const { conversationId } = bookmark;
+            const prevSiblingId = bookmark.prevSiblingId;
+
+            if (!messagePromises[messageId]) {
+               messagePromises[messageId] = messagesTable.getMessageByConversationIdAndMessageId(req, conversationId, messageId);
+            }
+            if ((!prevSiblingId) && (!messagePromises[prevSiblingId])) {
+               messagePromises[prevSiblingId] = messagesTable.getMessageByConversationIdAndMessageId(req, conversationId, prevSiblingId);
+            }
+         });
+      });
+
+      if (Object.keys(messagePromises).length > 0) {
+         const resolvedBookmarks = { ...bookmarks, messages: {} };
+         Promise.all(Object.values(messagePromises))
+            .then((messages) => {
+               messages.forEach((message) => { resolvedBookmarks.messages[message.messageId] = message; });
+               resolve(resolvedBookmarks);
+            })
+            .catch(err => reject(err));
+      } else {
+         const resolvedBookmarks = { ...bookmarks, messages: {} };
+         resolve(resolvedBookmarks);
+      }
+   });
+};
+
+export const updateUser = (req, userId, updateInfo) => {
    return new Promise((resolve, reject) => {
       usersTable.updateUser(req, userId, updateInfo)
          .then((user) => {
@@ -109,12 +144,16 @@ export function updateUser(req, userId, updateInfo) {
             if ((updateInfo.preferences) && (updateInfo.preferences.private)) {
                userPrivateInfoUpdated(req, user);
             }
+            if (updateInfo.bookmarks) {
+               resolveBookmarks(req, user.bookmarks)
+                  .then(resolvedBookmarks => userBookmarksUpdated(req, user, resolvedBookmarks));
+            }
          })
          .catch(err => reject(err));
    });
-}
+};
 
-export function updatePassword(req, userId, oldPassword, newPassword) {
+export const updatePassword = (req, userId, oldPassword, newPassword) => {
    return new Promise((resolve, reject) => {
       usersTable.getUserByUserId(req, userId)
          .then((user) => {
@@ -134,9 +173,9 @@ export function updatePassword(req, userId, oldPassword, newPassword) {
          })
          .catch(err => reject(err));
    });
-}
+};
 
-export function resetPassword(req, email, password) {
+export const resetPassword = (req, email, password) => {
    return new Promise((resolve, reject) => {
       usersTable.getUserByEmailAddress(req, email)
          .then((user) => {
@@ -153,7 +192,7 @@ export function resetPassword(req, email, password) {
          })
          .catch(err => reject(err));
    });
-}
+};
 
 export const getInvitations = (req, email) => {
    return new Promise((resolve, reject) => {
