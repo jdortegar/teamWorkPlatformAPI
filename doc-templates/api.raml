@@ -2411,6 +2411,164 @@ documentation:
                      FORBIDDEN<br />
                      The user doesn't have permissions to view this conversation.
 
+   /getMessages:
+      post:
+         securedBy: [oauth_2_0]
+         description: |
+            Retrieve specific messages by conversationId and messageId.  The returned array is the same size as the request array.
+            If a message is not found, null will be in place of that message in the return array.
+         body:
+            properties:
+               messages:
+                  type: array
+                  required: true
+                  items:
+                     properties:
+                        conversationId:
+                           type: string
+                           required: true
+                        messageid:
+                           type: string
+                           required: true
+         responses:
+            200:
+               description: |
+                  OK
+               body:
+                  properties:
+                     messages:
+                        type: array
+                        required: true
+                        items:
+                           properties:
+                              messageId:
+                                 type: string
+                                 required: true
+                              createdBy:
+                                 description: |
+                                    `userId`
+                                 type: string
+                                 required: true
+                              # TODO: only in DB.
+                              #createdByDisplayName:
+                              #   type: string
+                              #   required: true
+                              content:
+                                 type: array
+                                 required: true
+                                 items:
+                                    properties:
+                                       type:
+                                          type: string
+                                          required: true
+                                          description: Media Types as specified at https://www.iana.org/assignments/media-types/media-types.xhtml.
+                                       text:
+                                          type: string
+                                          required: false
+                                          description: if type is text/plain, then this field is required.
+                                       resourceId:
+                                          type: string
+                                          required: false
+                                          description: |
+                                             For binary files this field is required.<br />
+                                             Obtain the resource ID from first uploading the resource using the PUT /resources/{fileName} endpoint.
+                                       meta:
+                                          type: object
+                                          required: false
+                                          description: Optional fields for your pleasure.  Can add whatever, but you probably want consistency.
+                                          properties:
+                                             fileName:
+                                                type: string
+                                                required: false
+                              replyTo:
+                                 description: |
+                                    `messageId` this messages is attached to.  This is for threaded messages support.
+                                 type: string
+                                 required: false
+                              path:
+                                 type: string
+                                 required: true
+                              level:
+                                 type: integer
+                                 required: true,
+                              created:
+                                 description: The format is in [RFC339](https://xml2rfc.tools.ietf.org/public/rfc/html/rfc3339.html#anchor14), which is a profile of [ISO 8601].
+                                 type: datetime
+                                 required: true
+                              lastModified:
+                                 type: datetime
+                                 required: true
+                  example: |
+                     {
+                        "messages": [
+                           {
+                              "messageId": "9dec8947-0381-4809-a053-b56777f782f4",
+                              "createdBy": "9dec8947-0381-4809-a053-b56777f782f4",
+                              "messageType": "text",
+                              "text": "Alright.",
+                              "content": [
+                                 { "type": "text/plain", "text": "Alright." }
+                              ],
+                              "path": "9dec8947-0381-4809-a053-b56777f782f4",
+                              "level": 0,
+                              "created": "2017-08-17T00:59:49Z",
+                              "lastModified: "2017-08-17T00:59:49Z"
+                           },
+                           {
+                              "messageId": "9dec8947-0381-4809-a053-b56777f782f5",
+                              "createdBy": "9dec8947-0381-4809-a053-b56777f782f5",
+                              "messageType": "text",
+                              "text": "How's it going?",
+                              "content": [
+                                 { "type": "text/plain", "text": "How's it going?" },
+                                 {
+                                    "type": "application/octet-stream",
+                                    "resourceId": "bfefa47e-bde6-4dbf-816c-bc231a7320b1",
+                                    "meta": { "fileName": "abc.xyz" }
+                                 }
+                              ],
+                              "path": "9dec8947-0381-4809-a053-b56777f782f5",
+                              "level": 0,
+                              "created": "2017-08-17T00:59:49Z",
+                              "lastModified: "2017-08-17T00:59:49Z"
+                           }
+                        ]
+                     }
+                  example: |
+                     // v0
+                     {
+                        "messages": [
+                           {
+                              "messageId": "9dec8947-0381-4809-a053-b56777f782f4",
+                              "createdBy": "9dec8947-0381-4809-a053-b56777f782f4",
+                              "messageType": "text",
+                              "text": "Alright.",
+                              "path": "9dec8947-0381-4809-a053-b56777f782f4",
+                              "level": 0,
+                              "created": "2017-08-17T00:59:49Z",
+                              "lastModified: "2017-08-17T00:59:49Z"
+                           },
+                           {
+                              "messageId": "9dec8947-0381-4809-a053-b56777f782f5",
+                              "createdBy": "9dec8947-0381-4809-a053-b56777f782f5",
+                              "messageType": "text",
+                              "text": "How's it going?",
+                              "path": "9dec8947-0381-4809-a053-b56777f782f5",
+                              "level": 0,
+                              "created": "2017-08-17T00:59:49Z",
+                              "lastModified: "2017-08-17T00:59:49Z"
+                           }
+                        ]
+                     }
+            404:
+               description: |
+                  NOT_FOUND<br />
+                  The conversation with the given `conversationId` doesn't exist.
+            403:
+               description: |
+                  FORBIDDEN<br />
+                  The user doesn't have permissions to view this conversation.
+
    /{conversationId}:
       uriParameters:
          conversationId:

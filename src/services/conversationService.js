@@ -536,6 +536,13 @@ export const createMessage = (req, conversationId, userId, content, replyTo) => 
    });
 };
 
+export const getMessagesByConversationIdsAndMessageIds = (req, conversationIdsMessageIds) => {
+   const promises = conversationIdsMessageIds.map(({ conversationId, messageId }) => {
+      return messagesTable.getMessageByConversationIdAndMessageId(req, conversationId, messageId);
+   });
+   return Promise.all(promises);
+};
+
 export const updateMessage = (req, conversationId, messageId, userId, content) => {
    return new Promise((resolve, reject) => {
       const byteCount = byteCountOfContent(content);

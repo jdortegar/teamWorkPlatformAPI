@@ -54,6 +54,18 @@ export const getTranscript = (req, res, next) => {
       });
 };
 
+export const getMessages = (req, res, next) => {
+   const { messages: conversationIdsMessageIds } = req.body;
+
+   conversationsSvc.getMessagesByConversationIdsAndMessageIds(req, conversationIdsMessageIds)
+      .then((messages) => {
+         res.status(httpStatus.OK).json({ messages: publishByApiVersion(req, apiVersionedVisibility.publicMessages, messages) });
+      })
+      .catch((err) => {
+         next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
+      });
+};
+
 export const createMessage = (req, res, next) => {
    const userId = req.user._id;
    const conversationId = req.params.conversationId;

@@ -3,6 +3,7 @@
     ["transform-es2015-modules-commonjs"],
     ["transform-async-to-generator"],
     ["babel-plugin-transform-class-properties"],
+    ["transform-object-rest-spread"],
     ["transform-runtime", {
       "polyfill": true,
       "regenerator": true

@@ -13,6 +13,9 @@ router.route('/getBookmarkedMessages')
 router.route('/getTranscript/:conversationId')
    .get(conversations.getTranscript);
 
+router.route('/getMessages')
+   .post(validateByApiVersion(apiVersionedValidators.getMessages), conversations.getMessages);
+
 router.route('/:conversationId/createMessage')
    .post(validateByApiVersion(apiVersionedValidators.createMessage), conversations.createMessage);
 

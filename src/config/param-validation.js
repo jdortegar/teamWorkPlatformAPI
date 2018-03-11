@@ -186,6 +186,16 @@ const validationSchemas = {
          replyTo: Joi.string().min(1).allow(null)
       }
    },
+   getMessages: {
+      body: {
+         messages: Joi.array().min(1).items(
+           Joi.object().keys({
+              conversationId: Joi.string().min(1).required(),
+              messageId: Joi.string().min(1).required()
+           }
+        ).required())
+      }
+   },
    updateMessage: {
       body: {
          content: Joi.array().min(1).items(
@@ -301,6 +311,10 @@ export const apiVersionedValidators = {
    createMessage: {
       0: validate(validationSchemas.createMessage),
       1: validate(validationSchemas.createMessage_v1)
+   },
+   getMessages: {
+      0: validate(validationSchemas.getMessages),
+      1: validate(validationSchemas.getMessages)
    },
    updateMessage: {
       0: validate(validationSchemas.updateMessage),

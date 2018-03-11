@@ -254,6 +254,10 @@ const publicConversations = (conversations) => {
 
 
 const publicMessage = (message) => {
+   if (!message) {
+      return null;
+   }
+
    const messageId = message.messageId;
    const { conversationId, createdBy, topic, content, replyTo, path, level, created, lastModified, deleted } = message.messageInfo || message;
    return {
