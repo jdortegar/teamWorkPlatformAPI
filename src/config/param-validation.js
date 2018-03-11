@@ -35,9 +35,7 @@ const validationSchemas = {
          icon: Joi.string().base64().allow(null),
          defaultLocale: Joi.string().min(1),
          presenceStatus: Joi.string().min(1),
-         bookmarks: Joi.array().min(1).items(
-            Joi.string().min(1).required()
-         ),
+         bookmarks: Joi.object(),
          preferences: Joi.object().keys({
             iconColor: Joi.string().min(1),
             private: Joi.object()

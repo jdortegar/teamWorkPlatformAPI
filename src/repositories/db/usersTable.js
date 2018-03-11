@@ -33,8 +33,32 @@ const tableName = () => {
 const v = 1;
 
 const upgradeSchema = (req, dbObjects) => {
-   // Nothing to upgrade.
-   return Promise.resolve(dbObjects);
+   return dbObjects.map((dbObject) => {
+      let schemaVersion = dbObject.v;
+
+      if (schemaVersion === 1) {
+         schemaVersion = 2;
+         const params = {
+            TableName: tableName(),
+            Key: { userId: dbObject.userId },
+            UpdateExpression: 'set v = :v, bookmarks = :bookmarks',
+            ExpressionAttributeValues: {
+               ':v': schemaVersion,
+               ':bookmarks': {}
+            }
+         };
+
+         return req.app.locals.docClient.update(params).promise()
+            .then(() => {
+               const upgradedDbObject = dbObject;
+               upgradedDbObject.v = schemaVersion;
+               upgradedDbObject.bookmarks = {};
+               return upgradedDbObject;
+            });
+      }
+
+      return dbObject;
+   });
 };
 
 export const createUser = (req,
@@ -66,7 +90,7 @@ export const createUser = (req,
             defaultLocale: defaultLocale || 'en',
             enabled: enabled || true,
             presenceStatus: null,
-            bookmarks: [],
+            bookmarks: {},
             created: req.now.format(),
             lastModified: req.now.format(),
             preferences
