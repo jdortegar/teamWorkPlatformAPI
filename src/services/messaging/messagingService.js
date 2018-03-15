@@ -1,18 +1,15 @@
-import moment from 'moment';
+import _ from 'lodash';
 import SocketIO from 'socket.io';
 import socketioJwt from 'socketio-jwt';
 import SocketIORedisAdapter from 'socket.io-redis';
 import SocketIOWildcard from 'socketio-wildcard';
 import config from '../../config/env';
-import app from '../../config/express';
+import * as subscriberUsersTable from '../../repositories/db/subscriberUsersTable';
+import * as teamMembersTable from '../../repositories/db/teamMembersTable';
+import * as teamRoomMembersTable from '../../repositories/db/teamRoomMembersTable';
 import * as conversationSvc from '../conversationService';
-import logger from '../../logger';
+import logger, { createPseudoRequest } from '../../logger';
 import { setPresence } from './presence';
-import {
-   getSubscriberUsersByUserIds,
-   getTeamMembersByUserIds,
-   getTeamRoomMembersByUserIds
-} from '../../repositories/util';
 import { disconnectFromRedis } from '../../redis-connection';
 import Roles from '../roles';
 
@@ -23,6 +20,9 @@ export const EventTypes = Object.freeze({
    userCreated: 'userCreated',
    userUpdated: 'userUpdated',
    userPrivateInfoUpdated: 'userPrivateInfoUpdated',
+   userInvitationAccepted: 'userInvitationAccepted',
+   userInvitationDeclined: 'userInvitationDeclined',
+   sentInvitationStatus: 'sentInvitationStatus',
 
    subscriberOrgCreated: 'subscriberOrgCreated',
    subscriberOrgUpdated: 'subscriberOrgUpdated',
@@ -42,6 +42,12 @@ export const EventTypes = Object.freeze({
    conversationCreated: 'conversationCreated',
    conversationUpdated: 'conversationUpdated',
    messageCreated: 'messageCreated',
+   messageRead: 'messageRead',
+   messageUpdated: 'messageUpdated',
+   messageDeleted: 'messageDeleted',
+   messageLiked: 'messageLiked',
+   messageDisliked: 'messageDisliked',
+   messageFlagged: 'messageFlagged',
 
    typing: 'typing',
    location: 'location',
@@ -49,6 +55,7 @@ export const EventTypes = Object.freeze({
    integrationsUpdated: 'integrationsUpdated',
    boxWebhookEvent: 'boxWebhookEvent',
    googleWebhookEvent: 'googleWebhookEvent',
+   sharepointWebhookEvent: 'sharepointWebhookEvent',
 
    from(value) { return (this[value]); }
 });
@@ -92,13 +99,13 @@ export class ChannelFactory {
 }
 
 export const PresenceStatuses = Object.freeze({
-   available: 'available',
-   away: 'away',
+   online: 'online',
+   offline: 'offline',
    from(value) { return (this[value]); }
 });
 
 
-function joinCurrentChannels(req, socket, userId) {
+const joinCurrentChannels = (req, socket, userId) => {
    const publicChannel = ChannelFactory.publicChannel();
    socket.join(publicChannel);
    logger.debug(`MessagingService: userId=${userId} joining ${publicChannel}`);
@@ -109,10 +116,10 @@ function joinCurrentChannels(req, socket, userId) {
 
    // Get subscribers/members instead of subscriberOrgs/teams/teamRooms, as we need the role also.
 
-   getSubscriberUsersByUserIds(req, [userId])
+   subscriberUsersTable.getSubscriberUsersByUserId(req, userId)
       .then((subscribers) => {
          subscribers.forEach((subscriber) => {
-            const { subscriberOrgId, role } = subscriber.subscriberUserInfo;
+            const { subscriberOrgId, role } = subscriber;
 
             const subscriberOrgChannel = ChannelFactory.subscriberOrgChannel(subscriberOrgId);
             socket.join(subscriberOrgChannel);
@@ -127,10 +134,10 @@ function joinCurrentChannels(req, socket, userId) {
       })
       .catch(err => logger.error(err));
 
-   getTeamMembersByUserIds(req, [userId])
+   teamMembersTable.getTeamMembersByUserId(req, userId)
       .then((teamMembers) => {
          teamMembers.forEach((teamMember) => {
-            const { teamId, role } = teamMember.teamMemberInfo;
+            const { teamId, role } = teamMember;
 
             const teamChannel = ChannelFactory.teamChannel(teamId);
             socket.join(teamChannel);
@@ -145,10 +152,10 @@ function joinCurrentChannels(req, socket, userId) {
       })
       .catch(err => logger.error(err));
 
-   getTeamRoomMembersByUserIds(req, [userId])
+   teamRoomMembersTable.getTeamRoomMembersByUserId(req, userId)
       .then((teamRoomMembers) => {
          teamRoomMembers.forEach((teamRoomMember) => {
-            const { teamRoomId, role } = teamRoomMember.teamRoomMemberInfo;
+            const { teamRoomId, role } = teamRoomMember;
 
             const teamRoomChannel = ChannelFactory.teamRoomChannel(teamRoomId);
             socket.join(teamRoomChannel);
@@ -173,7 +180,7 @@ function joinCurrentChannels(req, socket, userId) {
          });
       })
       .catch(err => logger.error(err));
-}
+};
 
 
 class MessagingService {
@@ -249,9 +256,9 @@ class MessagingService {
       const location = undefined;
       logger.debug(`MessagingService: User connected. sId=${socket.id} userId=${userId} ${socket.decoded_token.email} address=${address} userAgent=${userAgent}`);
 
-      const req = { app, now: moment.utc() };
+      const req = createPseudoRequest();
       joinCurrentChannels(req, socket, userId);
-      this._presenceChanged(req, userId, address, userAgent, location, PresenceStatuses.available);
+      this._presenceChanged(req, userId, address, userAgent, location, PresenceStatuses.online);
    }
 
    _disconnected(socket, reason) {
@@ -264,7 +271,7 @@ class MessagingService {
       const location = undefined;
       logger.debug(`MessagingService: User disconnected. sId=${socket.id} userId=${userId} ${socket.decoded_token.email} address=${address} userAgent=${userAgent} (${reason})`);
 
-      const req = { app, now: moment.utc() };
+      const req = createPseudoRequest();
       this._presenceChanged(req, userId, address, userAgent, location, PresenceStatuses.away);
    }
 
@@ -292,12 +299,12 @@ class MessagingService {
       } else if (eventType === EventTypes.location) {
          const { lat, lon, alt, accuracy } = event;
          if ((lat) && (lon)) {
-            const req = { app, now: moment.utc() };
+            const req = createPseudoRequest();
             const userId = socket.decoded_token._id;
             const address = socket.client.conn.remoteAddress;
             const userAgent = socket.client.request.headers['user-agent'];
             const location = { lat, lon, alt, accuracy };
-            this._presenceChanged(req, userId, address, userAgent, location, PresenceStatuses.available);
+            this._presenceChanged(req, userId, address, userAgent, location, PresenceStatuses.online);
             // broadcast.
          }
       } else {
@@ -382,18 +389,27 @@ const messagingService = new MessagingService();
 export default messagingService;
 
 
-// export function _presenceChanged(req, userId, address, userAgent, location, presenceStatus, presenceMessage = undefined) {
+// export const _presenceChanged = (req, userId, address, userAgent, location, presenceStatus, presenceMessage = undefined) => {
 //    messagingService._presenceChanged(req, userId, address, userAgent, location, presenceStatus, presenceMessage);
-// }
+// };
 
-export function _broadcastEvent(req, eventType, event, channels = undefined) {
-   messagingService._broadcastEvent(req, eventType, event, channels);
-}
+export const _broadcastEvent = (req, eventType, event, channels = undefined) => {
+   const sendEvent = _.clone(event);
+   if (req.user) {
+      sendEvent._src = {
+         userId: req.user._id,
+         address: req.ip,
+         userAgent: req.headers['user-agent']
+      };
+   }
+   messagingService._broadcastEvent(req, eventType, sendEvent, channels);
+};
 
-export function _joinChannels(req, userId, channels) {
+export const _joinChannels = (req, userId, channels) => {
    return messagingService._joinChannels(req, userId, channels);
-}
+};
 
-export function _leaveChannels(req, userId, channels) {
+export const _leaveChannels = (req, userId, channels) => {
    messagingService._leaveChannels(req, userId, channels);
-}
+};
+

@@ -1,27 +1,26 @@
 import _ from 'lodash';
 import uuid from 'uuid';
-import config from '../config/env';
 import { IntegrationAccessError, SubscriberOrgNotExistError } from './errors';
 import { composeAuthorizationUrl, exchangeAuthorizationCodeForAccessToken, getUserInfo, revokeIntegration, validateWebhookMessage } from '../integrations/google';
 import { integrationsUpdated, googleWebhookEvent } from './messaging';
-import { getSubscriberUsersByUserIdAndSubscriberOrgId, updateItemCompletely } from '../repositories/util';
+import * as subscriberUsersTable from '../repositories/db/subscriberUsersTable';
 
 const defaultExpiration = 30 * 60; // 30 minutes.
 
-function hashKey(state) {
+const hashKey = (state) => {
    return `${state}#googleIntegrationState`;
-}
+};
 
-function createRedisGoogleIntegrationState(req, userId, subscriberOrgId) {
+const createRedisGoogleIntegrationState = (req, userId, subscriberOrgId) => {
    return new Promise((resolve, reject) => {
       const state = uuid.v4();
       req.app.locals.redis.hmsetAsync(hashKey(state), 'userId', userId, 'subscriberOrgId', subscriberOrgId, 'EX', defaultExpiration)
          .then(() => resolve(state))
          .catch(err => reject(err));
    });
-}
+};
 
-function deleteRedisGoogleIntegrationState(req, state) {
+const deleteRedisGoogleIntegrationState = (req, state) => {
    return new Promise((resolve, reject) => {
       let userId;
       let subscriberOrgId;
@@ -41,14 +40,14 @@ function deleteRedisGoogleIntegrationState(req, state) {
          })
          .catch(err => reject(err));
    });
-}
+};
 
 
-export function integrateGoogle(req, userId, subscriberOrgId) {
+export const integrateGoogle = (req, userId, subscriberOrgId) => {
    return new Promise((resolve, reject) => {
-      getSubscriberUsersByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId)
-         .then((subscriberUsers) => {
-            if (subscriberUsers.length === 0) {
+      subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId)
+         .then((subscriberUser) => {
+            if (!subscriberUser) {
                throw new SubscriberOrgNotExistError(subscriberOrgId);
             }
 
@@ -60,9 +59,9 @@ export function integrateGoogle(req, userId, subscriberOrgId) {
          })
          .catch(err => reject(err));
    });
-}
+};
 
-export function googleAccessResponse(req, { code, state, error }) {
+export const googleAccessResponse = (req, { code, state, error }) => {
    if (error) {
       return Promise.reject(new IntegrationAccessError(error));
    }
@@ -86,27 +85,27 @@ export function googleAccessResponse(req, { code, state, error }) {
             req.logger.debug(`Google access info for userId=${userId}/subscriberOrgId=${subscriberOrgId} = ${JSON.stringify(tokenInfo)}`);
             integrationInfo = tokenInfo;
             return Promise.all([
-               getSubscriberUsersByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId),
+               subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId),
                getUserInfo(req, integrationInfo.access_token)
             ]);
          })
          .then((promiseResults) => {
-            const subscriberUsers = promiseResults[0];
+            const subscriberUser = promiseResults[0];
             const userInfo = promiseResults[1];
-            if (subscriberUsers.length === 0) {
+            if (!subscriberUser) {
                throw new SubscriberOrgNotExistError(subscriberOrgId);
             }
 
-            const { subscriberUserId } = subscriberUsers[0];
+            const { subscriberUserId } = subscriberUser;
             integrationInfo.userId = userInfo.id;
             integrationInfo.expired = false;
             const googleInfo = {
                google: integrationInfo
             };
-            updateInfo = _.merge(subscriberUsers[0].subscriberUserInfo, { integrations: googleInfo });
+            updateInfo = _.merge(subscriberUser, { integrations: googleInfo });
             delete updateInfo.integrations.google.revoked;
-
-            return updateItemCompletely(req, -1, `${config.tablePrefix}subscriberUsers`, 'subscriberUserId', subscriberUserId, { subscriberUserInfo: updateInfo });
+            const integrations = updateInfo.integrations;
+            return subscriberUsersTable.updateSubscriberUserIntegrations(req, subscriberUserId, integrations);
          })
          .then(() => {
             integrationsUpdated(req, updateInfo);
@@ -125,42 +124,40 @@ export function googleAccessResponse(req, { code, state, error }) {
             reject(integrationError);
          });
    });
-}
+};
 
-export function revokeGoogle(req, userId, subscriberOrgId) {
+export const revokeGoogle = (req, userId, subscriberOrgId) => {
    return new Promise((resolve, reject) => {
-      let subscriberUserInfo;
-      getSubscriberUsersByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId)
-         .then((subscriberUsers) => {
-            if (subscriberUsers.length === 0) {
+      subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId)
+         .then((subscriberUser) => {
+            if (!subscriberUser) {
                throw new SubscriberOrgNotExistError(subscriberOrgId);
             }
 
-            const subscriberUserId = subscriberUsers[0].subscriberUserId;
-            subscriberUserInfo = _.cloneDeep(subscriberUsers[0].subscriberUserInfo);
-            const userAccessToken = ((subscriberUserInfo.integrations) && (subscriberUserInfo.integrations.google))
-               ? subscriberUserInfo.integrations.google.access_token : undefined;
+            const { subscriberUserId, integrations } = subscriberUser;
+            const userAccessToken = ((subscriberUser.integrations) && (subscriberUser.integrations.google))
+               ? subscriberUser.integrations.google.access_token : undefined;
             const promises = [];
 
             if (userAccessToken) {
-               subscriberUserInfo.integrations.google = { revoked: true };
-               promises.push(updateItemCompletely(req, -1, `${config.tablePrefix}subscriberUsers`, 'subscriberUserId', subscriberUserId, { subscriberUserInfo }));
+               integrations.google = { revoked: true };
+               promises.push(subscriberUsersTable.updateSubscriberUserIntegrations(req, subscriberUserId, integrations));
                promises.push(revokeIntegration(req, userAccessToken));
             } else {
                throw new IntegrationAccessError('Google integration doesn\'t exist.');
             }
             return Promise.all(promises);
          })
-         .then(() => {
+         .then(([subscriberUserInfo]) => {
             resolve();
             integrationsUpdated(req, subscriberUserInfo);
          })
          .catch(err => reject(err));
    });
-}
+};
 
-export function webhookEvent(req) {
+export const webhookEvent = (req) => {
    validateWebhookMessage(req);
    googleWebhookEvent(req, req.body);
    return Promise.resolve();
-}
+};

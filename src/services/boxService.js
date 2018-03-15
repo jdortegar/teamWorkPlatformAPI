@@ -1,27 +1,26 @@
 import _ from 'lodash';
 import uuid from 'uuid';
-import config from '../config/env';
 import { IntegrationAccessError, SubscriberOrgNotExistError } from './errors';
 import { composeAuthorizationUrl, exchangeAuthorizationCodeForAccessToken, getUserInfo, revokeIntegration, validateWebhookMessage } from '../integrations/box';
 import { integrationsUpdated, boxWebhookEvent } from './messaging';
-import { getSubscriberUsersByUserIdAndSubscriberOrgId, updateItemCompletely } from '../repositories/util';
+import * as subscriberUsersTable from '../repositories/db/subscriberUsersTable';
 
 const defaultExpiration = 30 * 60; // 30 minutes.
 
-function hashKey(state) {
+const hashKey = (state) => {
    return `${state}#boxIntegrationState`;
-}
+};
 
-function createRedisBoxIntegrationState(req, userId, subscriberOrgId) {
+const createRedisBoxIntegrationState = (req, userId, subscriberOrgId) => {
    return new Promise((resolve, reject) => {
       const state = uuid.v4();
       req.app.locals.redis.hmsetAsync(hashKey(state), 'userId', userId, 'subscriberOrgId', subscriberOrgId, 'EX', defaultExpiration)
          .then(() => resolve(state))
          .catch(err => reject(err));
    });
-}
+};
 
-function deleteRedisBoxIntegrationState(req, state) {
+const deleteRedisBoxIntegrationState = (req, state) => {
    return new Promise((resolve, reject) => {
       let userId;
       let subscriberOrgId;
@@ -41,14 +40,14 @@ function deleteRedisBoxIntegrationState(req, state) {
          })
          .catch(err => reject(err));
    });
-}
+};
 
 
-export function integrateBox(req, userId, subscriberOrgId) {
+export const integrateBox = (req, userId, subscriberOrgId) => {
    return new Promise((resolve, reject) => {
-      getSubscriberUsersByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId)
-         .then((subscriberUsers) => {
-            if (subscriberUsers.length === 0) {
+      subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId)
+         .then((subscriberUser) => {
+            if (!subscriberUser) {
                throw new SubscriberOrgNotExistError(subscriberOrgId);
             }
 
@@ -60,9 +59,9 @@ export function integrateBox(req, userId, subscriberOrgId) {
          })
          .catch(err => reject(err));
    });
-}
+};
 
-export function boxAccessResponse(req, { code, state, error, error_description }) {
+export const boxAccessResponse = (req, { code, state, error, error_description }) => {
    if (error) {
       return Promise.reject(new IntegrationAccessError(`${error}: ${error_description}`)); // eslint-disable-line camelcase
    }
@@ -86,27 +85,27 @@ export function boxAccessResponse(req, { code, state, error, error_description }
             req.logger.debug(`Box access info for userId=${userId}/subscriberOrgId=${subscriberOrgId} = ${JSON.stringify(tokenInfo)}`);
             integrationInfo = tokenInfo;
             return Promise.all([
-               getSubscriberUsersByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId),
+               subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId),
                getUserInfo(req, integrationInfo.accessToken)
             ]);
          })
          .then((promiseResults) => {
-            const subscriberUsers = promiseResults[0];
+            const subscriberUser = promiseResults[0];
             const userInfo = promiseResults[1];
-            if (subscriberUsers.length === 0) {
+            if (!subscriberUser) {
                throw new SubscriberOrgNotExistError(subscriberOrgId);
             }
 
-            const { subscriberUserId } = subscriberUsers[0];
+            const { subscriberUserId } = subscriberUser;
             integrationInfo.userId = userInfo.id;
             integrationInfo.expired = false;
             const boxInfo = {
                box: integrationInfo
             };
-            updateInfo = _.merge(subscriberUsers[0].subscriberUserInfo, { integrations: boxInfo });
+            updateInfo = _.merge(subscriberUser, { integrations: boxInfo });
             delete updateInfo.integrations.box.revoked;
-
-            return updateItemCompletely(req, -1, `${config.tablePrefix}subscriberUsers`, 'subscriberUserId', subscriberUserId, { subscriberUserInfo: updateInfo });
+            const integrations = updateInfo.integrations;
+            return subscriberUsersTable.updateSubscriberUserIntegrations(req, subscriberUserId, integrations);
          })
          .then(() => {
             integrationsUpdated(req, updateInfo);
@@ -125,41 +124,39 @@ export function boxAccessResponse(req, { code, state, error, error_description }
             reject(integrationError);
          });
    });
-}
+};
 
-export function revokeBox(req, userId, subscriberOrgId) {
+export const revokeBox = (req, userId, subscriberOrgId) => {
    return new Promise((resolve, reject) => {
-      let subscriberUserInfo;
-      getSubscriberUsersByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId)
-         .then((subscriberUsers) => {
-            if (subscriberUsers.length === 0) {
+      subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId)
+         .then((subscriberUser) => {
+            if (!subscriberUser) {
                throw new SubscriberOrgNotExistError(subscriberOrgId);
             }
 
-            const { subscriberUserId } = subscriberUsers[0];
-            subscriberUserInfo = _.cloneDeep(subscriberUsers[0].subscriberUserInfo);
-            const userAccessToken = ((subscriberUserInfo.integrations) && (subscriberUserInfo.integrations.box)) ? subscriberUserInfo.integrations.box.accessToken : undefined;
+            const { subscriberUserId, integrations } = subscriberUser;
+            const userAccessToken = ((subscriberUser.integrations) && (subscriberUser.integrations.box)) ? subscriberUser.integrations.box.accessToken : undefined;
             const promises = [];
 
             if (userAccessToken) {
-               subscriberUserInfo.integrations.box = { revoked: true };
-               promises.push(updateItemCompletely(req, -1, `${config.tablePrefix}subscriberUsers`, 'subscriberUserId', subscriberUserId, { subscriberUserInfo }));
+               integrations.box = { revoked: true };
+               promises.push(subscriberUsersTable.updateSubscriberUserIntegrations(req, subscriberUserId, integrations));
                promises.push(revokeIntegration(req, userAccessToken));
             } else {
                throw new IntegrationAccessError('Box integration doesn\'t exist.');
             }
             return Promise.all(promises);
          })
-         .then(() => {
+         .then(([subscriberUserInfo]) => {
             resolve();
             integrationsUpdated(req, subscriberUserInfo);
          })
          .catch(err => reject(err));
    });
-}
+};
 
-export function webhookEvent(req) {
+export const webhookEvent = (req) => {
    validateWebhookMessage(req);
    boxWebhookEvent(req, req.body);
    return Promise.resolve();
-}
+};

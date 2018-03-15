@@ -199,6 +199,41 @@ documentation:
                   OK<br />
                   Always OK, whether a valid JWT exists or not, or any other server failure.
 
+   /registerAWSCustomer:
+      post:
+         description: |
+            AWS Marketplace SaaS registration endpoint, invoked my user purchase on AWS Marketplace.
+         body:
+            application/x-www-form-urlencoded:
+               properties:
+                  x-amzn-marketplace-token:
+                     description: AWS Marketplace customer’s registration token, to be used to retrieve the AWS customer ID.
+                     type: string
+                     required: true
+         responses:
+            302:
+               description: |
+                  FOUND<br />
+                  Redirect user to Habla AI login page, for the user to login or register.
+            404:
+               description: |
+                  NOT_FOUND<br />
+                  Either the customer's registration token was not given, or the Product Code that the customer signed up for does not match Habla AI .
+
+   /handleAWSEntitlementEvent:
+      post:
+         description: |
+            AWS Marketplace SaaS notification endpoint, invoked when the customer makes changes to their plan on AWS Marketplace.
+         responses:
+            200:
+               description: |
+                  OK<br />
+                  We were able to process the message cleanly, whether valid or not.  This signifies the invoker to not reinvoke.
+            500:
+               description: |
+                  Internal Server Error<br />
+                  There's an error in processing.  This signal the invoker to resend, and for us to fix a bug.
+
 
 /users:
 
@@ -233,14 +268,9 @@ documentation:
                         type: string
                         required: true
                         example: SUCCESS
-                     uuid:
-                        type: string
-                        required: true
-                        example: 9dec8947-0381-4809-a053-b56777f782f4
                   example: |
                      {
-                       "status": "SUCCESS",
-                       "uuid": "9dec8947-0381-4809-a053-b56777f782f4"
+                       "status": "SUCCESS"
                      }
             400:
                description: |
@@ -327,6 +357,11 @@ documentation:
                   type: string | nil
                   required: false
                   default: nil
+               defaultLocale:
+                  description: The locale to use when the user is offline (ex. email notifications, etc.).
+                  type: string
+                  required: false
+                  default: en
                preferences:
                   type: object
                   required: false
@@ -403,6 +438,22 @@ documentation:
                   description: The user's avatar, base64 of image.
                   type: string | nil
                   required: false
+               defaultLocale:
+                  description: The locale to use when the user is offline (ex. email notifications, etc.).
+                  type: string
+                  required: false
+               presenceStatus:
+                  description: Status of the user, like "In a meeting", "Out sick", etc.
+                  type: string
+                  required: false
+               bookmarks:
+                  type: array
+                  required: false
+                  items:
+                     properties:
+                        messageId:
+                           type: string
+                           required: true
                preferences:
                   type: object
                   required: false
@@ -443,6 +494,92 @@ documentation:
                description: |
                   NOT_FOUND<br />
                   The user was not found.
+
+   /updatePassword:
+      patch:
+         securedBy: [oauth_2_0]
+         description: |
+            Update a user's password in Habla.
+         body:
+            properties:
+               oldPasword:
+                  description: The current user's password.
+                  type: string
+                  required: true
+                  example: HelloWorld#123
+               newPasword:
+                  description: The new password to update.
+                  type: string
+                  required: true
+                  example: HelloWorld#123!
+            example: |
+               {
+                  "oldPassword": "Hello123"
+                  "newPassword": "Bye123#"
+               }
+         responses:
+            204:
+               description: |
+                  NO_CONTENT<br />
+                  The password was updated successfully.
+            404:
+               description: |
+                  NOT_FOUND<br />
+                  The user was not found.
+
+   /forgotPassword:
+      post:
+         description: |
+            Submit user email address to initiate password reset process
+         body:
+            properties:
+               email:
+                  type: string
+                  required: true
+            example: |
+               {
+                  "email": "john_doe@habla.ai"
+               }
+         responses:
+            201:
+               description: |
+                  CREATED<br />
+                  The uuid is the Reservation ID (rid).
+                  TODO: Was 200 OK.
+            400:
+               description: |
+                  BAD_REQUEST<br />
+                  No reason is given for privacy purposes, but could be an unknown username.
+
+   /resetPassword:
+      /{rid}:
+         uriParameters:
+            rid:
+               description: Reservation ID (rid).
+         post:
+            description: |
+               Reset the user's password
+            body:
+               properties:
+                  pasword:
+                     description: The new password to update.
+                     type: string
+                     required: true
+                     example: Bye123#!
+               example: |
+                  {
+                     "password": "Bye123#"
+                  }
+            responses:
+               204:
+                  description: |
+                     NO_CONTENT<br />
+                     The password was reset successfully.
+               404:
+                  description: |
+                     NOT_FOUND<br />
+                     The user was not found.
+
 
    /updatePublicPreferences:
       /{userId}:
@@ -500,6 +637,12 @@ documentation:
                               byUserId:
                                  type: string
                                  required: true
+                              byUserFirstName:
+                                 type: string
+                                 required: true
+                              byUserLastName:
+                                 type: string
+                                 required: true
                               byUserDisplayName:
                                  type: string
                                  required: true
@@ -526,19 +669,120 @@ documentation:
                         "invitations": [
                            {
                               "byUserId": "ea794510-cea6-4132-0008-a7ae1d32abb1",
+                              "byUserFirstName": "Anthony",
+                              "byUserLastName": "Daga",
                               "byUserDisplayName": "Anthony Daga",
                               "subscriberOrgId": "ea794510-cea6-4132-0008-a7ae1d32abb2",
-                              "subscriberOrgName": "Acme"
+                              "subscriberOrgName": "Acme",
+                              "created": "2018-01-10T19:05:16Z"
                            },
                            {
                               "byUserId": "ea794510-cea6-4132-0008-a7ae1d32abb1",
+                              "byUserFirstName": "Anthony",
+                              "byUserLastName": "Daga",
                               "byUserDisplayName": "Anthony Daga",
                               "subscriberOrgId": "ea794510-cea6-4132-0008-a7ae1d32abb2",
                               "subscriberOrgName": "Acme",
                               "teamId": "ea794510-cea6-4132-0008-a7ae1d32abb3",
                               "teamName": "All",
                               "teamRoomId": "ea794510-cea6-4132-0008-a7ae1d32abb4",
-                              "teamRoomName": "Lobby"
+                              "teamRoomName": "Lobby",
+                              "created": "2018-01-10T19:06:17Z"
+                           }
+                        ]
+                     }
+
+   /getSentInvitations:
+      get:
+         securedBy: [oauth_2_0]
+         description: |
+            Retrieve all invitations that the user sent.
+         queryParameters:
+            since:
+               description: The messages returned are `created` greater than or equal to this value, in RFC339 format.
+               type: string
+               required: false
+               example: "2017-04-12T23:20:50.52Z"
+            state:
+               description: The state of the invitation, null | ACCEPTED | DECLINED | EXPIRED, where null means pending.
+         responses:
+            200:
+               description: |
+                  OK
+               body:
+                  properties:
+                     invitations:
+                        type: array
+                        required: true
+                        items:
+                           properties:
+                              inviterUserId:
+                                 type: string
+                                 required: true
+                              created:
+                                 type: datetime
+                                 required: true
+                              inviterFirstName:
+                                 type: string
+                                 required: true
+                              inviterLastName:
+                                 type: string
+                                 required: true
+                              inviterDisplayName:
+                                 type: string
+                                 required: true
+                              inviteeEmail:
+                                 description: Only available for a subscriberOrg invite.
+                                 type: string
+                                 required: false
+                              inviteeUserId:
+                                 type: string
+                                 required: false
+                                 description: Only available if the invite is for an existing Habla AI user.
+                              expires:
+                                 type: string
+                                 required: true
+                              state:
+                                 type: string
+                                 required: true
+                                 description: null | ACCEPTED | DECLINED | EXPIRED, where null means pending.
+                              lastModified:
+                                 type: datetime
+                                 required: true
+                              subscriberOrgId:
+                                 type: string
+                                 required: true
+                              subscriberOrgName:
+                                 type: string
+                                 required: true
+                              teamId:
+                                 type: string
+                                 required: false
+                              teamName:
+                                 type: string
+                                 required: false
+                              teamRoomId:
+                                 type: string
+                                 required: false
+                              teamRoomName:
+                                 type: string
+                                 required: false
+                  example: |
+                     {
+                        "invitations": [
+                           {
+                              "inviterUserId": "02c44319-074b-4787-b149-808fa53b53c3",
+                              "created": "2018-01-11T06:38:16Z",
+                              "inviterFirstName": "Anthony",
+                              "inviterLastName": "Daga",
+                              "inviterDisplayName": "a.d@habla.io",
+                              "inviteeEmail": "anthony.daga@habla.ai",
+                              "inviteeUserId": "65ba9c90-d584-4ec1-aed5-950f1ffe39db",
+                              "expires": "2018-01-18T06:38:16Z",
+                              "state": null,
+                              "lastModified": "2018-01-11T06:38:16Z",
+                              "subscriberOrgId": "3e5485b2-64a9-489c-be21-b4b40861cbae",
+                              "subscriberOrgName": "a.d@habla.io"
                            }
                         ]
                      }
@@ -712,6 +956,10 @@ documentation:
                   description: |
                      FORBIDDEN<br />
                      The user is not allowed to update the specified organization.
+               409:
+                  description: |
+                     CONFLICT<br />
+                     The requested subscriberOrg name is a duplicate.
 
    /getSubscribers:
       /{subscriberOrgId}:
@@ -753,6 +1001,9 @@ documentation:
                                     type: string | nil
                                     required: false
                                     default: nil
+                                 presenceStatus:
+                                    type: string
+                                    required: false
                                  userType:
                                     type: string
                                     required: true
@@ -819,6 +1070,7 @@ documentation:
                                  "lastName": "Daga",
                                  "displayName": "Anthony Dude Daga",
                                  "icon": null,
+                                 "presenceStatus": "Out and about",
                                  "userType": "hablaUser",
                                  "enabled": true,
                                  "preferences": {
@@ -831,7 +1083,7 @@ documentation:
                                     {
                                        "address": "::ffff:127.0.0.1",
                                        "userAgent": "node-XMLHttpRequest",
-                                       "presenceStatus": "available"
+                                       "presenceStatus": "online"
                                     }
                                  ]
                               },
@@ -842,6 +1094,7 @@ documentation:
                                  "lastName": "Goodacre",
                                  "displayName": "Jill Goodacre",
                                  "icon": null,
+                                 "presenceStatus": null,
                                  "userType": "hablaUser",
                                  "enabled": true,
                                  "preferences": {
@@ -854,7 +1107,7 @@ documentation:
                                     {
                                        "address": "::ffff:127.0.0.1",
                                        "userAgent": "node-XMLHttpRequest",
-                                       "presenceStatus": "available"
+                                       "presenceStatus": "online"
                                     }
                                  ]
                               }
@@ -1157,7 +1410,7 @@ documentation:
                409:
                   description: |
                      CONFLICT<br />
-                     A primary team cannot be deactivated.
+                     The updated name is a duplicate within the subscriberOrg, or a primary team cannot be deactivated.
                404:
                   description: |
                      NOT_FOUND<br />
@@ -1204,6 +1457,9 @@ documentation:
                                     type: string | nil
                                     required: false
                                     default: nil
+                                 presenceStatus:
+                                    type: string
+                                    required: false
                                  userType:
                                     type: string
                                     required: true
@@ -1263,6 +1519,7 @@ documentation:
                                  "lastName": "Daga",
                                  "displayName": "Anthony Dude Daga",
                                  "icon": null,
+                                 "presenceStatus": "Out and about",
                                  "userType": "hablaUser",
                                  "enabled": true,
                                  "preferences": {
@@ -1276,6 +1533,7 @@ documentation:
                                  "lastName": "Goodacre",
                                  "displayName": "Jill Goodacre",
                                  "icon": null,
+                                 "presenceStatus": null,
                                  "userType": "hablaUser",
                                  "enabled": true,
                                  "preferences": {
@@ -1623,7 +1881,7 @@ documentation:
                409:
                   description: |
                      CONFLICT<br />
-                     A primary team room cannot be deactivated.
+                     The updated name is a duplicate within the team, or a primary team room cannot be deactivated.
                404:
                   description: |
                      NOT_FOUND<br />
@@ -1670,6 +1928,9 @@ documentation:
                                     type: string | nil
                                     required: false
                                     default: nil
+                                 presenceStatus:
+                                    type: string
+                                    required: false
                                  userType:
                                     type: string
                                     required: true
@@ -1729,6 +1990,7 @@ documentation:
                                  "lastName": "Daga",
                                  "displayName": "Anthony Dude Daga",
                                  "icon": null,
+                                 "presenceStatus": "Out and about",
                                  "userType": "hablaUser",
                                  "enabled": true,
                                  "preferences": {
@@ -1742,6 +2004,7 @@ documentation:
                                  "lastName": "Goodacre",
                                  "displayName": "Jill Goodacre",
                                  "icon": null,
+                                 "presenceStatus": null,
                                  "userType": "hablaUser",
                                  "enabled": true,
                                  "preferences": {
@@ -1864,6 +2127,9 @@ documentation:
                                  type: string
                                  required: true
                               teamRoomId:
+                                 type: string
+                                 required: false
+                              topic:
                                  type: string
                                  required: false
                               participants:
@@ -2259,79 +2525,301 @@ documentation:
                      METHOD_NOT_ALLOWED<br />
                      Messages can't be posted to an inactive conversation.
 
-   /updateMessage:
-      /{messageId}:
-         uriParameters:
-            messageId:
-               description: Message to update.
-         patch:
-            securedBy: [oauth_2_0]
-            description: |
-               Update a message in Habla.
-            body:
-               properties:
-                  content:
-                     type: array
-                     required: true
-                     items:
+      /updateMessage:
+         /{messageId}:
+            uriParameters:
+               messageId:
+                  description: Update message content.
+            patch:
+               securedBy: [oauth_2_0]
+               description: |
+                  Update a message in Habla.
+               body:
+                  properties:
+                     content:
+                        type: array
+                        required: true
+                        items:
+                           properties:
+                              type:
+                                 type: string
+                                 required: true
+                                 description: Media Types as specified at https://www.iana.org/assignments/media-types/media-types.xhtml.
+                              text:
+                                 type: string
+                                 required: false
+                                 description: if type is text/plain, then this field is required.
+                              resourceId:
+                                 type: string
+                                 required: false
+                                 description: |
+                                    For binary files this field is required.<br />
+                                    Obtain the resource ID from first uploading the resource using the PUT /resources/{fileName} endpoint.
+                              meta:
+                                 type: object
+                                 required: false
+                                 properties:
+                                    fileName:
+                                       type: string
+                                       required: false
+               responses:
+                  200:
+                     description: |
+                        OK<br />
+                        The message was updated successfully.
+                     body:
                         properties:
-                           type:
+                           messageId:
                               type: string
                               required: true
-                              description: Media Types as specified at https://www.iana.org/assignments/media-types/media-types.xhtml.
+                           created:
+                              description: The format is in [RFC339](https://xml2rfc.tools.ietf.org/public/rfc/html/rfc3339.html#anchor14), which is a profile of [ISO 8601].
+                              type: datetime
+                              required: true
+                           createdBy:
+                              description: |
+                                 `userId`
+                              type: string
+                              required: true
+                           messageType:
+                              enum: [ text ]
+                              required: true
                            text:
                               type: string
-                              required: false
-                              description: if type is text/plain, then this field is required.
-                           resourceId:
+                              required: true
+                           replyTo:
+                              description: |
+                                 `messageId` this messages is attached to.  This is for threaded messages support.
                               type: string
                               required: false
-                              description: |
-                                 For binary files this field is required.<br />
-                                 Obtain the resource ID from first uploading the resource using the PUT /resources/{fileName} endpoint.
-                           meta:
-                              type: object
-                              required: false
-                              properties:
-                                 fileName:
-                                    type: string
-                                    required: false
-            responses:
-               204:
-                  description: |
-                     NO_CONTENT<br />
-                     The message was updated successfully.
-               404:
-                  description: |
-                     NOT_FOUND<br />
-                     The `message` with the specified ID was not found.
-               403:
-                  description: |
-                     FORBIDDEN<br />
-                     The user is not allowed to update the specified message.
+                        example: |
+                           {
+                              "messageId": "9dec8947-0381-4809-a053-b56777f782f4",
+                              "created": "2017-04-12T23:20:50.52Z",
+                              "createdBy": "9dec8947-0381-4809-a053-b56777f782f4",
+                              "messageType": "text",
+                              "text": "Alright.",
+                              "replyTo": "9dec8947-0381-4809-a053-b56777f782f5"
+                           }
+                  404:
+                     description: |
+                        NOT_FOUND<br />
+                        The `message` with the specified ID was not found.
+                  403:
+                     description: |
+                        FORBIDDEN<br />
+                        The user is not allowed to update the specified message.
 
-   /deleteMessage:
-      /{messageId}:
-         uriParameters:
-            messageId:
-               description: Message to delete.
-         delete:
+      /deleteMessage:
+         /{messageId}:
+            uriParameters:
+               messageId:
+                  description: Message to delete.
+            delete:
+               securedBy: [oauth_2_0]
+               description: |
+                  Delete a message in Habla.
+               responses:
+                  204:
+                     description: |
+                        NO_CONTENT<br />
+                        The message was deleted successfully.
+                  404:
+                     description: |
+                        NOT_FOUND<br />
+                        The `message` with the specified ID was not found.
+                  403:
+                     description: |
+                        FORBIDDEN<br />
+                        The user is not allowed to delete the specified message.
+
+      /likeMessage:
+         /{messageId}:
+            uriParameters:
+               messageId:
+                  description: Like a message.
+            post:
+               securedBy: [oauth_2_0]
+               description: |
+                  Like a message in Habla.
+               body:
+                  properties:
+                     like:
+                        type: boolean
+                        required: true
+               responses:
+                  200:
+                     description: |
+                        OK<br />
+                        The message was marked as liked by the user.
+                  404:
+                     description: |
+                        NOT_FOUND<br />
+                        The `message` with the specified ID was not found.
+
+      /unlikeMessage:
+         /{messageId}:
+            uriParameters:
+               messageId:
+                  description: Unlike a message.
+            post:
+               securedBy: [oauth_2_0]
+               description: |
+                  Unlike a message in Habla.
+               body:
+                  properties:
+                     like:
+                        type: boolean
+                        required: true
+               responses:
+                  200:
+                     description: |
+                        OK<br />
+                        The message was marked as unliked by the user.
+                  404:
+                     description: |
+                        NOT_FOUND<br />
+                        The `message` with the specified ID was not found.
+
+      /flagMessage:
+         /{messageId}:
+            uriParameters:
+               messageId:
+                  description: Flag a message.
+            post:
+               securedBy: [oauth_2_0]
+               description: |
+                  Flag a message in Habla.
+               body:
+                  properties:
+                     flag:
+                        type: boolean
+                        required: true
+               responses:
+                  200:
+                     description: |
+                        OK<br />
+                        The message was flagged by the user.
+                  404:
+                     description: |
+                        NOT_FOUND<br />
+                        The `message` with the specified ID was not found.
+
+      /readMessage:
+         post:
             securedBy: [oauth_2_0]
             description: |
-               Delete a message in Habla.
+               Mark a message as read by the user, which includes previous messages within that same thread (which can be the main thread).
+            body:
+               properties:
+                  messageId:
+                     type: string
+                     required: true
+            example: |
+               {
+                  "messageId": "bfefa47e-bde6-4dbf-816c-bc231a7320b1"
+               }
             responses:
                204:
                   description: |
                      NO_CONTENT<br />
-                     The message was deleted successfully.
+                     The message, including earlier messages within that thread, has been marked as read by the user.
                404:
                   description: |
                      NOT_FOUND<br />
-                     The `message` with the specified ID was not found.
-               403:
-                  description: |
-                     FORBIDDEN<br />
-                     The user is not allowed to delete the specified message.
+                     The `conversation` and `message` doesn't exist.
+
+   /getReadMessages:
+      get:
+         securedBy: [oauth_2_0]
+         description: |
+            For all user conversations, retrieve the number of messages and last timestamp within their threads, and what has been read by the user/invoker.
+         queryParameters:
+            conversationId:
+               description: Restrict the results to only a specific conversation.
+               type: string
+               required: false
+         responses:
+            200:
+               description: |
+                  OK
+               body:
+                  properties:
+                     readMessages:
+                        type: object
+                        required: true
+                        properties:
+                           userId:
+                              type: string
+                              required: true
+                           conversationIds:
+                              type: object
+                              required: true
+                              properties:
+                                 conversationId:
+                                    type: object
+                                    required: false
+                                    description: The actual `conversationId`.
+                                    properties:
+                                       messageCount:
+                                          type: number
+                                          required: true
+                                       lastTimestamp:
+                                          type: datetime
+                                          required: true
+                                       lastReadMessageCount:
+                                          type: number
+                                          required: true
+                                       lastReadTimestamp:
+                                          type: datetime
+                                          required: true
+                                       parentMessages:
+                                          type: object
+                                          required: true
+                                          properties:
+                                             parentMessageId:
+                                                type: object
+                                                required: false
+                                                description: The actual `messageId` of the parent of a thread.
+                                                properties:
+                                                    messageCount:
+                                                      type: number
+                                                      required: true
+                                                   lastTimestamp:
+                                                      type: datetime
+                                                      required: true
+                                                   lastReadMessageCount:
+                                                      type: number
+                                                      required: true
+                                                   lastReadTimestamp:
+                                                      type: datetime
+                                                      required: true
+                  example: |
+                     {
+                         "readMessages": {
+                             "userId": "66a4fd2c-28da-4765-abe8-bbbc34a26411",
+                             "conversationIds": {
+                                 "e9d53635-d4f0-4a87-8c28-ce092eb8dc21": {
+                                     "messageCount": 2,
+                                     "lastTimestamp": "2017-12-26T05:02:43Z",
+                                     "lastReadMessageCount": 2,
+                                     "lastReadTimestamp": "2017-12-26T05:06:40Z",
+                                     "parentMessages": {
+                                         "ac865cd0-26ea-476d-96de-0bad24522287": {
+                                             "messageCount": 1,
+                                             "lastTimestamp": "2017-12-26T05:02:49Z",
+                                             "lastReadMessageCount": 0,
+                                             "lastReadTimestamp": "0000-00-00T00:00:00Z"
+                                         }
+                                     }
+                                 }
+                             }
+                         }
+                     }
+            403:
+               description: |
+                  FORBIDDEN<br />
+                  When a conversationId is specified, either the conversation doesn't exist, or the user is not in the specified conversation.
 
 
 /resources:
@@ -2445,7 +2933,10 @@ documentation:
                               box:
                                  type: object
                                  required: false
-                              googleDrive:
+                              google:
+                                 type: object
+                                 required: false
+                              sharepoint:
                                  type: object
                                  required: false
                   example: |
@@ -2462,6 +2953,69 @@ documentation:
                            }
                         ]
                      }
+
+   /{target}:
+      uriParameters:
+         target:
+            description: |
+               box | google | sharepoint.  Currently, only sharepoint can be configured.
+      /configure:
+         /{subscriberOrgId}:
+            uriParameters:
+               subscriberOrgId:
+                  description: Scope this configuration request to a specific `subscriberOrgId`.
+            patch:
+               securedBy: [oauth_2_0]
+               description: Configure an integration for a user, scoped to the `subscriberOrgId`.
+               body:
+                  properties:
+                     sharepoint:
+                        type: object
+                        required: false
+                        properties:
+                           sites:
+                              type: array
+                              required: true
+                              items:
+                                 properties:
+                                    site:
+                                       type: string
+                                       required: true
+                                    selected:
+                                       type: boolean
+                                       required: true
+                  example: |
+                     {
+                        "sharepoint": {
+                           "sites": [
+                              {
+                                 "site": "https://hablaaiinc.sharepoint.com/sites/ThomasCEO",
+                                 "selected": false
+                              },
+                              {
+                                 "site": "https://hablaaiinc.sharepoint.com/sites/PythonApp",
+                                 "selected": true
+                              },
+                              {
+                                 "site": "https://hablaaiinc.sharepoint.com/sites/ThridSharePointTest",
+                                 "selected": true
+                              }
+                           ]
+                        }
+                     }
+               responses:
+                  201:
+                     description: |
+                        NO_CONTENT<br />
+                        The configuration for `target` was successful.
+                  404:
+                     description: |
+                        NOT_FOUND<br />
+                        Invalid subscriberOrgId.
+                  400:
+                     description: |
+                        BAD_REQUEST<br />
+                        The updated configuration is invalid.
 
    /box:
 
@@ -2496,7 +3050,7 @@ documentation:
                   description: |
                      FOUND<br />
                      Redirect to Habla Box integration page.
-                     The query parameter `integration` is included, with current value: box | google.
+                     The query parameter `integration` is included, with current value: box | google | sharepoint.
                      The query parameter `status` is included, which contains one of the values:<br />
                      CREATED: Successfully integrated to Box.<br />
                      NOT_FOUND: The provided `subscriberOrgId` is invalid for the current user.<br />
@@ -2575,7 +3129,7 @@ documentation:
                   description: |
                      FOUND<br />
                      Redirect to Habla Google integration page.
-                     The query parameter `integration` is included, with current value: box | google.
+                     The query parameter `integration` is included, with current value: box | google | sharepoint.
                      The query parameter `status` is included, which contains one of the values:<br />
                      CREATED: Successfully integrated to Google.<br />
                      NOT_FOUND: The provided `subscriberOrgId` is invalid for the current user.<br />
@@ -2611,6 +3165,84 @@ documentation:
             headers:
                X-Goog-Channel-Token:
                   description: Specifies an arbitrary string value to use as a channel token, to verify the message as coming from Google.
+            responses:
+               202:
+                  description: |
+                     ACCEPTED<br />
+                     Habla accepted the webhook event and forwarded it to AI.
+               403:
+                  description |
+                     FORBIDDEN<br />
+                     The signature of the message is invalid, and therefore not accepted by Habla.
+
+   /sharepoint:
+
+      /integrate:
+         /{subscriberOrgId}:
+            uriParameters:
+               subscriberOrgId:
+                  description: SharePoint integration, scoped to the logged-in user and provided `subscriberOrgId`.
+            get:
+               securedBy: [oauth_2_0]
+               queryParameters:
+                  sharepointOrg:
+                     description: The SharePoint integration to integrate with, which is the subdomain of sharepoint.org.
+                     type: string
+                     required: true
+                     example: hablaaiinc (from the URL https://hablaainc.sharepoint.com).
+               description: Integrate SharePoint to Habla, scoped to the logged-in user and provided `subscriberOrgId`.
+               responses:
+                  202:
+                     description: |
+                        ACCEPTED<br />
+                        If request header `Accept` contains `application/json`, the body will contain JSON `{ location: ... }`.
+                        Manually redirect the browser to that location.
+                  302:
+                     description: |
+                        FOUND<br />
+                        Redirect to SharePoint access approval.
+
+      /access:
+         get:
+            description: Invoked by SharePoint in response to user access response.
+            responses:
+               302:
+                  description: |
+                     FOUND<br />
+                     Redirect to Habla SharePoint integration page.
+                     The query parameter `integration` is included, with current value: box | google | sharepoint.
+                     The query parameter `status` is included, which contains one of the values:<br />
+                     CREATED: Successfully integrated to Box.<br />
+                     NOT_FOUND: The provided `subscriberOrgId` is invalid for the current user.<br />
+                     INTERNAL_SERVER_ERROR: Something bad happened.
+
+      /revoke:
+         /{subscriberOrgId}:
+            uriParameters:
+               subscriberOrgId:
+                  description: SharePoint integration, scoped to the logged-in user and provided `subscriberOrgId`.
+            post:
+               securedBy: [oauth_2_0]
+               description: Revoke SharePoint access from Habla, scoped to the logged-in user and provided `subscriberOrgId`.
+               responses:
+                  200:
+                     description: |
+                        OK<br />
+                        The integration was revoked successfully, which includes clearing data in the DB as well as notifying SharePoint of revocation.
+                  410:
+                     description: |
+                        GONE<br />
+                        Clearing integration data from the DB was successful, but the remote call to Box failed.
+                        This can mean either the existing access token is no longer valid, or SharePoint isn't aware of this Habla integration.
+                        Either way, Habla no longer has access to the user's data, but having the user check on the SharePoint end might be a good idea.
+                  404:
+                     description: |
+                        NOT_FOUND<br />
+                        Invalid subscriberOrgId.
+
+      /webhooks:
+         post:
+            description: Invoked by SharePoint for webhook events.
             responses:
                202:
                   description: |

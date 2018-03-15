@@ -576,12 +576,16 @@
                               "invitations": [
                                  {
                                     "byUserId": "ea794510-cea6-4132-0008-a7ae1d32abb1",
+                                    "byUserFirstName": "Anthony",
+                                    "byUserLastName": "Daga",
                                     "byUserDisplayName": "Anthony Daga",
                                     "subscriberOrgId": "ea794510-cea6-4132-0008-a7ae1d32abb2",
                                     "subscriberOrgName": "Acme"
                                  },
                                  {
                                     "byUserId": "ea794510-cea6-4132-0008-a7ae1d32abb1",
+                                    "byUserFirstName": "Anthony",
+                                    "byUserLastName": "Daga",
                                     "byUserDisplayName": "Anthony Daga",
                                     "subscriberOrgId": "ea794510-cea6-4132-0008-a7ae1d32abb2",
                                     "subscriberOrgName": "Acme",
@@ -603,6 +607,14 @@
                                     "properties": {
                                        "byUserId": {
                                           "title": "byUserId",
+                                          "type": "string"
+                                       },
+                                       "byUserFirstName": {
+                                          "title": "byUserFirstName",
+                                          "type": "string"
+                                       },
+                                       "byUserLastName": {
+                                          "title": "byUserLastName",
                                           "type": "string"
                                        },
                                        "byUserDisplayName": {
@@ -636,6 +648,8 @@
                                     },
                                     "required": [
                                        "byUserId",
+                                       "byUserFirstName",
+                                       "byUserLastName",
                                        "byUserDisplayName",
                                        "subscriberOrgId",
                                        "subscriberOrgName"

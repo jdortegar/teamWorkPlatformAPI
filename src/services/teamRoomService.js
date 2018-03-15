@@ -1,6 +1,8 @@
 import _ from 'lodash';
 import uuid from 'uuid';
-import config from '../config/env';
+import * as subscriberOrgsTable from '../repositories/db/subscriberOrgsTable';
+import * as teamsTable from '../repositories/db/teamsTable';
+import * as teamRoomsTable from '../repositories/db/teamRoomsTable';
 import * as conversationSvc from './conversationService';
 import {
    CannotDeactivateError,
@@ -11,202 +13,173 @@ import {
    TeamNotExistError,
    TeamRoomExistsError,
    TeamRoomNotExistError,
-   UserNotExistError
+   UserNotExistError,
+   TeamRoomMemberExistsError
 } from './errors';
-import { deleteRedisInvitation, InvitationKeys, inviteExistingUsersToTeamRoom } from './invitations';
-import { teamRoomCreated, teamRoomMemberAdded, teamRoomPrivateInfoUpdated, teamRoomUpdated } from './messaging';
-import { getPresence } from './messaging/presence';
+import InvitationKeys from '../repositories/InvitationKeys';
+import * as invitationsTable from '../repositories/db/invitationsTable';
+import * as usersTable from '../repositories/db/usersTable';
+import * as teamMembersTable from '../repositories/db/teamMembersTable';
+import * as teamRoomMembersTable from '../repositories/db/teamRoomMembersTable';
+import { deleteInvitation } from '../repositories/cache/invitationsCache';
+import { inviteExistingUsersToTeamRoom } from './invitationsUtil';
 import {
-   createItem,
-   getSubscriberOrgsByIds,
-   getSubscriberUsersByUserIds,
-   getTeamsByIds,
-   getTeamMembersBySubscriberUserIds,
-   getTeamMembersByUserIdAndTeamId,
-   getTeamMembersByTeamIdAndUserIdAndRole,
-   getTeamRoomMembersByTeamMemberIds,
-   getTeamRoomMembersByTeamRoomId,
-   getTeamRoomMembersByTeamRoomIdAndUserIdAndRole,
-   getTeamRoomMembersByUserIds,
-   getTeamRoomsByIds,
-   getTeamRoomsByTeamId,
-   getTeamRoomsByTeamIdAndName,
-   getTeamRoomsByTeamIdAndPrimary,
-   getUsersByIds,
-   updateItem
-} from '../repositories/util';
-import { getRandomColor } from './util';
+   teamRoomCreated,
+   teamRoomMemberAdded,
+   teamRoomPrivateInfoUpdated,
+   teamRoomUpdated,
+   userInvitationAccepted,
+   userInvitationDeclined,
+   sentInvitationStatus
+} from './messaging';
+import { getPresence } from './messaging/presence';
 import Roles from './roles';
 
 export const defaultTeamRoomName = 'Lobby';
 
-export function getUserTeamRooms(req, userId, { teamId, subscriberOrgId } = {}) {
-   const filterSubscriberOrgId = (teamId) ? undefined : subscriberOrgId;
+export const getUserTeamRooms = (req, userId, { teamId, subscriberOrgId } = {}) => {
    return new Promise((resolve, reject) => {
-      getSubscriberUsersByUserIds(req, [userId])
-         .then((subscriberUsers) => {
-            let filteredSubscriberUsers;
-            if (filterSubscriberOrgId) {
-               filteredSubscriberUsers = subscriberUsers.filter(subscriberUser => subscriberUser.subscriberUserInfo.subscriberOrgId === filterSubscriberOrgId);
-            } else {
-               filteredSubscriberUsers = subscriberUsers;
-            }
-            const subscriberUserIds = filteredSubscriberUsers.map(subscriberUser => subscriberUser.subscriberUserId);
-            return getTeamMembersBySubscriberUserIds(req, subscriberUserIds);
-         })
-         .then((teamMembers) => {
-            const filteredTeamMembers = (teamId) ? teamMembers.filter(teamMember => teamMember.teamMemberInfo.teamId === teamId) : teamMembers;
-            const teamMemberIds = filteredTeamMembers.map((teamMember) => {
-               return teamMember.teamMemberId;
-            });
-            return getTeamRoomMembersByTeamMemberIds(req, teamMemberIds);
-         })
+      let promise;
+      if (teamId) {
+         promise = teamRoomMembersTable.getTeamRoomMembersByUserIdAndTeamId(req, userId, teamId);
+      } else if (subscriberOrgId) {
+         promise = teamRoomMembersTable.getTeamRoomMembersByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId);
+      } else {
+         promise = teamRoomMembersTable.getTeamRoomMembersByUserId(req, userId);
+      }
+
+      promise
          .then((teamRoomMembers) => {
-            const teamRoomIds = teamRoomMembers.map((teamRoomMember) => {
-               return teamRoomMember.teamRoomMemberInfo.teamRoomId;
-            });
-            return getTeamRoomsByIds(req, teamRoomIds);
+            const teamRoomIds = teamRoomMembers.map(teamRoomMember => teamRoomMember.teamRoomId);
+            return teamRoomsTable.getTeamRoomsByTeamRoomIds(req, teamRoomIds);
          })
-         .then((teamRooms) => {
-            // Remove partitionId.
-            const retTeamRooms = [];
-            teamRooms.forEach((teamRoom) => {
+         .then((retrievedTeamRooms) => {
+            const teamRooms = retrievedTeamRooms.map((teamRoom) => {
                const teamRoomClone = _.cloneDeep(teamRoom);
-               delete teamRoomClone.partitionId;
-               teamRoomClone.teamRoomInfo.active =
-                  (('teamActive' in teamRoomClone.teamRoomInfo) && (teamRoomClone.teamRoomInfo.teamActive === false))
-                     ? false : teamRoomClone.teamRoomInfo.active;
-               retTeamRooms.push(teamRoomClone);
+               teamRoomClone.active = (teamRoomClone.teamActive === false) ? false : teamRoomClone.active;
+               return teamRoomClone;
             });
-            resolve(retTeamRooms);
+            resolve(teamRooms);
          })
          .catch(err => reject(err));
    });
-}
+};
 
-export function createTeamRoomNoCheck(req, teamId, teamRoomInfo, teamMemberId, user, teamRoomId = undefined) {
-   const actualTeamRoomId = teamRoomId || uuid.v4();
-   const icon = teamRoomInfo.icon || null;
-   const preferences = teamRoomInfo.preferences || { private: {} };
-   if (preferences.private === undefined) {
-      preferences.private = {};
-   }
-   preferences.iconColor = preferences.iconColor || getRandomColor();
-   const teamRoom = {
-      teamId,
-      teamActive: true,
-      name: teamRoomInfo.name,
-      purpose: teamRoomInfo.purpose,
-      publish: teamRoomInfo.publish,
-      icon,
-      active: teamRoomInfo.active,
-      primary: teamRoomInfo.primary || false,
-      preferences,
-      created: req.now.format(),
-      lastModified: req.now.format()
-   };
-   const teamRoomMemberId = uuid.v4();
-
+export const createTeamRoomNoCheck = (req, subscriberOrgId, subscriberUserId, teamId, teamRoomInfo, teamMemberId, user, teamRoomAdminUserIds, teamRoomId = undefined) => {
    return new Promise((resolve, reject) => {
+      const actualTeamRoomId = teamRoomId || uuid.v4();
+      const icon = teamRoomInfo.icon || null;
+      const preferences = teamRoomInfo.preferences || { private: {} };
+      if (preferences.private === undefined) {
+         preferences.private = {};
+      }
+      preferences.iconColor = preferences.iconColor || '#557DBF'; // default color for team room
+      const teamRoomMemberId = uuid.v4();
       const role = Roles.admin;
-      createItem(req, -1, `${config.tablePrefix}teamRooms`, 'teamRoomId', actualTeamRoomId, 'teamRoomInfo', teamRoom)
-         .then(() => {
-            const teamRoomMember = {
-               teamMemberId,
-               teamRoomId: actualTeamRoomId,
-               userId: user.userId,
-               role,
-               created: req.now.format(),
-               lastModified: req.now.format()
-            };
-            return createItem(req, -1, `${config.tablePrefix}teamRoomMembers`, 'teamRoomMemberId', teamRoomMemberId, 'teamRoomMemberInfo', teamRoomMember);
+      let teamRoom;
+
+      teamRoomsTable.createTeamRoom(req, actualTeamRoomId, teamId, subscriberOrgId, teamRoomInfo.name, icon, teamRoomInfo.primary || false, preferences)
+         .then((createdTeamRoom) => {
+            teamRoom = createdTeamRoom;
+            return teamRoomMembersTable.createTeamRoomMember(req, teamRoomMemberId, user.userId, actualTeamRoomId, teamMemberId, teamId, subscriberUserId, subscriberOrgId, role);
          })
          .then(() => {
-            teamRoom.teamRoomId = actualTeamRoomId;
-            teamRoomCreated(req, teamRoom, user.userId);
+            teamRoomCreated(req, teamRoom, teamRoomAdminUserIds);
             teamRoomMemberAdded(req, actualTeamRoomId, user, role, teamRoomMemberId);
 
-            const conversation = {};
-            return conversationSvc.createConversationNoCheck(req, actualTeamRoomId, conversation, user.userId);
+            return conversationSvc.createConversationNoCheck(req, subscriberOrgId, actualTeamRoomId, user.userId, teamRoomAdminUserIds);
          })
          .then(() => resolve(teamRoom))
          .catch(err => reject(err));
    });
-}
+};
 
-export function createTeamRoom(req, teamId, teamRoomInfo, userId, teamRoomId = undefined) {
+export const createTeamRoom = (req, teamId, teamRoomInfo, userId, teamRoomId = undefined) => {
    return new Promise((resolve, reject) => {
+      let subscriberOrgId;
       let teamMemberId;
+      let teamAdminUserIds;
+      let subscriberUserId;
 
-      Promise.all([getTeamsByIds(req, [teamId]), getTeamMembersByTeamIdAndUserIdAndRole(req, teamId, userId, Roles.admin)])
-         .then((promiseResults) => {
-            const teams = promiseResults[0];
-            const teamMembers = promiseResults[1];
-
-            if (teams.length === 0) {
+      Promise.all([teamsTable.getTeamByTeamId(req, teamId), teamMembersTable.getTeamMembersByTeamIdAndRole(req, teamId, Roles.admin)])
+         .then(([team, adminTeamMembers]) => {
+            if (!team) {
                throw new TeamNotExistError(teamId);
             }
-            const team = teams[0];
-            if ((('subscriberOrgEnabled' in team) && (team.subscriberOrgEnabled === false)) || (team.active === false)) {
+            subscriberOrgId = team.subscriberOrgId;
+            if ((team.subscriberOrgEnabled === false) || (team.active === false)) {
                throw new NotActiveError(teamId);
             }
 
-            if (teamMembers.length === 0) {
+            if (adminTeamMembers.length === 0) {
                throw new NoPermissionsError(teamId);
             }
 
-            teamMemberId = teamMembers[0].teamMemberId;
+            // Add all team admins to new team room.
+            teamAdminUserIds = adminTeamMembers.map(adminTeamMember => adminTeamMember.userId);
+
+            teamMemberId = adminTeamMembers.reduce((prevValue, adminTeamMember) => {
+               let newValue;
+               if ((!prevValue) && (adminTeamMember.userId === userId)) {
+                  newValue = adminTeamMember.teamMemberId;
+                  subscriberUserId = adminTeamMember.subscriberUserId;
+               }
+               return newValue;
+            }, undefined);
             return Promise.all([
-               getTeamRoomsByTeamIdAndName(req, teamId, teamRoomInfo.name),
-               getUsersByIds(req, [userId])
+               teamRoomsTable.getTeamRoomByTeamIdAndName(req, teamId, teamRoomInfo.name),
+               usersTable.getUserByUserId(req, userId)
             ]);
          })
-         .then((promiseResults) => {
-            const teamRooms = promiseResults[0];
-            const user = promiseResults[1][0];
-            if (teamRooms.length > 0) {
+         .then(([teamRoom, user]) => {
+            if (teamRoom) {
                throw new TeamRoomExistsError(teamRoomInfo.name);
             }
 
-            return this.createTeamRoomNoCheck(req, teamId, teamRoomInfo, teamMemberId, user, teamRoomId);
+            return createTeamRoomNoCheck(req, subscriberOrgId, subscriberUserId, teamId, teamRoomInfo, teamMemberId, user, teamAdminUserIds, teamRoomId);
          })
          .then(teamRoom => resolve(teamRoom))
          .catch(err => reject(err));
    });
-}
+};
 
-export function updateTeamRoom(req, teamRoomId, updateInfo, userId) {
+export const updateTeamRoom = (req, teamRoomId, updateInfo, userId) => {
    return new Promise((resolve, reject) => {
-      const timestampedUpdateInfo = _.cloneDeep(updateInfo);
-      timestampedUpdateInfo.lastModified = req.now.format();
-      let dbTeamRoom;
-      getTeamRoomsByIds(req, [teamRoomId])
-         .then((teamRooms) => {
-            if (teamRooms.length === 0) {
+      let previousActive;
+      Promise.all([
+         teamRoomsTable.getTeamRoomByTeamRoomId(req, teamRoomId),
+         teamRoomMembersTable.getTeamRoomMemberByTeamRoomIdAndUserIdAndRole(req, teamRoomId, userId, Roles.admin)
+      ])
+         .then(([teamRoom, teamRoomMember]) => {
+            if (!teamRoom) {
                throw new TeamRoomNotExistError(teamRoomId);
             }
 
-            dbTeamRoom = teamRooms[0];
-            return getTeamRoomMembersByTeamRoomIdAndUserIdAndRole(req, dbTeamRoom.teamRoomId, userId, Roles.admin);
-         })
-         .then((teamMembers) => {
-            if (teamMembers.length === 0) {
+            if (!teamRoomMember) {
                throw new NoPermissionsError(teamRoomId);
             }
 
-            if ((dbTeamRoom.teamRoomInfo.primary) && (updateInfo.active === false)) {
+            if ((teamRoom.primary) && (updateInfo.active === false)) {
                throw new CannotDeactivateError(teamRoomId);
             }
+            previousActive = teamRoom.active;
 
-            return updateItem(req, -1, `${config.tablePrefix}teamRooms`, 'teamRoomId', teamRoomId, { teamRoomInfo: timestampedUpdateInfo });
+            if ((updateInfo.name) && (teamRoom.name !== updateInfo.name)) {
+               return teamRoomsTable.getTeamRoomByTeamIdAndName(req, teamRoom.teamId, updateInfo.name);
+            }
+            return undefined;
          })
-         .then(() => {
+         .then((duplicateName) => {
+            if (duplicateName) {
+               throw new TeamRoomExistsError(updateInfo.name);
+            }
+
+            const { name, icon, primary, active, teamActive, preferences } = updateInfo;
+            return teamRoomsTable.updateTeamRoom(req, teamRoomId, { name, icon, primary, active, teamActive, preferences });
+         })
+         .then((teamRoom) => {
             resolve();
 
-            const teamRoom = dbTeamRoom.teamRoomInfo;
-            const previousActive = teamRoom.active;
-            _.merge(teamRoom, timestampedUpdateInfo); // Eventual consistency, so might be old.
-            teamRoom.teamRoomId = teamRoomId;
             teamRoomUpdated(req, teamRoom);
             if ((updateInfo.preferences) && (updateInfo.preferences.private)) {
                teamRoomPrivateInfoUpdated(req, teamRoom);
@@ -214,50 +187,36 @@ export function updateTeamRoom(req, teamRoomId, updateInfo, userId) {
 
             if (('active' in updateInfo) && (previousActive !== updateInfo.active)) {
                // Enable/disable children. Um, no children for this.
-               conversationSvc.setConversationsOfTeamRoomActive(req, teamRoomId, updateInfo.active);
+               conversationSvc.setConversationOfTeamRoomActive(req, teamRoomId, updateInfo.active);
             }
          })
-         .catch((err) => {
-            if (err.code === 'ValidationException') {
-               reject(new TeamRoomNotExistError(teamRoomId));
-            } else {
-               reject(err);
-            }
-         });
+         .catch(err => reject(err));
    });
-}
+};
 
-export function setTeamRoomsOfTeamActive(req, teamId, active) {
+export const setTeamRoomsOfTeamActive = (req, teamId, active) => {
    return new Promise((resolve, reject) => {
-      const teamRooms = [];
-      getTeamRoomsByTeamId(req, teamId)
-         .then((dbTeamRooms) => {
-            const updateTeamRooms = [];
-            dbTeamRooms.forEach((dbTeamRoom) => {
-               const { teamRoomInfo } = dbTeamRoom;
-               teamRoomInfo.teamActive = active;
-               updateTeamRooms.push(updateItem(req, -1, `${config.tablePrefix}teamRooms`, 'teamRoomId', dbTeamRoom.teamRoomId, { teamRoomInfo: { teamActive: active } }));
-               teamRooms.push(_.merge({ teamRoomId: dbTeamRoom.teamRoomId }, teamRoomInfo));
-            });
-            return Promise.all(updateTeamRooms);
+      let updatedTeamRooms;
+      teamRoomsTable.getTeamRoomsByTeamId(req, teamId)
+         .then((teamRooms) => {
+            return Promise.all(teamRooms.map((teamRoom) => {
+               return teamRoomsTable.updateTeamRoom(req, teamRoom.teamRoomId, { teamActive: active });
+            }));
          })
-         .then(() => {
-            const updateConversations = [];
-            teamRooms.forEach((teamRoom) => {
-               updateConversations.push(conversationSvc.setConversationsOfTeamRoomActive(req, teamRoom.teamRoomId, active));
-            });
-            return Promise.all(updateConversations);
+         .then((teamRooms) => {
+            updatedTeamRooms = teamRooms;
+            return Promise.all(teamRooms.map((teamRoom) => {
+               return conversationSvc.setConversationOfTeamRoomActive(req, teamRoom.teamRoomId, active);
+            }));
          })
          .then(() => {
             resolve();
 
-            teamRooms.forEach((teamRoom) => {
-               teamRoomUpdated(req, teamRoom);
-            });
+            updatedTeamRooms.forEach(teamRoom => teamRoomUpdated(req, teamRoom));
          })
          .catch(err => reject(err));
    });
-}
+};
 
 /**
  * If the team room doesn't exist, a TeamRoomNotExistError is thrown.
@@ -270,34 +229,34 @@ export function setTeamRoomsOfTeamActive(req, teamId, active) {
  * @param userId Optional userId to return results only if the user is a team room member.
  * @returns {Promise}
  */
-export function getTeamRoomUsers(req, teamRoomId, userId = undefined) {
+export const getTeamRoomUsers = (req, teamRoomId, userId = undefined) => {
    const userIdsRoles = {};
    const userIdsTeamRoomMemberIds = {};
    let usersWithRoles;
 
    return new Promise((resolve, reject) => {
-      getTeamRoomMembersByTeamRoomId(req, teamRoomId)
+      teamRoomMembersTable.getTeamRoomMembersByTeamRoomId(req, teamRoomId)
          .then((teamRoomMembers) => {
             if (teamRoomMembers.length === 0) {
                throw new TeamRoomNotExistError(teamRoomId);
             }
 
             const userIds = teamRoomMembers.map((teamRoomMember) => {
-               userIdsRoles[teamRoomMember.teamRoomMemberInfo.userId] = teamRoomMember.teamRoomMemberInfo.role;
-               userIdsTeamRoomMemberIds[teamRoomMember.teamRoomMemberInfo.userId] = teamRoomMember.teamRoomMemberId;
-               return teamRoomMember.teamRoomMemberInfo.userId;
+               userIdsRoles[teamRoomMember.userId] = teamRoomMember.role;
+               userIdsTeamRoomMemberIds[teamRoomMember.userId] = teamRoomMember.teamRoomMemberId;
+               return teamRoomMember.userId;
             });
             if ((userId) && (userIds.indexOf(userId)) < 0) {
                throw new NoPermissionsError(teamRoomId);
             }
 
-            return getUsersByIds(req, userIds);
+            return usersTable.getUsersByUserIds(req, userIds);
          })
          .then((users) => {
             usersWithRoles = users.map((user) => {
                const ret = _.cloneDeep(user);
-               ret.userInfo.role = userIdsRoles[user.userId];
-               ret.userInfo.teamRoomMemberId = userIdsTeamRoomMemberIds[user.userId];
+               ret.role = userIdsRoles[user.userId];
+               ret.teamRoomMemberId = userIdsTeamRoomMemberIds[user.userId];
                return ret;
             });
 
@@ -321,16 +280,16 @@ export function getTeamRoomUsers(req, teamRoomId, userId = undefined) {
             });
             usersWithRoles = usersWithRoles.map((userWithRoles) => {
                const clone = _.cloneDeep(userWithRoles);
-               clone.userInfo.presence = userIdPresences[userWithRoles.userId];
+               clone.presence = userIdPresences[userWithRoles.userId];
                return clone;
             });
             resolve(usersWithRoles);
          })
          .catch(err => reject(err));
    });
-}
+};
 
-export function inviteMembers(req, teamRoomId, userIds, userId) {
+export const inviteMembers = (req, teamRoomId, userIds, userId) => {
    let teamRoom;
    let team;
    let inviteDbUsers;
@@ -338,31 +297,28 @@ export function inviteMembers(req, teamRoomId, userIds, userId) {
    let subscriberOrg;
    return new Promise((resolve, reject) => {
       Promise.all([
-         getTeamRoomsByIds(req, [teamRoomId]),
-         getTeamRoomMembersByTeamRoomIdAndUserIdAndRole(req, teamRoomId, userId, Roles.admin)
+         teamRoomsTable.getTeamRoomByTeamRoomId(req, teamRoomId),
+         teamRoomMembersTable.getTeamRoomMemberByTeamRoomIdAndUserIdAndRole(req, teamRoomId, userId, Roles.admin)
       ])
          .then((promiseResults) => {
-            const teamRooms = promiseResults[0];
-            const teamRoomMembers = promiseResults[1];
-
-            if (teamRooms.length === 0) {
+            teamRoom = promiseResults[0];
+            const teamRoomMember = promiseResults[1];
+            if (!teamRoom) {
                throw new TeamRoomNotExistError(teamRoomId);
             }
-            teamRoom = teamRooms[0];
 
-            if (teamRoomMembers.length === 0) {
+            if (!teamRoomMember) {
                throw new NoPermissionsError(teamRoomId);
             }
 
-            if ((('teamActive' in teamRoom.teamRoomInfo) && (teamRoom.teamRoomInfo.teamActive === false)) || (teamRoom.teamRoomInfo.active === false)) {
+            if ((teamRoom.teamActive === false) || (teamRoom.active === false)) {
                throw new CannotInviteError(teamRoomId);
             }
 
-            return getTeamsByIds(req, [teamRoom.teamRoomInfo.teamId]);
+            return teamsTable.getTeamByTeamId(req, teamRoom.teamId);
          })
-         .then((teams) => {
-            team = teams[0];
-
+         .then((retrievedTeam) => {
+            team = retrievedTeam;
             const uniqueUserIds = userIds.reduce((prevList, userIdEntry) => {
                if (prevList.indexOf(userIdEntry) < 0) {
                   prevList.push(userIdEntry);
@@ -371,8 +327,8 @@ export function inviteMembers(req, teamRoomId, userIds, userId) {
             }, []);
 
             return Promise.all([
-               getUsersByIds(req, [userId, ...uniqueUserIds]),
-               getSubscriberOrgsByIds(req, [teams[0].teamInfo.subscriberOrgId])
+               usersTable.getUsersByUserIds(req, [userId, ...uniqueUserIds]),
+               subscriberOrgsTable.getSubscriberOrgBySubscriberOrgId(req, team.subscriberOrgId)
             ]);
          })
          .then((promiseResults) => {
@@ -383,7 +339,7 @@ export function inviteMembers(req, teamRoomId, userIds, userId) {
                }
                return true;
             });
-            subscriberOrg = promiseResults[1][0];
+            subscriberOrg = promiseResults[1];
 
             // If any of the userIds are bad, fail.
             if (existingDbUsers.length !== userIds.length) {
@@ -395,12 +351,11 @@ export function inviteMembers(req, teamRoomId, userIds, userId) {
             const inviteDbUserIds = inviteDbUsers.map(inviteDbUser => inviteDbUser.userId);
 
             // Make sure invitees are not already in here.
-            return getTeamRoomMembersByUserIds(req, inviteDbUserIds);
+            return teamRoomMembersTable.getTeamRoomMembersByUserIdsAndTeamRoomId(req, inviteDbUserIds, teamRoomId);
          })
          .then((teamRoomMembers) => {
-            const teamRoomMembersOfTeamRoom = teamRoomMembers.filter(teamRoomMember => teamRoomMember.teamRoomMemberInfo.teamRoomId === teamRoomId);
-            if (teamRoomMembersOfTeamRoom.length !== 0) {
-               const doNotInviteUserIds = teamRoomMembersOfTeamRoom.map(teamRoomMember => teamRoomMember.teamRoomMemberInfo.userId);
+            if (teamRoomMembers.length !== 0) {
+               const doNotInviteUserIds = teamRoomMembers.map(teamRoomMember => teamRoomMember.userId);
                inviteDbUsers = inviteDbUsers.filter(inviteDbUser => doNotInviteUserIds.indexOf(inviteDbUser.userId) < 0);
             }
             return inviteExistingUsersToTeamRoom(req, dbUser, inviteDbUsers, subscriberOrg, team, teamRoom);
@@ -408,26 +363,29 @@ export function inviteMembers(req, teamRoomId, userIds, userId) {
          .then(() => resolve())
          .catch(err => reject(err));
    });
-}
+};
 
-export function addUserToTeamRoom(req, user, teamMemberId, teamRoomId, role) {
+export const addUserToTeamRoom = (req, user, teamId, teamMemberId, teamRoomId, role) => {
    return new Promise((resolve, reject) => {
-      getTeamRoomsByIds(req, [teamRoomId])
-         .then((teamRooms) => {
-            if (teamRooms.length === 0) {
+      const teamRoomMemberId = uuid.v4();
+      Promise.all([
+         teamRoomsTable.getTeamRoomByTeamRoomId(req, teamRoomId),
+         teamMembersTable.getTeamMemberByTeamIdAndUserId(req, teamId, user.userId)
+      ])
+         .then(([teamRoom, teamMember]) => {
+            if (!teamRoom) {
                throw new TeamRoomNotExistError(teamRoomId);
             }
 
-            const teamRoomMemberId = uuid.v4();
-            const teamRoomMember = {
-               teamMemberId,
+            return teamRoomMembersTable.createTeamRoomMember(req,
+               teamRoomMemberId,
+               user.userId,
                teamRoomId,
-               userId: user.userId,
-               role,
-               created: req.now.format(),
-               lastModified: req.now.format()
-            };
-            return createItem(req, -1, `${config.tablePrefix}teamRoomMembers`, 'teamRoomMemberId', teamRoomMemberId, 'teamRoomMemberInfo', teamRoomMember);
+               teamMemberId,
+               teamMember.teamId,
+               teamMember.subscriberUserId,
+               teamMember.subscriberOrgId,
+               role);
          })
          .then(() => {
             teamRoomMemberAdded(req, teamRoomId, user, role, teamRoomMemberId);
@@ -436,62 +394,85 @@ export function addUserToTeamRoom(req, user, teamMemberId, teamRoomId, role) {
          .then(() => resolve())
          .catch(err => reject(err));
    });
-}
+};
 
-export function addUserToPrimaryTeamRoom(req, user, teamId, teamMemberId, role) {
+export const addUserToPrimaryTeamRoom = (req, user, teamId, teamMemberId, role) => {
    return new Promise((resolve, reject) => {
-      getTeamRoomsByTeamIdAndPrimary(req, teamId, true)
-         .then((teamRooms) => {
-            if (teamRooms.length > 0) {
-               const teamRoomId = teamRooms[0].teamRoomId;
-               return addUserToTeamRoom(req, user, teamMemberId, teamRoomId, role);
+      teamRoomsTable.getTeamRoomByTeamIdAndPrimary(req, teamId, true)
+         .then((teamRoom) => {
+            if (teamRoom) {
+               const { teamRoomId } = teamRoom;
+               return addUserToTeamRoom(req, user, teamId, teamMemberId, teamRoomId, role);
             }
             return undefined;
          })
          .then(() => resolve())
          .catch(err => reject(err));
    });
-}
+};
 
-export function replyToInvite(req, teamRoomId, accept, userId) {
+export const replyToInvite = (req, teamRoomId, accept, userId) => {
    return new Promise((resolve, reject) => {
       let user;
       let teamRoom;
-      Promise.all([getUsersByIds(req, [userId]), getTeamRoomsByIds(req, [teamRoomId])])
-         .then((promiseResults) => {
-            const users = promiseResults[0];
-            const teamRooms = promiseResults[1];
-
-            if (users.length === 0) {
+      let cachedInvitation;
+      Promise.all([
+         usersTable.getUserByUserId(req, userId),
+         teamRoomsTable.getTeamRoomByTeamRoomId(req, teamRoomId),
+         teamRoomMembersTable.getTeamRoomMemberByTeamRoomIdAndUserId(req, teamRoomId, userId)
+      ])
+         .then(([retrievedUser, retrievedTeamRoom, teamRoomMember]) => {
+            user = retrievedUser;
+            teamRoom = retrievedTeamRoom;
+            if (!user) {
                throw new UserNotExistError();
             }
-            user = users[0];
 
-            if (teamRooms.length === 0) {
+            if (!teamRoom) {
                throw new TeamRoomNotExistError(teamRoomId);
             }
-            teamRoom = teamRooms[0];
 
-            return deleteRedisInvitation(req, user.userInfo.emailAddress, InvitationKeys.teamRoomId, teamRoomId);
+            if (teamRoomMember) {
+               throw new TeamRoomMemberExistsError(`teamRoomId=${teamRoomId}, userId=${userId}`);
+            }
+
+            return deleteInvitation(req, user.emailAddress, InvitationKeys.teamRoomId, teamRoomId);
          })
-         .then((invitation) => {
-            if ((invitation) && ((!('teamActive' in teamRoom.teamRoomInfo)) || (teamRoom.teamRoomInfo.teamActive))) {
-               if ((teamRoom.teamRoomInfo.active) && (accept)) {
-                  const { teamId } = invitation;
-                  return getTeamMembersByUserIdAndTeamId(req, userId, teamId);
+         .then((retrievedCachedInvitation) => {
+            cachedInvitation = retrievedCachedInvitation;
+            if ((cachedInvitation) && (teamRoom.teamActive)) {
+               if ((teamRoom.active) && (accept)) {
+                  const { teamId } = cachedInvitation;
+                  userInvitationAccepted(req, cachedInvitation, userId);
+                  return teamMembersTable.getTeamMemberByTeamIdAndUserId(req, teamId, userId);
+               } else if (!accept) {
+                  userInvitationDeclined(req, cachedInvitation, userId);
                }
                return undefined;
             }
             throw new InvitationNotExistError(teamRoomId);
          })
-         .then((teamMembers) => {
-            if ((teamMembers) && (teamMembers.length > 0)) {
-               const { teamMemberId } = teamMembers[0];
-               return addUserToTeamRoom(req, user, teamMemberId, teamRoomId, Roles.user);
+         .then((teamMember) => {
+            if (teamMember) {
+               const { teamMemberId } = teamMember;
+               return addUserToTeamRoom(req, user, teamMember.teamId, teamMemberId, teamRoomId, Roles.user);
             }
             return undefined;
          })
-         .then(() => resolve())
-         .catch(err => reject(err));
+         .then(() => {
+            const state = (accept) ? 'ACCEPTED' : 'DECLINED';
+            return invitationsTable.updateInvitationsStateByInviteeEmail(req, user.emailAddress, InvitationKeys.teamRoomId, teamRoomId, state);
+         })
+         .then((changedInvitations) => {
+            resolve();
+            sentInvitationStatus(req, changedInvitations);
+         })
+         .catch((err) => {
+            if (err instanceof TeamRoomMemberExistsError) {
+               resolve();
+            } else {
+               reject(err);
+            }
+         });
    });
-}
+};

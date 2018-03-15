@@ -12,9 +12,9 @@ const sdk = new BoxSDK({ clientID: clientId, clientSecret });
 const accessUri = `https://account.box.com/api/oauth2/authorize?response_type=code&client_id=${clientId}`;
 
 
-export function composeAuthorizationUrl(state) {
+export const composeAuthorizationUrl = (state) => {
    return `${accessUri}&state=${state}&redirect_uri=${redirectUri}`;
-}
+};
 
 /**
  * tokenInfo: {
@@ -27,7 +27,7 @@ export function composeAuthorizationUrl(state) {
  * @param authorizationCode
  * @returns {Promise}
  */
-export function exchangeAuthorizationCodeForAccessToken(authorizationCode) {
+export const exchangeAuthorizationCodeForAccessToken = (authorizationCode) => {
    return new Promise((resolve, reject) => {
       sdk.getTokensAuthorizationCodeGrant(authorizationCode, null, (error, tokenInfo) => {
          if (error) {
@@ -37,7 +37,7 @@ export function exchangeAuthorizationCodeForAccessToken(authorizationCode) {
          }
       });
    });
-}
+};
 
 /**
  * Example:
@@ -63,7 +63,7 @@ export function exchangeAuthorizationCodeForAccessToken(authorizationCode) {
  * @param userAccessToken
  * @returns {Promise}
  */
-export function getUserInfo(req, userAccessToken) {
+export const getUserInfo = (req, userAccessToken) => {
    return new Promise((resolve, reject) => {
       const client = sdk.getBasicClient(userAccessToken);
       client.users.get(client.CURRENT_USER_ID, null, (err, currentUser) => {
@@ -74,22 +74,25 @@ export function getUserInfo(req, userAccessToken) {
          }
       });
    });
-}
+};
 
-export function revokeIntegration(req, userAccessToken) {
-   return new Promise((resolve, reject) => {
-      sdk.revokeTokens(userAccessToken, (err) => {
-         if (err) {
-            reject(new IntegrationAccessError(`Failed to revoke box integration: ${err}`));
-         } else {
-            resolve();
-         }
-      });
-   });
-}
+export const revokeIntegration = (req, userAccessToken) => { // eslint-disable-line no-unused-vars
+   return Promise.resolve();
+   // Moved to AI layer, since they need to do some work before actually revoking
+   // return new Promise((resolve, reject) => {
+   //    sdk.revokeTokens(userAccessToken, (err) => {
+   //       if (err) {
+   //          reject(new IntegrationAccessError(`Failed to revoke box integration: ${err}`));
+   //       } else {
+   //          resolve();
+   //       }
+   //    });
+   // });
+};
 
-export function validateWebhookMessage(req) {
+export const validateWebhookMessage = (req) => {
    if (BoxSDK.validateWebhookMessage(req.body, req.headers, primaryKey, secondaryKey) === false) {
       throw new IntegrationAccessError('Invalid Box webhook message.');
    }
-}
+};
+

@@ -6,7 +6,7 @@ import { IntegrationAccessError, SubscriberOrgNotExistError } from '../services/
 
 const webappIntegrationUri = `${config.webappBaseUri}/app/integrations`;
 
-export function integrateGoogle(req, res, next) {
+export const integrateGoogle = (req, res, next) => {
    const userId = req.user._id;
    const subscriberOrgId = req.params.subscriberOrgId;
 
@@ -25,9 +25,9 @@ export function integrateGoogle(req, res, next) {
             next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
          }
       });
-}
+};
 
-export function googleAccess(req, res) {
+export const googleAccess = (req, res) => {
    // Use referrer to get subscriberOrgId.
    // TODO: remove  const refererToks = req.headers.referer.split('/');
    // TODO: remove  const subscriberOrgId = refererToks[refererToks.length - 1];
@@ -51,9 +51,9 @@ export function googleAccess(req, res) {
             res.redirect(`${redirectUri}/${subscriberOrgId}/google/INTERNAL_SERVER_ERROR`);
          }
       });
-}
+};
 
-export function revokeGoogle(req, res, next) {
+export const revokeGoogle = (req, res, next) => {
    const userId = req.user._id;
    const subscriberOrgId = req.params.subscriberOrgId;
 
@@ -70,9 +70,9 @@ export function revokeGoogle(req, res, next) {
             next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
          }
       });
-}
+};
 
-export function googleWebhooks(req, res) {
+export const googleWebhooks = (req, res) => {
    googleSvc.webhookEvent(req)
       .then(() => res.status(httpStatus.ACCEPTED).end())
       .catch((err) => {
@@ -83,4 +83,5 @@ export function googleWebhooks(req, res) {
             res.status(httpStatus.INTERNAL_SERVER_ERROR).end();
          }
       });
-}
+};
+

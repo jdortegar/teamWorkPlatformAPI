@@ -1,15 +1,23 @@
 import AWS from 'aws-sdk';
-import config from './config/env';
+import config, { applyPropertiesFromDbToConfig, applyEnvironmentToConfig } from './config/env';
 import app from './config/express';
-import logger from './logger';
+import logger, { createPseudoRequest } from './logger';
+import { getAllSystemProperties } from './repositories/db/systemPropertiesTable';
 import messagingSvc from './services/messaging/messagingService';
 import { listenForInternalEvents, stopListeningForInternalEvents } from './services/messaging/internalQueue';
 import { connectToRedis, disconnectFromRedis } from './redis-connection';
+import { ensureCachedByteCountExists, startCronUpdateCustomerEntitlements } from './services/awsMarketplaceService';
 
 let redisClient;
 let server;
 
-function startupInfo() {
+AWS.config.update({
+   accessKeyId: config.aws.accessKeyId,
+   secretAccessKey: config.aws.secretAccessKey,
+   region: config.aws.awsRegion
+});
+
+const startupInfo = () => {
    logger.info('Habla API Startup');
    logger.info('---------------------------------------------------------');
    logger.info(`AWS Region       : ${config.aws.awsRegion}`);
@@ -19,26 +27,24 @@ function startupInfo() {
    logger.info(`Redis Port       : ${config.cachePort}`);
    logger.info(`NodeJS Port      : ${config.nodePort}`);
    logger.info();
-}
+};
 
 
-export function setupDynamoDb() {
+export const setupDynamoDb = () => {
    return new Promise((resolve) => {
-      AWS.config.update({
-         region: config.aws.awsRegion,
-         endpoint: config.dynamoDbEndpoint
-      });
+      AWS.config.dynamodb = { endpoint: config.dynamoDbEndpoint };
       const dynamodb = new AWS.DynamoDB();
       app.locals.AWS = AWS;
       app.locals.db = dynamodb;
+      app.locals.docClient = new AWS.DynamoDB.DocumentClient();
 
       logger.info('Connected to DynamoDB.');
       resolve(dynamodb);
    });
-}
+};
 
 
-export function connectRedis() {
+export const connectRedis = () => {
    const redisConfig = {
       host: config.cacheServer,
       port: config.cachePort
@@ -53,9 +59,9 @@ export function connectRedis() {
          })
          .catch(err => reject(err));
    });
-}
+};
 
-export function disconnectRedis(client) {
+export const disconnectRedis = (client) => {
    return new Promise((resolve, reject) => {
       disconnectFromRedis(client)
          .then(() => {
@@ -64,10 +70,10 @@ export function disconnectRedis(client) {
          })
          .catch(err => reject(err));
    });
-}
+};
 
 
-export function startServer(redisclient, handleInternalEvents = true) {
+export const startServer = (redisclient, handleInternalEvents = true) => {
    return new Promise((resolve, reject) => {
       const httpServer = app.listen(config.nodePort, (err) => {
          if (err) {
@@ -84,9 +90,9 @@ export function startServer(redisclient, handleInternalEvents = true) {
          }
       });
    });
-}
+};
 
-export function stopServer(httpServer) {
+const stopServer = (httpServer) => {
    return new Promise((resolve, reject) => {
       stopListeningForInternalEvents()
          .then(() => messagingSvc.close())
@@ -109,11 +115,11 @@ export function stopServer(httpServer) {
          .then(() => resolve())
          .catch(err => reject(err));
    });
-}
+};
 
 // This function is called when you want the server to die gracefully.
 // i.e. wait for existing connections.
-function gracefulShutdown() {
+const gracefulShutdown = () => {
    logger.info('Received kill signal, shutting down gracefully...');
 
    const kill = setTimeout(() => {
@@ -125,9 +131,9 @@ function gracefulShutdown() {
       .then(() => disconnectRedis(redisClient))
       .then(() => clearTimeout(kill))
       .catch(err => logger.error(err));
-}
+};
 
-function registerGracefulShutdown() {
+const registerGracefulShutdown = () => {
    return new Promise((resolve) => {
       // Listen for TERM signal .e.g. kill.
       process.on('SIGTERM', gracefulShutdown);
@@ -137,19 +143,32 @@ function registerGracefulShutdown() {
 
       resolve();
    });
-}
+};
 
 
-export default function start() {
-   startupInfo();
-   Promise.all([setupDynamoDb(), connectRedis()])
+const start = () => {
+   const bootup = applyEnvironmentToConfig() // AWS and DB connection properties used.
+      .then(() => setupDynamoDb())
+      .then(() => getAllSystemProperties(createPseudoRequest()))
+      .then(propertiesFromDb => applyPropertiesFromDbToConfig(propertiesFromDb))
+      .then(() => applyEnvironmentToConfig()) // Reapply, since environment takes precedence.
+      .then(() => startupInfo())
+      .then(() => connectRedis())
       .then((dbAndRedisStatuses) => {
-         redisClient = dbAndRedisStatuses[1];
+         redisClient = dbAndRedisStatuses;
          return startServer(redisClient, false);
       })
       .then((httpServer) => {
          server = httpServer;
          return registerGracefulShutdown();
       })
+      .then(() => ensureCachedByteCountExists(createPseudoRequest()))
       .catch(err => logger.error(err));
-}
+
+   // Only update entitlements if in prod for AWS Marketplace.
+   if (config.tablePrefix === 'PROD_') {
+      bootup.then(() => startCronUpdateCustomerEntitlements());
+   }
+};
+export default start;
+
