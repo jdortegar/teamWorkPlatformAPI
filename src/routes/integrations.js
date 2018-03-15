@@ -2,6 +2,7 @@ import express from 'express';
 import * as box from '../controllers/box';
 import * as google from '../controllers/google';
 import * as sharepoint from '../controllers/sharepoint';
+import * as onedrive from '../controllers/onedrive';
 import * as integrations from '../controllers/integrations';
 import { apiVersionedValidators, validateByApiVersion } from '../config/param-validation';
 
@@ -49,4 +50,13 @@ router.route('/sharepoint/revoke/:subscriberOrgId')
 router.route('/:target/configure/:subscriberOrgId')
    .patch(validateByApiVersion(apiVersionedValidators.configureIntegration), integrations.configureIntegration);
 
+
+router.route('/onedrive/integrate/:subscriberOrgId')
+   .get(onedrive.integrateOnedrive);
+
+router.route('/onedrive/access')
+   .get(onedrive.onedriveAccess);
+
+router.route('/onedrive/revoke/:subscriberOrgId')
+   .post(onedrive.revokeOnedrive);
 export default router;

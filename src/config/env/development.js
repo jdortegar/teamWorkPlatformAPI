@@ -39,6 +39,11 @@ export const sharepointClientSecret = 'cYk8V8WFLk/zaa7C8G8q2bt8UV2Tun6zoZqA4rhL8
 // export const sharepointClientId = 'd0032bb6-4898-4da3-8a0f-d16f185dfe44'; // ngrok
 // export const sharepointClientSecret = 'sKtwfhTxjtBriCzu249/8BpHlptChV07zEJkG37G6WU='; // ngrok
 
+export const onedriveClientId = '1be05c43-a7db-4127-af14-6e5e0c3e6be1';
+export const onedriveClientSecret = 'jrosbYCP12;[;)dqSOSW322';
+// export const onedriveClientId = 'd2061ee6-7c0d-415f-942f-8318952579c8';
+// export const onedriveClientSecret = 'kbWGVYM93_)koyjbQK557!)';
+
 export const awsProductCode = '8loyvo6g5k96nfobn626rwjbj';
 
 
