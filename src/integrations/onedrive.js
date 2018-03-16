@@ -10,7 +10,7 @@ const redirectUri = `${config.apiEndpoint}/integrations/onedrive/access`;
 export const composeAuthorizationUrl = () => {
    const paramsObject = {
       client_id: clientId,
-      scope: 'User.Read Files.Read.All Notes.Read.All Sites.Read.All',
+      scope: 'User.Read Files.Read.All Notes.Read.All Sites.Read.All offline_access',
       response_type: 'code',
       redirect_uri: redirectUri
    };
