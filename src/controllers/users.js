@@ -31,7 +31,6 @@ export const createReservation = (req, res) => {
          mailer.sendActivationLink(email, rid).then(() => {
             const response = {
                status: 'SUCCESS'
-               // uuid: rid
             };
             res.status(httpStatus.CREATED).json(response);
          });
