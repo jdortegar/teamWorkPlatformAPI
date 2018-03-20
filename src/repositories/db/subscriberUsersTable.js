@@ -1,7 +1,9 @@
 import _ from 'lodash';
 import config from '../../config/env';
 import * as util from './util';
+import Aes from '../../helpers/aes';
 
+const aes = new Aes('AI-Infused Knowledge Management for Enterprise Teams'); // eslint-disable-line no-unused-vars
 /**
  * hash: subscriberUserId
  * v

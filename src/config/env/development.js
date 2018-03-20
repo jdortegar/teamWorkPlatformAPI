@@ -21,6 +21,7 @@ export const resourcesBaseUrl = 'https://uw33cc3bz4.execute-api.us-west-2.amazon
 // export const resourcesBaseUrl = 'https://hablaresources.ngrok.io';
 
 export const signedCookieSecret = '4fIv(E2@';
+export const aesKey = 'AI-Infused Knowledge Management for Enterprise Teams';
 
 export const loggerLevel = 'debug';
 export const loggerJson = false;
