@@ -20,6 +20,7 @@ export const integrateBox = (req, res, next) => {
          }
       })
       .catch((err) => {
+         req.logger.error(err);
          if (err instanceof SubscriberOrgNotExistError) {
             res.status(httpStatus.NOT_FOUND).end();
          } else {

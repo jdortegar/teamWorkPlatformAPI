@@ -30,7 +30,7 @@ const deleteRedisBoxIntegrationState = (req, state) => {
             userId = redisResponse[0];
             subscriberOrgId = redisResponse[1];
             if ((userId === null) || (subscriberOrgId === null)) {
-               throw new IntegrationAccessError('No OAuth 2 state found.');
+               throw new IntegrationAccessError(subscriberOrgId, 'No OAuth 2 state found.');
             }
 
             return req.app.locals.redis.delAsync(hashKey(state));
@@ -50,8 +50,9 @@ export const integrateBox = (req, userId, subscriberOrgId) => {
             if (!subscriberUser) {
                throw new SubscriberOrgNotExistError(subscriberOrgId);
             }
+            throw new IntegrationAccessError(subscriberOrgId);
 
-            return createRedisBoxIntegrationState(req, userId, subscriberOrgId);
+            // return createRedisBoxIntegrationState(req, userId, subscriberOrgId);
          })
          .then((state) => {
             const boxUri = composeAuthorizationUrl(state);

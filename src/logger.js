@@ -79,6 +79,8 @@ class Wrapper {
 
    warn(...args) { this.log('warn', args); }
 
+   // problem(...args) { (args[0] instanceof AppError) ? this.error(args) : this.warn(...args) }
+
    info(...args) { this.log('info', args); }
 
    verbose(...args) { this.log('verbose', args); }

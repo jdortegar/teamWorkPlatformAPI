@@ -1,3 +1,23 @@
+import NestedError from 'nested-error-stacks';
+
+export class AppError extends NestedError {
+   constructor(message = undefined, nested = undefined) {
+      if (new.target === AppError) {
+         throw new TypeError('Cannot construct AppError instance directly.');
+      }
+      super(message, nested);
+   }
+}
+
+export class AppWarning extends NestedError {
+   constructor(message = undefined, nested = undefined) {
+      if (new.target === AppError) {
+         throw new TypeError('Cannot construct AppWarning instance directly.');
+      }
+      super(message, nested);
+   }
+}
+
 export class UserNotExistError extends Error {
    constructor(...args) {
       super(...args);
@@ -124,14 +144,11 @@ export class CannotInviteError extends Error {
    }
 }
 
-export class IntegrationAccessError extends Error {
-   _subscriberOrgId;
-   _chainedError;
-
-   constructor(subscriberOrgId, ...args) {
-      super(...args);
-      this._subscriberOrgId = subscriberOrgId;
-      Error.captureStackTrace(this, IntegrationAccessError);
+export class IntegrationAccessError extends AppError {
+   constructor(subscriberOrgId, message = undefined, nested = undefined) {
+      let msg = `IntegrationAccessError:subscriberOrgId=${subscriberOrgId}`;
+      msg += (message) ? `:${message}` : '';
+      super(msg, nested);
    }
 }
 
