@@ -27,7 +27,7 @@ export const userPrivateInfoUpdated = (req, user) => {
 };
 
 export const userBookmarksUpdated = (req, user, bookmarks) => {
-   const publishedBookmarks = _.clone(bookmarks);
+   const publishedBookmarks = _.cloneDeep(bookmarks);
    const messages = {};
    Object.keys(publishedBookmarks.messages).forEach((messageId) => {
       messages[messageId] = publishByApiVersion(req, apiVersionedVisibility.publicMessage, publishedBookmarks.messages[messageId]);

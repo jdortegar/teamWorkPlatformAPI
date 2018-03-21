@@ -1,0 +1,18 @@
+# project: habla-ai-dev
+
+dev:
+	clientId: 56229434385-73hkhvmqdkmqb7pgnjua0o2p7jdv46is.apps.googleusercontent.com
+	clientSecret: J7dv0lEIE7VJL4LGV8MI6bTt
+
+demo:
+	clientId: 56229434385-73hkhvmqdkmqb7pgnjua0o2p7jdv46is.apps.googleusercontent.com
+	clientSecret: J7dv0lEIE7VJL4LGV8MI6bTt
+
+staging:
+	clientId: 56229434385-73hkhvmqdkmqb7pgnjua0o2p7jdv46is.apps.googleusercontent.com
+	clientSecret: J7dv0lEIE7VJL4LGV8MI6bTt
+
+prod:
+	clientId: 56229434385-er6slkc68oaklfs58oi5ej2fbbjabpc7.apps.googleusercontent.com
+	clientSecret: tQ-XvOvgGmAAJfjMWjH4Ai1T
+

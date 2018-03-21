@@ -395,7 +395,7 @@ export default messagingService;
 // };
 
 export const _broadcastEvent = (req, eventType, event, channels = undefined) => {
-   const sendEvent = _.clone(event);
+   const sendEvent = _.cloneDeep(event);
    if (req.user) {
       sendEvent._src = {
          userId: req.user._id,

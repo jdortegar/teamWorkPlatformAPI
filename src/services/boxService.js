@@ -11,7 +11,7 @@ const hashKey = (state) => {
    return `${state}#boxIntegrationState`;
 };
 
-const createRedisBoxIntegrationState = (req, userId, subscriberOrgId) => {
+const createRedisBoxIntegrationState = (req, userId, subscriberOrgId) => { // eslint-disable-line no-unused-vars
    return new Promise((resolve, reject) => {
       const state = uuid.v4();
       req.app.locals.redis.hmsetAsync(hashKey(state), 'userId', userId, 'subscriberOrgId', subscriberOrgId, 'EX', defaultExpiration)
@@ -50,9 +50,9 @@ export const integrateBox = (req, userId, subscriberOrgId) => {
             if (!subscriberUser) {
                throw new SubscriberOrgNotExistError(subscriberOrgId);
             }
-            throw new IntegrationAccessError(subscriberOrgId);
+            // throw new IntegrationAccessError(subscriberOrgId);
 
-            // return createRedisBoxIntegrationState(req, userId, subscriberOrgId);
+            return createRedisBoxIntegrationState(req, userId, subscriberOrgId);
          })
          .then((state) => {
             const boxUri = composeAuthorizationUrl(state);

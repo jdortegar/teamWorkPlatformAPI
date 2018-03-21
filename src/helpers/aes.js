@@ -6,8 +6,8 @@ export default class Aes {
    _aesKey;
    _initializationVector;
 
-   CIPHER_PATTERN_PREFIX = '${ciper:';
-   CIPHER_PATTERN_SUFFIX = '}';
+   static CIPHER_PATTERN_PREFIX = '${cipher:';
+   static CIPHER_PATTERN_SUFFIX = '}';
 
    constructor(aesKeyString, initializationVectorString) {
       const aesKeyLength = Buffer.byteLength(aesKeyString);
@@ -47,6 +47,10 @@ export default class Aes {
       return decrypted;
    }
 
+   encryptCipher(uncipheredString) {
+      return `${Aes.CIPHER_PATTERN_PREFIX}${this.encrypt(uncipheredString)}${Aes.CIPHER_PATTERN_SUFFIX}`;
+   }
+
    decryptCiphers(cipheredString) {
       const matches = cipheredString.match(/\${cipher:[^}]*}/g);
       if (matches == null) {
@@ -55,7 +59,7 @@ export default class Aes {
 
       let decryptedString = cipheredString;
       for (const match of matches) { // eslint-disable-line no-restricted-syntax
-         const encrypted = match.substring(this.CIPHER_PATTERN_PREFIX.length + 1, match.length - 1);
+         const encrypted = match.substring(Aes.CIPHER_PATTERN_PREFIX.length, match.length - 1);
          const replacement = this.decrypt(encrypted);
          decryptedString = decryptedString.replace(match, replacement);
       }
@@ -63,4 +67,3 @@ export default class Aes {
       return decryptedString;
    }
 }
-

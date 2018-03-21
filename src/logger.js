@@ -42,7 +42,7 @@ const options = {
    rewriters: [(msgLevel, msg, meta) => {
       if ((meta) && (meta.error) && (meta.error instanceof Error)) {
          const exceptionMeta = winston.exception.getAllInfo(meta.error);
-         const clone = _.clone(meta);
+         const clone = _.cloneDeep(meta);
          clone.error = exceptionMeta.stack || exceptionMeta.trace;
          return clone;
       }

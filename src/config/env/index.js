@@ -26,9 +26,9 @@ const config = {
    redisPrefix: defaultConfig.redisPrefix,
 
    nodePort: process.env.NODE_PORT || defaultConfig.nodePort,
+   aesKey: process.env.AES_KEY || defaultConfig.aesKey,
    jwtSecret: process.env.JWT_SECRET || defaultConfig.jwtSecret,
    signedCookieSecret: process.env.SIGNED_COOKIE_SECRET || defaultConfig.signedCookieSecret,
-   aesKey: process.env.AES_KEY || defaultConfig.aesKey,
    apiEndpoint: process.env.API_ENDPOINT || defaultConfig.apiEndpoint,
 
    webappBaseUri: process.env.WEBAPP_BASE_URI || defaultConfig.webappBaseUri,
@@ -79,9 +79,9 @@ export const applyEnvironmentToConfig = () => {
    config.redisPrefix = process.env.REDIS_PREFIX || config.redisPrefix;
 
    config.nodePort = process.env.NODE_PORT || config.nodePort;
+   config.aesKey = process.env.AES_KEY || config.aesKey;
    config.jwtSecret = process.env.JWT_SECRET || config.jwtSecret;
    config.signedCookieSecret = process.env.SIGNED_COOKIE_SECRET || config.signedCookieSecret;
-   config.aesKey = process.env.AES_KEY || config.aesKey;
    config.apiEndpoint = process.env.API_ENDPOINT || config.apiEndpoint;
 
    config.webappBaseUri = process.env.WEBAPP_BASE_URI || config.webappBaseUri;
