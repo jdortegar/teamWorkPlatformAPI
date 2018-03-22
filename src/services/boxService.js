@@ -50,7 +50,6 @@ export const integrateBox = (req, userId, subscriberOrgId) => {
             if (!subscriberUser) {
                throw new SubscriberOrgNotExistError(subscriberOrgId);
             }
-            // throw new IntegrationAccessError(subscriberOrgId);
 
             return createRedisBoxIntegrationState(req, userId, subscriberOrgId);
          })

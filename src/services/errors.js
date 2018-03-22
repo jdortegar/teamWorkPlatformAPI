@@ -18,6 +18,37 @@ export class AppWarning extends NestedError {
    }
 }
 
+export class APIError extends AppError {
+   status;
+   constructor(httpStatus, nestedErrorOrMessage) {
+      let msg = 'APIError';
+      let nested;
+      if (nestedErrorOrMessage instanceof String) {
+         msg = `${msg}:${nestedErrorOrMessage}`;
+      } else {
+         nested = nestedErrorOrMessage;
+      }
+      super(msg, nested);
+      this.status = httpStatus;
+   }
+}
+
+export class APIWarning extends AppWarning {
+   status;
+
+   constructor(httpStatus, nestedErrorOrMessage) {
+      let msg = 'APIWarning';
+      let nested;
+      if (nestedErrorOrMessage instanceof String) {
+         msg = `${msg}:${nestedErrorOrMessage}`;
+      } else {
+         nested = nestedErrorOrMessage;
+      }
+      super(msg, nested);
+      this.status = httpStatus;
+   }
+}
+
 export class UserNotExistError extends Error {
    constructor(...args) {
       super(...args);
@@ -144,13 +175,17 @@ export class CannotInviteError extends Error {
    }
 }
 
-export class IntegrationAccessError extends AppError {
-   constructor(subscriberOrgId, message = undefined, nested = undefined) {
-      let msg = `IntegrationAccessError:subscriberOrgId=${subscriberOrgId}`;
-      msg += (message) ? `:${message}` : '';
-      super(msg, nested);
+export class IntegrationAccessError extends Error {
+   _subscriberOrgId;
+   _chainedError;
+
+   constructor(subscriberOrgId, ...args) {
+      super(...args);
+      this._subscriberOrgId = subscriberOrgId;
+      Error.captureStackTrace(this, IntegrationAccessError);
    }
 }
+
 
 export class BadIntegrationConfigurationError extends Error {
    _configuration;

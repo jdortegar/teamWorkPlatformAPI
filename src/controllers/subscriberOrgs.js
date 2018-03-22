@@ -1,8 +1,16 @@
 import httpStatus from 'http-status';
-import APIError from '../helpers/APIError';
 import { apiVersionedVisibility, publishByApiVersion } from '../helpers/publishedVisibility';
 import * as subscriberOrgSvc from '../services/subscriberOrgService';
-import { CannotInviteError, InvitationNotExistError, NoPermissionsError, SubscriberOrgExistsError, SubscriberOrgNotExistError, UserNotExistError } from '../services/errors';
+import {
+   APIError,
+   APIWarning,
+   CannotInviteError,
+   InvitationNotExistError,
+   NoPermissionsError,
+   SubscriberOrgExistsError,
+   SubscriberOrgNotExistError,
+   UserNotExistError
+} from '../services/errors';
 
 export const getSubscriberOrgs = (req, res, next) => {
    const userId = req.user._id;
@@ -12,7 +20,7 @@ export const getSubscriberOrgs = (req, res, next) => {
          res.status(httpStatus.OK).json({ subscriberOrgs: publishByApiVersion(req, apiVersionedVisibility.publicSubscriberOrgs, subscriberOrgs) });
       })
       .catch((err) => {
-         next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
+         next(new APIError(httpStatus.INTERNAL_SERVER_ERROR, err));
       });
 };
 
@@ -25,11 +33,11 @@ export const createSubscriberOrg = (req, res, next) => {
       })
       .catch((err) => {
          if (err instanceof SubscriberOrgExistsError) {
-            res.status(httpStatus.CONFLICT).json({ status: 'EXISTS' });
+            next(new APIWarning(httpStatus.CONFLICT, err));
          } else if (err instanceof NoPermissionsError) {
-            res.status(httpStatus.FORBIDDEN).end();
+            next(new APIWarning(httpStatus.FORBIDDEN, err));
          } else {
-            next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
+            next(new APIError(httpStatus.INTERNAL_SERVER_ERROR, err));
          }
       });
 };
@@ -43,13 +51,13 @@ export const updateSubscriberOrg = (req, res, next) => {
       })
       .catch((err) => {
          if (err instanceof SubscriberOrgNotExistError) {
-            res.status(httpStatus.NOT_FOUND).end();
+            next(new APIWarning(httpStatus.NOT_FOUND, err));
          } else if (err instanceof NoPermissionsError) {
-            res.status(httpStatus.FORBIDDEN).end();
+            next(new APIWarning(httpStatus.FORBIDDEN, err));
          } else if (err instanceof SubscriberOrgExistsError) {
-            res.status(httpStatus.CONFLICT).end();
+            next(new APIWarning(httpStatus.CONFLICT, err));
          } else {
-            next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE));
+            next(new APIError(httpStatus.SERVICE_UNAVAILABLE, err));
          }
       });
 };
@@ -64,11 +72,11 @@ export const getSubscriberOrgUsers = (req, res, next) => {
       })
       .catch((err) => {
          if (err instanceof SubscriberOrgNotExistError) {
-            res.status(httpStatus.NOT_FOUND).end();
+            next(new APIWarning(httpStatus.NOT_FOUND, err));
          } else if (err instanceof NoPermissionsError) {
-            res.status(httpStatus.FORBIDDEN).end();
+            next(new APIWarning(httpStatus.FORBIDDEN, err));
          } else {
-            next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
+            next(new APIError(httpStatus.INTERNAL_SERVER_ERROR, err));
          }
       });
 };
@@ -83,13 +91,13 @@ export const inviteSubscribers = (req, res, next) => {
       })
       .catch((err) => {
          if ((err instanceof SubscriberOrgNotExistError) || (err instanceof UserNotExistError)) {
-            res.status(httpStatus.NOT_FOUND).end();
+            next(new APIWarning(httpStatus.NOT_FOUND, err));
          } else if (err instanceof NoPermissionsError) {
-            res.status(httpStatus.FORBIDDEN).end();
+            next(new APIWarning(httpStatus.FORBIDDEN, err));
          } else if (err instanceof CannotInviteError) {
-            res.status(httpStatus.METHOD_NOT_ALLOWED).end();
+            next(new APIWarning(httpStatus.METHOD_NOT_ALLOWED, err));
          } else {
-            next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
+            next(new APIError(httpStatus.INTERNAL_SERVER_ERROR, err));
          }
       });
 };
@@ -104,11 +112,11 @@ export const replyToInvite = (req, res, next) => {
       })
       .catch((err) => {
          if ((err instanceof SubscriberOrgNotExistError) || (err instanceof UserNotExistError) || (err instanceof InvitationNotExistError)) {
-            res.status(httpStatus.NOT_FOUND).end();
+            next(new APIWarning(httpStatus.NOT_FOUND, err));
          } else if (err instanceof NoPermissionsError) {
-            res.status(httpStatus.FORBIDDEN).end();
+            next(new APIWarning(httpStatus.FORBIDDEN, err));
          } else {
-            next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
+            next(new APIError(httpStatus.INTERNAL_SERVER_ERROR, err));
          }
       });
 };

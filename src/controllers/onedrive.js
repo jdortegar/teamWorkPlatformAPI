@@ -1,8 +1,7 @@
 import httpStatus from 'http-status';
 import config from '../config/env';
-import APIError from '../helpers/APIError';
 import * as onedriveSvc from '../services/onedriveService';
-import { IntegrationAccessError, SubscriberOrgNotExistError } from '../services/errors';
+import { APIError, APIWarning, IntegrationAccessError, SubscriberOrgNotExistError } from '../services/errors';
 
 const webappIntegrationUri = `${config.webappBaseUri}/app/integrations`;
 
@@ -20,9 +19,9 @@ export const integrateOnedrive = (req, res, next) => {
       })
       .catch((err) => {
          if (err instanceof SubscriberOrgNotExistError) {
-            res.status(httpStatus.NOT_FOUND).end();
+            next(new APIWarning(httpStatus.NOT_FOUND, err));
          } else {
-            next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
+            next(new APIError(httpStatus.INTERNAL_SERVER_ERROR, err));
          }
       });
 };
@@ -59,11 +58,11 @@ export const revokeOnedrive = (req, res, next) => {
       })
       .catch((err) => {
          if (err instanceof SubscriberOrgNotExistError) {
-            res.status(httpStatus.NOT_FOUND).end();
+            next(new APIWarning(httpStatus.NOT_FOUND, err));
          } else if (err instanceof IntegrationAccessError) {
-            res.status(httpStatus.GONE).end();
+            next(new APIWarning(httpStatus.GONE, err));
          } else {
-            next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
+            next(new APIError(httpStatus.INTERNAL_SERVER_ERROR, err));
          }
       });
 };

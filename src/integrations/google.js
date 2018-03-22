@@ -9,7 +9,9 @@ const googleChannelKey = config.googleChannelKey;
 
 const scopes = [
    'https://www.googleapis.com/auth/userinfo.profile',
-   'https://www.googleapis.com/auth/drive.readonly'
+   'https://www.googleapis.com/auth/drive.readonly',
+   'https://www.googleapis.com/auth/drive.file',
+   'https://www.googleapis.com/auth/drive.install'
 ];
 
 const OAuth2 = google.auth.OAuth2;

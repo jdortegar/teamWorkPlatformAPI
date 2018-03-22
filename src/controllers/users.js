@@ -2,9 +2,8 @@ import httpStatus from 'http-status';
 import uuid from 'uuid';
 import app from '../config/express';
 import config from '../config/env';
-import APIError from '../helpers/APIError';
 import * as mailer from '../helpers/mailer';
-import { NoPermissionsError, UserNotExistError } from '../services/errors';
+import { APIError, APIWarning, NoPermissionsError, UserNotExistError } from '../services/errors';
 import * as userSvc from '../services/userService';
 import { AWS_CUSTOMER_ID_HEADER_NAME } from './auth';
 import { apiVersionedVisibility, publishByApiVersion } from '../helpers/publishedVisibility';
@@ -84,7 +83,7 @@ export const deleteRedisKey = (rid) => {
  * @param res
  * @param next
  */
-export const validateEmail = (req, res) => {
+export const validateEmail = (req, res, next) => {
    const rid = req.params.rid || req.body.reservationId || '';
 
    // Find reservation in cache
@@ -102,18 +101,15 @@ export const validateEmail = (req, res) => {
          if (req.accepts('json')) {
             res.status(httpStatus.OK).json(response);
          } else {
-            res.status(httpStatus.BAD_REQUEST).end();
+            next(new APIWarning(httpStatus.BAD_REQUEST));
          }
       } else {
-         const response = {
-            status: 'ERR_RESERVATION_NOT_FOUND'
-         };
-         res.status(httpStatus.NOT_FOUND).json(response);
+         next(new APIWarning(httpStatus.NOT_FOUND));
       }
    });
 };
 
-export const resetPassword = (req, res) => {
+export const resetPassword = (req, res, next) => {
    const rid = req.params.rid || '';
    const password = req.body.password;
 
@@ -135,14 +131,11 @@ export const resetPassword = (req, res) => {
                if (req.accepts('json')) {
                   res.status(httpStatus.OK).json(response);
                } else {
-                  res.status(httpStatus.BAD_REQUEST).end();
+                  next(new APIWarning(httpStatus.BAD_REQUEST));
                }
             });
       } else {
-         const response = {
-            status: 'ERR_RESERVATION_NOT_FOUND'
-         };
-         res.status(httpStatus.NOT_FOUND).json(response);
+         next(new APIWarning(httpStatus.NOT_FOUND));
       }
    });
 };
@@ -152,9 +145,9 @@ export const createUser = (req, res, next) => {
       .then(() => res.status(httpStatus.CREATED).end())
       .catch((err) => {
          if (err instanceof NoPermissionsError) {
-            res.status(httpStatus.FORBIDDEN).end();
+            next(new APIWarning(httpStatus.FORBIDDEN, err));
          } else {
-            next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE));
+            next(new APIError(httpStatus.SERVICE_UNAVAILABLE, err));
          }
       });
 };
@@ -168,9 +161,9 @@ export const updateUser = (req, res, next) => {
       })
       .catch((err) => {
          if (err instanceof UserNotExistError) {
-            res.status(httpStatus.NOT_FOUND).end();
+            next(new APIWarning(httpStatus.NOT_FOUND, err));
          } else {
-            next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE));
+            next(new APIError(httpStatus.SERVICE_UNAVAILABLE, err));
          }
       });
 };
@@ -189,9 +182,9 @@ export const updatePassword = (req, res, next) => {
       })
       .catch((err) => {
          if (err instanceof UserNotExistError) {
-            res.status(httpStatus.NOT_FOUND).end();
+            next(new APIWarning(httpStatus.NOT_FOUND, err));
          } else {
-            next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE));
+            next(new APIError(httpStatus.SERVICE_UNAVAILABLE, err));
          }
       });
 };
@@ -211,7 +204,7 @@ export const updatePassword = (req, res, next) => {
 //          } else if (err instanceof NoPermissionsError) {
 //             res.status(httpStatus.FORBIDDEN).end();
 //          } else {
-//             next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE));
+//             next(new APIError(httpStatus.SERVICE_UNAVAILABLE, err));
 //          }
 //       });
 // };
@@ -221,7 +214,7 @@ export const getInvitations = (req, res, next) => {
 
    userSvc.getInvitations(req, email)
       .then(invitations => res.status(httpStatus.OK).json({ invitations }))
-      .catch(err => next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE)));
+      .catch(err => next(new APIError(httpStatus.SERVICE_UNAVAILABLE, err)));
 };
 
 export const getSentInvitations = (req, res, next) => {
@@ -230,5 +223,5 @@ export const getSentInvitations = (req, res, next) => {
 
    userSvc.getSentInvitations(req, userId, { since, state })
       .then(invitations => res.status(httpStatus.OK).json({ invitations: publishByApiVersion(req, apiVersionedVisibility.publicInvitations, invitations) }))
-      .catch(err => next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE)));
+      .catch(err => next(new APIError(httpStatus.SERVICE_UNAVAILABLE, err)));
 };

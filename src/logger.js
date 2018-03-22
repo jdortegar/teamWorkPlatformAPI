@@ -6,6 +6,7 @@ import shortid from 'shortid';
 import winston from 'winston';
 import config from './config/env';
 import app from './config/express';
+import { APIWarning } from './services/errors';
 
 const level = config.loggerLevel;
 const json = config.loggerJson;
@@ -140,6 +141,10 @@ export const postAuthMiddleware = [
 
 
 export const errorMiddleware = (error, req, res, next) => {
-   req.logger.error({ error, body: req.body });
+   if (error instanceof APIWarning) {
+      req.logger.warn(error.message);
+   } else {
+      req.logger.error({ error, body: req.body });
+   }
    next(error);
 };

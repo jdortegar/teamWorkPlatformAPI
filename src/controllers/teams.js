@@ -1,8 +1,9 @@
 import httpStatus from 'http-status';
-import APIError from '../helpers/APIError';
 import { apiVersionedVisibility, publishByApiVersion } from '../helpers/publishedVisibility';
 import * as teamSvc from '../services/teamService';
 import {
+   APIError,
+   APIWarning,
    CannotDeactivateError,
    CannotInviteError,
    InvitationNotExistError,
@@ -23,7 +24,7 @@ export const getTeams = (req, res, next) => {
          res.status(httpStatus.OK).json({ teams: publishByApiVersion(req, apiVersionedVisibility.publicTeams, teams) });
       })
       .catch((err) => {
-         next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
+         next(new APIError(httpStatus.INTERNAL_SERVER_ERROR, err));
       });
 };
 
@@ -37,15 +38,15 @@ export const createTeam = (req, res, next) => {
       })
       .catch((err) => {
          if (err instanceof TeamExistsError) {
-            res.status(httpStatus.CONFLICT).json({ status: 'EXISTS' });
+            next(new APIWarning(httpStatus.CONFLICT, err));
          } else if (err instanceof NoPermissionsError) {
-            res.status(httpStatus.FORBIDDEN).end();
+            next(new APIWarning(httpStatus.FORBIDDEN, err));
          } else if (err instanceof SubscriberOrgNotExistError) {
-            res.status(httpStatus.NOT_FOUND).end();
+            next(new APIWarning(httpStatus.NOT_FOUND, err));
          } else if (err instanceof NotActiveError) {
-            res.status(httpStatus.METHOD_NOT_ALLOWED).end();
+            next(new APIWarning(httpStatus.METHOD_NOT_ALLOWED, err));
          } else {
-            next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
+            next(new APIError(httpStatus.INTERNAL_SERVER_ERROR, err));
          }
       });
 };
@@ -59,13 +60,13 @@ export const updateTeam = (req, res, next) => {
       })
       .catch((err) => {
          if (err instanceof TeamNotExistError) {
-            res.status(httpStatus.NOT_FOUND).end();
+            next(new APIWarning(httpStatus.NOT_FOUND, err));
          } else if (err instanceof NoPermissionsError) {
-            res.status(httpStatus.FORBIDDEN).end();
+            next(new APIWarning(httpStatus.FORBIDDEN, err));
          } else if ((err instanceof TeamExistsError) || (err instanceof CannotDeactivateError)) {
-            res.status(httpStatus.CONFLICT).end();
+            next(new APIWarning(httpStatus.CONFLICT, err));
          } else {
-            next(new APIError(err, httpStatus.SERVICE_UNAVAILABLE));
+            next(new APIError(httpStatus.SERVICE_UNAVAILABLE, err));
          }
       });
 };
@@ -80,11 +81,11 @@ export const getTeamMembers = (req, res, next) => {
       })
       .catch((err) => {
          if (err instanceof TeamNotExistError) {
-            res.status(httpStatus.NOT_FOUND).end();
+            next(new APIWarning(httpStatus.NOT_FOUND, err));
          } else if (err instanceof NoPermissionsError) {
-            res.status(httpStatus.FORBIDDEN).end();
+            next(new APIWarning(httpStatus.FORBIDDEN, err));
          } else {
-            next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
+            next(new APIError(httpStatus.INTERNAL_SERVER_ERROR, err));
          }
       });
 };
@@ -99,13 +100,13 @@ export const inviteMembers = (req, res, next) => {
       })
       .catch((err) => {
          if ((err instanceof TeamNotExistError) || (err instanceof UserNotExistError)) {
-            res.status(httpStatus.NOT_FOUND).end();
+            next(new APIWarning(httpStatus.NOT_FOUND, err));
          } else if (err instanceof NoPermissionsError) {
-            res.status(httpStatus.FORBIDDEN).end();
+            next(new APIWarning(httpStatus.FORBIDDEN, err));
          } else if (err instanceof CannotInviteError) {
-            res.status(httpStatus.METHOD_NOT_ALLOWED).end();
+            next(new APIWarning(httpStatus.METHOD_NOT_ALLOWED, err));
          } else {
-            next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
+            next(new APIError(httpStatus.INTERNAL_SERVER_ERROR, err));
          }
       });
 };
@@ -120,11 +121,11 @@ export const replyToInvite = (req, res, next) => {
       })
       .catch((err) => {
          if ((err instanceof TeamNotExistError) || (err instanceof UserNotExistError) || (err instanceof InvitationNotExistError)) {
-            res.status(httpStatus.NOT_FOUND).end();
+            next(new APIWarning(httpStatus.NOT_FOUND, err));
          } else if (err instanceof NoPermissionsError) {
-            res.status(httpStatus.FORBIDDEN).end();
+            next(new APIWarning(httpStatus.FORBIDDEN, err));
          } else {
-            next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
+            next(new APIError(httpStatus.INTERNAL_SERVER_ERROR, err));
          }
       });
 };

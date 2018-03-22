@@ -1,8 +1,7 @@
 import httpStatus from 'http-status';
 import config from '../config/env';
-import APIError from '../helpers/APIError';
 import * as googleSvc from '../services/googleService';
-import { IntegrationAccessError, SubscriberOrgNotExistError } from '../services/errors';
+import { APIError, APIWarning, IntegrationAccessError, SubscriberOrgNotExistError } from '../services/errors';
 
 const webappIntegrationUri = `${config.webappBaseUri}/app/integrations`;
 
@@ -20,9 +19,9 @@ export const integrateGoogle = (req, res, next) => {
       })
       .catch((err) => {
          if (err instanceof SubscriberOrgNotExistError) {
-            res.status(httpStatus.NOT_FOUND).end();
+            next(new APIWarning(httpStatus.NOT_FOUND, err));
          } else {
-            next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
+            next(new APIError(httpStatus.INTERNAL_SERVER_ERROR, err));
          }
       });
 };
@@ -63,22 +62,22 @@ export const revokeGoogle = (req, res, next) => {
       })
       .catch((err) => {
          if (err instanceof SubscriberOrgNotExistError) {
-            res.status(httpStatus.NOT_FOUND).end();
+            next(new APIWarning(httpStatus.NOT_FOUND, err));
          } else if (err instanceof IntegrationAccessError) {
-            res.status(httpStatus.GONE).end();
+            next(new APIWarning(httpStatus.GONE, err));
          } else {
-            next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
+            next(new APIError(httpStatus.INTERNAL_SERVER_ERROR, err));
          }
       });
 };
 
-export const googleWebhooks = (req, res) => {
+export const googleWebhooks = (req, res, next) => {
    googleSvc.webhookEvent(req)
       .then(() => res.status(httpStatus.ACCEPTED).end())
       .catch((err) => {
          req.logger.error(err);
          if (err instanceof IntegrationAccessError) {
-            res.status(httpStatus.FORBIDDEN).end();
+            next(new APIWarning(httpStatus.FORBIDDEN, err));
          } else {
             res.status(httpStatus.INTERNAL_SERVER_ERROR).end();
          }
