@@ -71,6 +71,7 @@ app.use(jwtMiddleware.unless({
       /^\/(v\d+\/)?auth\/login/,
       /^\/(v\d+\/)?auth\/logout/,
       /^\/(v\d+\/)?integrations\/.*\/access/,
+      /^\/(v\d+\/)?integrations\/.*\/app/,
       /^\/(v\d+\/)?integrations\/.*\/webhooks/,
       /^\/(v\d+\/)?users\/passwordreset/,
       /^\/(v\d+\/)?passwordupdate/

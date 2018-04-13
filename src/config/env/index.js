@@ -58,7 +58,10 @@ const config = {
    sharepointClientSecret: process.env.SHAREPOINT_CLIENT_SECRET || defaultConfig.sharepointClientSecret,
 
    onedriveClientId: process.env.ONEDRIVE_CLIENT_ID || defaultConfig.onedriveClientId,
-   onedriveClientSecret: process.env.ONEDRIVE_CLIENT_SECRET || defaultConfig.onedriveClientSecret
+   onedriveClientSecret: process.env.ONEDRIVE_CLIENT_SECRET || defaultConfig.onedriveClientSecret,
+
+   salesforceClientId: process.env.SALESFORCE_CLIENT_ID || defaultConfig.salesforceClientId,
+   salesforceClientSecret: process.env.SALESFORCE_CLIENT_SECRET || defaultConfig.salesforceClientSecret
 };
 
 export const applyPropertiesFromDbToConfig = (propertiesFromDb) => {
@@ -112,6 +115,9 @@ export const applyEnvironmentToConfig = () => {
 
    config.onedriveClientId = process.env.ONEDRIVE_CLIENT_ID || config.onedriveClientId;
    config.onedriveClientSecret = process.env.ONEDRIVE_CLIENT_ID || config.onedriveClientSecret;
+
+   config.salesforceClientId = process.env.ONEDRIVE_CLIENT_ID || config.salesforceClientId;
+   config.salesforceClientSecret = process.env.ONEDRIVE_CLIENT_ID || config.salesforceClientSecret;
 
    return Promise.resolve();
 };

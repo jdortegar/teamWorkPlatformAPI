@@ -47,4 +47,7 @@ export const onedriveClientSecret = 'jrosbYCP12;[;)dqSOSW322';
 // export const onedriveClientId = 'd2061ee6-7c0d-415f-942f-8318952579c8';
 // export const onedriveClientSecret = 'kbWGVYM93_)koyjbQK557!)';
 
+export const salesforceClientId = '3MVG9zlTNB8o8BA3yxc0Y3VFQq5pZNVvejwizNZqqwXxlyUCCnf_4aHlR4QK5sP41BspCZ2Hjf56LoJfCJs08';
+export const salesforceClientSecret = '1586929814816678095';
+
 export const awsProductCode = '8loyvo6g5k96nfobn626rwjbj';

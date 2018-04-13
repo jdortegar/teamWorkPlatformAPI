@@ -132,6 +132,23 @@ export const getSubscriberUserBySubscriberUserId = (req, subscriberUserId) => {
    });
 };
 
+export const getSubscriberUserByIntegrationsBoxUserId = (req, boxUserId) => {
+   return new Promise((resolve, reject) => {
+      const params = {
+         TableName: tableName(),
+         FilterExpression: 'integrations.box.userId = :boxUserId',
+         ExpressionAttributeValues: {
+            ':boxUserId': boxUserId
+         }
+      };
+
+      util.scan(req, params)
+         .then(originalResults => upgradeSchema(req, originalResults))
+         .then(latestResults => resolve(decryptIntegrations(req, latestResults)))
+         .catch(err => reject(err));
+   });
+};
+
 export const getSubscriberUsersByUserId = (req, userId) => {
    return new Promise((resolve, reject) => {
       const params = {

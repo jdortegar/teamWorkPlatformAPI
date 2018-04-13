@@ -3,6 +3,7 @@ import * as box from '../controllers/box';
 import * as google from '../controllers/google';
 import * as sharepoint from '../controllers/sharepoint';
 import * as onedrive from '../controllers/onedrive';
+import * as salesforce from '../controllers/salesforce';
 import * as integrations from '../controllers/integrations';
 import { apiVersionedValidators, validateByApiVersion } from '../config/param-validation';
 
@@ -20,6 +21,9 @@ router.route('/box/access')
 
 router.route('/box/revoke/:subscriberOrgId')
    .post(box.revokeBox);
+
+router.route('/box/app')
+   .get(box.boxApp);
 
 router.route('/box/webhooks')
    .post(box.boxWebhooks);
@@ -59,4 +63,16 @@ router.route('/onedrive/access')
 
 router.route('/onedrive/revoke/:subscriberOrgId')
    .post(onedrive.revokeOnedrive);
+
+
+router.route('/salesforce/integrate/:subscriberOrgId')
+   .get(salesforce.integrateSalesforce);
+
+router.route('/salesforce/access')
+   .get(salesforce.salesforceAccess);
+
+router.route('/salesforce/revoke/:subscriberOrgId')
+   .post(salesforce.revokeSalesforce);
+
+
 export default router;
