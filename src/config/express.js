@@ -6,7 +6,7 @@ import expressValidation from 'express-validation';
 import httpStatus from 'http-status';
 import jwt, { UnauthorizedError } from 'express-jwt';
 import config from './env';
-import APIError from '../helpers/APIError';
+import { APIError, APIWarning } from '../services/errors';
 import { googleSiteVerification } from '../integrations/google';
 import { errorMiddleware as loggerErrorMiddleware, preAuthMiddleware, postAuthMiddleware } from '../logger';
 import routes from '../routes';
@@ -71,6 +71,7 @@ app.use(jwtMiddleware.unless({
       /^\/(v\d+\/)?auth\/login/,
       /^\/(v\d+\/)?auth\/logout/,
       /^\/(v\d+\/)?integrations\/.*\/access/,
+      /^\/(v\d+\/)?integrations\/.*\/app/,
       /^\/(v\d+\/)?integrations\/.*\/webhooks/,
       /^\/(v\d+\/)?users\/passwordreset/,
       /^\/(v\d+\/)?passwordupdate/
@@ -85,24 +86,24 @@ app.use('/v:apiVersion/', routes);
 
 // Catch 404 and forward to error handler.
 app.use((req, res, next) => {
-   const err = new APIError('API not found', httpStatus.NOT_FOUND);
+   const err = new APIError(httpStatus.NOT_FOUND, 'API not found');
    return next(err);
 });
 
-// If error is not an instanceOf APIError, convert it.
+// If error is not an instanceOf APIError or APIWarning, convert it.
 app.use((err, req, res, next) => {
    let e = err;
    if (err instanceof expressValidation.ValidationError) {
       const unifiedErrorMessage = err.errors.map((error) => {
          return error.messages.join('. ');
       }).join(' and ');
-      e = new APIError(unifiedErrorMessage, err.status, true);
+      e = new APIError(err.status, unifiedErrorMessage);
    } else if (err instanceof UnauthorizedError) {
       req.logger.warn(err.message);
       res.status(httpStatus.UNAUTHORIZED).end();
       return;
-   } else if (!(err instanceof APIError)) {
-      e = new APIError(err.message, err.status, err.isPublic);
+   } else if (!(err instanceof APIError) && !(err instanceof APIWarning)) {
+      e = new APIError(httpStatus.INTERNAL_SERVER_ERROR, err.message);
    }
 
    next(e);
@@ -112,6 +113,7 @@ app.use(loggerErrorMiddleware);
 
 app.use((err, req, res, next) => { // eslint-disable-line no-unused-vars
    res.status(err.status).json({
+      status: err.status,
       message: err.message
    });
 });

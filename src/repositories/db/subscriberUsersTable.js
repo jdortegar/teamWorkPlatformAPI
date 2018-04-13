@@ -4,6 +4,7 @@ import * as util from './util';
 import Aes from '../../helpers/aes';
 
 const aes = new Aes('AI-Infused Knowledge Management for Enterprise Teams'); // eslint-disable-line no-unused-vars
+
 /**
  * hash: subscriberUserId
  * v
@@ -34,6 +35,61 @@ const v = 1;
 const upgradeSchema = (req, dbObjects) => {
    // Nothing to upgrade.
    return Promise.resolve(dbObjects);
+};
+
+const accessTokenRegex = /^access.*token$/i;
+const refreshTokenRegex = /^refresh.*token$/i;
+
+const decryptIntegration = (req, subscriberUser) => {
+   if (!subscriberUser) {
+      return undefined;
+   }
+
+   let decryptedSubscriberUser = subscriberUser;
+   if ((subscriberUser) && (subscriberUser.integrations)) {
+      decryptedSubscriberUser = _.cloneDeep(subscriberUser);
+      Object.keys(subscriberUser.integrations).forEach((integrationType) => {
+         Object.keys(subscriberUser.integrations[integrationType]).forEach((key) => {
+            if ((accessTokenRegex.test(key)) || (refreshTokenRegex.test(key))) {
+               const currentValue = decryptedSubscriberUser.integrations[integrationType][key];
+               decryptedSubscriberUser.integrations[integrationType][key] = aes.decryptCiphers(currentValue);
+            }
+         });
+      });
+   }
+   return decryptedSubscriberUser;
+};
+
+const decryptIntegrations = (req, singleOrArraySubscriberUser) => {
+   if (!singleOrArraySubscriberUser) {
+      return undefined;
+   }
+
+   if (singleOrArraySubscriberUser instanceof Array) {
+      return singleOrArraySubscriberUser.map(subscriberUser => decryptIntegration(req, subscriberUser));
+   }
+
+   return decryptIntegration(req, singleOrArraySubscriberUser);
+};
+
+const encryptIntegrations = (req, integrations) => {
+   if (!integrations) {
+      return integrations;
+   }
+
+   const encryptedIntegrations = _.cloneDeep(integrations);
+   Object.keys(integrations).forEach((integrationType) => {
+      Object.keys(integrations[integrationType]).forEach((key) => {
+         if ((accessTokenRegex.test(key)) || (refreshTokenRegex.test(key))) {
+            const currentValue = integrations[integrationType][key];
+            if (currentValue.indexOf(Aes.CIPHER_PATTERN_PREFIX) !== 0) {
+               // TODO: Turn this on when python code matches.
+               // encryptedIntegrations[integrationType][key] = aes.encryptCipher(currentValue);
+            }
+         }
+      });
+   });
+   return encryptedIntegrations;
 };
 
 export const createSubscriberUser = (req, subscriberUserId, userId, subscriberOrgId, role, displayName) => {
@@ -70,7 +126,25 @@ export const getSubscriberUserBySubscriberUserId = (req, subscriberUserId) => {
       };
       util.query(req, params)
          .then(originalResults => upgradeSchema(req, originalResults))
-         .then(latestResults => resolve((latestResults.length > 0) ? latestResults[0] : undefined))
+         .then((latestResults) => { return (latestResults.length > 0) ? latestResults[0] : undefined; })
+         .then(subscriberUser => resolve(decryptIntegrations(req, subscriberUser)))
+         .catch(err => reject(err));
+   });
+};
+
+export const getSubscriberUserByIntegrationsBoxUserId = (req, boxUserId) => {
+   return new Promise((resolve, reject) => {
+      const params = {
+         TableName: tableName(),
+         FilterExpression: 'integrations.box.userId = :boxUserId',
+         ExpressionAttributeValues: {
+            ':boxUserId': boxUserId
+         }
+      };
+
+      util.scan(req, params)
+         .then(originalResults => upgradeSchema(req, originalResults))
+         .then(latestResults => resolve(decryptIntegrations(req, latestResults)))
          .catch(err => reject(err));
    });
 };
@@ -87,7 +161,7 @@ export const getSubscriberUsersByUserId = (req, userId) => {
       };
       util.query(req, params)
          .then(originalResults => upgradeSchema(req, originalResults))
-         .then(latestResults => resolve(latestResults))
+         .then(latestResults => resolve(decryptIntegrations(req, latestResults)))
          .catch(err => reject(err));
    });
 };
@@ -105,7 +179,8 @@ export const getSubscriberUserByUserIdAndSubscriberOrgId = (req, userId, subscri
       };
       util.query(req, params)
          .then(originalResults => upgradeSchema(req, originalResults))
-         .then(latestResults => resolve((latestResults.length > 0) ? latestResults[0] : undefined))
+         .then((latestResults) => { return (latestResults.length > 0) ? latestResults[0] : undefined; })
+         .then(subscriberUser => resolve(decryptIntegrations(req, subscriberUser)))
          .catch(err => reject(err));
    });
 };
@@ -132,7 +207,8 @@ export const getSubscriberUserByUserIdAndSubscriberOrgIdAndRole = (req, userId, 
       };
       util.query(req, params)
          .then(originalResults => upgradeSchema(req, originalResults))
-         .then(latestResults => resolve((latestResults.length > 0) ? latestResults[0] : undefined))
+         .then((latestResults) => { return (latestResults.length > 0) ? latestResults[0] : undefined; })
+         .then(subscriberUser => resolve(decryptIntegrations(req, subscriberUser)))
          .catch(err => reject(err));
    });
 };
@@ -149,7 +225,7 @@ export const getSubscriberUsersBySubscriberOrgId = (req, subscriberOrgId) => {
       };
       util.query(req, params)
          .then(originalResults => upgradeSchema(req, originalResults))
-         .then(latestResults => resolve(latestResults))
+         .then(latestResults => resolve(decryptIntegrations(req, latestResults)))
          .catch(err => reject(err));
    });
 };
@@ -171,7 +247,7 @@ export const getSubscriberUsersBySubscriberOrgIdAndRole = (req, subscriberOrgId,
       };
       util.query(req, params)
          .then(originalResults => upgradeSchema(req, originalResults))
-         .then(latestResults => resolve(latestResults))
+         .then(latestResults => resolve(decryptIntegrations(req, latestResults)))
          .catch(err => reject(err));
    });
 };
@@ -190,7 +266,7 @@ export const updateSubscriberUserIntegrations = (req, subscriberUserId, integrat
                UpdateExpression: 'set lastModified = :lastModified, integrations = :integrations',
                ExpressionAttributeValues: {
                   ':lastModified': lastModified,
-                  ':integrations': integrations
+                  ':integrations': encryptIntegrations(req, integrations)
                }
             };
 

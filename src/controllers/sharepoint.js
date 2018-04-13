@@ -1,8 +1,7 @@
 import httpStatus from 'http-status';
 import config from '../config/env';
-import APIError from '../helpers/APIError';
 import * as sharepointSvc from '../services/sharepointService';
-import { IntegrationAccessError, SubscriberOrgNotExistError } from '../services/errors';
+import { APIError, APIWarning, IntegrationAccessError, SubscriberOrgNotExistError } from '../services/errors';
 
 const webappIntegrationUri = `${config.webappBaseUri}/app/integrations`;
 
@@ -22,9 +21,9 @@ export const integrateSharepoint = (req, res, next) => {
       })
       .catch((err) => {
          if (err instanceof SubscriberOrgNotExistError) {
-            res.status(httpStatus.NOT_FOUND).end();
+            next(new APIWarning(httpStatus.NOT_FOUND, err));
          } else {
-            next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
+            next(new APIError(httpStatus.INTERNAL_SERVER_ERROR, err));
          }
       });
 };
@@ -61,11 +60,11 @@ export const revokeSharepoint = (req, res, next) => {
       })
       .catch((err) => {
          if (err instanceof SubscriberOrgNotExistError) {
-            res.status(httpStatus.NOT_FOUND).end();
+            next(new APIWarning(httpStatus.NOT_FOUND, err));
          } else if (err instanceof IntegrationAccessError) {
-            res.status(httpStatus.GONE).end();
+            next(new APIWarning(httpStatus.GONE, err));
          } else {
-            next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
+            next(new APIError(httpStatus.INTERNAL_SERVER_ERROR, err));
          }
       });
 };
@@ -76,7 +75,7 @@ export const revokeSharepoint = (req, res, next) => {
 //       .catch((err) => {
 //          req.logger.error(err);
 //          if (err instanceof IntegrationAccessError) {
-//             res.status(httpStatus.FORBIDDEN).end();
+//             next(new APIWarning(httpStatus.FORBIDDEN, err));
 //          } else {
 //             res.status(httpStatus.INTERNAL_SERVER_ERROR).end();
 //          }

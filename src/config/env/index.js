@@ -26,9 +26,9 @@ const config = {
    redisPrefix: defaultConfig.redisPrefix,
 
    nodePort: process.env.NODE_PORT || defaultConfig.nodePort,
+   aesKey: process.env.AES_KEY || defaultConfig.aesKey,
    jwtSecret: process.env.JWT_SECRET || defaultConfig.jwtSecret,
    signedCookieSecret: process.env.SIGNED_COOKIE_SECRET || defaultConfig.signedCookieSecret,
-   aesKey: process.env.AES_KEY || defaultConfig.aesKey,
    apiEndpoint: process.env.API_ENDPOINT || defaultConfig.apiEndpoint,
 
    webappBaseUri: process.env.WEBAPP_BASE_URI || defaultConfig.webappBaseUri,
@@ -58,7 +58,10 @@ const config = {
    sharepointClientSecret: process.env.SHAREPOINT_CLIENT_SECRET || defaultConfig.sharepointClientSecret,
 
    onedriveClientId: process.env.ONEDRIVE_CLIENT_ID || defaultConfig.onedriveClientId,
-   onedriveClientSecret: process.env.ONEDRIVE_CLIENT_SECRET || defaultConfig.onedriveClientSecret
+   onedriveClientSecret: process.env.ONEDRIVE_CLIENT_SECRET || defaultConfig.onedriveClientSecret,
+
+   salesforceClientId: process.env.SALESFORCE_CLIENT_ID || defaultConfig.salesforceClientId,
+   salesforceClientSecret: process.env.SALESFORCE_CLIENT_SECRET || defaultConfig.salesforceClientSecret
 };
 
 export const applyPropertiesFromDbToConfig = (propertiesFromDb) => {
@@ -79,9 +82,9 @@ export const applyEnvironmentToConfig = () => {
    config.redisPrefix = process.env.REDIS_PREFIX || config.redisPrefix;
 
    config.nodePort = process.env.NODE_PORT || config.nodePort;
+   config.aesKey = process.env.AES_KEY || config.aesKey;
    config.jwtSecret = process.env.JWT_SECRET || config.jwtSecret;
    config.signedCookieSecret = process.env.SIGNED_COOKIE_SECRET || config.signedCookieSecret;
-   config.aesKey = process.env.AES_KEY || config.aesKey;
    config.apiEndpoint = process.env.API_ENDPOINT || config.apiEndpoint;
 
    config.webappBaseUri = process.env.WEBAPP_BASE_URI || config.webappBaseUri;
@@ -112,6 +115,9 @@ export const applyEnvironmentToConfig = () => {
 
    config.onedriveClientId = process.env.ONEDRIVE_CLIENT_ID || config.onedriveClientId;
    config.onedriveClientSecret = process.env.ONEDRIVE_CLIENT_ID || config.onedriveClientSecret;
+
+   config.salesforceClientId = process.env.ONEDRIVE_CLIENT_ID || config.salesforceClientId;
+   config.salesforceClientSecret = process.env.ONEDRIVE_CLIENT_ID || config.salesforceClientSecret;
 
    return Promise.resolve();
 };

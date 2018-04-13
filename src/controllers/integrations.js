@@ -1,8 +1,8 @@
 import httpStatus from 'http-status';
-import APIError from '../helpers/APIError';
 import { apiVersionedVisibility, publishByApiVersion } from '../helpers/publishedVisibility';
 import * as integrationSvc from '../services/integrationService';
 import {
+   APIError, APIWarning,
    BadIntegrationConfigurationError, SubscriberUserNotExistError
 } from '../services/errors';
 
@@ -15,7 +15,7 @@ export const getIntegrations = (req, res, next) => {
          res.status(httpStatus.OK).json({ integrations: publishByApiVersion(req, apiVersionedVisibility.publicIntegrations, integrations) });
       })
       .catch((err) => {
-         next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
+         next(new APIError(httpStatus.INTERNAL_SERVER_ERROR, err));
       });
 };
 
@@ -30,11 +30,11 @@ export const configureIntegration = (req, res, next) => {
       })
       .catch((err) => {
          if (err instanceof SubscriberUserNotExistError) {
-            res.status(httpStatus.NOT_FOUND).end();
+            next(new APIWarning(httpStatus.NOT_FOUND, err));
          } else if (err instanceof BadIntegrationConfigurationError) {
-            res.status(httpStatus.BAD_REQUEST).end();
+            next(new APIWarning(httpStatus.BAD_REQUEST, err));
          } else {
-            next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
+            next(new APIError(httpStatus.INTERNAL_SERVER_ERROR, err));
          }
       });
 };

@@ -6,6 +6,7 @@ import shortid from 'shortid';
 import winston from 'winston';
 import config from './config/env';
 import app from './config/express';
+import { APIWarning } from './services/errors';
 
 const level = config.loggerLevel;
 const json = config.loggerJson;
@@ -42,7 +43,7 @@ const options = {
    rewriters: [(msgLevel, msg, meta) => {
       if ((meta) && (meta.error) && (meta.error instanceof Error)) {
          const exceptionMeta = winston.exception.getAllInfo(meta.error);
-         const clone = _.clone(meta);
+         const clone = _.cloneDeep(meta);
          clone.error = exceptionMeta.stack || exceptionMeta.trace;
          return clone;
       }
@@ -78,6 +79,8 @@ class Wrapper {
    error(...args) { this.log('error', args); }
 
    warn(...args) { this.log('warn', args); }
+
+   // problem(...args) { (args[0] instanceof AppError) ? this.error(args) : this.warn(...args) }
 
    info(...args) { this.log('info', args); }
 
@@ -138,6 +141,10 @@ export const postAuthMiddleware = [
 
 
 export const errorMiddleware = (error, req, res, next) => {
-   req.logger.error({ error, body: req.body });
+   if (error instanceof APIWarning) {
+      req.logger.warn(error.message);
+   } else {
+      req.logger.error({ error, body: req.body });
+   }
    next(error);
 };

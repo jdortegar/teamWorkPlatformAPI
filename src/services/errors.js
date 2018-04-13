@@ -1,3 +1,54 @@
+import NestedError from 'nested-error-stacks';
+
+export class AppError extends NestedError {
+   constructor(message = undefined, nested = undefined) {
+      if (new.target === AppError) {
+         throw new TypeError('Cannot construct AppError instance directly.');
+      }
+      super(message, nested);
+   }
+}
+
+export class AppWarning extends NestedError {
+   constructor(message = undefined, nested = undefined) {
+      if (new.target === AppError) {
+         throw new TypeError('Cannot construct AppWarning instance directly.');
+      }
+      super(message, nested);
+   }
+}
+
+export class APIError extends AppError {
+   status;
+   constructor(httpStatus, nestedErrorOrMessage) {
+      let msg = 'APIError';
+      let nested;
+      if (nestedErrorOrMessage instanceof String) {
+         msg = `${msg}:${nestedErrorOrMessage}`;
+      } else {
+         nested = nestedErrorOrMessage;
+      }
+      super(msg, nested);
+      this.status = httpStatus;
+   }
+}
+
+export class APIWarning extends AppWarning {
+   status;
+
+   constructor(httpStatus, nestedErrorOrMessage) {
+      let msg = 'APIWarning';
+      let nested;
+      if (nestedErrorOrMessage instanceof String) {
+         msg = `${msg}:${nestedErrorOrMessage}`;
+      } else {
+         nested = nestedErrorOrMessage;
+      }
+      super(msg, nested);
+      this.status = httpStatus;
+   }
+}
+
 export class UserNotExistError extends Error {
    constructor(...args) {
       super(...args);
@@ -134,6 +185,7 @@ export class IntegrationAccessError extends Error {
       Error.captureStackTrace(this, IntegrationAccessError);
    }
 }
+
 
 export class BadIntegrationConfigurationError extends Error {
    _configuration;

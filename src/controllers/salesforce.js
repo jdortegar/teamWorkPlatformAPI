@@ -1,20 +1,20 @@
 import httpStatus from 'http-status';
 import config from '../config/env';
-import * as onedriveSvc from '../services/onedriveService';
+import * as salesforceSvc from '../services/salesforceService';
 import { APIError, APIWarning, IntegrationAccessError, SubscriberOrgNotExistError } from '../services/errors';
 
 const webappIntegrationUri = `${config.webappBaseUri}/app/integrations`;
 
-export const integrateOnedrive = (req, res, next) => {
+export const integrateSalesforce = (req, res, next) => {
    const userId = req.user._id;
    const subscriberOrgId = req.params.subscriberOrgId;
 
-   onedriveSvc.integrateOnedrive(req, userId, subscriberOrgId)
-      .then((onedriveUri) => {
+   salesforceSvc.integrateSalesforce(req, userId, subscriberOrgId)
+      .then((salesforceUri) => {
          if (req.accepts('application/json')) {
-            res.status(httpStatus.ACCEPTED).json({ location: onedriveUri });
+            res.status(httpStatus.ACCEPTED).json({ location: salesforceUri });
          } else {
-            res.redirect(onedriveUri);
+            res.redirect(salesforceUri);
          }
       })
       .catch((err) => {
@@ -26,33 +26,33 @@ export const integrateOnedrive = (req, res, next) => {
       });
 };
 
-export const onedriveAccess = (req, res) => {
+export const salesforceAccess = (req, res) => {
    const redirectUri = `${webappIntegrationUri}`;
    let subscriberOrgId;
 
-   onedriveSvc.onedriveAccessResponse(req, req.query)
+   salesforceSvc.salesforceAccessResponse(req, req.query)
       .then((stateSubscriberOrgId) => {
          subscriberOrgId = stateSubscriberOrgId;
-         res.redirect(`${redirectUri}/${subscriberOrgId}/onedrive/CREATED`);
+         res.redirect(`${redirectUri}/${subscriberOrgId}/salesforce/CREATED`);
       })
       .catch((err) => { // err is always instance of IntegrationAccessError, which has subscriberOrgId and chained error.
          subscriberOrgId = subscriberOrgId || err.subscriberOrgId;
          const realError = err._chainedError || err;
          if (realError instanceof IntegrationAccessError) {
-            res.redirect(`${redirectUri}/${subscriberOrgId}/onedrive/FORBIDDEN`);
+            res.redirect(`${redirectUri}/${subscriberOrgId}/salesforce/FORBIDDEN`);
          } else if (realError instanceof SubscriberOrgNotExistError) {
-            res.redirect(`${redirectUri}/${subscriberOrgId}/onedrive/NOT_FOUND`);
+            res.redirect(`${redirectUri}/${subscriberOrgId}/salesforce/NOT_FOUND`);
          } else {
-            res.redirect(`${redirectUri}/${subscriberOrgId}/onedrive/INTERNAL_SERVER_ERROR`);
+            res.redirect(`${redirectUri}/${subscriberOrgId}/salesforce/INTERNAL_SERVER_ERROR`);
          }
       });
 };
 
-export const revokeOnedrive = (req, res, next) => {
+export const revokeSalesforce = (req, res, next) => {
    const userId = req.user._id;
    const subscriberOrgId = req.params.subscriberOrgId;
 
-   onedriveSvc.revokeOnedrive(req, userId, subscriberOrgId)
+   salesforceSvc.revokeSalesforce(req, userId, subscriberOrgId)
       .then(() => {
          res.status(httpStatus.OK).end();
       })
@@ -66,4 +66,3 @@ export const revokeOnedrive = (req, res, next) => {
          }
       });
 };
-

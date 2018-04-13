@@ -1,8 +1,7 @@
 import httpStatus from 'http-status';
 import config from '../config/env';
-import APIError from '../helpers/APIError';
 import * as boxSvc from '../services/boxService';
-import { IntegrationAccessError, SubscriberOrgNotExistError } from '../services/errors';
+import { APIError, APIWarning, IntegrationAccessError, SubscriberOrgNotExistError } from '../services/errors';
 
 const webappIntegrationUri = `${config.webappBaseUri}/app/integrations`;
 
@@ -21,9 +20,9 @@ export const integrateBox = (req, res, next) => {
       })
       .catch((err) => {
          if (err instanceof SubscriberOrgNotExistError) {
-            res.status(httpStatus.NOT_FOUND).end();
+            next(new APIWarning(httpStatus.NOT_FOUND, err));
          } else {
-            next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
+            next(new APIError(httpStatus.INTERNAL_SERVER_ERROR, err));
          }
       });
 };
@@ -60,12 +59,43 @@ export const revokeBox = (req, res, next) => {
       })
       .catch((err) => {
          if (err instanceof SubscriberOrgNotExistError) {
-            res.status(httpStatus.NOT_FOUND).end();
+            next(new APIWarning(httpStatus.NOT_FOUND, err));
          } else if (err instanceof IntegrationAccessError) {
-            res.status(httpStatus.GONE).end();
+            next(new APIWarning(httpStatus.GONE, err));
          } else {
-            next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
+            next(new APIError(httpStatus.INTERNAL_SERVER_ERROR, err));
          }
+      });
+};
+
+export const boxApp = (req, res, next) => {
+   const { user_id, file_id } = req.query; // eslint-disable-line no-unused-vars
+
+   boxSvc.getSubscriberUsersAndOrgsByBoxUserId(req, user_id)
+      .then((subscriberUsersAndOrgs) => {
+         if (subscriberUsersAndOrgs.length === 0) {
+            // boxUserId not found in system.
+            const createAccountUri = `${config.webappBaseUri}/register`; // eslint-disable-line no-unused-vars
+            res.send(`
+               <html>
+                  <body>
+                     <h3>No corresponding user in Habla AI.  Please create an Habla AI account here:</h3>
+                     <a href={createAccountUri}>{createAccountUri}</a>
+                  </body>
+               </html>
+            `);
+         }
+
+         res.send(`
+            <html>
+               <body>
+                  <h3>Share with Habla AI</h3>
+               </body>
+            </html>
+         `);
+      })
+      .catch((err) => {
+         next(new APIError(httpStatus.INTERNAL_SERVER_ERROR, err));
       });
 };
 

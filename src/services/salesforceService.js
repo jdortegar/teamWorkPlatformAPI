@@ -1,18 +1,17 @@
 import _ from 'lodash';
 import uuid from 'uuid';
 import { IntegrationAccessError, SubscriberOrgNotExistError } from './errors';
-import { composeAuthorizationUrl, exchangeAuthorizationCodeForAccessToken, getUserInfo, revokeIntegration, validateWebhookMessage } from '../integrations/box';
-import { integrationsUpdated, boxWebhookEvent } from './messaging';
+import { composeAuthorizationUrl, exchangeAuthorizationCodeForAccessToken, revokeIntegration } from '../integrations/salesforce';
+import { integrationsUpdated } from './messaging';
 import * as subscriberUsersTable from '../repositories/db/subscriberUsersTable';
-import * as subscriberOrgsTable from '../repositories/db/subscriberOrgsTable';
 
 const defaultExpiration = 30 * 60; // 30 minutes.
 
 const hashKey = (state) => {
-   return `${state}#boxIntegrationState`;
+   return `${state}#salesforceIntegrationState`;
 };
 
-const createRedisBoxIntegrationState = (req, userId, subscriberOrgId) => { // eslint-disable-line no-unused-vars
+const createRedisSalesforceIntegrationState = (req, userId, subscriberOrgId) => {
    return new Promise((resolve, reject) => {
       const state = uuid.v4();
       req.app.locals.redis.hmsetAsync(hashKey(state), 'userId', userId, 'subscriberOrgId', subscriberOrgId, 'EX', defaultExpiration)
@@ -21,7 +20,7 @@ const createRedisBoxIntegrationState = (req, userId, subscriberOrgId) => { // es
    });
 };
 
-const deleteRedisBoxIntegrationState = (req, state) => {
+const deleteRedisSalesforceIntegrationState = (req, state) => {
    return new Promise((resolve, reject) => {
       let userId;
       let subscriberOrgId;
@@ -44,7 +43,7 @@ const deleteRedisBoxIntegrationState = (req, state) => {
 };
 
 
-export const integrateBox = (req, userId, subscriberOrgId) => {
+export const integrateSalesforce = (req, userId, subscriberOrgId) => {
    return new Promise((resolve, reject) => {
       subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId)
          .then((subscriberUser) => {
@@ -52,17 +51,17 @@ export const integrateBox = (req, userId, subscriberOrgId) => {
                throw new SubscriberOrgNotExistError(subscriberOrgId);
             }
 
-            return createRedisBoxIntegrationState(req, userId, subscriberOrgId);
+            return createRedisSalesforceIntegrationState(req, userId, subscriberOrgId);
          })
          .then((state) => {
-            const boxUri = composeAuthorizationUrl(state);
-            resolve(boxUri);
+            const salesforceUri = composeAuthorizationUrl(state);
+            resolve(salesforceUri);
          })
          .catch(err => reject(err));
    });
 };
 
-export const boxAccessResponse = (req, { code, state, error, error_description }) => {
+export const salesforceAccessResponse = (req, { code, state, error, error_description }) => {
    if (error) {
       return Promise.reject(new IntegrationAccessError(`${error}: ${error_description}`)); // eslint-disable-line camelcase
    }
@@ -75,7 +74,7 @@ export const boxAccessResponse = (req, { code, state, error, error_description }
       let subscriberOrgId;
       let updateInfo;
 
-      deleteRedisBoxIntegrationState(req, state)
+      deleteRedisSalesforceIntegrationState(req, state)
          .then((integrationContext) => {
             userId = integrationContext.userId;
             subscriberOrgId = integrationContext.subscriberOrgId;
@@ -83,28 +82,26 @@ export const boxAccessResponse = (req, { code, state, error, error_description }
             return exchangeAuthorizationCodeForAccessToken(authorizationCode);
          })
          .then((tokenInfo) => {
-            req.logger.debug(`Box access info for userId=${userId}/subscriberOrgId=${subscriberOrgId} = ${JSON.stringify(tokenInfo)}`);
+            req.logger.debug(`Salesforce access info for userId=${userId}/subscriberOrgId=${subscriberOrgId} = ${JSON.stringify(tokenInfo)}`);
             integrationInfo = tokenInfo;
             return Promise.all([
-               subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId),
-               getUserInfo(req, integrationInfo.accessToken)
+               subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId)
             ]);
          })
-         .then((promiseResults) => {
-            const subscriberUser = promiseResults[0];
-            const userInfo = promiseResults[1];
-            if (!subscriberUser) {
+         .then((subscriberUsers) => {
+            if ((!subscriberUsers) || (subscriberUsers.length < 1)) {
                throw new SubscriberOrgNotExistError(subscriberOrgId);
             }
 
+            const subscriberUser = subscriberUsers[0];
             const { subscriberUserId } = subscriberUser;
-            integrationInfo.userId = userInfo.id;
+            integrationInfo.userId = integrationInfo.id;
             integrationInfo.expired = false;
-            const boxInfo = {
-               box: integrationInfo
+            const salesforceInfo = {
+               salesforce: integrationInfo
             };
-            updateInfo = _.merge(subscriberUser, { integrations: boxInfo });
-            delete updateInfo.integrations.box.revoked;
+            updateInfo = _.merge(subscriberUser, { integrations: salesforceInfo });
+            delete updateInfo.integrations.salesforce.revoked;
             const integrations = updateInfo.integrations;
             return subscriberUsersTable.updateSubscriberUserIntegrations(req, subscriberUserId, integrations);
          })
@@ -127,7 +124,7 @@ export const boxAccessResponse = (req, { code, state, error, error_description }
    });
 };
 
-export const revokeBox = (req, userId, subscriberOrgId) => {
+export const revokeSalesforce = (req, userId, subscriberOrgId) => {
    return new Promise((resolve, reject) => {
       subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId)
          .then((subscriberUser) => {
@@ -136,15 +133,15 @@ export const revokeBox = (req, userId, subscriberOrgId) => {
             }
 
             const { subscriberUserId, integrations } = subscriberUser;
-            const userAccessToken = ((subscriberUser.integrations) && (subscriberUser.integrations.box)) ? subscriberUser.integrations.box.accessToken : undefined;
+            const userAccessToken = ((subscriberUser.integrations) && (subscriberUser.integrations.salesforce)) ? subscriberUser.integrations.salesforce.access_token : undefined;
             const promises = [];
 
             if (userAccessToken) {
-               integrations.box = { revoked: true };
+               integrations.salesforce = { revoked: true };
                promises.push(subscriberUsersTable.updateSubscriberUserIntegrations(req, subscriberUserId, integrations));
                promises.push(revokeIntegration(req, userAccessToken));
             } else {
-               throw new IntegrationAccessError('Box integration doesn\'t exist.');
+               throw new IntegrationAccessError('Salesforce integration doesn\'t exist.');
             }
             return Promise.all(promises);
          })
@@ -154,34 +151,4 @@ export const revokeBox = (req, userId, subscriberOrgId) => {
          })
          .catch(err => reject(err));
    });
-};
-
-export const getSubscriberUsersAndOrgsByBoxUserId = (req, boxUserId) => {
-   return new Promise((resolve, reject) => {
-      let subscriberUsers;
-      subscriberUsersTable.getSubscriberUserByIntegrationsBoxUserId(req, boxUserId)
-         .then((retrievedSubscriberUsers) => {
-            subscriberUsers = retrievedSubscriberUsers;
-            if (subscriberUsers.length === 0) {
-               resolve([]);
-            }
-
-            const subscriberOrgIds = subscriberUsers.map(subscriberUser => subscriberUser.subscriberOrgId);
-            return subscriberOrgsTable.getSubscriberOrgsBySubscriberOrgIds(req, subscriberOrgIds);
-         })
-         .then((subscriberOrgs) => {
-            let i = -1;
-            resolve(subscriberOrgs.map((subscriberOrg) => {
-               i += 1;
-               return { subscriberOrg, subscriberUser: subscriberUsers[i] };
-            }));
-         })
-         .catch(err => reject(err));
-   });
-};
-
-export const webhookEvent = (req) => {
-   validateWebhookMessage(req);
-   boxWebhookEvent(req, req.body);
-   return Promise.resolve();
 };

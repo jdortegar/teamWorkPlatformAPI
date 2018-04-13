@@ -4,12 +4,11 @@ import SnsValidator from 'sns-validator';
 import axios from 'axios';
 import config from '../config/env';
 import { jwtMiddleware } from '../config/express';
-import APIError from '../helpers/APIError';
 import { apiVersionedVisibility, publishByApiVersion } from '../helpers/publishedVisibility';
 import { getAuthData } from '../models/user';
 import * as userSvc from '../services/userService';
 import * as awsMarketplaceSvc from '../services/awsMarketplaceService';
-import { NoPermissionsError, InvalidAwsProductCodeError, CustomerExistsError } from '../services/errors';
+import { APIError, APIWarning, NoPermissionsError, InvalidAwsProductCodeError, CustomerExistsError } from '../services/errors';
 
 export const AWS_CUSTOMER_ID_HEADER_NAME = 'x-hablaai-awsCustomerId';
 export const AWS_CUSTOMER_ID_QUERY_NAME = 'awsCustomerId';
@@ -45,7 +44,7 @@ export const login = (req, res, next) => {
                         postLoginUrl: `${config.webappBaseUri}/app/editSubscriberOrg` // TODO: customer id exists
                      });
                   } else {
-                     next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
+                     next(new APIError(httpStatus.INTERNAL_SERVER_ERROR, err));
                   }
                });
          } else {
@@ -60,9 +59,9 @@ export const login = (req, res, next) => {
       })
       .catch((err) => {
          if (err instanceof NoPermissionsError) {
-            next(new APIError('Invalid credentials', httpStatus.UNAUTHORIZED));
+            next(new APIWarning(httpStatus.UNAUTHORIZED, 'Invalid credentials'));
          } else {
-            next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
+            next(new APIError(httpStatus.INTERNAL_SERVER_ERROR, err));
          }
       });
 };
@@ -87,13 +86,13 @@ export const resolveAwsCustomer = (req, res, next) => {
          })
          .catch((err) => {
             if (err instanceof InvalidAwsProductCodeError) {
-               next(new APIError(err, httpStatus.NOT_FOUND));
+               next(new APIError(httpStatus.NOT_FOUND, err));
             } else {
-               next(new APIError(err, httpStatus.INTERNAL_SERVER_ERROR));
+               next(new APIError(httpStatus.INTERNAL_SERVER_ERROR, err));
             }
          });
    } else {
-      next(new APIError('Amazon Marketplace Token not found.', httpStatus.NOT_FOUND));
+      next(new APIError(httpStatus.NOT_FOUND, 'Amazon Marketplace Token not found.'));
    }
 };
 
