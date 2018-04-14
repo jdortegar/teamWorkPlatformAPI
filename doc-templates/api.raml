@@ -3111,7 +3111,7 @@ documentation:
       uriParameters:
          target:
             description: |
-               box | google | sharepoint.  Currently, only sharepoint can be configured.
+               box | google | sharepoint | onedrive | salesforce.  Currently, only sharepoint can be configured.
       /configure:
          /{subscriberOrgId}:
             uriParameters:
@@ -3203,7 +3203,7 @@ documentation:
                   description: |
                      FOUND<br />
                      Redirect to Habla Box integration page.
-                     The query parameter `integration` is included, with current value: box | google | sharepoint.
+                     The query parameter `integration` is included, with current value: box | google | sharepoint | onedrive | salesforce.
                      The query parameter `status` is included, which contains one of the values:<br />
                      CREATED: Successfully integrated to Box.<br />
                      NOT_FOUND: The provided `subscriberOrgId` is invalid for the current user.<br />
@@ -3282,7 +3282,7 @@ documentation:
                   description: |
                      FOUND<br />
                      Redirect to Habla Google integration page.
-                     The query parameter `integration` is included, with current value: box | google | sharepoint.
+                     The query parameter `integration` is included, with current value: box | google | sharepoint | onedrive | salesforce.
                      The query parameter `status` is included, which contains one of the values:<br />
                      CREATED: Successfully integrated to Google.<br />
                      NOT_FOUND: The provided `subscriberOrgId` is invalid for the current user.<br />
@@ -3363,7 +3363,7 @@ documentation:
                   description: |
                      FOUND<br />
                      Redirect to Habla SharePoint integration page.
-                     The query parameter `integration` is included, with current value: box | google | sharepoint.
+                     The query parameter `integration` is included, with current value: box | google | sharepoint | onedrive | salesforce.
                      The query parameter `status` is included, which contains one of the values:<br />
                      CREATED: Successfully integrated to Box.<br />
                      NOT_FOUND: The provided `subscriberOrgId` is invalid for the current user.<br />
@@ -3405,3 +3405,120 @@ documentation:
                   description |
                      FORBIDDEN<br />
                      The signature of the message is invalid, and therefore not accepted by Habla.
+
+   /onedrive:
+
+      /integrate:
+         /{subscriberOrgId}:
+            uriParameters:
+               subscriberOrgId:
+                  description: OneDrive integration, scoped to the logged-in user and provided `subscriberOrgId`.
+            get:
+               securedBy: [oauth_2_0]
+               description: Integrate OneDrive to Habla, scoped to the logged-in user and provided `subscriberOrgId`.
+               responses:
+                  202:
+                     description: |
+                        ACCEPTED<br />
+                        If request header `Accept` contains `application/json`, the body will contain JSON `{ location: ... }`.
+                  302:
+                     description: |
+                        FOUND<br />
+                        Redirect to OneDrive access approval.
+
+      /access:
+         get:
+            description: Invoked by OneDrive in response to user access response.
+            responses:
+               302:
+                  description: |
+                     FOUND<br />
+                     Redirect to Habla OneDrive integration page.
+                     The query parameter `integration` is included, with current value: box | google | sharepoint | onedrive | salesforce.
+                     The query parameter `status` is included, which contains one of the values:<br />
+                     CREATED: Successfully integrated to OneDrive.<br />
+                     NOT_FOUND: The provided `subscriberOrgId` is invalid for the current user.<br />
+                     INTERNAL_SERVER_ERROR: Something bad happened.
+
+      /revoke:
+         /{subscriberOrgId}:
+            uriParameters:
+               subscriberOrgId:
+                  description: OneDrive integration, scoped to the logged-in user and provided `subscriberOrgId`.
+            post:
+               securedBy: [oauth_2_0]
+               description: Revoke OneDrive access from Habla, scoped to the logged-in user and provided `subscriberOrgId`.
+               responses:
+                  200:
+                     description: |
+                        OK<br />
+                        The integration was revoked successfully, which includes clearing data in the DB as well as notifying OneDrive of revocation.
+                  410:
+                     description: |
+                        GONE<br />
+                        Clearing integration data from the DB was successful, but the remote call to OneDrive failed.
+                        This can mean either the existing access token is no longer valid, or OneDrive isn't aware of this Habla integration.
+                        Either way, Habla no longer has access to the user's data, but having the user check on the OneDrive end might be a good idea.
+                  404:
+                     description: |
+                        NOT_FOUND<br />
+                        Invalid subscriberOrgId.
+
+   /salesforce:
+
+      /integrate:
+         /{subscriberOrgId}:
+            uriParameters:
+               subscriberOrgId:
+                  description: Salesforce integration, scoped to the logged-in user and provided `subscriberOrgId`.
+            get:
+               securedBy: [oauth_2_0]
+               description: Integrate Salesforce to Habla, scoped to the logged-in user and provided `subscriberOrgId`.
+               responses:
+                  202:
+                     description: |
+                        ACCEPTED<br />
+                        If request header `Accept` contains `application/json`, the body will contain JSON `{ location: ... }`.
+                  302:
+                     description: |
+                        FOUND<br />
+                        Redirect to Salesforce access approval.
+
+      /access:
+         get:
+            description: Invoked by Salesforce in response to user access response.
+            responses:
+               302:
+                  description: |
+                     FOUND<br />
+                     Redirect to Habla Salesforce integration page.
+                     The query parameter `integration` is included, with current value: box | google | sharepoint | onedrive | salesforce.
+                     The query parameter `status` is included, which contains one of the values:<br />
+                     CREATED: Successfully integrated to Salesforce.<br />
+                     NOT_FOUND: The provided `subscriberOrgId` is invalid for the current user.<br />
+                     INTERNAL_SERVER_ERROR: Something bad happened.
+
+      /revoke:
+         /{subscriberOrgId}:
+            uriParameters:
+               subscriberOrgId:
+                  description: Salesforce integration, scoped to the logged-in user and provided `subscriberOrgId`.
+            post:
+               securedBy: [oauth_2_0]
+               description: Revoke Salesforce access from Habla, scoped to the logged-in user and provided `subscriberOrgId`.
+               responses:
+                  200:
+                     description: |
+                        OK<br />
+                        The integration was revoked successfully, which includes clearing data in the DB as well as notifying OneSalesforceDrive of revocation.
+                  410:
+                     description: |
+                        GONE<br />
+                        Clearing integration data from the DB was successful, but the remote call to Salesforce failed.
+                        This can mean either the existing access token is no longer valid, or Salesforce isn't aware of this Habla integration.
+                        Either way, Habla no longer has access to the user's data, but having the user check on the Salesforce end might be a good idea.
+                  404:
+                     description: |
+                        NOT_FOUND<br />
+                        Invalid subscriberOrgId.
+
