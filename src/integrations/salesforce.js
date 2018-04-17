@@ -14,7 +14,6 @@ export const composeAuthorizationUrl = (state) => {
       client_id: clientId,
       redirect_uri: redirectUri,
       state,
-      scope: 'api refresh_token'
    };
    const params = Object.keys(paramsObject).map(key => `${key}=${encodeURIComponent(paramsObject[key])}`).join('&');
    return `${accessUri}?${params}`;
