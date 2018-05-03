@@ -27,15 +27,15 @@ export const loggerLevel = 'debug';
 export const loggerJson = false;
 
 
-export const boxClientId = 'c7kuuon9sbf7jbynnuvbczj9zzkyzc5c';
-export const boxClientSecret = '9p20xotNgLqLF2uS6ybg1ANd53jpq3GE';
+export const boxClientId = 'csha3gfiw1ujah73e3t5sb43lthkbk6s';
+export const boxClientSecret = 'IiQlk9hzKwHLDpeZi002E32pQDQ61kim';
 // export const boxClientId = 'a666hm00w8qtw6cuxutbb9et7bxvso7j'; // ngrok
 // export const boxClientSecret = 'KdRfL9bePDT4BnhYGTWQX7Uukfn7ygRU'; // ngrok
 export const boxWebhooksPrimaryKey = 'fWo4rJNBbVeSpQ0llAdiM5GnDer1CPLE';
 export const boxWebhooksSecondaryKey = 'Q5Ht4J6nucMSxTnXKRKk1w9LwJaBefLY';
 
-export const googleClientId = '56229434385-er6slkc68oaklfs58oi5ej2fbbjabpc7.apps.googleusercontent.com';
-export const googleClientSecret = 'tQ-XvOvgGmAAJfjMWjH4Ai1T';
+export const googleClientId = '801943186202-5cp3slnr8mi8vmtdruiessk3i5ugneg0.apps.googleusercontent.com';
+export const googleClientSecret = 'VPDsaJ5aAKs9gNt4y1CQBl1Z';
 
 export const sharepointClientId = 'a5a13f17-353a-493c-8121-f0659cd32ab4';
 export const sharepointClientSecret = 'cYk8V8WFLk/zaa7C8G8q2bt8UV2Tun6zoZqA4rhL8Og=';
