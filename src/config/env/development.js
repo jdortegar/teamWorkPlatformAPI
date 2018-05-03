@@ -27,8 +27,8 @@ export const loggerLevel = 'debug';
 export const loggerJson = false;
 
 
-export const boxClientId = 'c7kuuon9sbf7jbynnuvbczj9zzkyzc5c';
-export const boxClientSecret = '9p20xotNgLqLF2uS6ybg1ANd53jpq3GE';
+export const boxClientId = 'csha3gfiw1ujah73e3t5sb43lthkbk6s';
+export const boxClientSecret = 'IiQlk9hzKwHLDpeZi002E32pQDQ61kim';
 // export const boxClientId = 'a666hm00w8qtw6cuxutbb9et7bxvso7j'; // ngrok
 // export const boxClientSecret = 'KdRfL9bePDT4BnhYGTWQX7Uukfn7ygRU'; // ngrok
 export const boxWebhooksPrimaryKey = 'fWo4rJNBbVeSpQ0llAdiM5GnDer1CPLE';
