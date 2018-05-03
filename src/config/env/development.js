@@ -14,7 +14,7 @@ export const aws = {
 };
 // export const dynamoDbEndpoint = 'http://localhost:8000';
 // export const dynamoDbEndpoint = 'https://dynamodb.us-west-2.amazonaws.com';
-export const dynamoDbEndpoint = process.env.DYNAMODB_ENDPOINT || 'http://localhost:8000';
+export const dynamoDbEndpoint = process.env.DYNAMODB_ENDPOINT || 'https://dynamodb.us-west-2.amazonaws.com';
 export const webappBaseUri = 'http://localhost:9090';
 // export const webappBaseUri = 'https://hablawebapp.ngrok.io';
 
