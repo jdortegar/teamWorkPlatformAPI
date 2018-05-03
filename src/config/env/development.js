@@ -12,9 +12,9 @@ export const aws = {
    secretAccessKey: 'SInyKW4pa4d4gBR5DgVwiU762spTVY6JoPitanvZ',
    awsRegion: 'us-west-2'
 };
-export const dynamoDbEndpoint = 'http://localhost:8000';
+// export const dynamoDbEndpoint = 'http://localhost:8000';
 // export const dynamoDbEndpoint = 'https://dynamodb.us-west-2.amazonaws.com';
-
+export const dynamoDbEndpoint = process.env.DYNAMODB_ENDPOINT || 'http://localhost:8000';
 export const webappBaseUri = 'http://localhost:9090';
 // export const webappBaseUri = 'https://hablawebapp.ngrok.io';
 
