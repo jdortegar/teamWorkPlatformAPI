@@ -2,31 +2,6 @@ import _ from 'lodash';
 import moment from 'moment';
 import client from './redshiftClient';
 
-function getFormatedAssetName(asset) {
-   switch (asset) {
-      case 'L1 String 10':
-         return 'L1 S10';
-      case 'L1 String 6':
-         return 'L1 S6';
-      case 'L1 String 7':
-         return 'L1 S7';
-      case 'L1 String 8':
-         return 'L1 S9';
-      case 'L2 String 1':
-         return 'L2 S1';
-      case 'L2 String 2':
-         return 'L2 S2';
-      case 'L2 String 3':
-         return 'L2 S3';
-      case 'L2 String 4':
-         return 'L2 S4';
-      case 'L2 String 5':
-         return 'L2 S5';
-      default:
-         return asset;
-   }
-}
-
 // Disable this until add other reports
 /* eslint import/prefer-default-export: "off" */
 export const lambWestonReportA = (plant, from, until, measure) => {
@@ -61,7 +36,7 @@ export const lambWestonReportA = (plant, from, until, measure) => {
          });
          const series = _.map(points, (values, key) => {
             return {
-               name: getFormatedAssetName(key),
+               name: key.replace('String ', 'S'),
                data: values
             };
          });
