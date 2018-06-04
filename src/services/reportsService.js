@@ -27,8 +27,9 @@ function getFormatedAssetName(asset) {
    }
 }
 
-
-const lambWestonReportA = (plant, from, until, measure) => {
+// Disable this until add other reports
+/* eslint import/prefer-default-export: "off" */
+export const lambWestonReportA = (plant, from, until, measure) => {
    const momentFrom = moment(from);
    const momentUntil = moment(until);
    const days = moment.duration(momentUntil.diff(momentFrom)).asDays() + 1;
@@ -72,4 +73,3 @@ const lambWestonReportA = (plant, from, until, measure) => {
       });
 };
 
-export default lambWestonReportA;

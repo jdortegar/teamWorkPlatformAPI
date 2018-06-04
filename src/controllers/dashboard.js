@@ -2,7 +2,9 @@ import httpStatus from 'http-status';
 import * as reports from '../services/reportsService';
 import { APIError } from '../services/errors';
 
-const getLambWestonReportA = (req, res, next) => {
+// Disable this until add other reports
+/* eslint import/prefer-default-export: "off" */
+export const getLambWestonReportA = (req, res, next) => {
    const plant = req.query.plant;
    if (!plant) {
       next(new APIError(httpStatus.BAD_REQUEST, "Filter 'plant' is required in Url query."));
@@ -20,4 +22,4 @@ const getLambWestonReportA = (req, res, next) => {
        next(new APIError(httpStatus.INTERNAL_SERVER_ERROR, err));
     });
 };
-export default getLambWestonReportA;
+
