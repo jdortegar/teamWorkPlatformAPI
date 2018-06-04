@@ -18,6 +18,7 @@ import teamsRoutes from './teams';
 import teamRoomsRoutes from './teamRooms';
 import userRoutes from './users';
 import integrationRoutes from './integrations';
+import dashboarRoutes from './dashboard';
 
 const router = express.Router();
 
@@ -40,6 +41,7 @@ router.use('/teamRooms', teamRoomsRoutes);
 router.use('/conversations', conversationsRoutes);
 
 router.use('/integrations', integrationRoutes);
+router.use('/reports', dashboarRoutes);
 
 export default router;
 

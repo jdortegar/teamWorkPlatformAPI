@@ -53,3 +53,10 @@ export const salesforceClientId = '3MVG9CEn_O3jvv0z6aRiUukKKhckrgCvcTQYVLI_vhr7G
 export const salesforceClientSecret = '1130800630408373913';
 
 export const awsProductCode = '8loyvo6g5k96nfobn626rwjbj';
+export const redshift = {
+   user: 'root',
+   database: 'habladb',
+   password: 'MAnchi89',
+   host: 'habla-ai.csvoexx0fghm.us-west-2.redshift.amazonaws.com',
+   port: 5439
+};

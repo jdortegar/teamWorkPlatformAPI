@@ -120,6 +120,7 @@
     "morgan": "^1.9.0",
     "nested-error-stacks": "^2.0.0",
     "node-cron": "^1.2.1",
+    "node-redshift": "^0.1.5",
     "nodemailer": "^4.4.2",
     "redis": "^2.8.0",
     "shortid": "^2.2.8",
