@@ -61,7 +61,14 @@ const config = {
    onedriveClientSecret: process.env.ONEDRIVE_CLIENT_SECRET || defaultConfig.onedriveClientSecret,
 
    salesforceClientId: process.env.SALESFORCE_CLIENT_ID || defaultConfig.salesforceClientId,
-   salesforceClientSecret: process.env.SALESFORCE_CLIENT_SECRET || defaultConfig.salesforceClientSecret
+   salesforceClientSecret: process.env.SALESFORCE_CLIENT_SECRET || defaultConfig.salesforceClientSecret,
+   redshift: {
+      user: process.env.REDSHIFT_USER || defaultConfig.redshift.user,
+      database: process.env.REDSHIFT_DATABASE || defaultConfig.redshift.database,
+      password: process.env.REDSHIFT_PASSWORD || defaultConfig.redshift.password,
+      host: process.env.REDSHIFT_HOST || defaultConfig.redshift.host,
+      port: process.env.REDSHIFT_PORT || defaultConfig.redshift.port
+   }
 };
 
 export const applyPropertiesFromDbToConfig = (propertiesFromDb) => {
