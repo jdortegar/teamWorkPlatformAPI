@@ -66,7 +66,7 @@ export const lambWestonReportB = (plant, month, measure) => {
             if (!_.has(preformatedData, row.asset)) {
                preformatedData[row.asset] = [];
             }
-            preformatedData[row.asset].push([moment(row.start_time).valueOf(), row[measure]]);
+            preformatedData[row.asset].push([moment(row.logical_date).valueOf(), row[measure]]);
          });
          const series = _.map(preformatedData, (points, key) => {
             return {
