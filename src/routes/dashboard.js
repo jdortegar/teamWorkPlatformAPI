@@ -9,4 +9,7 @@ router.route('/lamb-weston/report-a')
 router.route('/lamb-weston/report-b')
     .get(dashboard.getLambWestonReportB);
 
+router.route('/lamb-weston/report-c')
+    .get(dashboard.getLambWestonReportC);
+
 export default router;

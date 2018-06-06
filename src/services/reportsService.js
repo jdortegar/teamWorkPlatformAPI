@@ -81,3 +81,32 @@ export const lambWestonReportB = (plant, month, measure) => {
          };
       });
 };
+
+export const lambWestonReportC = (from, until, measure) => {
+   const queryString = `SELECT factory as plant, SUM(seconds) as seconds, SUM(minutes) as minutes, SUM(hours) as hours
+      FROM public.lamb_weston_raw_data WHERE
+      logical_date >= '${from}' AND
+      logical_date <= '${until}' AND
+      super_reason = 'Uptime'
+      GROUP BY factory
+      ORDER BY factory
+   `;
+   return client.query(queryString)
+      .then((data) => {
+         const dataSet = {
+            name: 'Plants',
+            colorByPoint: true
+         };
+         dataSet.data = _.map(data.rows, (row) => {
+            return {
+               name: row.plant,
+               y: row[measure],
+            };
+         });
+         return {
+            title: 'Plant Uptime by Week or Month for Multiple Plants Comparison',
+            series: [dataSet],
+            measure
+         };
+      });
+};
