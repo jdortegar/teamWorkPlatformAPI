@@ -2,8 +2,6 @@ import httpStatus from 'http-status';
 import * as reports from '../services/reportsService';
 import { APIError } from '../services/errors';
 
-// Disable this until add other reports
-/* eslint import/prefer-default-export: "off" */
 export const getLambWestonReportA = (req, res, next) => {
    const plant = req.query.plant;
    if (!plant) {
@@ -21,5 +19,47 @@ export const getLambWestonReportA = (req, res, next) => {
     .catch((err) => {
        next(new APIError(httpStatus.INTERNAL_SERVER_ERROR, err));
     });
+};
+
+export const getLambWestonReportB = (req, res, next) => {
+   const plant = req.query.plant;
+   if (!plant) {
+      next(new APIError(httpStatus.BAD_REQUEST, "Filter 'plant' is required"));
+   }
+   const month = req.query.month;
+   if (!month) {
+      next(new APIError(httpStatus.BAD_REQUEST, "Filter 'month' is required"));
+   }
+   const measure = req.query.measure || 'minutes';
+   reports.lambWestonReportB(plant, month, measure)
+      .then((reportData) => {
+         res.status(httpStatus.OK).json({
+            report: reportData
+         });
+      })
+      .catch((err) => {
+         next(new APIError(httpStatus.INTERNAL_SERVER_ERROR, err));
+      });
+};
+
+export const getLambWestonReportC = (req, res, next) => {
+   const from = req.query.from;
+   if (!from) {
+      next(new APIError(httpStatus.BAD_REQUEST, "Filter 'from' is required"));
+   }
+   const until = req.query.until;
+   if (!until) {
+      next(new APIError(httpStatus.BAD_REQUEST, "Filter 'until' is required"));
+   }
+   const measure = req.query.measure || 'minutes';
+   reports.lambWestonReportC(from, until, measure)
+      .then((reportData) => {
+         res.status(httpStatus.OK).json({
+            report: reportData
+         });
+      })
+      .catch((err) => {
+         next(new APIError(httpStatus.INTERNAL_SERVER_ERROR, err));
+      });
 };
 
