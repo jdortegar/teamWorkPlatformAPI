@@ -88,8 +88,8 @@ export const lambWestonReportC = (from, until, measure) => {
       logical_date >= '${from}' AND
       logical_date <= '${until}' AND
       super_reason = 'Uptime'
-      GROUP BY factory
-      ORDER BY factory
+      GROUP BY plant
+      ORDER BY plant
    `;
    return client.query(queryString)
       .then((data) => {
@@ -110,3 +110,84 @@ export const lambWestonReportC = (from, until, measure) => {
          };
       });
 };
+
+export const lambWestonReportD = (plant, from, until, measure) => {
+   const queryString = `SELECT super_reason, SUM(seconds) as seconds, SUM(minutes) as minutes, SUM(hours) as hours
+      FROM public.lamb_weston_raw_data WHERE
+      LOWER(factory) = LOWER('${plant}') AND
+      logical_date >= '${from}' AND
+      logical_date <= '${until}' AND
+      super_reason <> 'Uptime'
+      GROUP BY super_reason
+      ORDER BY super_reason
+   `;
+   return client.query(queryString)
+      .then((data) => {
+         const dataSet = {
+            name: 'Down Time Super Reasons',
+            colorByPoint: true
+         };
+         dataSet.data = _.map(data.rows, (row) => {
+            return {
+               name: row.super_reason,
+               y: row[measure]
+            };
+         });
+         return {
+            title: 'Down timme Stopages & Super Reasons',
+            series: [dataSet],
+            measure,
+         };
+      });
+};
+
+export const lambWestonReportE = (plants, months, measure) => {
+   const plantsSentences = _.map(plants, (plant) => {
+      return `LOWER(factory) = LOWER('${plant}')`;
+   });
+   const plantWHERE = `(${plantsSentences.join(' OR ')})`;
+   const monthsSentences = _.map(months, (month) => {
+      const from = moment(month);
+      const until = moment(month).endOf('month');
+      return `(logical_date >= '${from.format('YYYY-MM-DD')}' AND logical_date <= '${until.format('YYYY-MM-DD')}')`;
+   });
+   const monthsWHERE = `(${monthsSentences.join(' OR ')})`;
+   const queryString = `SELECT factory as plant, super_reason, DATE_TRUNC('month', logical_date) as month_start, SUM(seconds) as seconds, SUM(minutes) as minutes, SUM(hours) as hours
+      FROM public.lamb_weston_raw_data
+      WHERE
+         super_reason <> 'Uptime' AND
+         ${plantWHERE} AND
+         ${monthsWHERE}
+      GROUP BY plant, super_reason, month_start
+      ORDER BY plant
+   `;
+   return client.query(queryString)
+      .then((data) => {
+         const categories = _.map(data.rows, (row) => {
+            return `${row.plant} ${_.toUpper(moment(row.month_start).format('MMM YYYY'))}`;
+         });
+         const points = {};
+         _.each(data.rows, (row) => {
+            const category = `${row.plant} ${_.toUpper(moment(row.month_start).format('MMM YYYY'))}`;
+            if (!_.has(points, row.super_reason)) {
+               points[row.super_reason] = _.range(0, categories.length, 0);
+            }
+            const val = row[measure];
+            const index = categories.indexOf(category);
+            points[row.super_reason][index] = val;
+         });
+         const series = _.map(points, (values, key) => {
+            return {
+               name: key,
+               data: values
+            };
+         });
+         return {
+            title: 'Downtime Comparison Across Multiple Plants by Month',
+            categories,
+            series,
+            measure
+         };
+      });
+};
+
