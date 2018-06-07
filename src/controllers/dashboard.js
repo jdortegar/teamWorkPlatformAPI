@@ -87,3 +87,26 @@ export const getLambWestonReportD = (req, res, next) => {
       next(new APIError(httpStatus.INTERNAL_SERVER_ERROR, err));
    });
 };
+
+export const getLambWestonReportE = (req, res, next) => {
+   const plantsString = req.query.plants || '';
+   const plants = plantsString.split(',');
+   if (!plantsString) {
+      next(new APIError(httpStatus.BAD_REQUEST, "Filter 'plants' is required as a comma separatad params"));
+   }
+   const monthsStrings = req.query.months || '';
+   const months = monthsStrings.split(',');
+   if (!plantsString) {
+      next(new APIError(httpStatus.BAD_REQUEST, "Filter 'months' is required as a comma separated params"));
+   }
+   const measure = req.query.measure || 'minutes';
+   reports.lambWestonReportE(plants, months, measure)
+   .then((reportData) => {
+      res.status(httpStatus.OK).json({
+         report: reportData
+      });
+   })
+   .catch((err) => {
+      next(new APIError(httpStatus.INTERNAL_SERVER_ERROR, err));
+   });
+};
