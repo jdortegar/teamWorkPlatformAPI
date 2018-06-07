@@ -88,8 +88,8 @@ export const lambWestonReportC = (from, until, measure) => {
       logical_date >= '${from}' AND
       logical_date <= '${until}' AND
       super_reason = 'Uptime'
-      GROUP BY factory
-      ORDER BY factory
+      GROUP BY plant
+      ORDER BY plant
    `;
    return client.query(queryString)
       .then((data) => {
@@ -110,3 +110,34 @@ export const lambWestonReportC = (from, until, measure) => {
          };
       });
 };
+
+export const lambWestonReportD = (plant, from, until, measure) => {
+   const queryString = `SELECT super_reason, SUM(seconds) as seconds, SUM(minutes) as minutes, SUM(hours) as hours
+      FROM public.lamb_weston_raw_data WHERE
+      LOWER(factory) = LOWER('${plant}') AND
+      logical_date >= '${from}' AND
+      logical_date <= '${until}' AND
+      super_reason <> 'Uptime'
+      GROUP BY super_reason
+      ORDER BY super_reason
+   `;
+   return client.query(queryString)
+      .then((data) => {
+         const dataSet = {
+            name: 'Down Time Super Reasons',
+            colorByPoint: true
+         };
+         dataSet.data = _.map(data.rows, (row) => {
+            return {
+               name: row.super_reason,
+               y: row[measure]
+            };
+         });
+         return {
+            title: 'Down timme Stopages & Super Reasons',
+            series: [dataSet],
+            measure,
+         };
+      });
+};
+

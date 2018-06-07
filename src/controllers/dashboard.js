@@ -63,3 +63,27 @@ export const getLambWestonReportC = (req, res, next) => {
       });
 };
 
+export const getLambWestonReportD = (req, res, next) => {
+   const plant = req.query.plant;
+   if (!plant) {
+      next(new APIError(httpStatus.BAD_REQUEST, "Filter 'plant' is required"));
+   }
+   const from = req.query.from;
+   if (!from) {
+      next(new APIError(httpStatus.BAD_REQUEST, "Filter 'from' is required."));
+   }
+   const until = req.query.until;
+   if (!until) {
+      next(new APIError(httpStatus.BAD_REQUEST, "Filter 'until' is required."));
+   }
+   const measure = req.query.measure || 'minutes';
+   reports.lambWestonReportD(plant, from, until, measure)
+   .then((reportData) => {
+      res.status(httpStatus.OK).json({
+         report: reportData
+      });
+   })
+   .catch((err) => {
+      next(new APIError(httpStatus.INTERNAL_SERVER_ERROR, err));
+   });
+};
