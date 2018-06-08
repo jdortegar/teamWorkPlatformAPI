@@ -163,8 +163,12 @@ export const lambWestonReportE = (plants, months, measure) => {
    `;
    return client.query(queryString)
       .then((data) => {
-         const categories = _.map(data.rows, (row) => {
-            return `${row.plant} ${_.toUpper(moment(row.month_start).format('MMM YYYY'))}`;
+         const categories = [];
+         _.each(data.rows, (row) => {
+            const categoryName = `${row.plant} ${_.toUpper(moment(row.month_start).format('MMM YYYY'))}`;
+            if (categories.indexOf(categoryName) < 0) {
+               categories.push(categoryName);
+            }
          });
          const points = {};
          _.each(data.rows, (row) => {
