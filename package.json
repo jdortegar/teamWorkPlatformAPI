@@ -118,6 +118,7 @@
     "lodash": "^4.17.4",
     "moment": "^2.20.1",
     "morgan": "^1.9.0",
+    "neo4j-driver": "^1.6.1",
     "nested-error-stacks": "^2.0.0",
     "node-cron": "^1.2.1",
     "node-redshift": "^0.1.5",

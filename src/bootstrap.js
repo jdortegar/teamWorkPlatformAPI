@@ -1,4 +1,5 @@
 import AWS from 'aws-sdk';
+import neo4j from 'neo4j-driver';
 import config, { applyPropertiesFromDbToConfig, applyEnvironmentToConfig } from './config/env';
 import app from './config/express';
 import logger, { createPseudoRequest } from './logger';
@@ -43,6 +44,13 @@ export const setupDynamoDb = () => {
    });
 };
 
+export const setupNeo4j = () => {
+   const { host, port, user, password } = config.neo4j;
+   const driver = neo4j.driver(`bolt://${host}:${port}`, neo4j.auth.basic(user, password));
+
+   app.locals.neo4jDriver = driver;
+   app.locals.neo4jSession = driver.session();
+};
 
 export const connectRedis = () => {
    const redisConfig = {
@@ -149,6 +157,7 @@ const registerGracefulShutdown = () => {
 const start = () => {
    const bootup = applyEnvironmentToConfig() // AWS and DB connection properties used.
       .then(() => setupDynamoDb())
+      .then(() => setupNeo4j())
       .then(() => getAllSystemProperties(createPseudoRequest()))
       .then(propertiesFromDb => applyPropertiesFromDbToConfig(propertiesFromDb))
       .then(() => applyEnvironmentToConfig()) // Reapply, since environment takes precedence.

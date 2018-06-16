@@ -17,6 +17,14 @@ const config = {
       awsRegion: process.env.AWS_REGION || defaultConfig.aws.awsRegion
    },
 
+   // neo4j
+   neo4j: {
+      host: process.env.NEO4J_HOST || defaultConfig.neo4j.host,
+      port: process.env.NEO4J_PORT || defaultConfig.neo4j.port,
+      user: process.env.NEO4J_USER || defaultConfig.neo4j.user,
+      password: process.env.NEO4J_PASSWORD || defaultConfig.neo4j.password,
+   },
+
    dynamoDbEndpoint: process.env.DYNAMODB_ENDPOINT || defaultConfig.dynamoDbEndpoint,
    tablePrefix: process.env.TBL_PREFIX || defaultConfig.tablePrefix,
    // End local only.

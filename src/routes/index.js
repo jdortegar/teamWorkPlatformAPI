@@ -19,6 +19,7 @@ import teamRoomsRoutes from './teamRooms';
 import userRoutes from './users';
 import integrationRoutes from './integrations';
 import dashboarRoutes from './dashboard';
+import ckgRoutes from './ckg';
 
 const router = express.Router();
 
@@ -42,6 +43,9 @@ router.use('/conversations', conversationsRoutes);
 
 router.use('/integrations', integrationRoutes);
 router.use('/reports', dashboarRoutes);
+
+router.use('/ckg', ckgRoutes);
+
 
 export default router;
 

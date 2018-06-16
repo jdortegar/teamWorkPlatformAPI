@@ -12,6 +12,18 @@ export const aws = {
    secretAccessKey: 'SInyKW4pa4d4gBR5DgVwiU762spTVY6JoPitanvZ',
    awsRegion: 'us-west-2'
 };
+
+export const neo4j = {
+   // host: 'localhost',
+   // port: '7687',
+   // user: 'neo4j',
+   // password: '123456'
+   // DEV
+   host: '34.217.97.197',
+   port: '7687',
+   user: 'neo4j',
+   password: 'habla12345'
+};
 // export const dynamoDbEndpoint = 'http://localhost:8000';
 // export const dynamoDbEndpoint = 'https://dynamodb.us-west-2.amazonaws.com';
 export const dynamoDbEndpoint = process.env.DYNAMODB_ENDPOINT || 'https://dynamodb.us-west-2.amazonaws.com';
