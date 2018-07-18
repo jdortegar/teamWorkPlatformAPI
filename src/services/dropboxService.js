@@ -41,10 +41,11 @@ const deleteRedisDropboxIntegrationState = (req, state) => {
    });
 };
 
-export const IntegrateDropbox = (req, userId, subscriberOrgId) => {
+export const integrateDropbox = (req, userId, subscriberOrgId) => {
    return new Promise((resolve, reject) => {
       subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId)
          .then((subscriberUser) => {
+            console.log('SUB USER', subscriberUser);
             if (!subscriberUser) {
                throw new SubscriberOrgNotExistError(subscriberOrgId);
             }

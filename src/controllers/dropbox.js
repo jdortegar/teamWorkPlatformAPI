@@ -8,7 +8,6 @@ const webappIntegrationUri = `${config.webappBaseUri}/app/integrations`;
 export const integrateDropbox = (req, res, next) => {
    const userId = req.user._id;
    const subscriberOrgId = req.params.subscriberOrgId;
-
    dropboxSvc.integrateDropbox(req, userId, subscriberOrgId)
       .then((dropboxUri) => {
          if (req.accepts('application/json')) {
@@ -29,7 +28,7 @@ export const integrateDropbox = (req, res, next) => {
 export const dropboxAccess = (req, res) => {
    const redirectUri = webappIntegrationUri;
    let subscriberOrgId;
-   dropboxSvc.dropboxAccessRespose(req, req.query)
+   dropboxSvc.dropboxAccessResponse(req, req.query)
       .then((stateSubscriberOrgId) => {
          subscriberOrgId = stateSubscriberOrgId;
          res.redirect(`${redirectUri}/${subscriberOrgId}/dropbox/CRETED`);
