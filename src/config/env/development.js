@@ -63,6 +63,11 @@ export const onedriveClientSecret = 'jrosbYCP12;[;)dqSOSW322';
 // export const salesforceClientSecret = '1586929814816678095';
 export const salesforceClientId = '3MVG9CEn_O3jvv0z6aRiUukKKhckrgCvcTQYVLI_vhr7GEffhHcRoW0_mAXanBQtJU2aTwaM5aPE4WeQWo2X3';
 export const salesforceClientSecret = '1130800630408373913';
+// export const salesforceClientId = '3MVG9oNqAtcJCF.Hipaqdn8RbUN9YmDIby5aSVbkdExNKPvizD_nfOhxPVcYoqMLWfkmkwuWPXg==';
+// export const salesforceClientSecret = '6768971095996066050';
+
+export const dropboxClientId = '4ml1epnmlwvwzyv';
+export const dropboxClientSecret = 'tyw311ric33ypcn';
 
 export const awsProductCode = '8loyvo6g5k96nfobn626rwjbj';
 export const redshift = {
