@@ -4,6 +4,7 @@ import * as google from '../controllers/google';
 import * as sharepoint from '../controllers/sharepoint';
 import * as onedrive from '../controllers/onedrive';
 import * as salesforce from '../controllers/salesforce';
+import * as dropbox from '../controllers/dropbox';
 import * as integrations from '../controllers/integrations';
 import { apiVersionedValidators, validateByApiVersion } from '../config/param-validation';
 
@@ -74,5 +75,13 @@ router.route('/salesforce/access')
 router.route('/salesforce/revoke/:subscriberOrgId')
    .post(salesforce.revokeSalesforce);
 
+router.route('/dropbox/integrate/:subscriberOrgId')
+   .get(dropbox.integrateDropbox);
+
+router.route('/dropbox/access')
+   .get(dropbox.dropboxAccess);
+
+router.route('/dropbox/revoke/:subscriberOrgId')
+   .get(dropbox.revokeDropbox);
 
 export default router;

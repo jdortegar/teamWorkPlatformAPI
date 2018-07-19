@@ -70,6 +70,9 @@ const config = {
 
    salesforceClientId: process.env.SALESFORCE_CLIENT_ID || defaultConfig.salesforceClientId,
    salesforceClientSecret: process.env.SALESFORCE_CLIENT_SECRET || defaultConfig.salesforceClientSecret,
+
+   dropboxClientId: process.env.DROPBOX_CLIENT_ID || defaultConfig.dropboxClientId,
+   dropboxClientSecret: process.env.DROPBOX_CLIENT_SECRET || defaultConfig.dropboxClientSecret,
    redshift: {
       user: process.env.REDSHIFT_USER || defaultConfig.redshift.user,
       database: process.env.REDSHIFT_DATABASE || defaultConfig.redshift.database,
@@ -133,6 +136,9 @@ export const applyEnvironmentToConfig = () => {
 
    config.salesforceClientId = process.env.ONEDRIVE_CLIENT_ID || config.salesforceClientId;
    config.salesforceClientSecret = process.env.ONEDRIVE_CLIENT_ID || config.salesforceClientSecret;
+
+   config.dropboxClientId = process.env.DROPBOX_CLIENT_ID || config.dropboxClientId;
+   config.dropboxClientSecret = process.env.DROPBOX_CLIENT_SECRET || config.dropboxClientSecret;
 
    return Promise.resolve();
 };
