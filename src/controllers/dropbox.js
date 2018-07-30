@@ -31,7 +31,7 @@ export const dropboxAccess = (req, res) => {
    dropboxSvc.dropboxAccessResponse(req, req.query)
       .then((stateSubscriberOrgId) => {
          subscriberOrgId = stateSubscriberOrgId;
-         res.redirect(`${redirectUri}/${subscriberOrgId}/dropbox/CRETED`);
+         res.redirect(`${redirectUri}/${subscriberOrgId}/dropbox/CREATED`);
       })
       .catch((err) => {
          subscriberOrgId = subscriberOrgId || err.subscriberOrgId;

@@ -82,6 +82,6 @@ router.route('/dropbox/access')
    .get(dropbox.dropboxAccess);
 
 router.route('/dropbox/revoke/:subscriberOrgId')
-   .get(dropbox.revokeDropbox);
+   .post(dropbox.revokeDropbox);
 
 export default router;

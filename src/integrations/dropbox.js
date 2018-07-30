@@ -22,19 +22,24 @@ export const exchangeAuthorizationCodeForAccessToken = (authorizationCode) => {
    return new Promise((resolve, reject) => {
       const uri = 'https://api.dropboxapi.com/oauth2/token';
       const paramsObject = {
-         grant_tyope: 'authorization_code',
-         client_secret: clientSecret,
+         code: authorizationCode,
+         grant_type: 'authorization_code',
          client_id: clientId,
+         client_secret: clientSecret,
          redirect_uri: redirectUri,
-         code: authorizationCode
       };
       const params = Object.keys(paramsObject).map(key => `${key}=${encodeURIComponent(paramsObject[key])}`).join('&');
-      axios.post(uri, params, { headers: { 'Content-Type': 'application/x-form-urlencoded' } })
+      const basicAuth = new Buffer(`${clientId}:${clientSecret}`).toString('base64');
+      axios.post(uri, params, { headers: { 
+         'Content-Type': 'application/x-www-form-urlencoded'
+      } })
          .then((response) => {
             const { data } = response;
             resolve(data);
          })
-         .catch(err => reject(err));
+         .catch((err) => {
+            reject(err)
+         });
    });
 };
 

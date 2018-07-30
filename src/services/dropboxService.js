@@ -32,7 +32,7 @@ const deleteRedisDropboxIntegrationState = (req, state) => {
             if ((userId === null) || (subscriberOrgId === null)) {
                throw new IntegrationAccessError(subscriberOrgId, 'No Oauth 2 state.found.');
             }
-            return req.app.local.redis.delAsync(hashKey(state));
+            return req.app.locals.redis.delAsync(hashKey(state));
          })
          .then(() => {
             resolve({ userId, subscriberOrgId });
@@ -45,11 +45,10 @@ export const integrateDropbox = (req, userId, subscriberOrgId) => {
    return new Promise((resolve, reject) => {
       subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId)
          .then((subscriberUser) => {
-            console.log('SUB USER', subscriberUser);
             if (!subscriberUser) {
                throw new SubscriberOrgNotExistError(subscriberOrgId);
             }
-            return createRedisDropboxIntegrationState(req, userId, SubscriberOrgNotExistError);
+            return createRedisDropboxIntegrationState(req, userId, subscriberOrgId);
          })
          .then((state) => {
             const dropboxUri = composeAuthorizationUrl(state);
@@ -69,7 +68,6 @@ export const dropboxAccessResponse = (req, { code, state, error, error_descripti
       let userId;
       let subscriberOrgId;
       let updateInfo;
-
       deleteRedisDropboxIntegrationState(req, state)
          .then((integrationContext) => {
             userId = integrationContext.userId;
