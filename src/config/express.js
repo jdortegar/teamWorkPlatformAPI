@@ -10,6 +10,7 @@ import { APIError, APIWarning } from '../services/errors';
 import { googleSiteVerification } from '../integrations/google';
 import { errorMiddleware as loggerErrorMiddleware, preAuthMiddleware, postAuthMiddleware } from '../logger';
 import routes from '../routes';
+import routesV2 from '../routes/api-v2'
 
 const app = express();
 app.enable('trust proxy');
@@ -37,25 +38,25 @@ app.use(preAuthMiddleware);
 app.use(googleSiteVerification);
 
 // Extract API version in request and put in request as "apiVersion", defaulting to 0.
-app.use((req, res, next) => {
-   let apiVersion = 0;
+// app.use((req, res, next) => {
+//    let apiVersion = 0;
 
-   const vMatch = req.url.match(/\/v\d+\//);
-   if (vMatch !== null) {
-      const vMatchStr = vMatch[0].substring(2, vMatch[0].length - 1);
-      try {
-         apiVersion = Number(vMatchStr);
-         if (apiVersion > config.apiVersion) {
-            throw new APIError(`Invalid API Version: ${vMatchStr}`, httpStatus.BAD_REQUEST);
-         }
-      } catch (err) {
-         throw new APIError(`Invalid API Version: ${vMatchStr}`, httpStatus.BAD_REQUEST);
-      }
-   }
+//    const vMatch = req.url.match(/\/v\d+\//);
+//    if (vMatch !== null) {
+//       const vMatchStr = vMatch[0].substring(2, vMatch[0].length - 1);
+//       try {
+//          apiVersion = Number(vMatchStr);
+//          if (apiVersion > config.apiVersion) {
+//             throw new APIError(`Invalid API Version: ${vMatchStr}`, httpStatus.BAD_REQUEST);
+//          }
+//       } catch (err) {
+//          throw new APIError(`Invalid API Version: ${vMatchStr}`, httpStatus.BAD_REQUEST);
+//       }
+//    }
 
-   req.apiVersion = apiVersion;
-   next();
-});
+//    req.apiVersion = apiVersion;
+//    next();
+// });
 
 export const jwtMiddleware = jwt({ secret: config.jwtSecret });
 app.use(jwtMiddleware.unless({
@@ -82,8 +83,8 @@ app.use(postAuthMiddleware);
 
 // mount all routes on / path
 app.use('/', routes);
-app.use('/v:apiVersion/', routes);
-
+app.use('/v1/', routes);
+app.use('/v2/', routesV2);
 // Catch 404 and forward to error handler.
 app.use((req, res, next) => {
    const err = new APIError(httpStatus.NOT_FOUND, 'API not found');
