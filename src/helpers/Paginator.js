@@ -1,7 +1,7 @@
 import _ from 'lodash';
 
 class Paginator {
-    construnctor(items, options) {
+    constructor(items, options) {
         this.items = items;
         this.options =_.merge(this.getDefaultOptions(), options);
         this.pages = _.chunk(this.items, options.pageSize);
@@ -27,7 +27,7 @@ class Paginator {
         }
         return {
             total: this.totalCount,
-            pagesCount,
+            pagesCount: this.pagesCount,
             page: number,
             items: this.pages[number - 1]
         }
