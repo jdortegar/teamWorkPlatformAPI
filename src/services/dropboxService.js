@@ -93,7 +93,7 @@ export const dropboxAccessResponse = (req, { code, state, error, error_descripti
                dropbox: integrationInfo
             };
             updateInfo = _.merge(subscriberUser, { integrations: dropboxInfo });
-            delete updateInfo.integrations.salesforce.revoked;
+            delete updateInfo.integrations.dropbox.revoked;
             const integrations = updateInfo.integrations;
             return subscriberUsersTable.updateSubscriberUserIntegrations(req, subscriberUserId, integrations);
          })
