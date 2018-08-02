@@ -260,6 +260,7 @@ const getFiles = async (query, neo4jSession, fileRecords=[]) => {
             }
     } else {
     if (arrLen == 1) {
+        /*
         const ownFilesInsideFolders = `
         MATCH (u:User)-[:OWNS]->(folder:Folder)-[:HAS *0..]->(f:File)
         WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (f.fileName=~ '(?i).*${arr[0]}.*')
@@ -286,6 +287,34 @@ const getFiles = async (query, neo4jSession, fileRecords=[]) => {
         WHERE u.subscriberOrgId = '${subscriberOrgId}' AND u.active = true
         AND (f.fileName=~ '(?i).*${arr[0]}.*') RETURN DISTINCT f`;
         fileRecords = await getFiles(shareFiles, neo4jSession, fileRecords);
+        */
+       const ownFilesInsideFolders = `
+       MATCH (u:User)-[:OWNS]->(folder:Folder)-[:HAS *0..]->(f:File)
+       WHERE u.subscriberOrgId = '${subscriberOrgId}' AND toLower(f.fileName) contains(toLower('${arr[0]}'))
+       AND u.active = true
+       RETURN DISTINCT f`;
+       fileRecords = await getFiles(ownFilesInsideFolders, neo4jSession);       
+ 
+    const ownFiles = `
+       MATCH (u:User)-[:OWNS]->(f:File)
+       WHERE u.subscriberOrgId = '${subscriberOrgId}' AND toLower(f.fileName) contains(toLower('${arr[0]}'))
+       AND  u.active = true
+       RETURN DISTINCT f`;
+       fileRecords = await getFiles(ownFiles, neo4jSession, fileRecords);
+ 
+    const shareFilesInsideFolders = `
+       MATCH (f:File)<-[:HAS *0..]-(folder:Folder)-[:SHARE_WITH]->(u:User)
+       WHERE u.subscriberOrgId = '${subscriberOrgId}' AND toLower(f.fileName) contains(toLower('${arr[0]}'))
+       AND u.active = true
+       RETURN DISTINCT f`;
+       fileRecords = await getFiles(shareFilesInsideFolders, neo4jSession, fileRecords);
+ 
+    const shareFiles = `
+       MATCH (f:File)-[:SHARE_WITH]->(u:User)
+       WHERE u.subscriberOrgId = '${subscriberOrgId}' AND toLower(f.fileName) contains(toLower('${arr[0]}'))
+       AND u.active = true
+       RETURN DISTINCT f`;
+       fileRecords = await getFiles(shareFiles, neo4jSession, fileRecords);
        
     } else if (arrLen == 2) {
         console.log(arr[1]);
