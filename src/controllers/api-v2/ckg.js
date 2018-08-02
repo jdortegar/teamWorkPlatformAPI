@@ -1,4 +1,5 @@
 import axios from 'axios';
+import _ from 'lodash';
 import Paginator from '../../helpers/Paginator';
 
 import config from '../../config/env';
@@ -37,8 +38,31 @@ export const getFiles = async (req, res) => {
          return res.status(err.response.status).json({error: err.response.data });
       }
    }
-   // TO DO: Apply filters and sorting before paginate;
+   // Filters
+   const filters = {};
+   if (typeof req.query.owner !== 'undefined') {
+      filters.fileOwnerId = req.query.owner;
+   };
+   if (typeof req.query.fileType !== 'undefined') {
+      filters.fileType = req.query.fileType;
+   }
+   if (typeof req.query.fileExtension !== 'undefined') {
+      filters.fileExtension = req.query.fileExtension
+   }
+   if (typeof req.query.integration !== 'undefined') {
+      filters.fileSource = req.query.integration;
+   }
+   files = _.filter(files, filters);
 
+   // Sorting
+   if (typeof req.query.sort !== 'undefined' && req.query.sort instanceof Array && req.query.sort.length > 0) {
+      files = _.sortBy(files, req.query.sort);
+      if (typeof req.query.sortOrder === 'desc') {
+         files = _.reverse(files);
+      }
+   }
+   
+   // Create Paginator
    const pager = new Paginator(files, { pageSize });
    const pageNumber = req.query.page || 1;
    const page = pager.getPage(pageNumber);
@@ -51,6 +75,7 @@ export const getFiles = async (req, res) => {
          page: pageNumber,
          pageSize,
          totalCount: pager.totalCount,
+         pagesCount: page.pagesCount,
          prev: (pageNumber > 1) ? 
             `${apiEndpoint}/v2/ckg/${req.params.subscriberOrgId}/files/${req.params.search}?${buildQueryString(prevQuery)}` :
             null,
@@ -58,6 +83,6 @@ export const getFiles = async (req, res) => {
             `${apiEndpoint}/v2/ckg/${req.params.subscriberOrgId}/files/${req.params.search}?${buildQueryString(nextQuery)}` :
             null
       },
-      items: page.items
+      items: page.items || []
    });
 }

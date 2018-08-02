@@ -55,7 +55,6 @@ app.use((req, res, next) => {
    }
 
    req.apiVersion = apiVersion;
-   console.log('API VERSION', req.apiVersion);
    next();
 });
 
