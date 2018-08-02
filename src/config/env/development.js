@@ -8,8 +8,8 @@ export const jwtSecret = '69157cde-e3a7-4079-b79a-95a35d58c6d3';
 export const apiEndpoint = 'http://localhost:3000';
 // export const apiEndpoint = 'https://hablaapi.ngrok.io';
 export const aws = {
-   accessKeyId: 'AKIAJKOIEHG5WIWSSFLA',
-   secretAccessKey: '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',
+   accessKeyId: 'AKIAJUWK5MDFUPOKWM4A',
+   secretAccessKey: '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',
    awsRegion: 'us-west-2'
 };
 
