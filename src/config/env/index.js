@@ -8,7 +8,8 @@ if (process.env.NODE_ENV === 'test') {
 
 // Start with default config, then subsequently override with DB properties and environment properties.
 const config = {
-   apiVersion: 1, // Hard-coded.
+   appEnv: process.env.NODE_ENV.toLowerCase(),
+   apiVersion: 2, // Hard-coded.
 
    // Start local only.
    aws: {
