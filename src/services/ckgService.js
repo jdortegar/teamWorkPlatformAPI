@@ -47,7 +47,7 @@ const getFiles = async (query, neo4jSession, fileRecords=[]) => {
  };
 
  
- export const getFilesBySubscriberOrgIdSearchTerm = async (neo4jSession, subscriberOrgId, searchTerm, caseInsentive) => {
+ export const getFilesBySubscriberOrgIdSearchTerm = async (neo4jSession, subscriberOrgId, searchTerm, caseInsensitive) => {
     var arr = null;
     var arrLen = null;
   
@@ -61,7 +61,7 @@ const getFiles = async (query, neo4jSession, fileRecords=[]) => {
     console.log("length="+arrLen);
     console.log(arr[0]);
     let fileRecords = [];
-    if (caseInsentive==0) {
+    if (caseInsensitive==0) {
         if (arrLen == 1) {
             const ownFilesInsideFolders = `
             MATCH (u:User)-[:OWNS]->(folder:Folder)-[:HAS *0..]->(f:File)
