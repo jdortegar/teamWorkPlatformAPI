@@ -10,6 +10,7 @@ import { APIError, APIWarning } from '../services/errors';
 import { googleSiteVerification } from '../integrations/google';
 import { errorMiddleware as loggerErrorMiddleware, preAuthMiddleware, postAuthMiddleware } from '../logger';
 import routes from '../routes';
+import routesV2 from '../routes/api-v2'
 
 const app = express();
 app.enable('trust proxy');
@@ -81,9 +82,9 @@ app.use(jwtMiddleware.unless({
 app.use(postAuthMiddleware);
 
 // mount all routes on / path
+app.use('/v2/', routesV2);
 app.use('/', routes);
-app.use('/v:apiVersion/', routes);
-
+app.use('/v1/', routes);
 // Catch 404 and forward to error handler.
 app.use((req, res, next) => {
    const err = new APIError(httpStatus.NOT_FOUND, 'API not found');
