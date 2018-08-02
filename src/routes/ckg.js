@@ -6,4 +6,7 @@ const router = express.Router();
 router.route('/getFiles/:subscriberOrgId')
   .get(ckg.getFiles);
 
+router.route('/getFilesBySearchTerm/:subscriberOrgId/:searchTerm/:caseInsentive')
+  .get(ckg.getFilesBySearchTerm);
+
 export default router;

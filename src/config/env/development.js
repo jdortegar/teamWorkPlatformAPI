@@ -8,21 +8,26 @@ export const jwtSecret = '69157cde-e3a7-4079-b79a-95a35d58c6d3';
 export const apiEndpoint = 'http://localhost:3000';
 // export const apiEndpoint = 'https://hablaapi.ngrok.io';
 export const aws = {
-   accessKeyId: 'AKIAJUWK5MDFUPOKWM4A',
-   secretAccessKey: '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',
+   accessKeyId: 'AKIAJKOIEHG5WIWSSFLA',
+   secretAccessKey: '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',
    awsRegion: 'us-west-2'
 };
 
 export const neo4j = {
-   // host: 'localhost',
-   // port: '7687',
-   // user: 'neo4j',
-   // password: '123456'
+    /*
+      host: 'localhost',
+      port: '7687',
+      user: 'neo4j',
+      password: '123456'
+      */
    // DEV
-   host: '34.217.97.197',
+
+  // host: '34.214.167.0',
+   host:'34.214.167.0',
    port: '7687',
    user: 'neo4j',
    password: 'habla12345'
+
 };
 // export const dynamoDbEndpoint = 'http://localhost:8000';
 // export const dynamoDbEndpoint = 'https://dynamodb.us-west-2.amazonaws.com';

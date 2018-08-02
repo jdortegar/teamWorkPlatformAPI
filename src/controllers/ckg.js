@@ -15,3 +15,20 @@ export const getFiles = async (req, res) => {
       }
    });
 };
+
+export const getFilesBySearchTerm = async (req, res) => {
+    const { neo4jSession } = req.app.locals;
+    const subscriberOrgId = req.params.subscriberOrgId;
+    const searchTerm = req.params.searchTerm;
+    const caseInsentive = req.params.caseInsentive;
+
+    const files = await ckgSvc.getFilesBySubscriberOrgIdSearchTerm(neo4jSession, subscriberOrgId, searchTerm, caseInsentive)
+ 
+    return res.status(httpStatus.OK).json({
+       message: {
+          fileTypes: [],
+          files,
+          edges: []
+       }
+    });
+ };
