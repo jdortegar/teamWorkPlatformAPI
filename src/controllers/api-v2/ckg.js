@@ -11,7 +11,8 @@ function buildQueryString(obj) {
 
 
 export const getFiles = async (req, res) => {
-   const caseInsensitive = req.query.caseInsensitive || 1;
+   const caseSensitive = req.query.caseSensitive || 0
+   const caseInsensitive = (caseSensitive == 0) ? 1 : 0;
    const url = `${config.apiEndpoint}/v1/ckg/getFilesBySearchTerm/${req.params.subscriberOrgId}/${req.params.search}/${caseInsensitive}`;
    const hashkey = new Buffer(url).toString('base64');
    const cachedFiles = await req.app.locals.redis.getAsync(hashkey);
@@ -27,9 +28,8 @@ export const getFiles = async (req, res) => {
             }
          });
          files = remoteResponse.data.message.files;
-         req.app.locals.redis.set(hashkey, JSON.stringify(files), 'EX', 600); // The key will expire in 10 min in case new files was added.
+         req.app.locals.redis.set(hashkey, JSON.stringify(files), 'EX', 5); // The key will expire in 5 sec in case new files was added.
       } catch(err) {
-         console.log(err);
          return res.status(err.response.status).json({error: err.response.data });
       }
    }
@@ -52,7 +52,7 @@ export const getFiles = async (req, res) => {
    // Sorting
    if (typeof req.query.sort !== 'undefined' && req.query.sort instanceof Array && req.query.sort.length > 0) {
       files = _.sortBy(files, req.query.sort);
-      if (typeof req.query.sortOrder === 'desc') {
+      if (typeof req.query.sortOrder !== 'undefined' && req.query.sortOrder === 'desc') {
          files = _.reverse(files);
       }
    }
