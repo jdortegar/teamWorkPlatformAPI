@@ -9,16 +9,6 @@ function buildQueryString(obj) {
    return  Object.keys(obj).map(key => `${key}=${encodeURIComponent(obj[key])}`).join('&');
 }
 
-function getEnvAlias(prefix) {
-   switch (prefix) {
-      case 'DEV_':
-         return 'dev';
-      case 'PROD_':
-         return 'prod';
-      case 'DEMO_':
-         return 'demo';
-   } 
-}
 
 export const getFiles = async (req, res) => {
    const caseInsensitive = req.query.caseInsensitive || 1;
@@ -37,7 +27,6 @@ export const getFiles = async (req, res) => {
             }
          });
          files = remoteResponse.data.message.files;
-         // console.log(remoteResponse.data, console.log(JSON.stringify.files));
          req.app.locals.redis.set(hashkey, JSON.stringify(files), 'EX', 600); // The key will expire in 10 min in case new files was added.
       } catch(err) {
          console.log(err);
@@ -85,7 +74,7 @@ export const getFiles = async (req, res) => {
          prev: (pageNumber > 1) ? 
             `${apiEndpoint}/v2/ckg/${req.params.subscriberOrgId}/files/${req.params.search}?${buildQueryString(prevQuery)}` :
             null,
-         next: (pageNumber < pager.totalCount) ?
+         next: (pageNumber < pager.pagesCount) ?
             `${apiEndpoint}/v2/ckg/${req.params.subscriberOrgId}/files/${req.params.search}?${buildQueryString(nextQuery)}` :
             null
       },
