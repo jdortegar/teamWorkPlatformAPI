@@ -21,8 +21,8 @@ function getEnvAlias(prefix) {
 }
 
 export const getFiles = async (req, res) => {
-   const url = `https://y2rhikgvq4.execute-api.us-west-2.amazonaws.com/${getEnvAlias(config.tablePrefix)}/graphapi/ckg/files/${req.params.subscriberOrgId}/${req.params.search}`;
-
+   const caseInsensitive = req.query.caseInsensitive || 1;
+   const url = `${config.apiEndpoint}/v1/ckg/getFilesBySearchTerm/${req.params.subscriberOrgId}/${req.params.search}/${caseInsensitive}`;
    const hashkey = new Buffer(url).toString('base64');
    const cachedFiles = await req.app.locals.redis.getAsync(hashkey);
    const pageSize = req.query.pageSize || 20;
@@ -31,10 +31,16 @@ export const getFiles = async (req, res) => {
       files = JSON.parse(cachedFiles);
    } else {
       try {
-         const remoteResponse = await axios.get(url);
-         files = remoteResponse.data.files
+         const remoteResponse = await axios.get(url, {
+            headers: {
+               Authorization: req.headers.authorization
+            }
+         });
+         files = remoteResponse.data.message.files;
+         // console.log(remoteResponse.data, console.log(JSON.stringify.files));
          req.app.locals.redis.set(hashkey, JSON.stringify(files), 'EX', 600); // The key will expire in 10 min in case new files was added.
       } catch(err) {
+         console.log(err);
          return res.status(err.response.status).json({error: err.response.data });
       }
    }
