@@ -53,7 +53,7 @@ const getFiles = async (query, neo4jSession, fileRecords=[]) => {
   
     if (searchTerm) {
       console.log(searchTerm);
-      arr = searchTerm.split(/[ ,_-]+/);
+      arr = searchTerm.split(/[ ,]+/);
       if (arr == undefined || arr.length == 0) {
           return null;
       }
