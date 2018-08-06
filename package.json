@@ -125,6 +125,7 @@
     "nodemailer": "^4.4.2",
     "redis": "^2.8.0",
     "shortid": "^2.2.8",
+    "sift": "^6.0.0",
     "sns-validator": "^0.3.4",
     "socket.io": "^2.0.4",
     "socket.io-redis": "^5.2.0",
