@@ -109,6 +109,22 @@ export const putQueryFiles = async (req, res) => {
       return res.status(500).json({error: 'Something went wrong' });
    }
 
+   const metadata = {
+      ownerIds: [],
+      fileTypes: [],
+      sources: []
+   }
+   _.forEach(files, (file) => {
+      if (metadata.ownerIds.indexOf(file.fileOwnerId) < 0) {
+         metadata.ownerIds.push(file.fileOwnerId);
+      }
+      if (metadata.fileTypes.indexOf(file.fileType) < 0) {
+         metadata.fileTypes.push(file.fileType);
+      }
+      if (metadata.sources.indexOf(file.fileSource) < 0) {
+         metadata.sources.push(file.fileSource);
+      }
+   });
    // Filtering
    const filters = {};
    if (typeof req.body.include !== 'undefined') {
@@ -146,6 +162,7 @@ export const putQueryFiles = async (req, res) => {
          files = _.reverse(files);
       }
    }
-
-   return res.status(200).json(buildPaginator(files, pageSize, req));
+   const responseBody = buildPaginator(files, pageSize, req);
+   responseBody.metadata = metadata;
+   return res.status(200).json(responseBody);
 }
