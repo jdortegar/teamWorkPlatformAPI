@@ -242,6 +242,22 @@ const validationSchemas = {
             )
          })
       }
+   },
+   queryFiles: {
+      body: {
+        include: {
+          fileOwnerId: Joi.array().items(Joi.string()),
+          fileType: Joi.array().items(Joi.string()),
+          fileExtension: Joi.array().items(Joi.string()),
+          fileSource: Joi.array().items(Joi.string()),
+        },
+        exclude: {
+          fileOwnerId: Joi.array().items(Joi.string()),
+          fileType: Joi.array().items(Joi.string()),
+          fileExtension: Joi.array().items(Joi.string()),
+          fileSource: Joi.array().items(Joi.string())
+        }
+      }  
    }
 };
 
@@ -351,6 +367,9 @@ export const apiVersionedValidators = {
    configureIntegration: {
       0: validate(validationSchemas.configureIntegration),
       1: validate(validationSchemas.configureIntegration)
+   }, 
+   queryFiles: {
+     2: validate(validationSchemas.queryFiles)
    }
 };
 

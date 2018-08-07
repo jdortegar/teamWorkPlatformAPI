@@ -1,5 +1,6 @@
 import axios from 'axios';
 import _ from 'lodash';
+import sift from 'sift';
 import Paginator from '../../helpers/Paginator';
 
 import config from '../../config/env';
@@ -9,31 +10,64 @@ function buildQueryString(obj) {
    return  Object.keys(obj).map(key => `${key}=${encodeURIComponent(obj[key])}`).join('&');
 }
 
-
-export const getFiles = async (req, res) => {
-   const caseSensitive = req.query.caseSensitive || 0
-   const caseInsensitive = (caseSensitive == 0) ? 1 : 0;
-   const url = `${config.apiEndpoint}/v1/ckg/getFilesBySearchTerm/${req.params.subscriberOrgId}/${req.params.search}/${caseInsensitive}`;
+async function getFileCollection(url, redis, authorization) {
    const hashkey = new Buffer(url).toString('base64');
-   const cachedFiles = await req.app.locals.redis.getAsync(hashkey);
-   const pageSize = req.query.pageSize || 20;
+   const cachedFiles = await redis.getAsync(hashkey);
    let files;
    if (cachedFiles) {
       files = JSON.parse(cachedFiles);
    } else {
-      try {
-         const remoteResponse = await axios.get(url, {
-            headers: {
-               Authorization: req.headers.authorization
-            }
-         });
-         files = remoteResponse.data.message.files;
-         req.app.locals.redis.set(hashkey, JSON.stringify(files), 'EX', 5); // The key will expire in 5 sec in case new files was added.
-      } catch(err) {
-         return res.status(err.response.status).json({error: err.response.data });
-      }
+      const remoteResponse = await axios.get(url, {
+         headers: {
+            Authorization: authorization
+         }
+      });
+      files = remoteResponse.data.message.files;
+      redis.set(hashkey, JSON.stringify(files), 'EX', 5); // The key will expire in 5 sec in case new files was added.
    }
-   // Filters
+   return files;
+}
+
+function buildPaginator(files, pageSize, req) {
+   const pager = new Paginator(files, { pageSize });
+   const pageNumber = req.query.page || 1;
+   const page = pager.getPage(pageNumber);
+   const prevQuery = Object.assign({}, req.query);
+   const nextQuery = Object.assign({}, req.query);
+   prevQuery.page = Number(pageNumber) - 1;
+   nextQuery.page = Number(pageNumber) + 1;
+   return {
+      pager: {
+         page: pageNumber,
+         pageSize,
+         totalCount: pager.totalCount,
+         pagesCount: page.pagesCount,
+         prev: (pageNumber > 1) ? 
+            `${apiEndpoint}/v2/ckg/${req.params.subscriberOrgId}/files/${req.params.search}?${buildQueryString(prevQuery)}` :
+            null,
+         next: (pageNumber < pager.pagesCount) ?
+            `${apiEndpoint}/v2/ckg/${req.params.subscriberOrgId}/files/${req.params.search}?${buildQueryString(nextQuery)}` :
+            null
+      },
+      items: page.items || []
+   }
+}
+
+export const getFiles = async (req, res) => {
+   const caseSensitive = req.query.caseSensitive || 0
+   const caseInsensitive = (caseSensitive == 0) ? 1 : 0;
+   const pageSize = req.query.pageSize || 20;
+   const url = `${config.apiEndpoint}/v1/ckg/getFilesBySearchTerm/${req.params.subscriberOrgId}/${req.params.search}/${caseInsensitive}`;
+   let files;
+   try { 
+      files = await getFileCollection(url, req.app.locals.redis, req.headers.authorization);
+   } catch (err) {
+      if (typeof err.respnonse !== 'undefined') {
+         return res.status(err.respnonse.status).json({ error: err.response.data });
+      }
+      return res.status(500).json({error: 'Something went wrong' });
+   }
+   // Filters 
    const filters = {};
    if (typeof req.query.owner !== 'undefined') {
       filters.fileOwnerId = req.query.owner;
@@ -57,27 +91,61 @@ export const getFiles = async (req, res) => {
       }
    }
    
-   // Create Paginator
-   const pager = new Paginator(files, { pageSize });
-   const pageNumber = req.query.page || 1;
-   const page = pager.getPage(pageNumber);
-   const prevQuery = Object.assign({}, req.query);
-   const nextQuery = Object.assign({}, req.query);
-   prevQuery.page = Number(pageNumber) - 1;
-   nextQuery.page = Number(pageNumber) + 1; 
-   return res.status(200).json({
-      pager: {
-         page: pageNumber,
-         pageSize,
-         totalCount: pager.totalCount,
-         pagesCount: page.pagesCount,
-         prev: (pageNumber > 1) ? 
-            `${apiEndpoint}/v2/ckg/${req.params.subscriberOrgId}/files/${req.params.search}?${buildQueryString(prevQuery)}` :
-            null,
-         next: (pageNumber < pager.pagesCount) ?
-            `${apiEndpoint}/v2/ckg/${req.params.subscriberOrgId}/files/${req.params.search}?${buildQueryString(nextQuery)}` :
-            null
-      },
-      items: page.items || []
+   return res.status(200).json(buildPaginator(files, pageSize, req));
+}
+
+export const putQueryFiles = async (req, res) => {
+   const caseSensitive = req.query.caseSensitive || 0
+   const caseInsensitive = (caseSensitive == 0) ? 1 : 0;
+   const url = `${config.apiEndpoint}/v1/ckg/getFilesBySearchTerm/${req.params.subscriberOrgId}/${req.params.search}/${caseInsensitive}`;
+   let files;
+   const pageSize = req.query.pageSize || 20;
+   try { 
+      files = await getFileCollection(url, req.app.locals.redis, req.headers.authorization);
+   } catch (err) {
+      if (typeof err.respnonse !== 'undefined') {
+         return res.status(err.respnonse.status).json({ error: err.response.data });
+      }
+      return res.status(500).json({error: 'Something went wrong' });
+   }
+
+   // Filtering
+   const filters = {};
+   if (typeof req.body.include !== 'undefined') {
+      filters.include = req.body.include || {};
+   }
+   if (typeof req.body.exclude !== 'undefined') {
+      filters.exclude = req.body.exclude || {};
+   }
+
+   let query = {};
+   _.forEach(filters.include, (val, key) => {
+      if (typeof query[key] === 'undefined') {
+         query[key] = {};
+      }
    });
+   _.forEach(filters.exclude, (val, key) => {
+      if (typeof query[key] === 'undefined') {
+         query[key] = {};
+      }
+   });
+   _.forEach(query, (val, key) => {
+      if (typeof filters.include[key] !== 'undefined') {
+         query[key].$in = filters.include[key];
+      }
+      if (typeof filters.exclude[key] !== 'undefined') {
+         query[key].$nin = filters.exclude[key];
+      }
+   });
+   files = sift(query, files);
+
+   // Sorting
+   if (typeof req.query.sort !== 'undefined' && req.query.sort instanceof Array && req.query.sort.length > 0) {
+      files = _.sortBy(files, req.query.sort);
+      if (typeof req.query.sortOrder !== 'undefined' && req.query.sortOrder === 'desc') {
+         files = _.reverse(files);
+      }
+   }
+
+   return res.status(200).json(buildPaginator(files, pageSize, req));
 }
