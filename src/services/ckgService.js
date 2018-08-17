@@ -896,9 +896,7 @@ const getFiles = async (query, neo4jSession, fileRecords=[]) => {
 }
     const files = fileRecords.map((record) => {
     const fileNode = record.get(0);
-    console.log(fileNode);
     const userNode = record.get(1);
-    console.log(userNode);
     return {
         fileId: fileNode.properties.fileId,
         fileName: fileNode.properties.fileName,
