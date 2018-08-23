@@ -20,9 +20,12 @@ export const getFilesBySearchTerm = async (req, res) => {
     const { neo4jSession } = req.app.locals;
     const subscriberOrgId = req.params.subscriberOrgId;
     const searchTerm = req.params.searchTerm;
-    const caseInsensitive = req.params.caseInsensitive;
+    const caseInsensitive = req.params.caseInsensitive || 1;
+    const andOperator = req.params.andOperator || 0;
 
-    const files = await ckgSvc.getFilesBySubscriberOrgIdSearchTerm(neo4jSession, subscriberOrgId, searchTerm, caseInsensitive)
+    console.log("andOperator="+andOperator);
+
+    const files = await ckgSvc.getFilesBySubscriberOrgIdSearchTerm(neo4jSession, subscriberOrgId, searchTerm, caseInsensitive, andOperator)
  
     return res.status(httpStatus.OK).json({
        message: {
