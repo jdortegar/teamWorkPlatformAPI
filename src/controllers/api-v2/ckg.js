@@ -56,8 +56,9 @@ function buildPaginator(files, pageSize, req) {
 export const getFiles = async (req, res) => {
    const caseSensitive = req.query.caseSensitive || 0
    const caseInsensitive = (caseSensitive == 0) ? 1 : 0;
+   const andOperator = req.query.andOperator || 0;
    const pageSize = req.query.pageSize || 20;
-   const url = `${config.apiEndpoint}/v1/ckg/getFilesBySearchTerm/${req.params.subscriberOrgId}/${req.params.search}/${caseInsensitive}`;
+   const url = `${config.apiEndpoint}/v1/ckg/getFilesBySearchTerm/${req.params.subscriberOrgId}/${req.params.search}/${caseInsensitive}/${andOperator}`;
    let files;
    try { 
       files = await getFileCollection(url, req.app.locals.redis, req.headers.authorization);
@@ -97,7 +98,8 @@ export const getFiles = async (req, res) => {
 export const putQueryFiles = async (req, res) => {
    const caseSensitive = req.query.caseSensitive || 0
    const caseInsensitive = (caseSensitive == 0) ? 1 : 0;
-   const url = `${config.apiEndpoint}/v1/ckg/getFilesBySearchTerm/${req.params.subscriberOrgId}/${req.params.search}/${caseInsensitive}`;
+   const andOperator = req.query.andOperator || 0;
+   const url = `${config.apiEndpoint}/v1/ckg/getFilesBySearchTerm/${req.params.subscriberOrgId}/${req.params.search}/${caseInsensitive}/${andOperator}`;
    let files;
    const pageSize = req.query.pageSize || 20;
    try { 
