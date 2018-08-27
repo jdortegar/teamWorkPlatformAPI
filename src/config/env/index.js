@@ -80,7 +80,8 @@ const config = {
       password: process.env.REDSHIFT_PASSWORD || defaultConfig.redshift.password,
       host: process.env.REDSHIFT_HOST || defaultConfig.redshift.host,
       port: process.env.REDSHIFT_PORT || defaultConfig.redshift.port
-   }
+   },
+   surveyTable: process.env.SURVEY_TABLE || defaultConfig.surveyTable
 };
 
 export const applyPropertiesFromDbToConfig = (propertiesFromDb) => {

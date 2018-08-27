@@ -82,3 +82,4 @@ export const redshift = {
    host: 'habla-ai.csvoexx0fghm.us-west-2.redshift.amazonaws.com',
    port: 5439
 };
+export const surveyTable = 'dev_usage_survey';
