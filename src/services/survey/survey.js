@@ -22,3 +22,11 @@ export const getLastSurveyDate = (orgId, userId) => {
     GROUP BY org_id, user_id`;
     return client.query(query);
 }
+
+export const getSurveys = (orgId, userId) => {
+    const query = `SELECT org_id, user_id, created_at FROM ${config.surveyTable}
+        WHERE org_id = '${orgId}' AND 
+        user_id = '${userId}'
+        ORDER BY created_at`;
+    return client.query(query);
+}

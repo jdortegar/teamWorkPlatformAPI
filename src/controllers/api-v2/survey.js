@@ -27,7 +27,7 @@ export const createSurvey = async (req, res, next) => {
 export const getLastSurveyDate = async (req, res, next) => {
     const orgId = req.params.orgId;
     const userId = req.params.userId;
-    // try {
+    try {
         const result = await surveySvc.getLastSurveyDate(orgId, userId);
         if (result.rows.length > 0) {
             return res.status(httpStatus.OK).json({
@@ -39,7 +39,27 @@ export const getLastSurveyDate = async (req, res, next) => {
                 message: 'No surveys found for given orgId and userId'
             });
         }
-    // } catch (err) {
+    } catch (err) {
+        next(err);
+    }
+}
 
-    // }
+export const getSurveys = async (req, res, next) => {
+    const orgId = req.params.orgId;
+    const userId = req.params.userId;
+    try {
+        const result = await surveySvc.getSurveys(orgId, userId);
+        console.log(result.rows)
+        const dates = [];
+        _.forEach(result.rows, (row) => {
+            dates.push(moment(row.created_at).format('YYYY-MM-DD'))
+        });
+        return res.status(httpStatus.OK).json({
+            organizationId: orgId,
+            userId,
+            dates
+        });
+    } catch (err) {
+        next(err);
+    }
 }
