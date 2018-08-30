@@ -207,7 +207,7 @@ export const getInvitations = (req, email) => {
                   _.remove(uniqueInvitations, (uniqueInvitation) => {
                      return (
                         (uniqueInvitation.subscriberOrgId === invitation.subscriberOrgId) &&
-                        (uniqueInvitation.teamId === invitation.teamId) &&
+                        (uniqueInvitation.teamId === invitation.teamId) &
                         (uniqueInvitation.teamRoomId === invitation.teamRoomId)
                      );
                   });
@@ -233,3 +233,12 @@ export const getSentInvitations = (req, userId, { since = undefined, state = und
          .catch(err => reject(err));
    });
 };
+
+export const getUserNameHash = async (req, userIds = []) => {
+    const users = await usersTable.getUsersByUserIds(req, userIds);
+    const hash = {};
+    _.forEach(users, (user) => {
+          hash[user.userId] = `${user.firstName} ${user.lastName}`
+    });
+    return hash;
+}
