@@ -123,9 +123,8 @@ export const putQueryFiles = async (req, res) => {
         }
     });
     const userHash = await getUserNameHash(req, userIds);
-    console.log(userHash);
+
     _.forEach(files, (file, ix) => {
-        // console.log(file);
         files[ix].hablaUserName = userHash[file.fileOwnerId];
         if (typeof file.fileType === 'undefined') {
             files[ix].fileType = file.fileExtension || 'Other';
@@ -148,16 +147,8 @@ export const putQueryFiles = async (req, res) => {
         } else {
             metadata.sources[metaSourcePos].count++;
         }
-        // if (metadata.ownerIds.indexOf(file.fileOwnerId) < 0) {
-        //     metadata.ownerIds.push(file.fileOwnerId);
-        // }
-        // if (metadata.fileTypes.indexOf(file.fileType) < 0) {
-        //     metadata.fileTypes.push(file.fileType);
-        // }
-        // if (metadata.sources.indexOf(file.fileSource) < 0) {
-        //     metadata.sources.push(file.fileSource);
-        // }
     });
+    
     // Filtering
     const filters = {};
     if (typeof req.body.include !== 'undefined') {
