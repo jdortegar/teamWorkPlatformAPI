@@ -58,7 +58,13 @@ export const getFiles = async (req, res) => {
     const caseInsensitive = (caseSensitive == 0) ? 1 : 0;
     const andOperator = req.query.andOperator || 0;
     const pageSize = req.query.pageSize || 20;
-    const url = `${config.apiEndpoint}/v1/ckg/getFilesBySearchTerm/${req.params.subscriberOrgId}/${req.params.search}/${caseInsensitive}/${andOperator}`;
+    const search = req.query.query;
+    let url;
+    if (search) {
+        url = `${config.apiEndpoint}/v1/ckg/getFilesBySearchTerm/${req.params.subscriberOrgId}/${search}/${caseInsensitive}/${andOperator}`;
+    } else {
+        url = `${config.apiEndpoint}/v1/ckg/getFiles/${req.params.subscriberOrgId}`;
+    }
     let files;
     try {
         files = await getFileCollection(url, req.app.locals.redis, req.headers.authorization);
@@ -92,7 +98,7 @@ export const getFiles = async (req, res) => {
         }
     }
 
-    return res.status(200).json(buildPaginator(files, pageSize, req));
+    return res.status(200).json(files);
 }
 
 export const putQueryFiles = async (req, res) => {

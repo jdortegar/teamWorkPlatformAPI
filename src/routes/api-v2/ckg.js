@@ -4,7 +4,7 @@ import { apiVersionedValidators, validateByApiVersion } from '../../config/param
 
 const router = express.Router();
 
-router.route('/:subscriberOrgId/files/:search')
+router.route('/:subscriberOrgId/files')
     .get(ckg.getFiles);
 
 router.route('/:subscriberOrgId/files/:search')
