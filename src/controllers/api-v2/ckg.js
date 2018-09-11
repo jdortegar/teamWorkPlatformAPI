@@ -74,6 +74,19 @@ export const getFiles = async (req, res) => {
         }
         return res.status(500).json({ error: 'Something went wrong' });
     }
+    const userIds = [];
+    _.forEach(files, (file) => {
+        if (userIds.indexOf(file.fileOwnerId) < 0) {
+            userIds.push(file.fileOwnerId);
+        }
+    });
+    const userHash = await getUserNameHash(req, userIds);
+    _.forEach(files, (file, ix) => {
+        files[ix].hablaUserName = userHash[file.fileOwnerId];
+        if (typeof file.fileType === 'undefined') {
+            files[ix].fileType = file.fileExtension || 'Other';
+        }
+    });
     // Filters 
     const filters = {};
     if (typeof req.query.owner !== 'undefined') {
