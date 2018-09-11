@@ -1,0 +1,36 @@
+import BaseFixture from '../../src/__tests__/BaseFixture';
+import Messaging from '../../src/__tests__/Messaging';
+import config from '../../src/config/env';
+
+let baseFixture;
+
+beforeEach(async () => {
+   baseFixture = new BaseFixture(BaseFixture.TestTypes.server);
+   return baseFixture.setup();
+});
+
+afterEach(async () => {
+   baseFixture.teardown();
+});
+
+function x() {
+   return new Promise(() => {
+   });
+}
+
+test('Send simple event.', async () => {
+   //const messaging = new Messaging(config.apiEndpoint);
+
+   // LOCAL
+   const messaging = new Messaging('http://localhost:3000');
+   const jwt = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiJlYTc5NDUxMC1jZWE2LTQxMzItYWUyMi1hN2FlMWQzMmFiYjUiLCJlbWFpbCI6ImFudGhvbnkuZGFnYUBoYWJsYS5haSIsImlhdCI6MTQ5Mjk4OTM3N30.8f9ylrHqIlQyOKsAqeKIimDrrvChwP_V5ueBS0DNzxU';
+
+   // DEV
+   //const messaging = new Messaging('https://habla-fe-api-dev.habla.ai');
+   ////const jwt = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiJlYTc5NDUxMC1jZWE2LTQxMzItYWUyMi1hN2FlMWQzMmFiYjUiLCJlbWFpbCI6ImFudGhvbnkuZGFnYUBoYWJsYS5haSIsImlhdCI6MTQ5MzI1NjQyNH0.KZoA9IGiaViWbBofMGaA_Q7AuOqruz9YxpWRL4QNJus';
+
+   await messaging.connect(jwt);
+   messaging.send('Hello from client');
+   //messaging.close();
+});
+
