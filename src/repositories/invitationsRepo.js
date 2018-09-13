@@ -16,9 +16,7 @@ export const createInvitation = (req, email, inviteeUserId = undefined, invitati
             subscriberOrgId: invitation.subscriberOrgId,
             subscriberOrgName: invitation.subscriberOrgName,
             teamId: invitation.teamId,
-            teamName: invitation.teamName,
-            teamRoomId: invitation.teamRoomId,
-            teamRoomName: invitation.teamRoomName
+            teamName: invitation.teamName
          }
       )
    ]);

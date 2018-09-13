@@ -88,9 +88,7 @@ const publicInvitation = (invitation) => {
       subscriberOrgId,
       subscriberOrgName,
       teamId,
-      teamName,
-      teamRoomId,
-      teamRoomName
+      teamName
    } = invitation;
    return {
       inviterUserId,
@@ -106,9 +104,7 @@ const publicInvitation = (invitation) => {
       subscriberOrgId,
       subscriberOrgName,
       teamId,
-      teamName,
-      teamRoomId,
-      teamRoomName
+      teamName
    };
 };
 
@@ -192,54 +188,14 @@ const publicTeamMember = (teamId, user) => {
    };
 };
 
-
-const privateTeamRoom = (teamRoom) => {
-   const teamRoomId = teamRoom.teamRoomId;
-   const { teamId, name, purpose, icon, active, primary, preferences, created, lastModified } = teamRoom;
-   return {
-      teamRoomId,
-      teamId,
-      name,
-      purpose,
-      icon,
-      active,
-      primary,
-      preferences: _.cloneDeep(preferences),
-      created,
-      lastModified
-   };
-};
-
-const publicTeamRoom = (teamRoom) => {
-   const ret = privateTeamRoom(teamRoom);
-   if ((ret.preferences) && (ret.preferences.private)) {
-      delete ret.preferences.private;
-   }
-   return ret;
-};
-
-const publicTeamRooms = (teamRooms) => {
-   return teamRooms.map((teamRoom) => {
-      return publicTeamRoom(teamRoom);
-   });
-};
-
-const publicTeamRoomMember = (teamRoomId, user) => {
-   return {
-      teamRoomId,
-      user: publicUser(user)
-   };
-};
-
-
 const publicConversation = (conversation) => {
    const conversationId = conversation.conversationId;
-   const { topic, teamRoomId, created, lastModified } = conversation;
+   const { topic, teamId, created, lastModified } = conversation;
    const participants = (conversation.participants) ? publicUsers(conversation.participants) : undefined;
    return {
       topic,
       conversationId,
-      teamRoomId,
+      teamId,
       participants,
       created,
       lastModified
@@ -386,18 +342,6 @@ export const apiVersionedVisibility = {
    },
    publicTeamMember: {
       latest: publicTeamMember
-   },
-   privateTeamRoom: {
-      latest: privateTeamRoom
-   },
-   publicTeamRoom: {
-      latest: publicTeamRoom
-   },
-   publicTeamRooms: {
-      latest: publicTeamRooms
-   },
-   publicTeamRoomMember: {
-      latest: publicTeamRoomMember
    },
    publicConversation: {
       latest: publicConversation

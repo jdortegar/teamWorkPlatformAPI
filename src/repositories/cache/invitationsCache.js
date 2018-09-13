@@ -52,14 +52,11 @@ export const deleteInvitation = (req, email, invitationKey, invitationValue) => 
                const inviteValue = invite[invitationKey];
                if ((inviteValue) && (inviteValue === invitationValue)) {
                   switch (invitationKey) {
-                     case InvitationKeys.teamRoomId:
-                        inviteFound = true;
-                        break;
                      case InvitationKeys.teamId:
-                        inviteFound = !(invite[InvitationKeys.teamRoomId]);
+                        inviteFound = !(invite[InvitationKeys.teamId]);
                         break;
                      case InvitationKeys.subscriberOrgId:
-                        inviteFound = !(invite[InvitationKeys.teamId]);
+                        inviteFound = !(invite[InvitationKeys.subscriberOrgId]);
                         break;
                      default:
                   }

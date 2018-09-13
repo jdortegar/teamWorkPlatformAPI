@@ -207,8 +207,7 @@ export const getInvitations = (req, email) => {
                   _.remove(uniqueInvitations, (uniqueInvitation) => {
                      return (
                         (uniqueInvitation.subscriberOrgId === invitation.subscriberOrgId) &&
-                        (uniqueInvitation.teamId === invitation.teamId) &
-                        (uniqueInvitation.teamRoomId === invitation.teamRoomId)
+                        (uniqueInvitation.teamId === invitation.teamId)
                      );
                   });
                   uniqueInvitations.push(invitation);

@@ -19,8 +19,6 @@ import InvitationKeys from '../InvitationKeys';
  * subscriberOrgName
  * teamId (optional)
  * teamName (optional)
- * teamRoomId (optional)
- * teamRoomName (optional)
  *
  * GSI: inviteeEmailCreatedIdx
  * hash: inviteeEmail
@@ -39,7 +37,7 @@ const upgradeSchema = (req, dbObjects) => {
 };
 
 export const createInvitation = (req, inviterUserId, inviterFirstName, inviterLastName, inviterDisplayName, inviteeEmail, inviteeUserId, created, expires,
-   { subscriberOrgId, subscriberOrgName, teamId = undefined, teamName = undefined, teamRoomId = undefined, teamRoomName = undefined }) => {
+   { subscriberOrgId, subscriberOrgName, teamId = undefined, teamName = undefined }) => {
    return new Promise((resolve, reject) => {
       const params = {
          TableName: tableName(),
@@ -58,9 +56,7 @@ export const createInvitation = (req, inviterUserId, inviterFirstName, inviterLa
             subscriberOrgId,
             subscriberOrgName,
             teamId,
-            teamName,
-            teamRoomId,
-            teamRoomName
+            teamName
          }
       };
 
@@ -216,12 +212,10 @@ export const updateInvitationsStateByInviteeEmail = (req, inviteeEmail, invitati
             const invitations = allInvitations.filter((invitation) => {
                if (invitation.state === null) {
                   switch (invitationKey) {
-                     case InvitationKeys.teamRoomId:
-                        return (invitation[invitationKey] === invitationValue);
                      case InvitationKeys.teamId:
-                        return ((invitation[invitationKey] === invitationValue) && (!invitation.teamRoomId));
+                        return ((invitation[invitationKey] === invitationValue));
                      case InvitationKeys.subscriberOrgId:
-                        return ((invitation[invitationKey] === invitationValue) && (!invitation.teamRoomId) && (!invitation.teamId));
+                        return ((invitation[invitationKey] === invitationValue) && (!invitation.teamId));
                      default:
                   }
                }

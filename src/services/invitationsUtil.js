@@ -90,58 +90,6 @@ export const inviteExistingUsersToTeam = (req, invitingDbUser, existingDbUsers, 
    });
 };
 
-export const inviteExistingUsersToTeamRoom = (req, invitingDbUser, existingDbUsers, subscriberOrg, team, teamRoom) => {
-   return new Promise((resolve) => {
-      const key = toInvitationKey(InvitationKeys.teamRoomId, teamRoom.teamRoomId);
-      const invitation = {
-         byUserId: invitingDbUser.userId,
-         byUserFirstName: invitingDbUser.firstName,
-         byUserLastName: invitingDbUser.lastName,
-         byUserDisplayName: invitingDbUser.displayName,
-         subscriberOrgId: team.subscriberOrgId,
-         subscriberOrgName: subscriberOrg.name,
-         teamId: team.teamId,
-         teamName: team.name,
-         teamRoomId: teamRoom.teamRoomId,
-         teamRoomName: teamRoom.name,
-         created: req.now.format()
-      };
-
-      const promises = [];
-      let createdOffset = 0;
-      existingDbUsers.forEach((dbUser) => {
-         const email = dbUser.emailAddress;
-         const created = moment(req.now).add(createdOffset, 'milliseconds');
-         const promise = invitationsRepo.createInvitation(req, dbUser.emailAddress, dbUser.userId, invitation, created, defaultExpirationMinutes)
-            .then((createdInvitations) => {
-               const dbinvitation = createdInvitations[1];
-               return Promise.all([
-                  sendTeamRoomInviteToExistingUser(
-                     email,
-                     subscriberOrg.name,
-                     team.name,
-                     teamRoom.name,
-                     invitingDbUser,
-                     dbUser,
-                     key
-                  ),
-                  userInvited(req, dbUser.userId, invitation),
-                  sentInvitationStatus(req, dbinvitation)
-               ]);
-            });
-         promises.push(promise);
-         createdOffset += 1;
-      });
-      Promise.all(promises)
-         .then(() => resolve())
-         .catch((err) => {
-            // For internal invites, continue without failure since they will get the invite anyway.
-            req.error(err);
-            resolve();
-         });
-   });
-};
-
 export const inviteExternalUsersToSubscriberOrg = (req, invitingDbUser, emails, subscriberOrg) => {
    if (emails.size === 0) {
       return Promise.resolve();
