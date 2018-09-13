@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import moment from 'moment';
 import uuid from 'uuid';
-import * as teamRoomSvc from './teamRoomService';
+import * as teamSvc from './teamService';
 import * as conversationsTable from '../repositories/db/conversationsTable';
 import * as conversationParticipantsTable from '../repositories/db/conversationParticipantsTable';
 import * as messagesTable from '../repositories/db/messagesTable';
@@ -87,21 +87,21 @@ const ensureConversationStatsExistInCache = (req, conversations) => {
 
 /**
  * Retrieve all conversations that the specified user is privy to.
- * If the optional 'teamRoomId' is specified, the results are narrowed down to conversations of the team room.
+ * If the optional 'teamId' is specified, the results are narrowed down to conversations of the team.
  *
  * @param req
  * @param userId
  * @param teamId
  * @returns {Promise}
  */
-export const getConversations = (req, userId, teamRoomId = undefined) => {
+export const getConversations = (req, userId, teamId = undefined) => {
    return new Promise((resolve, reject) => {
       let conversations;
       conversationParticipantsTable.getConversationParticipantsByUserId(req, userId)
          .then((conversationParticipants) => {
             const conversationIds = conversationParticipants.reduce((prevValue, conversationParticipant) => {
-               if (teamRoomId) {
-                  if (conversationParticipant.teamRoomId === teamRoomId) {
+               if (teamId) {
+                  if (conversationParticipant.teamId === teamId) {
                      prevValue.push(conversationParticipant.conversationId);
                   }
                } else {
@@ -147,15 +147,15 @@ export const getConversations = (req, userId, teamRoomId = undefined) => {
    });
 };
 
-export const createConversationNoCheck = (req, subscriberOrgId, teamRoomId, userId, conversationParticipantUserIds, topic = undefined) => {
+export const createConversationNoCheck = (req, subscriberOrgId, teamId, userId, conversationParticipantUserIds, topic = undefined) => {
    const actualConversationId = uuid.v4();
 
    return new Promise((resolve, reject) => {
       let conversation;
-      conversationsTable.createConversation(req, actualConversationId, subscriberOrgId, teamRoomId, topic)
+      conversationsTable.createConversation(req, actualConversationId, subscriberOrgId, teamId, topic)
          .then((retrievedConversation) => {
             conversation = retrievedConversation;
-            return conversationParticipantsTable.createConversationParticipant(req, actualConversationId, userId, teamRoomId);
+            return conversationParticipantsTable.createConversationParticipant(req, actualConversationId, userId, teamId);
          })
          .then(() => usersTable.getUserByUserId(req, userId))
          .then((user) => {
@@ -178,10 +178,10 @@ export const createConversationNoCheck = (req, subscriberOrgId, teamRoomId, user
    });
 };
 
-export const setConversationOfTeamRoomActive = (req, teamRoomId, active) => {
+export const setConversationOfTeamActive = (req, teamId, active) => {
    return new Promise((resolve, reject) => {
       let conversation;
-      conversationsTable.getConversationByTeamRoomId(req, teamRoomId)
+      conversationsTable.getConversationByTeamId(req, teamId)
          .then((retrievedConversation) => {
             conversation = retrievedConversation;
             conversationsTable.updateConversationActive(req, conversation.conversationId, active);
@@ -198,14 +198,14 @@ export const setConversationOfTeamRoomActive = (req, teamRoomId, active) => {
    });
 };
 
-export const addUserToConversationByTeamRoomId = (req, user, teamRoomId) => {
+export const addUserToConversationByTeamId = (req, user, teamId) => {
    return new Promise((resolve, reject) => {
       let conversationId;
-      conversationsTable.getConversationByTeamRoomId(req, teamRoomId)
+      conversationsTable.getConversationByTeamId(req, teamId)
          .then((conversation) => {
             if (conversation) {
                conversationId = conversation.conversationId;
-               return conversationParticipantsTable.createConversationParticipant(req, conversationId, user.userId, teamRoomId);
+               return conversationParticipantsTable.createConversationParticipant(req, conversationId, user.userId, teamId);
             }
             return undefined;
          })
@@ -311,8 +311,8 @@ export const getMessages = (req, conversationId, userId = undefined, { since, un
             }
 
             if (userId) {
-               const { teamRoomId } = conversation;
-               return teamRoomSvc.getTeamRoomUsers(req, teamRoomId, userId);
+               const { teamId } = conversation;
+               return teamSvc.getTeamUsers(req, teamId, userId);
             }
             return undefined;
          })

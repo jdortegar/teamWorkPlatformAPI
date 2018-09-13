@@ -7,7 +7,7 @@ import * as util from './util';
  * v
  * conversationId
  * userId
- * teamRoomId (optional)
+ * teamId (optional)
  * created
  * lastModified
  *
@@ -15,8 +15,8 @@ import * as util from './util';
  * hash: userId
  * range: conversationId
  *
- * GSI: teamRoomIdUserIdIdx
- * hash: teamRoomId
+ * GSI: teamIdIdx
+ * hash: teamId
  * range: userId
  *
  * @returns {string}
@@ -33,7 +33,7 @@ const upgradeSchema = (req, dbObjects) => {
    return Promise.resolve(dbObjects);
 };
 
-export const createConversationParticipant = (req, conversationId, userId, teamRoomId = undefined) => {
+export const createConversationParticipant = (req, conversationId, userId, teamId = undefined) => {
    return new Promise((resolve, reject) => {
       const params = {
          TableName: tableName(),
@@ -41,7 +41,7 @@ export const createConversationParticipant = (req, conversationId, userId, teamR
             conversationId,
             userId,
             v,
-            teamRoomId,
+            teamId,
             created: req.now.format(),
             lastModified: req.now.format()
          }
@@ -103,14 +103,14 @@ export const getConversationParticipantsByUserId = (req, userId) => {
    });
 };
 
-export const getConversationParticipantsByTeamRoomId = (req, teamRoomId) => {
+export const getConversationParticipantsByTeamId = (req, teamId) => {
    return new Promise((resolve, reject) => {
       const params = {
          TableName: tableName(),
-         IndexName: 'teamRoomIdUserIdIdx',
-         KeyConditionExpression: 'teamRoomId = :teamRoomId',
+         IndexName: 'teamIdUserIdIdx',
+         KeyConditionExpression: 'teamId = :teamId',
          ExpressionAttributeValues: {
-            ':teamRoomId': teamRoomId
+            ':teamId': teamId
          }
       };
       req.app.locals.docClient.get(params).promise()

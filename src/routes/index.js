@@ -15,7 +15,6 @@ import conversationsRoutes from './conversations';
 // import { containsAnyRole, containsRole, roles } from '../policies';
 import subscriberOrgRoutes from './subscriberOrgs';
 import teamsRoutes from './teams';
-import teamRoomsRoutes from './teamRooms';
 import userRoutes from './users';
 import integrationRoutes from './integrations';
 import dashboarRoutes from './dashboard';
@@ -38,7 +37,6 @@ router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
 router.use('/subscriberOrgs', subscriberOrgRoutes);
 router.use('/teams', teamsRoutes);
-router.use('/teamRooms', teamRoomsRoutes);
 router.use('/conversations', conversationsRoutes);
 
 router.use('/integrations', integrationRoutes);

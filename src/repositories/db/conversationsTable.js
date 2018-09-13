@@ -5,7 +5,7 @@ import * as util from './util';
  * hash: conversationId
  * v
  * subscriberOrgId
- * teamRoomId
+ * teamId
  * topic
  * active
  * messageCount
@@ -14,8 +14,8 @@ import * as util from './util';
  * created
  * lastModified
  *
- * GSI: teamRoomIdIdx
- * hash: teamRoomId
+ * GSI: teamIdIdx
+ * hash: teamId
  */
 const tableName = () => {
    return `${config.tablePrefix}conversations`;
@@ -29,7 +29,7 @@ const upgradeSchema = (req, dbObjects) => {
    return Promise.resolve(dbObjects);
 };
 
-export const createConversation = (req, conversationId, subscriberOrgId, teamRoomId = undefined, topic = undefined) => {
+export const createConversation = (req, conversationId, subscriberOrgId, teamId = undefined, topic = undefined) => {
    return new Promise((resolve, reject) => {
       const params = {
          TableName: tableName(),
@@ -37,7 +37,7 @@ export const createConversation = (req, conversationId, subscriberOrgId, teamRoo
             conversationId,
             v,
             subscriberOrgId,
-            teamRoomId,
+            teamId,
             topic: topic || null,
             active: true,
             messageCount: 0,
@@ -162,14 +162,14 @@ export const getConversationsByConversationIds = (req, conversationIds) => {
    });
 };
 
-export const getConversationByTeamRoomId = (req, teamRoomId) => {
+export const getConversationByTeamId = (req, teamId) => {
    return new Promise((resolve, reject) => {
       const params = {
          TableName: tableName(),
-         IndexName: 'teamRoomIdIdx',
-         KeyConditionExpression: 'teamRoomId = :teamRoomId',
+         IndexName: 'teamIdIdx',
+         KeyConditionExpression: 'teamId = :teamId',
          ExpressionAttributeValues: {
-            ':teamRoomId': teamRoomId
+            ':teamId': teamId
          }
       };
       util.query(req, params)

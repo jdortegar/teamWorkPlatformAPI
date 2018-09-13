@@ -6,9 +6,9 @@ import { APIError, APIWarning, NotActiveError, ConversationNotExistError, NoPerm
 
 export const getConversations = (req, res, next) => {
    const userId = req.user._id;
-   const { teamRoomId } = req.query;
+   const { teamId } = req.query;
 
-   conversationsSvc.getConversations(req, userId, teamRoomId)
+   conversationsSvc.getConversations(req, userId, teamId)
       .then((conversations) => {
          res.status(httpStatus.OK).json({ conversations: publishByApiVersion(req, apiVersionedVisibility.publicConversations, conversations) });
       })

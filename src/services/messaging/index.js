@@ -164,60 +164,6 @@ export const teamMemberAdded = (req, team, user, role, teamMemberId) => {
       .catch(err => req.logger.error({ err }));
 };
 
-
-// EventType = teamRoom
-
-export const teamRoomCreated = (req, teamRoom, teamRoomAdminUserIds) => {
-   const joinChannelPromises = [];
-   teamRoomAdminUserIds.forEach((teamRoomAdminUserId) => {
-      joinChannelPromises.push(_joinChannels(req, teamRoomAdminUserId, [
-         ChannelFactory.teamRoomChannel(teamRoom.teamRoomId),
-         ChannelFactory.teamRoomAdminChannel(teamRoom.teamRoomId)
-      ]));
-   });
-
-   return Promise.all(joinChannelPromises)
-      .then(() => {
-         return _broadcastEvent(req, EventTypes.teamRoomCreated, publishByApiVersion(req, apiVersionedVisibility.publicTeamRoom, teamRoom), [
-            ChannelFactory.teamRoomChannel(teamRoom.teamRoomId)
-         ]);
-      });
-};
-
-export const teamRoomUpdated = (req, teamRoom) => {
-   return _broadcastEvent(req, EventTypes.teamRoomUpdated, publishByApiVersion(req, apiVersionedVisibility.publicTeamRoom, teamRoom), [
-      ChannelFactory.teamRoomChannel(teamRoom.teamRoomId)
-   ]);
-};
-
-export const teamRoomPrivateInfoUpdated = (req, teamRoom) => {
-   return _broadcastEvent(req, EventTypes.teamRoomPrivateInfoUpdated, publishByApiVersion(req, apiVersionedVisibility.privateTeamRoom, teamRoom), [
-      ChannelFactory.teamRoomAdminChannel(teamRoom.teamRoomId)
-   ]);
-};
-
-export const teamRoomMemberAdded = (req, teamRoom, user, role, teamRoomMemberId) => {
-   const { teamRoomId } = teamRoom;
-   const teamRoomChannel = ChannelFactory.teamRoomChannel(teamRoomId);
-   const channels = [teamRoomChannel];
-   if (role === Roles.admin) {
-      channels.push(ChannelFactory.teamRoomAdminChannel(teamRoomId));
-   }
-
-   return _joinChannels(req, user.userId, channels)
-      .then(() => {
-         return _broadcastEvent(req, EventTypes.teamRoomCreated, publishByApiVersion(req, apiVersionedVisibility.publicTeamRoom, teamRoom), [
-            ChannelFactory.personalChannel(user.userId)
-         ]);
-      })
-      .then(() => {
-         const mergedUser = _.merge(user, { userId: user.userId, role, teamRoomMemberId });
-         _broadcastEvent(req, EventTypes.teamRoomMemberAdded, publishByApiVersion(req, apiVersionedVisibility.publicTeamRoomMember, teamRoomId, mergedUser), [teamRoomChannel]);
-      })
-      .catch(err => req.logger.error({ err }));
-};
-
-
 // EventType = conversation
 
 export const conversationCreated = (req, conversation, conversationParticipantUserIds) => {
@@ -231,7 +177,7 @@ export const conversationCreated = (req, conversation, conversationParticipantUs
    return Promise.all(joinChannelPromises)
       .then(() => {
          return _broadcastEvent(req, EventTypes.conversationCreated, publishByApiVersion(req, apiVersionedVisibility.publicConversation, conversation), [
-            ChannelFactory.conversationChannel(conversation.teamRoomId)
+            ChannelFactory.conversationChannel(conversation.teamId)
          ]);
       });
 };

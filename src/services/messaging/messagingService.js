@@ -6,7 +6,6 @@ import SocketIOWildcard from 'socketio-wildcard';
 import config from '../../config/env';
 import * as subscriberUsersTable from '../../repositories/db/subscriberUsersTable';
 import * as teamMembersTable from '../../repositories/db/teamMembersTable';
-import * as teamRoomMembersTable from '../../repositories/db/teamRoomMembersTable';
 import * as conversationSvc from '../conversationService';
 import logger, { createPseudoRequest } from '../../logger';
 import { setPresence } from './presence';
@@ -34,11 +33,6 @@ export const EventTypes = Object.freeze({
    teamUpdated: 'teamUpdated',
    teamPrivateInfoUpdated: 'teamPrivateInfoUpdated',
    teamMemberAdded: 'teamMemberAdded',
-
-   teamRoomCreated: 'teamRoomCreated',
-   teamRoomUpdated: 'teamRoomUpdated',
-   teamRoomPrivateInfoUpdated: 'teamRoomPrivateInfoUpdated',
-   teamRoomMemberAdded: 'teamRoomMemberAdded',
 
    conversationCreated: 'conversationCreated',
    conversationUpdated: 'conversationUpdated',
@@ -84,14 +78,6 @@ export class ChannelFactory {
 
    static teamAdminChannel(teamId) {
       return `admin.teamId=${teamId}`;
-   }
-
-   static teamRoomChannel(teamRoomId) {
-      return `teamRoomId=${teamRoomId}`;
-   }
-
-   static teamRoomAdminChannel(teamRoomId) {
-      return `admin.teamRoomId=${teamRoomId}`;
    }
 
    static conversationChannel(conversationId) {
@@ -148,24 +134,6 @@ const joinCurrentChannels = (req, socket, userId) => {
                const teamPrivateChannel = ChannelFactory.teamAdminChannel(teamId);
                socket.join(teamPrivateChannel);
                logger.debug(`MessagingService: userId=${userId} joining ${teamPrivateChannel}`);
-            }
-         });
-      })
-      .catch(err => logger.error(err));
-
-   teamRoomMembersTable.getTeamRoomMembersByUserId(req, userId)
-      .then((teamRoomMembers) => {
-         teamRoomMembers.forEach((teamRoomMember) => {
-            const { teamRoomId, role } = teamRoomMember;
-
-            const teamRoomChannel = ChannelFactory.teamRoomChannel(teamRoomId);
-            socket.join(teamRoomChannel);
-            logger.debug(`MessagingService: userId=${userId} joining ${teamRoomChannel}`);
-
-            if (role === Roles.admin) {
-               const teamRoomPrivateChannel = ChannelFactory.teamRoomAdminChannel(teamRoomId);
-               socket.join(teamRoomPrivateChannel);
-               logger.debug(`MessagingService: userId=${userId} joining ${teamRoomPrivateChannel}`);
             }
          });
       })

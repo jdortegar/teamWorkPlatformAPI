@@ -32,7 +32,6 @@ import {
 } from './messaging';
 import { getPresence } from './messaging/presence';
 import Roles from './roles';
-import * as teamRoomSvc from './teamRoomService';
 
 export const defaultTeamName = 'All';
 
@@ -80,18 +79,6 @@ export const createTeamNoCheck = (req, subscriberOrgId, teamInfo, subscriberUser
             team = createdTeam;
 
             return teamMembersTable.createTeamMember(req, teamMemberId, user.userId, actualTeamId, subscriberUserId, subscriberOrgId, Roles.admin);
-         })
-         .then(() => {
-            teamCreated(req, team, teamAdminUserIds);
-            teamMemberAdded(req, team, user, role, teamMemberId);
-
-            const teamRoom = {
-               name: teamRoomSvc.defaultTeamRoomName,
-               purpose: undefined,
-               active: true,
-               primary: true,
-            };
-            return teamRoomSvc.createTeamRoomNoCheck(req, subscriberOrgId, subscriberUserId, actualTeamId, teamRoom, teamMemberId, user, [user.userId]);
          })
          .then(() => resolve(team))
          .catch(err => reject(err));
@@ -189,11 +176,6 @@ export function updateTeam(req, teamId, updateInfo, userId) {
             if ((updateInfo.preferences) && (updateInfo.preferences.private)) {
                teamPrivateInfoUpdated(req, team);
             }
-
-            if (('active' in updateInfo) && (previousActive !== updateInfo.active)) {
-               // Enable/disable children.
-               teamRoomSvc.setTeamRoomsOfTeamActive(req, teamId, updateInfo.active);
-            }
          })
          .catch(err => reject(err));
    });
@@ -205,9 +187,6 @@ export function setTeamsOfSubscriberOrgActive(req, subscriberOrgId, active) {
       teamsTable.updateTeamsBySubscriberOrgId(req, subscriberOrgId, { subscriberOrgEnabled: active })
          .then((updatedTeams) => {
             teams = updatedTeams;
-            return Promise.all(teams.map(team => teamRoomSvc.setTeamRoomsOfTeamActive(req, team.teamId, active)));
-         })
-         .then(() => {
             resolve();
 
             teams.forEach((team) => {
@@ -378,9 +357,8 @@ export function addUserToTeam(req, user, subscriberUserId, teamId, role) {
          })
          .then(() => {
             teamMemberAdded(req, team, user, role, teamMemberId);
-            return teamRoomSvc.addUserToPrimaryTeamRoom(req, user, teamId, teamMemberId, Roles.user);
+            resolve(teamMemberId);
          })
-         .then(() => resolve(teamMemberId))
          .catch(err => reject(err));
    });
 }
