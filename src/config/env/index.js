@@ -7,7 +7,7 @@ if (process.env.NODE_ENV === 'test') {
 }
 
 const config = {
-   apiVersion: 1,
+   apiVersion: 2,
    nodePort: process.env.NODE_PORT || defaultConfig.nodePort,
    tablePrefix: process.env.TBL_PREFIX || defaultConfig.tablePrefix,
    cacheServer: process.env.CACHE_SERVER || defaultConfig.cacheServer,
