@@ -1,14 +1,14 @@
 // TODO: Migrate the integrations refactored here.
 import _ from 'lodash';
-import * as subscriberTeamTable from '../../repositories/db/subscriberTeamsTable';
+import * as teamMemberTable from '../../repositories/db/teamMembersTable';
 
 export const getTeamIntegrations = async (req, teamId) => {
-    const subscribers = subscriberTeamTable.getSubscriberTeamsByTeamId(req, teamId);
+    const subscribers = teamMemberTable.getTeamMembersByTeamId(req, teamId);
     const integrations = [];
-    subscribers.forEach((subscriberTeam) => {
-        if (subscriberTeam.integrations) {
-            const memberIntegrations = _.cloneDeep(subscriberTeam.integrations);
-            _.merge(memberIntegrations, { teamId: subscriberTeam.teamId, userId: subscriberTeam.userId });
+    subscribers.forEach((teamMember) => {
+        if (teamMember.integrations) {
+            const memberIntegrations = _.cloneDeep(teamMember.integrations);
+            _.merge(memberIntegrations, { teamId: teamMember.teamId, userId: teamMember.userId });
             integrations.push(memberIntegrations);
         }
     });
