@@ -1,6 +1,9 @@
 import _ from 'lodash';
 import config from '../../config/env';
 import * as util from './util';
+import Aes from '../../helpers/aes';
+
+const aes = new Aes('AI-Infused Knowledge Management for Enterprise Teams'); // eslint-disable-line no-unused-vars
 
 /**
  * hash: teamMemberId
@@ -13,6 +16,7 @@ import * as util from './util';
  * enabled
  * created
  * lastModified
+ * integrations
  *
  * GSI: teamIdUserIdIdx
  * hash: teamId
@@ -36,7 +40,7 @@ const upgradeSchema = (req, dbObjects) => {
 const accessTokenRegex = /^access.*token$/i;
 const refreshTokenRegex = /^refresh.*token$/i;
 
-const decryptIntegration = (req, teamMember) => {
+const decryptIntegration = (teamMember) => {
     if (!teamMember) {
         return undefined;
     }
@@ -56,7 +60,7 @@ const decryptIntegration = (req, teamMember) => {
     return decryptedTeamMember;
 };
 
-const encryptIntegrations = (req, integrations) => {
+const encryptIntegrations = (integrations) => {
     if (!integrations) {
         return integrations;
     }
@@ -66,7 +70,7 @@ const encryptIntegrations = (req, integrations) => {
         Object.keys(integrations[integrationType]).forEach((key) => {
             if ((accessTokenRegex.test(key)) || (refreshTokenRegex.test(key))) {
                 const currentValue = integrations[integrationType][key];
-                if (currentValue.indexOf(Aes.CIPHER_PATTERN_PREFIX) !== 0) {
+                if (currentValue.indexOf(aes.CIPHER_PATTERN_PREFIX) !== 0) {
                     // TODO: Turn this on when python code matches.
                     // encryptedIntegrations[integrationType][key] = aes.encryptCipher(currentValue);
                 }
@@ -138,22 +142,29 @@ export const getTeamMembersByTeamId = async (req, teamId) => {
     return decryptedResults;
 };
 
-export const getTeamMemberByTeamIdAndUserId = (req, teamId, userId) => {
-    return new Promise((resolve, reject) => {
-        const params = {
-            TableName: tableName(),
-            IndexName: 'teamIdUserIdIdx',
-            KeyConditionExpression: 'teamId = :teamId and userId = :userId',
-            ExpressionAttributeValues: {
-                ':teamId': teamId,
-                ':userId': userId
-            }
-        };
-        util.query(req, params)
-            .then(originalResults => upgradeSchema(req, originalResults))
-            .then(latestResults => resolve((latestResults.length > 0) ? latestResults[0] : undefined))
-            .catch(err => reject(err));
-    });
+export const getTeamMemberByTeamIdAndUserId = async (req, teamId, userId) => {
+    const params = {
+        TableName: tableName(),
+        IndexName: 'teamIdUserIdIdx',
+        KeyConditionExpression: 'teamId = :teamId and userId = :userId',
+        ExpressionAttributeValues: {
+            ':teamId': teamId,
+            ':userId': userId
+        }
+    };
+    const originalResults = await util.query(req, params);
+    const latestResults = await upgradeSchema(req, originalResults);
+    let decryptedResults;
+    if (latestResults instanceof Array) {
+        decryptedResults = _.map(latestResults, (val) => {
+            return decryptIntegration(val);
+        });
+        
+    } else {
+        decryptedResults = [decryptIntegration(latestResults)]
+    }
+    console.log('***DECRYPTED RESULTS****', decryptedResults);
+    return (decryptedResults.length > 0) ? decryptedResults[0] : undefined;
 };
 
 export const getTeamMemberByTeamIdAndUserIdAndRole = (req, teamId, userId, role) => {
@@ -238,14 +249,14 @@ export const getTeamMembersByUserIdAndSubscriberOrgId = (req, userId, subscriber
 
 export const updateTeamMembersIntegrations = async (req, userId, teamId, integrations) => {
     const lastModified = req.now.format();
-    const teamMember = await getTeamMemberByTeamIdAndUserId(teamId, userId);
+    const teamMember = await getTeamMemberByTeamIdAndUserId(req, teamId, userId);
     const params = {
         TableName: tableName(),
-        Key:  { teamMemberID: teamMember.teamMemberId },
+        Key:  { teamMemberId: teamMember.teamMemberId },
         UpdateExpression: 'set lastModified = :lastModified, integrations = :integrations',
         ExpressionAttributeValues: {
             ':lastModified': lastModified,
-            ':integrations': integrations
+            ':integrations': encryptIntegrations(integrations)
         }
     };
     await req.app.locals.docClient.update(params).promise();
