@@ -163,7 +163,6 @@ export const getTeamMemberByTeamIdAndUserId = async (req, teamId, userId) => {
     } else {
         decryptedResults = [decryptIntegration(latestResults)]
     }
-    console.log('***DECRYPTED RESULTS****', decryptedResults);
     return (decryptedResults.length > 0) ? decryptedResults[0] : undefined;
 };
 
