@@ -49,7 +49,6 @@ export const getSurveys = async (req, res, next) => {
     const userId = req.params.userId;
     try {
         const result = await surveySvc.getSurveys(orgId, userId);
-        console.log(result.rows)
         const dates = [];
         _.forEach(result.rows, (row) => {
             dates.push(moment(row.created_at).format('YYYY-MM-DD'))
