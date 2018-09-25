@@ -121,7 +121,7 @@ export const revokeGoogle = async (req, userId, subscriberId) => {
     } else {
         subscriberInfo = await subscriberUsersTable.updateSubscriberUserIntegrations(req, subscriber.subscriberUserId, integrations);
     }
-
+    
     await revokeIntegration(req, userAccessToken);
     integrationsUpdated(req, subscriberInfo);        
 };
