@@ -129,7 +129,7 @@ export const getTeamMembersByTeamId = async (req, teamId) => {
             ':teamId': teamId
         }
     };
-    const originalResults = await util.query(req, params)
+    const originalResults = await util.query(req, params);
     const latestResults = await upgradeSchema(req, originalResults);
     let decryptedResults;
     if (latestResults instanceof Array) {
@@ -163,7 +163,6 @@ export const getTeamMemberByTeamIdAndUserId = async (req, teamId, userId) => {
     } else {
         decryptedResults = [decryptIntegration(latestResults)]
     }
-    console.log('***DECRYPTED RESULTS****', decryptedResults);
     return (decryptedResults.length > 0) ? decryptedResults[0] : undefined;
 };
 

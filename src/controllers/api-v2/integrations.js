@@ -3,11 +3,11 @@ import { apiVersionedVisibility, publishByApiVersion } from '../../helpers/publi
 import * as integrationSvc from '../../services/integrations/integrationService';
 import { APIError } from '../../services/errors';
 
-export const getTeamIntegrations = (req, res, next) => {
-    const teamId = req.param.teamId;
+export const getTeamIntegrations = async (req, res, next) => {
+    const teamId = req.params.teamId;
     try {
-        const integrations = integrationSvc.getTeamIntegrations(req, teamId);
-        return res.status(httpStatus.OK).json( { integrations: publishByApiVersion(req, apiVersionedVisibility.publicIntegrations, integrations) } );
+        const integrations = await integrationSvc.getTeamIntegrations(req, teamId);
+        return res.status(httpStatus.OK).json( { teamMemberIntegrations: publishByApiVersion(req, apiVersionedVisibility.publicIntegrations, integrations) } );
     } catch (err) {
         return next(new APIError(httpStatus.INTERNAL_SERVER_ERROR, err));
     }

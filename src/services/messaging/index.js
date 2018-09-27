@@ -250,12 +250,11 @@ export const messageDeleted = (req, message) => {
 };
 
 
-// EventType = integration
+// EventType = integration 
 
 export const integrationsUpdated = (req, subscriberUser) => {
    // Send to internal channel.
    const event = _.cloneDeep(subscriberUser);
-   console.log('*****EVENT*****', event);
    delete event.role;
    internalQueue.sendEvent(req, EventTypes.integrationsUpdated, event);
 

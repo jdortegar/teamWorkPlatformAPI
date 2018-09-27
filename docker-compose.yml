@@ -8,6 +8,8 @@ services:
       - cache
     environment:
       CACHE_SERVER: cache
+    volumes:
+      - ./:/usr/src/app
   cache:
     image: redis
   
