@@ -82,7 +82,7 @@ export const googleAccessResponse = async (req, { code, state, error }) => {
         google: tokenInfo
     };
     const updateInfo = _.merge(subscriber, { integrations: googleInfo });
-    delete updateInfo.integrations.revoked;
+    delete updateInfo.integrations.google.revoked;
     const integrations = updateInfo.integrations;
     if (teamLevel) {
         await teamMemabersTable.updateTeamMembersIntegrations(req, userId, subscriberId, integrations);
