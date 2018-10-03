@@ -8,6 +8,7 @@ services:
       - cache
     environment:
       CACHE_SERVER: cache
+      NODE_ENV: development
     volumes:
       - ./:/usr/src/app
   cache:

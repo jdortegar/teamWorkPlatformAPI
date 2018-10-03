@@ -4,7 +4,7 @@ import { IntegrationAccessError, SubscriberOrgNotExistError } from './errors';
 import { composeAuthorizationUrl, exchangeAuthorizationCodeForAccessToken, getUserInfo, revokeIntegration, validateWebhookMessage } from '../integrations/google';
 import { integrationsUpdated, googleWebhookEvent } from './messaging';
 import * as subscriberUsersTable from '../repositories/db/subscriberUsersTable';
-import * as teamMemabersTable from '../repositories/db/teamMembersTable';
+import * as teamMembersTable from '../repositories/db/teamMembersTable';
 
 const defaultExpiration = 30 * 60; // 30 minutes.
 
@@ -40,7 +40,7 @@ export const integrateGoogle = async (req, userId, subscriberId) => {
     let subscriber;
     const teamLevelVal = req.query.teamLevel || 0;
     if (typeof req.query.teamLevel !== 'undefined' && req.query.teamLevel == 1) {
-        subscriber = await teamMemabersTable.getTeamMemberByTeamIdAndUserId(req, subscriberId, userId);
+        subscriber = await teamMembersTable.getTeamMemberByTeamIdAndUserId(req, subscriberId, userId);
     } else {
         subscriber = await subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberId);
     }
@@ -66,7 +66,7 @@ export const googleAccessResponse = async (req, { code, state, error }) => {
     req.logger.debug(`Google access info for userId:${userId} = ${JSON.stringify(tokenInfo)}`);
     let subscriber;
     if (teamLevel) {
-        subscriber = await teamMemabersTable.getTeamMemberByTeamIdAndUserId(req, subscriberId, userId);
+        subscriber = await teamMembersTable.getTeamMemberByTeamIdAndUserId(req, subscriberId, userId);
     
     } else {
         subscriber = await subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberId);
@@ -85,7 +85,7 @@ export const googleAccessResponse = async (req, { code, state, error }) => {
     delete updateInfo.integrations.google.revoked;
     const integrations = updateInfo.integrations;
     if (teamLevel) {
-        await teamMemabersTable.updateTeamMembersIntegrations(req, userId, subscriberId, integrations);
+        await teamMembersTable.updateTeamMembersIntegrations(req, userId, subscriberId, integrations);
     } else {
         await subscriberUsersTable.updateSubscriberUserIntegrations(req, subscriber.subscriberUserId, integrations);
     }
@@ -100,7 +100,7 @@ export const revokeGoogle = async (req, userId, subscriberId) => {
 
     if (teamLevel) {
 
-        subscriber = await teamMemabersTable.getTeamMemberByTeamIdAndUserId(req, subscriberId, userId);
+        subscriber = await teamMembersTable.getTeamMemberByTeamIdAndUserId(req, subscriberId, userId);
 
     }  else {
         subscriber = await subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberId);
@@ -117,7 +117,7 @@ export const revokeGoogle = async (req, userId, subscriberId) => {
     integrations.google = { revoked: true };
     let subscriberInfo;
     if (teamLevel) {
-        subscriberInfo = teamMemabersTable.updateTeamMembersIntegrations(req, userId, subscriberId, integrations);
+        subscriberInfo = teamMembersTable.updateTeamMembersIntegrations(req, userId, subscriberId, integrations);
     } else {
         subscriberInfo = await subscriberUsersTable.updateSubscriberUserIntegrations(req, subscriber.subscriberUserId, integrations);
     }
