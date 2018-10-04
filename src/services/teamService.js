@@ -35,30 +35,27 @@ import Roles from './roles';
 
 export const defaultTeamName = 'All';
 
-export function getUserTeams(req, userId, subscriberOrgId = undefined) {
-    return new Promise((resolve, reject) => {
-        let promise;
-        if (subscriberOrgId) {
-            promise = teamMembersTable.getTeamMembersByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId);
-        } else {
-            promise = teamMembersTable.getTeamMembersByUserId(req, userId);
-        }
-        promise
-            .then((teamMembers) => {
-                const teamIds = teamMembers.map(teamMember => teamMember.teamId);
-                return teamsTable.getTeamsByTeamIds(req, teamIds);
-            })
-            .then((teams) => {
-                const retTeams = teams.map((team) => {
-                    const teamClone = _.cloneDeep(team);
-                    teamClone.active = (teamClone.subscriberOrgEnabled === false) ? false : teamClone.active;
-                    return teamClone;
-                });
-                resolve(retTeams);
-            })
-            .catch(err => reject(err));
+export async function getUserTeams(req, userId, subscriberOrgId = undefined) {
+    let teamMembers;
+    if (subscriberOrgId) {
+        teamMembers = await teamMembersTable.getTeamMembersByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId);
+    } else {
+        teamMembers = await teamMembersTable.getTeamMembersByUserId(req, userId);
+    }
+    const teamIds = teamMembers.map(teamMember => teamMember.teamId);
+    const teams = await teamsTable.getTeamsByTeamIds(req, teamIds);
+    const retTeams = teams.map((team) => {
+        const teamClone = _.cloneDeep(team);
+        teamClone.active = (teamClone.subscriberOrgEnabled === false) ? false : teamClone.active; 
+        return teamClone;
     });
+    // Doit on this ugly way for dynamodb no relational limitations
+    for (let i = 0; i < retTeams.length; i++) {
+        retTeams[i].teamAdmin = await teamMembersTable.getTeamAdmin(req, retTeams[i].teamId);
+    }
+    return retTeams;
 }
+
 export const createTeamNoCheck = (req, subscriberOrgId, teamInfo, subscriberUserId, user, teamAdminUserIds, teamId = undefined) => {
     return new Promise((resolve, reject) => {
         const actualTeamId = teamId || uuid.v4();
