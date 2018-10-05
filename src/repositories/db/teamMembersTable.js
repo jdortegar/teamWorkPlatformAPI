@@ -120,6 +120,27 @@ export const getTeamMemberByTeamMemberId = (req, teamMemberId) => {
     });
 };
 
+export const getTeamAdmin = async (req, teamId) => {
+    const params = {
+        TableName: tableName(),
+        IndexName: 'teamIdUserIdIdx',
+        KeyConditionExpression: 'teamId = :teamId',
+        FilterExpression: '#roleField = :adminRole',
+        ExpressionAttributeValues: {
+            ':teamId': teamId,
+            ':adminRole': 'admin'
+        },
+        ExpressionAttributeNames: {
+            '#roleField': 'role'
+        }
+    }
+    const result = await util.query(req, params);
+    if (result instanceof Array) {
+        return result[0].userId;
+    }
+    return result.userId;
+
+}
 export const getTeamMembersByTeamId = async (req, teamId) => {
     const params = {
         TableName: tableName(),

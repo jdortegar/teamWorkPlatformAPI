@@ -21,7 +21,7 @@ export const getTeams = (req, res, next) => {
 
    teamSvc.getUserTeams(req, userId, subscriberOrgId)
       .then((teams) => {
-         res.status(httpStatus.OK).json({ teams: publishByApiVersion(req, apiVersionedVisibility.publicTeams, teams) });
+         res.status(httpStatus.OK).json({ teams });
       })
       .catch((err) => {
          next(new APIError(httpStatus.INTERNAL_SERVER_ERROR, err));

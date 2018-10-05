@@ -59,7 +59,6 @@ export const dropboxAccessResponse = async (req, { code, state, error, error_des
     const teamLevel = teamLevelVal == 1;
     const authorizationCode = code;
     const integrationContext = await deleteRedisDropboxIntegrationState(req, state, teamLevelVal);
-    console.log('******INTEGRATION CONTEXT*******', integrationContext);
     const userId = integrationContext.userId;
     const subscriberId = (typeof integrationContext.subscriberOrgId !== 'undefined') ? integrationContext.subscriberOrgId : integrationContext.teamId;
     const tokenInfo = await exchangeAuthorizationCodeForAccessToken(authorizationCode);
