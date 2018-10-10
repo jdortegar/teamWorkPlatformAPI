@@ -34,7 +34,6 @@ export const dropboxAccess = (req, res) => {
             res.redirect(`${redirectUri}/${subscriberOrgId}/dropbox/CREATED`);
         })
         .catch((err) => {
-            console.log('******ERRRROR*******', err);
             subscriberOrgId = subscriberOrgId || err.subscriberOrgId;
             const realError = err._chainedError || err;
             if (realError instanceof IntegrationAccessError) {

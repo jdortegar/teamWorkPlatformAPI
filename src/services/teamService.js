@@ -135,53 +135,31 @@ export function createTeam(req, subscriberOrgId, teamInfo, userId, teamId = unde
     });
 }
 
-export function updateTeam(req, teamId, updateInfo, userId) {
-    return new Promise((resolve, reject) => {
-        let originalTeam;
-        teamsTable.getTeamByTeamId(req, teamId)
-            .then((retrievedTeam) => {
-                originalTeam = retrievedTeam;
-                if (!originalTeam) {
-                    throw new TeamNotExistError(teamId);
-                }
-
-                return teamMembersTable.getTeamMemberByTeamIdAndUserIdAndRole(req, teamId, userId, Roles.admin);
-            })
-            .then((teamMember) => {
-                if (!teamMember) {
-                    throw new NoPermissionsError(teamId);
-                }
-
-                if ((originalTeam.primary) && (updateInfo.active === false)) {
-                    throw new CannotDeactivateError(teamId);
-                }
-
-                if ((updateInfo.name) && (originalTeam.name !== updateInfo.name)) {
-                    return teamsTable.getTeamBySubscriberOrgIdAndName(req, originalTeam.subscriberOrgId, updateInfo.name);
-                }
-                return undefined;
-            })
-            .then((duplicateName) => {
-                if (duplicateName) {
-                    throw new TeamExistsError(updateInfo.name);
-                }
-
-                const { name, icon, active, preferences } = updateInfo;
-                return teamsTable.updateTeam(req, teamId, { name, icon, active, preferences });
-            })
-            .then((updatedTeam) => {
-                resolve();
-
-                const previousActive = originalTeam.active;
-                const team = _.cloneDeep(updatedTeam);
-                team.active = (team.subscriberOrgEnabled === false) ? false : team.active;
-                teamUpdated(req, team);
-                if ((updateInfo.preferences) && (updateInfo.preferences.private)) {
-                    teamPrivateInfoUpdated(req, team);
-                }
-            })
-            .catch(err => reject(err));
-    });
+export async function updateTeam(req, teamId, updateInfo, userId) {
+    // TODO: Once the roles are in the JWT we need to check this there;
+    const team = await teamsTable.getTeamByTeamId(req, teamId);
+    if (!team) {
+        throw new TeamNotExistError(teamId);
+    }
+    const user = await usersTable.getUserByUserId(req, userId);
+    const teamMember = await teamMembersTable.getTeamMemberByTeamIdAndUserId(req, teamId, userId);
+    if (user.role !== 'admin' || teamMember.role !== 'admin') {
+        throw new NoPermissionsError(teamId);
+    }
+    if (updateInfo.name) {
+        const duplicateName = await teamsTable.getTeamBySubscriberOrgIdAndName(req, team.subscriberOrgId, updateInfo.name);
+        if (duplicateName) {
+            throw new TeamExistsError(updateInfo.name);
+        }
+    }
+    const { name, icon, active, preferences } = updateInfo;
+    const updatedTeam = await teamsTable.updateTeam(req, teamId, { name, icon, active, preferences, active });
+    updatedTeam.active = (updatedTeam.subscriberOrgEnabled === false) ? false : updatedTeam.active;
+    teamUpdated(req, updatedTeam);
+    if ((updateInfo.preferences) && (updateInfo.preferences.private)) {
+        teamPrivateInfoUpdated(req, team);
+    }
+    return updatedTeam;
 }
 
 export function setTeamsOfSubscriberOrgActive(req, subscriberOrgId, active) {
