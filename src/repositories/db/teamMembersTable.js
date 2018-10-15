@@ -283,3 +283,18 @@ export const updateTeamMembersIntegrations = async (req, userId, teamId, integra
     delete teamMember.integrations;
     return _.merge({}, teamMember, { integrations, lastModified });
 }
+
+
+export const updateTeamMemberActive = async (req, teamMemberId, active) => {
+    const lastModified = req.now.format();
+    const params = {
+        TableName: tableName(),
+        Key: { teamMemberId },
+        UpdateExpression: 'set enabled = :enabled, lastModified = :lastModified',
+        ExpressionAttributeValues: {
+            ':lastModified': lastModified,
+            ':enabled': active
+        }
+    }
+    return await req.app.locals.docClient.update(params).promise();
+}

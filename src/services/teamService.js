@@ -134,29 +134,36 @@ export function createTeam(req, subscriberOrgId, teamInfo, userId, teamId = unde
 
 export async function updateTeam(req, teamId, updateInfo, userId) {
     // TODO: Once the roles are in the JWT we need to check this there;
-    const team = await teamsTable.getTeamByTeamId(req, teamId);
-    if (!team) {
-        throw new TeamNotExistError(teamId);
-    }
-    const user = await usersTable.getUserByUserId(req, userId);
-    const teamMember = await teamMembersTable.getTeamMemberByTeamIdAndUserId(req, teamId, userId);
-    if (user.role !== 'admin' || teamMember.role !== 'admin') {
-        throw new NoPermissionsError(teamId);
-    }
-    if (updateInfo.name) {
-        const duplicateName = await teamsTable.getTeamBySubscriberOrgIdAndName(req, team.subscriberOrgId, updateInfo.name);
-        if (duplicateName) {
-            throw new TeamExistsError(updateInfo.name);
+    try {
+        const team = await teamsTable.getTeamByTeamId(req, teamId);
+        if (!team) {
+            throw new TeamNotExistError(teamId);
         }
+        const user = await usersTable.getUserByUserId(req, userId);
+        const teamMember = await teamMembersTable.getTeamMemberByTeamIdAndUserId(req, teamId, userId);
+        if (user.role !== 'admin' || teamMember.role !== 'admin') {
+            throw new NoPermissionsError(teamId);
+        }
+        if (updateInfo.name) {
+            const duplicateName = await teamsTable.getTeamBySubscriberOrgIdAndName(req, team.subscriberOrgId, updateInfo.name);
+            if (duplicateName) {
+                throw new TeamExistsError(updateInfo.name);
+            }
+        }
+        const { name, icon, preferences, active } = updateInfo;
+        const updatedTeam = await teamsTable.updateTeam(req, teamId, { name, icon, preferences, active });
+        if (!updatedTeam.active) {
+            deactivateTeamMembers(req, teamId);
+        }
+        teamUpdated(req, updatedTeam);
+        if ((updateInfo.preferences) && (updateInfo.preferences.private)) {
+            teamPrivateInfoUpdated(req, team);
+        }
+        return updatedTeam;
+
+    } catch (err) {
+        console.log(err);
     }
-    const { name, icon, active, preferences } = updateInfo;
-    const updatedTeam = await teamsTable.updateTeam(req, teamId, { name, icon, active, preferences, active });
-    updatedTeam.active = (updatedTeam.subscriberOrgEnabled === false) ? false : updatedTeam.active;
-    teamUpdated(req, updatedTeam);
-    if ((updateInfo.preferences) && (updateInfo.preferences.private)) {
-        teamPrivateInfoUpdated(req, team);
-    }
-    return updatedTeam;
 }
 
 export function setTeamsOfSubscriberOrgActive(req, subscriberOrgId, active) {
@@ -419,4 +426,18 @@ export function replyToInvite(req, teamId, accept, userId) {
                 }
             });
     });
+}
+
+export const deactivateTeamMembers = async (req, teamId) => {
+    const teamMembers = await teamMembersTable.getTeamMembersByTeamId(req, teamId);
+    const deactivateTeamMember = async (member) => {
+        try {
+            await teamMembersTable.updateTeamMemberActive(req, member.teamMemberId, false);
+        } catch (err) {
+            console.log(err)
+        }
+    }
+    if (teamMembers) {
+        teamMembers.forEach(deactivateTeamMember);
+    }
 }

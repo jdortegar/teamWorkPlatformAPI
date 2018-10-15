@@ -157,11 +157,13 @@ export const updateTeam = (req, teamId, { name, icon, primary, active, subscribe
             const params = {
                TableName: tableName(),
                Key: { teamId },
-               UpdateExpression: 'set lastModified = :lastModified',
-               ExpressionAttributeNames: {},
+               UpdateExpression: 'set #lastModified = :lastModified',
+               ExpressionAttributeNames: {
+                     '#lastModified': 'lastModified'
+               },
                ExpressionAttributeValues: {
                   ':lastModified': lastModified
-               }
+               },
             };
 
             if (name) {
