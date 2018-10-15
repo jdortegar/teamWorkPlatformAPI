@@ -5,7 +5,7 @@ import * as integrations from '../../controllers/api-v2/integrations';
 
 const router = express.Router();
 
-router.route('/organization/:orgId/team/:teamId/integrations')
+router.route('/organization/:orgId/teams/:teamId/integrations')
     .get(integrations.getTeamIntegrations);
 
 export default router;

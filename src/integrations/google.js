@@ -1,6 +1,7 @@
 import google from 'googleapis';
 import config from '../config/env';
 import { IntegrationAccessError } from '../services/errors';
+import axios from 'axios';
 
 const clientId = config.googleClientId;
 const clientSecret = config.googleClientSecret;
@@ -75,22 +76,15 @@ export const getUserInfo = (req, userAccessToken) => {
     });
 };
 
-export const revokeIntegration = (req, userAccessToken) => { // eslint-disable-line no-unused-vars
-    return Promise.resolve();
-    // Moved to AI layer, since they need to do some work before actually revoking
-    // return new Promise((resolve, reject) => {
-    //    axios.get(`https://accounts.google.com/o/oauth2/revoke?token=${userAccessToken}`)
-    //       .then((response) => {
-    //          if (response.status === 200) {
-    //             resolve();
-    //          } else {
-    //             reject(new IntegrationAccessError('Failed to revoke google integration.'));
-    //          }
-    //       })
-    //       .catch((err) => {
-    //          reject(new IntegrationAccessError(`Failed to revoke google integration: ${err}`));
-    //       });
-    // });
+export const revokeIntegration = async (req, userAccessToken) => { // eslint-disable-line no-unused-vars
+    try {
+        const response = await axios.get(`https://accounts.google.com/o/oauth2/revoke?token=${userAccessToken}`);
+        if (response.status !== 200) {
+            throw new IntegrationAccessError(`Failed to revoke google integration. ${JSON.stringify(response.data)}`);
+        }
+    } catch (err) {
+        throw new IntegrationAccessError(`Failed to revoke google Integration. ${err}`);
+    }
 };
 
 export const googleSiteVerification = (req, res, next) => {

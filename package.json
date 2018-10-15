@@ -21,8 +21,8 @@
     "*.{js,jsx}": "eslint"
   },
   "scripts": {
-    "start": "nodemon $NODE_DEBUG_OPTION src/index.js --exec babel-node",
-    "debug": "nodemon src/index.js --exec babel-node --debug",
+    "start": "nodemon --legacy-watch $NODE_DEBUG_OPTION src/index.js --exec babel-node",
+    "debug": "nodemon --legacy-watch src/index.js --exec babel-node --debug",
     "precommit": "lint-staged",
     "lint": "eslint src",
     "test": "cross-env NODE_ENV=test jest --verbose --runInBand",
@@ -131,6 +131,7 @@
     "socket.io-redis": "^5.2.0",
     "socketio-jwt": "^4.5.0",
     "socketio-wildcard": "^0.4.0",
+    "unirest": "^0.5.1",
     "uuid": "^3.2.1",
     "winston": "^2.4.0"
   },

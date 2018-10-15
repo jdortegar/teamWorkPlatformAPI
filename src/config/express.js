@@ -93,6 +93,7 @@ app.use((req, res, next) => {
 
 // If error is not an instanceOf APIError or APIWarning, convert it.
 app.use((err, req, res, next) => {
+    console.log(err);
    let e = err;
    if (err instanceof expressValidation.ValidationError) {
       const unifiedErrorMessage = err.errors.map((error) => {

@@ -250,7 +250,7 @@ export const messageDeleted = (req, message) => {
 };
 
 
-// EventType = integration
+// EventType = integration 
 
 export const integrationsUpdated = (req, subscriberUser) => {
    // Send to internal channel.

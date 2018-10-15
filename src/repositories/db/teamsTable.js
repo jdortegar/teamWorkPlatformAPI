@@ -179,7 +179,8 @@ export const updateTeam = (req, teamId, { name, icon, primary, active, subscribe
                params.ExpressionAttributeValues[':primary'] = primary;
             }
             if (_.isBoolean(active)) {
-               params.UpdateExpression += ', active = :active';
+               params.UpdateExpression += ', #active = :active';
+               params.ExpressionAttributeNames['#active'] = 'active';
                params.ExpressionAttributeValues[':active'] = active;
             }
             if (_.isBoolean(subscriberOrgEnabled)) {

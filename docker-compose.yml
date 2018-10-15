@@ -1,0 +1,16 @@
+version: '3'
+services:
+  api: 
+    build: .
+    ports: 
+      - "3000:3000"
+    links:
+      - cache
+    environment:
+      CACHE_SERVER: cache
+      NODE_ENV: development
+    volumes:
+      - ./:/usr/src/app
+  cache:
+    image: redis
+  
