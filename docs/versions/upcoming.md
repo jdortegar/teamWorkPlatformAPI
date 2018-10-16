@@ -6,5 +6,6 @@
     * integrations
     * teams
 * Endpoint for surveys.
+* Endpoint to get All organization teams and integrations.
 
 ## Bug Fixes
