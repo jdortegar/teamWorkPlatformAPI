@@ -3,7 +3,7 @@
 ## Get Org Teams and Integrations [GET]
 
 ### URI Format 
-`{host}/v2/organization/{orgId}`
+`{host}/v2/organizations/{orgId}`
 
 ### Response Body Format
 
