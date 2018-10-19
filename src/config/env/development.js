@@ -1,6 +1,5 @@
 export const nodePort = 3000;
-// export const tablePrefix = 'DEV1_';
-export const tablePrefix = 'TEST1_';
+export const tablePrefix = 'DEV1_';
 export const cacheServer = 'localhost';
 export const cachePort = 6379;
 export const redisPrefix = '';
