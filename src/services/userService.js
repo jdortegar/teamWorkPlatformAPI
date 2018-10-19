@@ -4,12 +4,17 @@ import config from '../config/env';
 import { NoPermissionsError, UserNotExistError, CustomerExistsError } from './errors';
 import { getRandomColor } from './util';
 import { hashPassword, passwordMatch } from '../models/user';
+import invitationsKeys from '../repositories/InvitationKeys';
 import * as usersTable from '../repositories/db/usersTable';
 import * as messagesTable from '../repositories/db/messagesTable';
 import * as usersCache from '../repositories/cache/usersCache';
 import * as invitationsRepo from '../repositories/invitationsRepo';
 import * as awsMarketplaceSvc from './awsMarketplaceService';
 import * as subscriberOrgSvc from './subscriberOrgService';
+import * as subscriberUserTable from '../repositories/db/subscriberUsersTable';
+import * as invitationsTable from '../repositories/db/invitationsTable';
+
+
 import { userCreated, userUpdated, userPrivateInfoUpdated, userBookmarksUpdated } from './messaging';
 
 const getUserByEmail = (req, email) => {
@@ -42,63 +47,104 @@ export const login = (req, email, password) => {
     });
 };
 
-export const createUser = (req, userInfo) => {
-    return new Promise((resolve, reject) => {
-        const { email: emailAddress } = userInfo;
-        const userId = uuid.v4();
-        let user;
+export const createUser = async (req, userInfo) => {     
+    // return new Promise((resolve, reject) => {
+    //     const { email: emailAddress } = userInfo;
+    //     const userId = uuid.v4();
+    //     let user;
 
-        usersTable.getUserByEmailAddress(req, emailAddress)
-            .then((existingUser) => {
-                user = existingUser;
-                if (user) {
-                    throw new NoPermissionsError(emailAddress);
-                }
+    //     usersTable.getUserByEmailAddress(req, emailAddress)
+    //         .then((existingUser) => {
+    //             user = existingUser;
+    //             if (user) {
+    //                 throw new NoPermissionsError(emailAddress);
+    //             }
 
-                const { firstName, lastName, displayName, country, timeZone } = userInfo;
-                const password = hashPassword(userInfo.password);
-                const icon = userInfo.icon || null;
-                const preferences = userInfo.preferences || { private: {} };
-                if (preferences.private === undefined) {
-                    preferences.private = {};
-                }
-                preferences.iconColor = preferences.iconColor || getRandomColor();
-                return Promise.all([
-                    usersTable.createUser(req, userId, firstName, lastName, displayName, emailAddress, password, country, timeZone, icon, preferences),
-                    usersCache.createUser(req, emailAddress, userId)
-                ]);
-            })
-            .then((promiseResults) => {
-                user = promiseResults[0];
-                const subscriberOrgId = uuid.v4();
-                const subscriberOrgName = req.body.displayName;
-                return subscriberOrgSvc.createSubscriberOrgUsingBaseName(req, { name: subscriberOrgName }, user, subscriberOrgId);
-            })
-            .then(() => {
-                userCreated(req, user);
+    //             const { firstName, lastName, displayName, country, timeZone } = userInfo;
+    //             const password = hashPassword(userInfo.password);
+    //             const icon = userInfo.icon || null;
+    //             const preferences = userInfo.preferences || { private: {} };
+    //             if (preferences.private === undefined) {
+    //                 preferences.private = {};
+    //             }
+    //             preferences.iconColor = preferences.iconColor || getRandomColor();
+    //             return Promise.all([
+    //                 usersTable.createUser(req, userId, firstName, lastName, displayName, emailAddress, password, country, timeZone, icon, preferences),
+    //                 usersCache.createUser(req, emailAddress, userId)
+    //             ]);
+    //         })
+    //         .then((promiseResults) => {
+    //             user = promiseResults[0];
+    //             const subscriberOrgId = uuid.v4();
+    //             const subscriberOrgName = req.body.displayName;
+    //             return subscriberOrgSvc.createSubscriberOrgUsingBaseName(req, { name: subscriberOrgName }, user, subscriberOrgId);
+    //         })
+    //         .then(() => {
+    //             userCreated(req, user);
 
-                // See if it's a new AWS customer. // TODO: refactor into cache dir.
-                return req.app.locals.redis.getAsync(`${config.redisPrefix}${emailAddress}#awsCustomerId`);
-            })
-            .then((awsCustomerId) => {
-                if ((awsCustomerId) && (awsCustomerId !== null)) {
-                    return new Promise((resolve2, reject2) => {
-                        awsMarketplaceSvc.registerCustomer(req, awsCustomerId, user)
-                            .then(() => resolve2())
-                            .catch((err) => {
-                                if (err instanceof CustomerExistsError) {
-                                    // TODO: do we auto invite, etc.
-                                } else {
-                                    reject2(err); // TODO:
-                                }
-                            });
-                    });
-                }
-                return undefined;
-            })
-            .then(() => resolve(user))
-            .catch(err => reject(err));
-    });
+    //             // See if it's a new AWS customer. // TODO: refactor into cache dir.
+    //             return req.app.locals.redis.getAsync(`${config.redisPrefix}${emailAddress}#awsCustomerId`);
+    //         })
+    //         .then((awsCustomerId) => {
+    //             if ((awsCustomerId) && (awsCustomerId !== null)) {
+    //                 return new Promise((resolve2, reject2) => {
+    //                     awsMarketplaceSvc.registerCustomer(req, awsCustomerId, user)
+    //                         .then(() => resolve2())
+    //                         .catch((err) => {
+    //                             if (err instanceof CustomerExistsError) {
+    //                                 // TODO: do we auto invite, etc.
+    //                             } else {
+    //                                 reject2(err); // TODO:
+    //                             }
+    //                         });
+    //                 });
+    //             }
+    //             return undefined;
+    //         })
+    //         .then(() => resolve(user))
+    //         .catch(err => reject(err));
+    // });
+    const { email: emailAddress } = userInfo;
+    const userId = uuid.v4();
+    let user;
+    try {
+        const existingUser = await usersTable.getUserByEmailAddress(req, emailAddress);
+        if (existingUser) {
+            throw new  NoPermissionsError(emailAddress);
+        }  
+        const { firstName, lastName, displayName, country, timeZone } = userInfo;
+        const password = hashPassword(userInfo.password);
+        const icon = userInfo.icon || null;
+        const preferences = userInfo.preferences || { private:  {} };
+        if (typeof preferences.private === 'undefined') {
+            preferences.private = {};
+        }
+        preferences.iconColor = preferences.iconColor || getRandomColor();
+        user = await usersTable.createUser(req, userId, firstName, lastName, displayName, emailAddress, password, country, timeZone, icon, preferences);
+        await usersCache.createUser(req, emailAddress, userId);
+        // Check if there are invitations if not create a new organization.
+        const invitations = await getInvitations(req, emailAddress);
+        console.log('*****INVITATIONS****', invitations);
+        if (invitations instanceof Array && invitations.length > 0) {
+            const subscriberUserId = uuid.v4();
+            const subscriberUser = await subscriberUserTable.createSubscriberUser(req, subscriberUserId, userId, invitations[0].subscriberOrgId, 'user', user.displayName);
+            await invitationsTable.updateInvitationsStateByInviteeEmail(req, user.emailAddress, invitationsKeys.subscriberOrgId, invitations[0].subscriberOrgId, 'ACCEPTED');
+            await req.app.locals.redis.delAsync(`${user.emailAddress}#pendingInvites`);
+            // console.log('***INVITATION PARAMS****', invitations[0].subscriberOrgId, user.userId);
+            // await subscriberOrgSvc.replyToInvite(req, invitations[0].subscriberOrgId, true, user.userId);
+        } else {
+            const subscriberOrgId = uuid.v4();
+            const subscriberOrgName = req.body.displayName;
+            await subscriberOrgSvc.createSubscriberOrgUsingBaseName(req, { name: subscriberOrgName }, user, subscriberOrgId);
+        }
+        userCreated(req, user);
+        const awsCustomerId = await req.app.locals.redis.getAsync(`${config.redisPrefix}${emailAddress}#awsCustomerId`);
+        if (awsCustomerId && (awsCustomerId !== null)) {
+            await awsMarketplaceSvc.registerCustomer(req, awsCustomerId, user);
+        }
+    } catch (err) {
+        return Promise.reject(err);
+    }
 };
 
 const resolveBookmarks = (req, bookmarks) => {

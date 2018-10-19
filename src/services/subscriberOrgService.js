@@ -352,6 +352,7 @@ const addUserToSubscriberOrg = (req, user, subscriberOrgId, role) => {
 };
 
 export const replyToInvite = (req, subscriberOrgId, accept, userId) => {
+    console.log('***REPLY TO INVITE*****', subscriberOrgId, accept, userId);
     return new Promise((resolve, reject) => {
         let user;
         let subscriberOrg;
@@ -362,6 +363,7 @@ export const replyToInvite = (req, subscriberOrgId, accept, userId) => {
             subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId)
         )
             .then(([retrievedUser, retrievedSubscriberOrg, subscriberUser]) => {
+                console.log('***RETRIEVED ORG***', retrievedSubscriberOrg);
                 user = retrievedUser;
                 subscriberOrg = retrievedSubscriberOrg;
                 if (!user) {
