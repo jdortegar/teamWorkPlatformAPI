@@ -131,7 +131,6 @@ export const getUserByUserId = async (req, userId) => {
     let subscriberUsers = await util.query(req, subscriberUserParams);
     let role = 'user';
     if (subscriberUsers) {
-        console.log('***SUBSCRIBER USERS IN TABLE***', subscriberUsers);
         role = (subscriberUsers instanceof Array && subscriberUsers.length > 0) ? subscriberUsers[0].role : subscriberUsers.role ;
     }
     const originalResults = await util.query(req, userParams);

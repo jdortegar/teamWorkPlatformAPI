@@ -47,63 +47,7 @@ export const login = (req, email, password) => {
     });
 };
 
-export const createUser = async (req, userInfo) => {     
-    // return new Promise((resolve, reject) => {
-    //     const { email: emailAddress } = userInfo;
-    //     const userId = uuid.v4();
-    //     let user;
-
-    //     usersTable.getUserByEmailAddress(req, emailAddress)
-    //         .then((existingUser) => {
-    //             user = existingUser;
-    //             if (user) {
-    //                 throw new NoPermissionsError(emailAddress);
-    //             }
-
-    //             const { firstName, lastName, displayName, country, timeZone } = userInfo;
-    //             const password = hashPassword(userInfo.password);
-    //             const icon = userInfo.icon || null;
-    //             const preferences = userInfo.preferences || { private: {} };
-    //             if (preferences.private === undefined) {
-    //                 preferences.private = {};
-    //             }
-    //             preferences.iconColor = preferences.iconColor || getRandomColor();
-    //             return Promise.all([
-    //                 usersTable.createUser(req, userId, firstName, lastName, displayName, emailAddress, password, country, timeZone, icon, preferences),
-    //                 usersCache.createUser(req, emailAddress, userId)
-    //             ]);
-    //         })
-    //         .then((promiseResults) => {
-    //             user = promiseResults[0];
-    //             const subscriberOrgId = uuid.v4();
-    //             const subscriberOrgName = req.body.displayName;
-    //             return subscriberOrgSvc.createSubscriberOrgUsingBaseName(req, { name: subscriberOrgName }, user, subscriberOrgId);
-    //         })
-    //         .then(() => {
-    //             userCreated(req, user);
-
-    //             // See if it's a new AWS customer. // TODO: refactor into cache dir.
-    //             return req.app.locals.redis.getAsync(`${config.redisPrefix}${emailAddress}#awsCustomerId`);
-    //         })
-    //         .then((awsCustomerId) => {
-    //             if ((awsCustomerId) && (awsCustomerId !== null)) {
-    //                 return new Promise((resolve2, reject2) => {
-    //                     awsMarketplaceSvc.registerCustomer(req, awsCustomerId, user)
-    //                         .then(() => resolve2())
-    //                         .catch((err) => {
-    //                             if (err instanceof CustomerExistsError) {
-    //                                 // TODO: do we auto invite, etc.
-    //                             } else {
-    //                                 reject2(err); // TODO:
-    //                             }
-    //                         });
-    //                 });
-    //             }
-    //             return undefined;
-    //         })
-    //         .then(() => resolve(user))
-    //         .catch(err => reject(err));
-    // });
+export const createUser = async (req, userInfo) => {
     const { email: emailAddress } = userInfo;
     const userId = uuid.v4();
     let user;
@@ -124,14 +68,12 @@ export const createUser = async (req, userInfo) => {
         await usersCache.createUser(req, emailAddress, userId);
         // Check if there are invitations if not create a new organization.
         const invitations = await getInvitations(req, emailAddress);
-        console.log('*****INVITATIONS****', invitations);
         if (invitations instanceof Array && invitations.length > 0) {
+            // Here we need to create a normal user to suscriber user and reply the invite.
             const subscriberUserId = uuid.v4();
             const subscriberUser = await subscriberUserTable.createSubscriberUser(req, subscriberUserId, userId, invitations[0].subscriberOrgId, 'user', user.displayName);
             await invitationsTable.updateInvitationsStateByInviteeEmail(req, user.emailAddress, invitationsKeys.subscriberOrgId, invitations[0].subscriberOrgId, 'ACCEPTED');
             await req.app.locals.redis.delAsync(`${user.emailAddress}#pendingInvites`);
-            // console.log('***INVITATION PARAMS****', invitations[0].subscriberOrgId, user.userId);
-            // await subscriberOrgSvc.replyToInvite(req, invitations[0].subscriberOrgId, true, user.userId);
         } else {
             const subscriberOrgId = uuid.v4();
             const subscriberOrgName = req.body.displayName;

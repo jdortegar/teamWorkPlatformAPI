@@ -351,8 +351,8 @@ const addUserToSubscriberOrg = (req, user, subscriberOrgId, role) => {
     });
 };
 
+// TODO: This method is junk and it should be removed. Is attached to old architecture. I will kepp it her just in case not to break the frontend.
 export const replyToInvite = (req, subscriberOrgId, accept, userId) => {
-    console.log('***REPLY TO INVITE*****', subscriberOrgId, accept, userId);
     return new Promise((resolve, reject) => {
         let user;
         let subscriberOrg;
@@ -363,7 +363,6 @@ export const replyToInvite = (req, subscriberOrgId, accept, userId) => {
             subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId)
         )
             .then(([retrievedUser, retrievedSubscriberOrg, subscriberUser]) => {
-                console.log('***RETRIEVED ORG***', retrievedSubscriberOrg);
                 user = retrievedUser;
                 subscriberOrg = retrievedSubscriberOrg;
                 if (!user) {
