@@ -112,6 +112,13 @@ export class TeamMemberExistsError extends Error {
    }
 }
 
+export class TeamMemberNotExistsError extends Error {
+    constructor(...args) {
+        super(...args);
+        Error.captureStackTrace(this, TeamMemberExistsError);
+    }
+}
+
 export class TeamRoomExistsError extends Error {
    constructor(...args) {
       super(...args);
