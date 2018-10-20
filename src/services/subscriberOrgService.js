@@ -426,6 +426,7 @@ export const getOrganizationInfo = async (req, orgId) => {
     if (!orgAdmin) {
         throw new NoPermissionsError(req.user._id);
     }
+    const globalIntegrations = subscriberUser[0].integrations || {};
     const teams = await teamsTable.getTeamsWithTeamMembers(req, orgId);
     const resultTeams = _.map(teams, (val) => {
          return {
@@ -448,7 +449,7 @@ export const getOrganizationInfo = async (req, orgId) => {
     return {
         orgId,
         name: organization.name,
-        integrations: organization.integrations || {},
+        integrations: globalIntegrations,
         teams: resultTeams,
     };
 }
