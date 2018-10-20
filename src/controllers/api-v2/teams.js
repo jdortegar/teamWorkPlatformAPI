@@ -1,13 +1,14 @@
 import httpStatus from 'http-status';
 import * as teamSvc from '../../services/teamService';
-import * as userSvc from '../../services/userService';
 import {
     TeamExistsError,
     TeamNotExistError,
-    NoPermissionsError
+    NoPermissionsError,
+    TeamMemberNotExistsError
 } from '../../services/errors'
+import { updateTeamMembersIntegrations } from '../../repositories/db/teamMembersTable';
 
-export const updateTeam = async (req, res, next) => {
+export const updateTeam = async (req, res) => {
     try {
         const updatedTeam = await teamSvc.updateTeam(req, req.params.teamId, req.body, req.user._id);
         return res.status(200).json(updatedTeam);
@@ -30,6 +31,27 @@ export const updateTeam = async (req, res, next) => {
                 message: 'You do not have access rights to update this resource'
             });
         }
-        throw err;
+        return Promise.reject(err);
+    }
+}
+
+export const updateTeamMember = async (req, res)  => {
+    try {
+        const updatedTeamMember = await teamSvc.updateTeamMember(req, req.params.userId, req.params.teamId, req.body);
+        return res.json({
+            userId: updatedTeamMember.userId,
+            teamId: updatedTeamMember.teamId,
+            orgId: updatedTeamMember.subscriberOrgId,
+            role: updatedTeamMember.role,
+            active: updatedTeamMember.enabled
+        });
+    } catch (err) {
+        if (err instanceof TeamMemberNotExistsError) {
+            return res.status(httpStatus.NOT_FOUND).json({
+                error: 'Not Found',
+                message: 'Team Member not Found',
+            });
+        }
+        return Promise.reject(err);
     }
 }

@@ -10,7 +10,8 @@ import {
     TeamExistsError,
     TeamNotExistError,
     UserNotExistError,
-    TeamMemberExistsError
+    TeamMemberExistsError,
+    TeamMemberNotExistsError
 } from './errors';
 import InvitationKeys from '../repositories/InvitationKeys';
 import * as invitationsTable from '../repositories/db/invitationsTable';
@@ -162,7 +163,7 @@ export async function updateTeam(req, teamId, updateInfo, userId) {
         return updatedTeam;
 
     } catch (err) {
-        console.log(err);
+        return Promise.reject(err);
     }
 }
 
@@ -434,10 +435,26 @@ export const deactivateTeamMembers = async (req, teamId) => {
         try {
             await teamMembersTable.updateTeamMemberActive(req, member.teamMemberId, false);
         } catch (err) {
-            console.log(err)
+            return Promise.reject(err);
         }
     }
     if (teamMembers) {
         teamMembers.forEach(deactivateTeamMember);
+    }
+}
+
+export const updateTeamMember = async (req, userId, teamId, body) => {
+    try {
+        const teamMember = await teamMembersTable.getTeamMemberByTeamIdAndUserId(req, teamId, userId);
+        if (!teamMember) {
+            throw new TeamMemberNotExistsError(userId, teamId);
+        }
+        if (typeof body.active !== 'undefined') {
+            await teamMembersTable.updateTeamMemberActive(req, teamMember.teamMemberId, body.active);
+            teamMember.enabled = body.active;
+        }
+        return teamMember;
+    } catch (err) {
+        Promise.reject(err);
     }
 }
