@@ -8,7 +8,7 @@ export const getFiles = async (req, res) => {
    const { subscriberTeamId } = req.params.subscriberTeamId;
    var files = null;
 
-   if (subscriberTeamId) {
+   if (subscriberTeamId !== null && subscriberTeamId !== '' && subscriberTeamId !== 0) {
        files = await ckgTeamSvc.getFilesBySubscriberTeamId(neo4jSession, subscriberTeamId)
    } else {
     files = await ckgSvc.getFilesBySubscriberOrgId(neo4jSession, subscriberOrgId)
@@ -35,8 +35,8 @@ export const getFilesBySearchTerm = async (req, res) => {
 
     var files = null;
 
-    if (subscriberTeamId) {
-        files = await ckgSvc.getFilesBySubscriberOrgIdSearchTerm(neo4jSession, subscriberTeamId, searchTerm, caseInsensitive, andOperator)
+    if (subscriberTeamId !== null && subscriberTeamId !== '' && subscriberTeamId !== 0) {
+        files = await ckgTeamSvc.getFilesBySubscriberOrgIdSearchTerm(neo4jSession, subscriberTeamId, searchTerm, caseInsensitive, andOperator)
     } else {
         files = await ckgSvc.getFilesBySubscriberOrgIdSearchTerm(neo4jSession, subscriberOrgId, searchTerm, caseInsensitive, andOperator)
     }
