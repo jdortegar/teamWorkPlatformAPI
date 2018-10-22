@@ -36,7 +36,7 @@ export const getFilesBySearchTerm = async (req, res) => {
     var files = null;
 
     if (subscriberTeamId !== null && subscriberTeamId !== '' && subscriberTeamId !== 0) {
-        files = await ckgTeamSvc.getFilesBySubscriberOrgIdSearchTerm(neo4jSession, subscriberTeamId, searchTerm, caseInsensitive, andOperator)
+        files = await ckgTeamSvc.getFilesBySubscriberTeamIdSearchTerm(neo4jSession, subscriberTeamId, searchTerm, caseInsensitive, andOperator)
     } else {
         files = await ckgSvc.getFilesBySubscriberOrgIdSearchTerm(neo4jSession, subscriberOrgId, searchTerm, caseInsensitive, andOperator)
     }
