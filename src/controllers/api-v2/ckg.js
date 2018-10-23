@@ -59,11 +59,12 @@ export const getFiles = async (req, res) => {
     const andOperator = req.query.andOperator || 0;
     const pageSize = req.query.pageSize || 20;
     const search = req.query.query;
+    const teamId = req.params.teamId || 0;
     let url;
     if (search) {
-        url = `${config.apiEndpoint}/v1/ckg/getFilesBySearchTerm/${req.params.subscriberOrgId}/${search}/${caseInsensitive}/${andOperator}`;
+        url = `${config.apiEndpoint}/v1/ckg/getFilesBySearchTerm/${req.params.subscriberOrgId}/${teamId}/${search}/${caseInsensitive}/${andOperator}`;
     } else {
-        url = `${config.apiEndpoint}/v1/ckg/getFiles/${req.params.subscriberOrgId}`;
+        url = `${config.apiEndpoint}/v1/ckg/getFiles/${req.params.subscriberOrgId}/${teamId}`;
     }
     let files;
     try {
