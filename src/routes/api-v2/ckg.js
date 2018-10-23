@@ -7,7 +7,13 @@ const router = express.Router();
 router.route('/:subscriberOrgId/files')
     .get(ckg.getFiles);
 
+router.route('/:subscriberOrgId/teams/:teamId/files')
+    .get(ckg.getFiles);
+
 router.route('/:subscriberOrgId/files/:search')
+    .put(validateByApiVersion(apiVersionedValidators.queryFiles), ckg.putQueryFiles);
+
+router.route('/:subscriberOrgId/teams/:teamId/files/:search')
     .put(validateByApiVersion(apiVersionedValidators.queryFiles), ckg.putQueryFiles);
 
 export default router;

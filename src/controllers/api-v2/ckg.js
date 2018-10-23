@@ -59,11 +59,12 @@ export const getFiles = async (req, res) => {
     const andOperator = req.query.andOperator || 0;
     const pageSize = req.query.pageSize || 20;
     const search = req.query.query;
+    const teamId = req.params.teamId || 0;
     let url;
     if (search) {
-        url = `${config.apiEndpoint}/v1/ckg/getFilesBySearchTerm/${req.params.subscriberOrgId}/${search}/${caseInsensitive}/${andOperator}`;
+        url = `${config.apiEndpoint}/v1/ckg/getFilesBySearchTerm/${req.params.subscriberOrgId}/${teamId}/${search}/${caseInsensitive}/${andOperator}`;
     } else {
-        url = `${config.apiEndpoint}/v1/ckg/getFiles/${req.params.subscriberOrgId}`;
+        url = `${config.apiEndpoint}/v1/ckg/getFiles/${req.params.subscriberOrgId}/${teamId}`;
     }
     let files;
     try {
@@ -118,7 +119,8 @@ export const putQueryFiles = async (req, res) => {
     const caseSensitive = Number(req.query.caseSensitive) || 0
     const caseInsensitive = (caseSensitive == 0) ? 1 : 0;
     const andOperator = Number(req.query.andOperator) || 0;
-    const url = `${config.apiEndpoint}/v1/ckg/getFilesBySearchTerm/${req.params.subscriberOrgId}/${req.params.search}/${caseInsensitive}/${andOperator}`;
+    const teamId = req.params.teamId || 0;
+    const url = `${config.apiEndpoint}/v1/ckg/getFilesBySearchTerm/${req.params.subscriberOrgId}/${teamId}/${req.params.search}/${caseInsensitive}/${andOperator}`;
     let files;
     const pageSize = Number(req.query.pageSize) || 20;
     try {
