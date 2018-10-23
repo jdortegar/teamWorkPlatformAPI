@@ -50,7 +50,7 @@ const getFiles = async (query, neo4jSession, fileRecords=[]) => {
  };
 
  
- export const getFilesBysubscriberTeamIdSearchTerm = async (neo4jSession, subscriberTeamId, searchTerm, caseInsensitive, andOperator) => {
+ export const getFilesBySubscriberTeamIdSearchTerm = async (neo4jSession, subscriberTeamId, searchTerm, caseInsensitive, andOperator) => {
     var arr = null;
     var arrLen = null;
   
