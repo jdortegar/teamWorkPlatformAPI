@@ -74,7 +74,6 @@ export const createTeamNoCheck = (req, subscriberOrgId, teamInfo, subscriberUser
         teamsTable.createTeam(req, actualTeamId, subscriberOrgId, teamInfo.name, icon, primary, preferences)
             .then((createdTeam) => {
                 team = createdTeam;
-
                 return teamMembersTable.createTeamMember(req, teamMemberId, user.userId, actualTeamId, subscriberUserId, subscriberOrgId, Roles.admin);
             })
             .then(() => {
@@ -126,7 +125,7 @@ export function createTeam(req, subscriberOrgId, teamInfo, userId, teamId = unde
                     throw new TeamExistsError(teamInfo.name);
                 }
 
-                return createTeamNoCheck(req, subscriberOrgId, teamInfo, subscriberUserId, user, subscriberOrgAdminUserIds, teamId);
+                return createTeamNoCheck(req, subscriberOrgId, teamInfo, subscriberUserId, user[0], subscriberOrgAdminUserIds, teamId);
             })
             .then(team => resolve(team))
             .catch(err => reject(err));

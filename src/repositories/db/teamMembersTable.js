@@ -97,7 +97,6 @@ export const createTeamMember = (req, teamMemberId, userId, teamId, subscriberUs
                 lastModified: req.now.format()
             }
         };
-
         req.app.locals.docClient.put(params).promise()
             .then(result => resolve(result.$response.request.rawParams.Item))
             .catch(err => reject(err));
