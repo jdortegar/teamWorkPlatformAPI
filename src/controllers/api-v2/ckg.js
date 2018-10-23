@@ -118,7 +118,8 @@ export const putQueryFiles = async (req, res) => {
     const caseSensitive = Number(req.query.caseSensitive) || 0
     const caseInsensitive = (caseSensitive == 0) ? 1 : 0;
     const andOperator = Number(req.query.andOperator) || 0;
-    const url = `${config.apiEndpoint}/v1/ckg/getFilesBySearchTerm/${req.params.subscriberOrgId}/${req.params.search}/${caseInsensitive}/${andOperator}`;
+    const teamId = req.params.teamId || 0;
+    const url = `${config.apiEndpoint}/v1/ckg/getFilesBySearchTerm/${req.params.subscriberOrgId}/${teamId}/${req.params.search}/${caseInsensitive}/${andOperator}`;
     let files;
     const pageSize = Number(req.query.pageSize) || 20;
     try {

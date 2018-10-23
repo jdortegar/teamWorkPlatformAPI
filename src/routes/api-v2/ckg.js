@@ -10,4 +10,7 @@ router.route('/:subscriberOrgId/files')
 router.route('/:subscriberOrgId/files/:search')
     .put(validateByApiVersion(apiVersionedValidators.queryFiles), ckg.putQueryFiles);
 
+router.route('/:subscriberOrgId/team/:teamId/files/:search')
+    .put(validateByApiVersion(apiVersionedValidators.queryFiles), ckg.putQueryFiles);
+
 export default router;
