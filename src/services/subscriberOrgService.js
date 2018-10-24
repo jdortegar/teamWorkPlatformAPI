@@ -237,6 +237,7 @@ export const getSubscriberOrgUsers = (req, subscriberOrgId, userId = undefined) 
 };
 
 export const inviteSubscribers = (req, subscriberOrgId, subscriberUserIdEmails, userId) => {
+    
     return new Promise((resolve, reject) => {
         let subscriberOrg;
         let dbUser;
@@ -266,7 +267,7 @@ export const inviteSubscribers = (req, subscriberOrgId, subscriberUserIdEmails, 
                     if (userIdOrEmail.indexOf('@') >= 0) {
                         emails.add(userIdOrEmail);
                     } else {
-                        userIds.add(userIdOrEmail);
+                        throw new SubscriberOrgExistsError(userIdOrEmail);
                     }
                 });
 
@@ -292,10 +293,7 @@ export const inviteSubscribers = (req, subscriberOrgId, subscriberUserIdEmails, 
 
                 // Convert any found emails to existing users.
                 if (retrievedUsersByEmail.length > 0) {
-                    retrievedUsersByEmail.forEach((user) => {
-                        existingDbUsers.push(user);
-                        emails.delete(user.emailAddress);
-                    });
+                    throw new SubscriberOrgExistsError(retrievedUsersByEmail);
                 }
 
                 // Remove duplicates.
