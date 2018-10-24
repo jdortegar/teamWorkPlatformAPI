@@ -4,6 +4,7 @@ import config from '../config/env';
 import { NoPermissionsError, UserNotExistError, CustomerExistsError } from './errors';
 import { getRandomColor } from './util';
 import { hashPassword, passwordMatch } from '../models/user';
+import { deactivateTeamMembersByUserId } from './teamService';
 import invitationsKeys from '../repositories/InvitationKeys';
 import * as usersTable from '../repositories/db/usersTable';
 import * as messagesTable from '../repositories/db/messagesTable';
@@ -135,6 +136,9 @@ export const updateUser = (req, userId, updateInfo) => {
                 if (updateInfo.bookmarks) {
                     resolveBookmarks(req, user.bookmarks)
                         .then(resolvedBookmarks => userBookmarksUpdated(req, user, resolvedBookmarks));
+                }
+                if (updateInfo.active === false) {
+                    deactivateTeamMembersByUserId(req, userId);
                 }
             })
             .catch(err => reject(err));

@@ -442,6 +442,17 @@ export const deactivateTeamMembers = async (req, teamId) => {
     }
 }
 
+export const deactivateTeamMembersByUserId = async (req, userId) => {
+    try {
+        const teamMembers = await teamMembersTable.getTeamMembersByUserId(req, userId);
+        _.forEach(teamMembers, (val) => {
+            teamMembersTable.updateTeamMemberActive(req, val.teamMemberId, false);
+        });
+    } catch (err) {
+        console.log('ERROR: ', err);
+    }
+}
+
 export const updateTeamMember = async (req, userId, teamId, body) => {
     try {
         const teamMember = await teamMembersTable.getTeamMemberByTeamIdAndUserId(req, teamId, userId);

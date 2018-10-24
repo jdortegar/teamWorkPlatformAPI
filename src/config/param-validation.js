@@ -36,6 +36,7 @@ const validationSchemas = {
             defaultLocale: Joi.string().min(1),
             presenceStatus: Joi.string().min(1),
             bookmarks: Joi.object(),
+            active: Joi.boolean(),
             preferences: Joi.object().keys({
                 iconColor: Joi.string().min(1),
                 private: Joi.object()
