@@ -14,9 +14,10 @@ import * as awsMarketplaceSvc from './awsMarketplaceService';
 import * as subscriberOrgSvc from './subscriberOrgService';
 import * as subscriberUserTable from '../repositories/db/subscriberUsersTable';
 import * as invitationsTable from '../repositories/db/invitationsTable';
+import { sentInvitationStatus } from './messaging/presence';
 
 
-import { userCreated, userUpdated, userPrivateInfoUpdated, userBookmarksUpdated } from './messaging';
+import { userCreated, userUpdated, userPrivateInfoUpdated, userBookmarksUpdated, sentInvitationStatus } from './messaging';
 
 const getUserByEmail = (req, email) => {
     return new Promise((resolve, reject) => {
@@ -73,7 +74,8 @@ export const createUser = async (req, userInfo) => {
             // Here we need to create a normal user to suscriber user and reply the invite.
             const subscriberUserId = uuid.v4();
             const subscriberUser = await subscriberUserTable.createSubscriberUser(req, subscriberUserId, userId, invitations[0].subscriberOrgId, 'user', user.displayName);
-            await invitationsTable.updateInvitationsStateByInviteeEmail(req, user.emailAddress, invitationsKeys.subscriberOrgId, invitations[0].subscriberOrgId, 'ACCEPTED');
+            const changedInvitations = await invitationsTable.updateInvitationsStateByInviteeEmail(req, user.emailAddress, invitationsKeys.subscriberOrgId, invitations[0].subscriberOrgId, 'ACCEPTED');
+            sentInvitationStatus(changedInvitations);
             await req.app.locals.redis.delAsync(`${user.emailAddress}#pendingInvites`);
         } else {
             const subscriberOrgId = uuid.v4();
