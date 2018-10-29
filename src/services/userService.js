@@ -72,7 +72,7 @@ export const createUser = async (req, userInfo) => {
             const subscriberUserId = uuid.v4();
             const subscriberUser = await subscriberUserTable.createSubscriberUser(req, subscriberUserId, userId, invitations[0].subscriberOrgId, 'user', user.displayName);
             const changedInvitations = await invitationsTable.updateInvitationsStateByInviteeEmail(req, user.emailAddress, invitationsKeys.subscriberOrgId, invitations[0].subscriberOrgId, 'ACCEPTED');
-            sentInvitationStatus(changedInvitations);
+            sentInvitationStatus(req, changedInvitations);
             await req.app.locals.redis.delAsync(`${user.emailAddress}#pendingInvites`);
         } else {
             const subscriberOrgId = uuid.v4();

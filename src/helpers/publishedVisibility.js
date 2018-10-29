@@ -73,6 +73,7 @@ const publicUsers = (users) => {
 
 const publicInvitation = (invitation) => {
     // Use inviteeEmail only if a subscriberOrg invite.
+    console.log('******INVITATION******', invitation)
     const inviteeEmail = (invitation.teamId) ? undefined : invitation.inviteeEmail;
 
     const {
