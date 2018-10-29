@@ -27,7 +27,7 @@ export const integrateDropbox = (req, res, next) => {
 
 export const dropboxAccess = async (req, res) => {
     try {
-        const teamLevelVal = await req.app.locals.redis.getAsync(`${dro*pboxSvc.hashKey(req.query.state)}#teamLevel`) || 0;
+        const teamLevelVal = await req.app.locals.redis.getAsync(`${dropboxSvc.hashKey(req.query.state)}#teamLevel`) || 0;
         const teamLevel = teamLevelVal == 1;
         let redirectUri;
         if (teamLevel) {
