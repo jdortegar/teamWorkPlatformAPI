@@ -8,7 +8,7 @@ import * as teamMembersTable from '../repositories/db/teamMembersTable';
 
 const defaultExpiration = 30 * 60; // 30 minutes.
 
-const hashKey = (state) => {
+export const hashKey = (state) => {
     return `${state}#googleIntegrationState`;
 };
 
@@ -86,6 +86,7 @@ export const googleAccessResponse = async (req, { code, state, error }) => {
     const integrations = updateInfo.integrations;
     if (teamLevel) {
         await teamMembersTable.updateTeamMembersIntegrations(req, userId, subscriberId, integrations);
+
     } else {
         await subscriberUsersTable.updateSubscriberUserIntegrations(req, subscriber.subscriberUserId, integrations);
     }

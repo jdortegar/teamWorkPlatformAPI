@@ -25,25 +25,29 @@ export const integrateDropbox = (req, res, next) => {
         });
 };
 
-export const dropboxAccess = (req, res) => {
-    const redirectUri = webappIntegrationUri;
-    let subscriberOrgId;
-    dropboxSvc.dropboxAccessResponse(req, req.query)
-        .then((stateSubscriberOrgId) => {
-            subscriberOrgId = stateSubscriberOrgId;
-            res.redirect(`${redirectUri}/${subscriberOrgId}/dropbox/CREATED`);
-        })
-        .catch((err) => {
-            subscriberOrgId = subscriberOrgId || err.subscriberOrgId;
-            const realError = err._chainedError || err;
-            if (realError instanceof IntegrationAccessError) {
-                res.redirect(`${redirectUri}/${subscriberOrgId}/dropbox/FORBIDDEN`);
-            } else if (realError instanceof SubscriberOrgNotExistError) {
-                res.redirect(`${redirectUri}/${subscriberOrgId}/dropbox/NOT_FOUND`);
-            } else {
-                res.redirect(`${redirectUri}/${subscriberOrgId}/dropbox/INTERNAL_SERVER_ERROR`);
-            }
-        });
+export const dropboxAccess = async (req, res) => {
+    try {
+        const teamLevelVal = await req.app.locals.redis.getAsync(`${dro*pboxSvc.hashKey(req.query.state)}#teamLevel`) || 0;
+        const teamLevel = teamLevelVal == 1;
+        let redirectUri;
+        if (teamLevel) {
+            redirectUri = `${config.webappBaseUri}/app/teamIntegrations`;
+        } else {
+            redirectUri = `${config.webappBaseUri}/app/integrations`;
+        }
+        const subscriberId = await dropboxSvc.dropboxAccessResponse(req, req.query);
+        res.redirect(`${redirectUri}/${subscriberId}/dropbox/CREATED`);
+    } catch (err) {
+        const subscriberId = err.subscriberOrgId;
+        const realError = err._chainedError || err;
+        if (realError instanceof IntegrationAccessError) {
+            res.redirect(`${redirectUri}/${subscriberId}/dropbox/FORBIDDEN`);
+        } else if (realError instanceof SubscriberOrgNotExistError) {
+            res.redirect(`${redirectUri}/${subscriberId}/dropbox/NOT_FOUND`);
+        } else {
+            res.redirect(`${redirectUri}/${subscriberId}/dropbox/INERNAL_SERVER_ERROR`);
+        }
+    }
 };
 
 export const revokeDropbox = (req, res, next) => {
