@@ -14,7 +14,7 @@ export const aws = {
 };
 
 export const neo4j = {
-    /*
+   /*
       host: 'localhost',
       port: '7687',
       user: 'neo4j',
@@ -22,12 +22,11 @@ export const neo4j = {
       */
    // DEV
 
-  // host: '34.214.167.0',
-   host:'34.214.167.0',
+   // host: '34.214.167.0',
+   host: '34.214.167.0',
    port: '7687',
    user: 'neo4j',
    password: 'habla12345'
-
 };
 // export const dynamoDbEndpoint = 'http://localhost:8000';
 // export const dynamoDbEndpoint = 'https://dynamodb.us-west-2.amazonaws.com';
@@ -42,7 +41,6 @@ export const signedCookieSecret = '4fIv(E2@';
 
 export const loggerLevel = 'debug';
 export const loggerJson = false;
-
 
 export const boxClientId = 'csha3gfiw1ujah73e3t5sb43lthkbk6s';
 export const boxClientSecret = 'IiQlk9hzKwHLDpeZi002E32pQDQ61kim';
@@ -66,7 +64,8 @@ export const onedriveClientSecret = 'jrosbYCP12;[;)dqSOSW322';
 
 // export const salesforceClientId = '3MVG9zlTNB8o8BA3yxc0Y3VFQq5pZNVvejwizNZqqwXxlyUCCnf_4aHlR4QK5sP41BspCZ2Hjf56LoJfCJs08';
 // export const salesforceClientSecret = '1586929814816678095';
-export const salesforceClientId = '3MVG9CEn_O3jvv0z6aRiUukKKhckrgCvcTQYVLI_vhr7GEffhHcRoW0_mAXanBQtJU2aTwaM5aPE4WeQWo2X3';
+export const salesforceClientId =
+   '3MVG9CEn_O3jvv0z6aRiUukKKhckrgCvcTQYVLI_vhr7GEffhHcRoW0_mAXanBQtJU2aTwaM5aPE4WeQWo2X3';
 export const salesforceClientSecret = '1130800630408373913';
 // export const salesforceClientId = '3MVG9oNqAtcJCF.Hipaqdn8RbUN9YmDIby5aSVbkdExNKPvizD_nfOhxPVcYoqMLWfkmkwuWPXg==';
 // export const salesforceClientSecret = '6768971095996066050';
@@ -83,3 +82,19 @@ export const redshift = {
    port: 5439
 };
 export const surveyTable = 'dev_usage_survey';
+
+// Stripe Config
+
+export const stripeConfig = {
+   // Default country for the checkout form.
+   country: 'US',
+   currency: 'usd',
+
+   // Configuration for Stripe.
+   stripe: {
+      country: 'US',
+      apiVersion: '2017-06-05',
+      publishableKey: 'pk_test_LvwApQvFOvPMs0bUSNUnplbb',
+      secretKey: 'sk_test_kDDtLeXmTDqyHxkLiwbrBTQR'
+   }
+};

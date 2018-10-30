@@ -113,10 +113,10 @@ export class TeamMemberExistsError extends Error {
 }
 
 export class TeamMemberNotExistsError extends Error {
-    constructor(...args) {
-        super(...args);
-        Error.captureStackTrace(this, TeamMemberExistsError);
-    }
+   constructor(...args) {
+      super(...args);
+      Error.captureStackTrace(this, TeamMemberExistsError);
+   }
 }
 
 export class TeamRoomExistsError extends Error {
@@ -192,7 +192,6 @@ export class IntegrationAccessError extends Error {
       Error.captureStackTrace(this, IntegrationAccessError);
    }
 }
-
 
 export class BadIntegrationConfigurationError extends Error {
    _configuration;
