@@ -1,7 +1,7 @@
 // Stripe service for billing
-import _ from 'lodash';
 import config from '../../config/env';
-const stripe = require('stripe')(config.stripeConfig.stripe.secretKey);
+import Stripe from 'stripe';
+const stripe = Stripe(config.stripeConfig.stripe.secretKey);
 stripe.setApiVersion(config.stripeConfig.stripe.apiVersion);
 
 export const doPayment = async (req, res, next) => {

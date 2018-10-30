@@ -88,31 +88,13 @@ export const surveyTable = 'dev_usage_survey';
 export const stripeConfig = {
    // Default country for the checkout form.
    country: 'US',
-
-   // Store currency.
-   // Note: A few payment methods like iDEAL or SOFORT only work with euros,
-   // so it's a good common denominator to test both Elements and Sources.
    currency: 'usd',
 
    // Configuration for Stripe.
-   // API Keys: https://dashboard.stripe.com/account/apikeys
-   // Webhooks: https://dashboard.stripe.com/account/webhooks
-   // Storing these keys and secrets as environment variables is a good practice.
-   // You can fill them in your own `.env` file.
    stripe: {
-      // The two-letter country code of your Stripe account (required for Payment Request).
       country: 'US',
-      // API version to set for this app (Stripe otherwise uses your default account version).
       apiVersion: '2017-06-05',
-      // Use your test keys for development and live keys for real charges in production.
-      // For non-card payments like iDEAL, live keys will redirect to real banking sites.
       publishableKey: 'pk_test_LvwApQvFOvPMs0bUSNUnplbb',
-      secretKey: 'sk_test_kDDtLeXmTDqyHxkLiwbrBTQR',
-      // Setting the webhook secret is good practice in order to verify signatures.
-      // After creating a webhook, click to reveal details and find your signing secret.
-      webhookSecret: process.env.STRIPE_WEBHOOK_SECRET
-   },
-
-   // Server port.
-   port: 3000
+      secretKey: 'sk_test_kDDtLeXmTDqyHxkLiwbrBTQR'
+   }
 };

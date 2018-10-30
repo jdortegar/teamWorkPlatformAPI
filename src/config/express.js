@@ -78,7 +78,7 @@ app.use(
          /^\/(v\d+\/)?users\/passwordreset/,
          /^\/(v\d+\/)?passwordupdate/,
          /^\/(v\d+\/)?payments/,
-         /^\/(v\d+\/)?getcoupons/
+         /^\/(v\d+\/)?coupons/
       ]
    })
 );
@@ -97,7 +97,6 @@ app.use((req, res, next) => {
 
 // If error is not an instanceOf APIError or APIWarning, convert it.
 app.use((err, req, res, next) => {
-   console.log(err);
    let e = err;
    if (err instanceof expressValidation.ValidationError) {
       const unifiedErrorMessage = err.errors
@@ -119,8 +118,7 @@ app.use((err, req, res, next) => {
 
 app.use(loggerErrorMiddleware);
 
-app.use((err, req, res, next) => {
-   // eslint-disable-line no-unused-vars
+app.use((err, req, res, next) => {   // eslint-disable-line no-unused-vars
    res.status(err.status).json({
       status: err.status,
       message: err.message

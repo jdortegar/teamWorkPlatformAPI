@@ -6,7 +6,6 @@ export const doPayment = async (req, res) => {
       const payment = await stripeSvc.doPayment(req, req.body);
       return res.json(payment);
    } catch (err) {
-      console.log(err);
       return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
          error: 'Internal Server Error',
          message: 'Something went wrong'
@@ -19,7 +18,6 @@ export const getCoupons = async (req, res) => {
       const coupons = await stripeSvc.getcoupons(req, req.body);
       return res.json(coupons);
    } catch (err) {
-      console.log(err);
       return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
          error: 'Internal Server Error',
          message: 'Something went wrong'
