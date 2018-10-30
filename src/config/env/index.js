@@ -23,7 +23,7 @@ const config = {
       host: process.env.NEO4J_HOST || defaultConfig.neo4j.host,
       port: process.env.NEO4J_PORT || defaultConfig.neo4j.port,
       user: process.env.NEO4J_USER || defaultConfig.neo4j.user,
-      password: process.env.NEO4J_PASSWORD || defaultConfig.neo4j.password,
+      password: process.env.NEO4J_PASSWORD || defaultConfig.neo4j.password
    },
 
    dynamoDbEndpoint: process.env.DYNAMODB_ENDPOINT || defaultConfig.dynamoDbEndpoint,
@@ -81,11 +81,15 @@ const config = {
       host: process.env.REDSHIFT_HOST || defaultConfig.redshift.host,
       port: process.env.REDSHIFT_PORT || defaultConfig.redshift.port
    },
-   surveyTable: process.env.SURVEY_TABLE || defaultConfig.surveyTable
+   surveyTable: process.env.SURVEY_TABLE || defaultConfig.surveyTable,
+
+   stripeConfig: defaultConfig.stripeConfig
 };
 
-export const applyPropertiesFromDbToConfig = (propertiesFromDb) => {
-   propertiesFromDb.forEach((property) => { config[property.propertyName] = property.propertyValue; });
+export const applyPropertiesFromDbToConfig = propertiesFromDb => {
+   propertiesFromDb.forEach(property => {
+      config[property.propertyName] = property.propertyValue;
+   });
    return Promise.resolve();
 };
 

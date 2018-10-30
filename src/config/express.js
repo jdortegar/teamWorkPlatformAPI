@@ -10,7 +10,7 @@ import { APIError, APIWarning } from '../services/errors';
 import { googleSiteVerification } from '../integrations/google';
 import { errorMiddleware as loggerErrorMiddleware, preAuthMiddleware, postAuthMiddleware } from '../logger';
 import routes from '../routes';
-import routesV2 from '../routes/api-v2'
+import routesV2 from '../routes/api-v2';
 
 const app = express();
 app.enable('trust proxy');
@@ -59,25 +59,29 @@ app.use((req, res, next) => {
 });
 
 export const jwtMiddleware = jwt({ secret: config.jwtSecret });
-app.use(jwtMiddleware.unless({
-   path: [
-      /^\/(v\d+\/)?test/,
-      /^\/(v\d+\/)?users\/registerUser/,
-      /^\/(v\d+\/)?users\/validateEmail/,
-      /^\/(v\d+\/)?users\/createUser/,
-      /^\/(v\d+\/)?users\/forgotPassword/,
-      /^\/(v\d+\/)?users\/resetPassword/,
-      /^\/(v\d+\/)?auth\/registerAWSCustomer/,
-      /^\/(v\d+\/)?auth\/handleAWSEntitlementEvent/,
-      /^\/(v\d+\/)?auth\/login/,
-      /^\/(v\d+\/)?auth\/logout/,
-      /^\/(v\d+\/)?integrations\/.*\/access/,
-      /^\/(v\d+\/)?integrations\/.*\/app/,
-      /^\/(v\d+\/)?integrations\/.*\/webhooks/,
-      /^\/(v\d+\/)?users\/passwordreset/,
-      /^\/(v\d+\/)?passwordupdate/
-   ]
-}));
+app.use(
+   jwtMiddleware.unless({
+      path: [
+         /^\/(v\d+\/)?test/,
+         /^\/(v\d+\/)?users\/registerUser/,
+         /^\/(v\d+\/)?users\/validateEmail/,
+         /^\/(v\d+\/)?users\/createUser/,
+         /^\/(v\d+\/)?users\/forgotPassword/,
+         /^\/(v\d+\/)?users\/resetPassword/,
+         /^\/(v\d+\/)?auth\/registerAWSCustomer/,
+         /^\/(v\d+\/)?auth\/handleAWSEntitlementEvent/,
+         /^\/(v\d+\/)?auth\/login/,
+         /^\/(v\d+\/)?auth\/logout/,
+         /^\/(v\d+\/)?integrations\/.*\/access/,
+         /^\/(v\d+\/)?integrations\/.*\/app/,
+         /^\/(v\d+\/)?integrations\/.*\/webhooks/,
+         /^\/(v\d+\/)?users\/passwordreset/,
+         /^\/(v\d+\/)?passwordupdate/,
+         /^\/(v\d+\/)?payments/,
+         /^\/(v\d+\/)?getcoupons/
+      ]
+   })
+);
 
 app.use(postAuthMiddleware);
 
@@ -93,12 +97,14 @@ app.use((req, res, next) => {
 
 // If error is not an instanceOf APIError or APIWarning, convert it.
 app.use((err, req, res, next) => {
-    console.log(err);
+   console.log(err);
    let e = err;
    if (err instanceof expressValidation.ValidationError) {
-      const unifiedErrorMessage = err.errors.map((error) => {
-         return error.messages.join('. ');
-      }).join(' and ');
+      const unifiedErrorMessage = err.errors
+         .map(error => {
+            return error.messages.join('. ');
+         })
+         .join(' and ');
       e = new APIError(err.status, unifiedErrorMessage);
    } else if (err instanceof UnauthorizedError) {
       req.logger.warn(err.message);
@@ -113,7 +119,8 @@ app.use((err, req, res, next) => {
 
 app.use(loggerErrorMiddleware);
 
-app.use((err, req, res, next) => { // eslint-disable-line no-unused-vars
+app.use((err, req, res, next) => {
+   // eslint-disable-line no-unused-vars
    res.status(err.status).json({
       status: err.status,
       message: err.message
