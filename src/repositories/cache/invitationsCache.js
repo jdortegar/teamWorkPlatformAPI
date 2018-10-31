@@ -46,24 +46,22 @@ export const deleteInvitation = (req, email, invitationKey, invitationValue) => 
             if (invitations === null) {
                return undefined;
             }
-
             const filteredInvitations = invitations.filter((invite) => {
                let inviteFound = false;
                const inviteValue = invite[invitationKey];
                if ((inviteValue) && (inviteValue === invitationValue)) {
                   switch (invitationKey) {
                      case InvitationKeys.teamId:
-                        inviteFound = !(invite[InvitationKeys.teamId]);
+                        inviteFound = (invite[InvitationKeys.teamId]);
                         break;
                      case InvitationKeys.subscriberOrgId:
-                        inviteFound = !(invite[InvitationKeys.subscriberOrgId]);
+                        inviteFound = (invite[InvitationKeys.subscriberOrgId]);
                         break;
                      default:
                   }
                }
                return inviteFound;
             });
-
             if (filteredInvitations.length > 0) {
                invitation = filteredInvitations[filteredInvitations.length - 1];
                const hash = hashKey(email);

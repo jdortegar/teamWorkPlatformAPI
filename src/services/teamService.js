@@ -338,9 +338,9 @@ export function addUserToTeam(req, user, subscriberUserId, teamId, role) {
                 if (!team) {
                     throw new TeamNotExistError(teamId);
                 }
-                return teamMembersTable.createTeamMember(req, teamMemberId, user.userId, teamId, subscriberUserId, team.subscriberOrgId, role);
+                return teamMembersTable.createTeamMember(req, teamMemberId, user[0].userId, teamId, subscriberUserId, team.subscriberOrgId, role);
             })
-            .then(() => {
+            .then((member) => {
                 teamMemberAdded(req, team, user, role, teamMemberId);
                 resolve(teamMemberId);
             })
@@ -386,8 +386,7 @@ export function replyToInvite(req, teamId, accept, userId) {
                 if (teamMember) {
                     throw new TeamMemberExistsError(`teamId=${teamId}, userId=${userId}`);
                 }
-
-                return deleteInvitation(req, user.emailAddress, InvitationKeys.teamId, teamId);
+                return deleteInvitation(req, user[0].emailAddress, InvitationKeys.teamId, teamId);
             })
             .then((retrievedCachedInvitation) => {
                 cachedInvitation = retrievedCachedInvitation;
@@ -412,7 +411,7 @@ export function replyToInvite(req, teamId, accept, userId) {
             })
             .then(() => {
                 const state = (accept) ? 'ACCEPTED' : 'DECLINED';
-                return invitationsTable.updateInvitationsStateByInviteeEmail(req, user.emailAddress, InvitationKeys.teamId, teamId, state);
+                return invitationsTable.updateInvitationsStateByInviteeEmail(req, user[0].emailAddress, InvitationKeys.teamId, teamId, state);
             })
             .then((changedInvitations) => {
                 resolve();
