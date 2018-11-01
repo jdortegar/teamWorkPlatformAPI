@@ -412,6 +412,7 @@ export const replyToInvite = (req, subscriberOrgId, accept, userId) => {
 
 export const getOrganizationInfo = async (req, orgId) => {
     const organization = await subscriberOrgsTable.getSubscriberOrgBySubscriberOrgId(req, orgId);
+    console.log(organization, orgId);
     if (!organization) {
         throw new SubscriberOrgNotExistError(orgId);
     }

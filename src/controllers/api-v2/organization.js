@@ -14,6 +14,7 @@ export const getOrganizationInfo = async (req, res) => {
             });
         }
         if (err instanceof SubscriberOrgNotExistError) {
+            console.log(err);
             return res.status(httpStatus.NOT_FOUND).json({
                 error: 'Not Found',
                 message: 'Organization not found'

@@ -85,51 +85,26 @@ export const createTeamNoCheck = (req, subscriberOrgId, teamInfo, subscriberUser
     });
 };
 
-export function createTeam(req, subscriberOrgId, teamInfo, userId, teamId = undefined) {
-    return new Promise((resolve, reject) => {
-        let subscriberUserId;
-        let subscriberOrgAdminUserIds;
-
-        Promise.all([
-            subscriberOrgsTable.getSubscriberOrgBySubscriberOrgId(req, subscriberOrgId),
-            subscriberUsersTable.getSubscriberUsersBySubscriberOrgIdAndRole(req, subscriberOrgId, Roles.admin)
-        ])
-            .then(([subscriberOrg, subscriberUsers]) => {
-                if (!subscriberOrg) {
-                    throw new SubscriberOrgNotExistError(subscriberOrgId);
-                }
-                if (subscriberOrg.enabled === false) {
-                    throw new NotActiveError(subscriberOrgId);
-                }
-
-                if (subscriberUsers.length === 0) {
-                    throw new NoPermissionsError(subscriberOrgId);
-                }
-                subscriberOrgAdminUserIds = subscriberUsers.map((adminSubscriberUser) => {
-                    if (adminSubscriberUser.userId === userId) {
-                        subscriberUserId = adminSubscriberUser.subscriberUserId;
-                    }
-                    return adminSubscriberUser.userId;
-                });
-                if (!subscriberUserId) {
-                    throw new NoPermissionsError(subscriberOrgId);
-                }
-
-                return Promise.all([
-                    teamsTable.getTeamBySubscriberOrgIdAndName(req, subscriberOrgId, teamInfo.name),
-                    usersTable.getUserByUserId(req, userId)
-                ]);
-            })
-            .then(([existingTeam, user]) => {
-                if (existingTeam) {
-                    throw new TeamExistsError(teamInfo.name);
-                }
-
-                return createTeamNoCheck(req, subscriberOrgId, teamInfo, subscriberUserId, user[0], subscriberOrgAdminUserIds, teamId);
-            })
-            .then(team => resolve(team))
-            .catch(err => reject(err));
-    });
+export async function createTeam(req, subscriberOrgId, teamInfo, userId, teamId = undefined) {
+    try {
+        const subscriberOrg = await subscriberOrgsTable.getSubscriberOrgBySubscriberOrgId(req, subscriberOrgId);
+        if (!subscriberOrg) {
+            throw new SubscriberOrgNotExistError(subscriberOrgId);
+        }
+        if (subscriberOrg.enabled === false) {
+            throw new NotActiveError(subscriberOrgId);
+        }
+        const subscriberUser = await subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId);
+        const existingTeam = await teamsTable.getTeamBySubscriberOrgIdAndName(req, subscriberOrgId, teamInfo.name);
+        const user = await usersTable.getUserByUserId(req, userId);
+        if (existingTeam) {
+            throw new TeamExistsError(teamInfo.name);
+        }
+        
+        return await createTeamNoCheck(req, subscriberOrgId, teamInfo, subscriberUser.subscriberUserId, user[0], [userId], teamId);
+    } catch (err) {
+        return Promise.reject(err);
+    }
 }
 
 export async function updateTeam(req, teamId, updateInfo, userId) {
