@@ -54,7 +54,7 @@ const privateUser = (user) => {
 const publicUser = (user) => {
     const ret = privateUser(user);
     delete ret.username;
-    delete ret.email;
+    // delete ret.email;
     if ((ret.preferences) && (ret.preferences.private)) {
         delete ret.preferences.private;
     }
