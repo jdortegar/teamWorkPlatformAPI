@@ -5,6 +5,7 @@ import { composeAuthorizationUrl, exchangeAuthorizationCodeForAccessToken, getUs
 import { integrationsUpdated, boxWebhookEvent } from './messaging';
 import * as subscriberUsersTable from '../repositories/db/subscriberUsersTable';
 import * as subscriberOrgsTable from '../repositories/db/subscriberOrgsTable';
+import * as teamMembersTable from '../repositories/db/teamMembersTable';
 
 const defaultExpiration = 30 * 60; // 30 minutes.
 
@@ -12,119 +13,85 @@ const hashKey = (state) => {
    return `${state}#boxIntegrationState`;
 };
 
-const createRedisBoxIntegrationState = (req, userId, subscriberOrgId) => { // eslint-disable-line no-unused-vars
-   return new Promise((resolve, reject) => {
-      const state = uuid.v4();
-      req.app.locals.redis.hmsetAsync(hashKey(state), 'userId', userId, 'subscriberOrgId', subscriberOrgId, 'EX', defaultExpiration)
-         .then(() => resolve(state))
-         .catch(err => reject(err));
-   });
+const createRedisBoxIntegrationState = async (req, userId, subscriberOrgId, teamLevel) => { // eslint-disable-line no-unused-vars
+    const state = uuid.v4();
+    const subscriberField = (teamLevel == 1) ? 'teamId' : 'subscriberOrgId';
+    await req.app.locals.redis.setAsync(`${hashKey(state)}#teamLevel`, teamLevel, 'EX', defaultExpiration);
+    await req.app.locals.redis.hmsetAsync(hashKey(state), 'userId', userId, subscriberField, subscriberOrgId, 'EX', defaultExpiration);
+    return state;
 };
 
-const deleteRedisBoxIntegrationState = (req, state) => {
-   return new Promise((resolve, reject) => {
-      let userId;
-      let subscriberOrgId;
-
-      req.app.locals.redis.hmgetAsync(hashKey(state), 'userId', 'subscriberOrgId')
-         .then((redisResponse) => {
-            userId = redisResponse[0];
-            subscriberOrgId = redisResponse[1];
-            if ((userId === null) || (subscriberOrgId === null)) {
-               throw new IntegrationAccessError(subscriberOrgId, 'No OAuth 2 state found.');
-            }
-
-            return req.app.locals.redis.delAsync(hashKey(state));
-         })
-         .then(() => {
-            resolve({ userId, subscriberOrgId });
-         })
-         .catch(err => reject(err));
-   });
+const deleteRedisBoxIntegrationState = async (req, state, teamLevel) => {
+    const subscriberField = (teamLevel == 1) ? 'teamId' : 'subscriberOrgId';
+    const redisResponse = await req.app.locals.redis.hmgetAsync(hashKey(state), 'userId', subscriberField);
+    const userId = redisResponse[0];
+    const subscriberOrgId = redisResponse[1];
+    if (userId === null || subscriberOrgId === null) {
+        throw new IntegrationAccessError(subscriberOrgId,'No Oauth 2 state found.');
+    }
+    req.app.locals.redis.delAsync(hashKey(state));
+    req.app.locals.redis.delAsync(`${hashKey(state)}#teamLevel`);
+    const result = { userId };
+    result[subscriberField] = subscriberOrgId;
+    return result;    
 };
 
-
-export const integrateBox = (req, userId, subscriberOrgId) => {
-   return new Promise((resolve, reject) => {
-      subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId)
-         .then((subscriberUser) => {
-            if (!subscriberUser) {
-               throw new SubscriberOrgNotExistError(subscriberOrgId);
-            }
-
-            return createRedisBoxIntegrationState(req, userId, subscriberOrgId);
-         })
-         .then((state) => {
-            const boxUri = composeAuthorizationUrl(state);
-            resolve(boxUri);
-         })
-         .catch(err => reject(err));
-   });
+export const integrateBox = async (req, userId, subscriberOrgId) => {
+    let subscriber;
+    const teamLevelVal = req.query.teamLevel || 0;
+    if (typeof req.query.teamLevel !== 'undefined' && req.query.teamLevel == 1) {
+        subscriber = await teamMembersTable.getTeamMemberByTeamIdAndUserId(req, subscriberOrgId, userId);
+    } else {
+        subscriber = await subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId);
+    }
+    if (!subscriber) {
+        throw new SubscriberOrgNotExistError(subscriberOrgId);
+    }
+    const state = await createRedisBoxIntegrationState(req, userId, subscriberOrgId, teamLevelVal);
+    return composeAuthorizationUrl(state);
 };
 
-export const boxAccessResponse = (req, { code, state, error, error_description }) => {
-   if (error) {
-      return Promise.reject(new IntegrationAccessError(`${error}: ${error_description}`)); // eslint-disable-line camelcase
-   }
+export const boxAccessResponse = async (req, { code, state, error, error_description }) => {
+    if (error) {
+        throw new IntegrationAccessError(error);
+    }
+    const teamLevelVal = await req.app.locals.redis.getAsync(`${hashKey(state)}#teamLevel`) || 0;
+    const teamLevel = teamLevelVal == 1;
+    const authorizationCode = code;
+    const integrationContext = await deleteRedisBoxIntegrationState(req, state, teamLevelVal);
+    const userId = integrationContext.userId;
+    const subscriberOrgId = (typeof integrationContext.subscriberOrgId !== 'undefined') ? integrationContext.subscriberOrgId : integrationContext.teamId;
+    const tokenInfo = await exchangeAuthorizationCodeForAccessToken(authorizationCode);
 
-   const authorizationCode = code;
+    req.logger.debug(`Box access info for userId:${userId} = ${JSON.stringify(tokenInfo)}`);
+    let subscriber;
+    if (teamLevel) {
+        subscriber = await teamMembersTable.getTeamMemberByTeamIdAndUserId(req, subscriberOrgId, userId);
+    
+    } else {
+        subscriber = await subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId);
+    }
+    const userInfo = await getUserInfo(req, tokenInfo.access_token);
 
-   return new Promise((resolve, reject) => {
-      let integrationInfo;
-      let userId;
-      let subscriberOrgId;
-      let updateInfo;
+    if (!subscriber) {
+        throw new SubscriberOrgNotExistError(subscriberOrgId);
+    }
+    tokenInfo.userId = userInfo.id;
+    tokenInfo.expired = false;
+    const boxInfo = {
+        box: tokenInfo
+    };
+    const updateInfo = _.merge(subscriber, { integrations: boxInfo });
+    delete updateInfo.integrations.box.revoked;
+    const integrations = updateInfo.integrations;
+    if (teamLevel) {
+        await teamMembersTable.updateTeamMembersIntegrations(req, userId, subscriberOrgId, integrations);
 
-      deleteRedisBoxIntegrationState(req, state)
-         .then((integrationContext) => {
-            userId = integrationContext.userId;
-            subscriberOrgId = integrationContext.subscriberOrgId;
-
-            return exchangeAuthorizationCodeForAccessToken(authorizationCode);
-         })
-         .then((tokenInfo) => {
-            req.logger.debug(`Box access info for userId=${userId}/subscriberOrgId=${subscriberOrgId} = ${JSON.stringify(tokenInfo)}`);
-            integrationInfo = tokenInfo;
-            return Promise.all([
-               subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId),
-               getUserInfo(req, integrationInfo.accessToken)
-            ]);
-         })
-         .then((promiseResults) => {
-            const subscriberUser = promiseResults[0];
-            const userInfo = promiseResults[1];
-            if (!subscriberUser) {
-               throw new SubscriberOrgNotExistError(subscriberOrgId);
-            }
-
-            const { subscriberUserId } = subscriberUser;
-            integrationInfo.userId = userInfo.id;
-            integrationInfo.expired = false;
-            const boxInfo = {
-               box: integrationInfo
-            };
-            updateInfo = _.merge(subscriberUser, { integrations: boxInfo });
-            delete updateInfo.integrations.box.revoked;
-            const integrations = updateInfo.integrations;
-            return subscriberUsersTable.updateSubscriberUserIntegrations(req, subscriberUserId, integrations);
-         })
-         .then(() => {
-            integrationsUpdated(req, updateInfo);
-            resolve(subscriberOrgId);
-         })
-         .catch((err) => {
-            let integrationError;
-            if (err instanceof IntegrationAccessError) {
-               integrationError = err;
-            } else {
-               integrationError = new IntegrationAccessError();
-               integrationError._chainedError = err;
-            }
-
-            integrationError._subscriberOrgId = subscriberOrgId;
-            reject(integrationError);
-         });
-   });
+    } else {
+        await subscriberUsersTable.updateSubscriberUserIntegrations(req, subscriber.subscriberUserId, integrations);
+    }
+    integrationsUpdated(req, updateInfo);
+    return subscriberOrgId;        
 };
 
 export const revokeBox = (req, userId, subscriberOrgId) => {
