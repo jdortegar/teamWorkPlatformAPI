@@ -158,7 +158,7 @@ export const teamMemberAdded = (req, team, user, role, teamMemberId) => {
          ]);
       })
       .then(() => {
-         const mergedUser = _.merge(userId, { user: user.userId, role, teamMemberId });
+         const mergedUser = _.merge(user, { userId: user.userId, role, teamMemberId });
          _broadcastEvent(req, EventTypes.teamMemberAdded, publishByApiVersion(req, apiVersionedVisibility.publicTeamMember, teamId, mergedUser), [teamChannel]);
       })
       .catch(err => req.logger.error({ err }));
