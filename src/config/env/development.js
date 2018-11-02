@@ -93,7 +93,7 @@ export const stripeConfig = {
    // Configuration for Stripe.
    stripe: {
       country: 'US',
-      apiVersion: '2017-06-05',
+      apiVersion: '2018-10-31',
       publishableKey: 'pk_test_LvwApQvFOvPMs0bUSNUnplbb',
       secretKey: 'sk_test_kDDtLeXmTDqyHxkLiwbrBTQR'
    }

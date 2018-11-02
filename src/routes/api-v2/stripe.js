@@ -7,4 +7,7 @@ router.route('/payments').post(payment.doPayment);
 
 router.route('/coupons').get(payment.getCoupons);
 
+router.route('/subscriptions').patch(payment.updateSubscription);
+router.route('/subscriptions').delete(payment.deleteSubscription);
+
 export default router;

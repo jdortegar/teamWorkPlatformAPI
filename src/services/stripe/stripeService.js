@@ -71,9 +71,62 @@ export const doPayment = async (req, res, next) => {
    }
 };
 
-export const getcoupons = async (req, res) => {
+export const getCoupons = async (req, res) => {
    try {
       return await stripe.coupons.list();
+   } catch (err) {
+      // This is where you handle declines and errors.
+      // For the demo we simply set to failed.
+      Promise.reject(err);
+   }
+};
+
+export const updateSubscription = async (req, res, next) => {
+   const subscriptionUpdateData = req.body;
+   const subscriptionId = subscriptionUpdateData.subscriptionId;
+   const coupon = subscriptionUpdateData.promocode || null;
+   let stripeResponse;
+
+   try {
+      const subscription = await stripe.subscriptions.retrieve(subscriptionUpdateData.subscriptionId);
+
+      if (subscriptionUpdateData.subscriptionType === 'monthly') {
+         stripeResponse = stripe.subscriptions.update(subscriptionId, {
+            coupon: coupon,
+            items: [
+               {
+                  id: subscription.items.data[0].id,
+                  plan: 'plan_DsRNYJSVq6yPgh',
+                  quantity: subscriptionUpdateData.users
+               }
+            ]
+         });
+      } else if (subscriptionUpdateData.subscriptionType === 'annually') {
+         stripeResponse = stripe.subscriptions.update(subscriptionId, {
+            coupon: coupon,
+            items: [
+               {
+                  id: subscription.items.data[0].id,
+                  plan: 'plan_DsSgjJ4Mm9vnIR',
+                  quantity: subscriptionUpdateData.users
+               }
+            ]
+         });
+      }
+
+      return stripeResponse;
+   } catch (err) {
+      // This is where you handle declines and errors.
+      // For the demo we simply set to failed.
+      Promise.reject(err);
+   }
+};
+
+export const deleteSubscription = async (req, res) => {
+   const subscriptionId = req.body.subscriptionId;
+
+   try {
+      return await stripe.subscriptions.del(subscriptionId);
    } catch (err) {
       // This is where you handle declines and errors.
       // For the demo we simply set to failed.
