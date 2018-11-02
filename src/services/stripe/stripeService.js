@@ -56,7 +56,7 @@ export const doPayment = async (req, res, next) => {
             coupon: coupon,
             items: [
                {
-                  plan: 'plan_DsSooTYkPx1LbU',
+                  plan: 'plan_DtzToEv1gIBqa0',
                   quantity: paymentData.users
                }
             ]
