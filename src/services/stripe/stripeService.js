@@ -133,3 +133,13 @@ export const deleteSubscription = async (req, res) => {
       Promise.reject(err);
    }
 };
+
+export const getSubscription = async (req, subscriptionId) => {
+   try {
+      return await stripe.subscriptions.retrieve(subscriptionId);
+   } catch (err) {
+      // This is where you handle declines and errors.
+      // For the demo we simply set to failed.
+      Promise.reject(err);
+   }
+};

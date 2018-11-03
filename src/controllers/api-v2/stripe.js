@@ -48,3 +48,15 @@ export const deleteSubscription = async (req, res) => {
       });
    }
 };
+
+export const getSubscription = async (req, res) => {
+   try {
+      const subscription = await stripeSvc.getSubscription(req, req.params.subscriptionId);
+      return res.json(subscription);
+   } catch (err) {
+      return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+         error: 'Internal Server Error',
+         message: 'Something went wrong'
+      });
+   }
+};
