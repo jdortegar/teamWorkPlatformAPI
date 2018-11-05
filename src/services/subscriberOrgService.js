@@ -44,7 +44,7 @@ export const getUserSubscriberOrgs = (req, userId) => {
     });
 };
 
-export const createSubscriberOrgNoCheck = (req, subscriberOrgInfo, user, subscriberOrgId = undefined) => {
+export const createSubscriberOrgNoCheck = (req, subscriberOrgInfo, user, subscriberOrgId = undefined, stripeSubscriptionId = null) => {
     return new Promise((resolve, reject) => {
         const actualSubscriberOrgId = subscriberOrgId || uuid.v4();
         const icon = subscriberOrgInfo.icon || null;
@@ -57,7 +57,7 @@ export const createSubscriberOrgNoCheck = (req, subscriberOrgInfo, user, subscri
         const subscriberUserId = uuid.v4();
         const role = Roles.admin;
 
-        subscriberOrgsTable.createSubscriberOrg(req, actualSubscriberOrgId, subscriberOrgInfo.name, icon, preferences)
+        subscriberOrgsTable.createSubscriberOrg(req, actualSubscriberOrgId, subscriberOrgInfo.name, icon, preferences, stripeSubscriptionId)
             .then((createdSubscriberOrg) => {
                 subscriberOrg = createdSubscriberOrg;
                 return subscriberUsersTable.createSubscriberUser(req, subscriberUserId, user.userId, actualSubscriberOrgId, role, user.displayName);
@@ -72,7 +72,7 @@ export const createSubscriberOrgNoCheck = (req, subscriberOrgInfo, user, subscri
     });
 };
 
-export const createSubscriberOrg = (req, subscriberOrgInfo, userOrUserId, subscriberOrgId = undefined) => {
+export const createSubscriberOrg = (req, subscriberOrgInfo, userOrUserId, subscriberOrgId = undefined, stripeSubscriptionId = null) => {
     return new Promise((resolve, reject) => {
         subscriberOrgsTable.getSubscriberOrgByName(req, subscriberOrgInfo.name)
             .then((subscriberOrg) => {
@@ -85,7 +85,7 @@ export const createSubscriberOrg = (req, subscriberOrgInfo, userOrUserId, subscr
                 }
                 return userOrUserId;
             })
-            .then(user => createSubscriberOrgNoCheck(req, subscriberOrgInfo, user, subscriberOrgId))
+            .then(user => createSubscriberOrgNoCheck(req, subscriberOrgInfo, user, subscriberOrgId, stripeSubscriptionId))
             .then(subscriberOrg => resolve(subscriberOrg))
             .catch(err => reject(err));
     });
@@ -99,18 +99,18 @@ export const createSubscriberOrg = (req, subscriberOrgInfo, userOrUserId, subscr
  * @param subscriberOrgName
  * @param appendNumber (optional)
  */
-export const createSubscriberOrgUsingBaseName = (req, info, user, subscriberOrgId = undefined, appendNumber = undefined) => {
+export const createSubscriberOrgUsingBaseName = (req, info, user, subscriberOrgId = undefined,  stripeSubscriptionId = null, appendNumber = undefined) => {
     const tryInfo = {
         name: info.name + ((appendNumber) ? ` (${appendNumber})` : ''),
         preferences: info.preferences
     };
     return new Promise((resolve, reject) => {
-        createSubscriberOrg(req, tryInfo, user, subscriberOrgId)
+        createSubscriberOrg(req, tryInfo, user, subscriberOrgId, stripeSubscriptionId)
             .then(createdSubscriberOrg => resolve(createdSubscriberOrg))
             .catch((err) => {
                 if (err instanceof SubscriberOrgExistsError) {
                     const tryNumber = (appendNumber) ? appendNumber + 1 : 1;
-                    createSubscriberOrgUsingBaseName(req, info, user, subscriberOrgId, tryNumber)
+                    createSubscriberOrgUsingBaseName(req, info, user, subscriberOrgId, stripeSubscriptionId, tryNumber)
                         .then(createdSubscriberOrg => resolve(createdSubscriberOrg))
                         .catch(err2 => reject(err2));
                 } else {
@@ -412,7 +412,6 @@ export const replyToInvite = (req, subscriberOrgId, accept, userId) => {
 
 export const getOrganizationInfo = async (req, orgId) => {
     const organization = await subscriberOrgsTable.getSubscriberOrgBySubscriberOrgId(req, orgId);
-    console.log(organization, orgId);
     if (!organization) {
         throw new SubscriberOrgNotExistError(orgId);
     }

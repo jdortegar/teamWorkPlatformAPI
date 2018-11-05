@@ -15,6 +15,7 @@ import { apiVersionedVisibility, publishByApiVersion } from '../helpers/publishe
 */
 export const createReservation = (req, res) => {
     const email = req.body.email || '';
+    const stripeSubscriptionId = req.body.subscriptionId || null;
     const awsCustomerId = req.get(AWS_CUSTOMER_ID_HEADER_NAME);
 
     // Add new reservation to cache
@@ -39,6 +40,11 @@ export const createReservation = (req, res) => {
     if (awsCustomerId) {
         req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#awsCustomerId`, awsCustomerId);
     }
+
+    // If User comes from stripe
+   if (stripeSubscriptionId) {
+      req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#stripeSubscriptionId`, stripeSubscriptionId);
+   }
 };
 
 export const forgotPassword = (req, res) => {

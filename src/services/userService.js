@@ -77,7 +77,8 @@ export const createUser = async (req, userInfo) => {
         } else {
             const subscriberOrgId = uuid.v4();
             const subscriberOrgName = req.body.displayName;
-            await subscriberOrgSvc.createSubscriberOrgUsingBaseName(req, { name: subscriberOrgName }, user, subscriberOrgId);
+            const stripeSubscriptionId = await req.app.locals.redis.getAsync(`${config.redisPrefix}${emailAddress}#stripeSubscriptionId`);
+	    await subscriberOrgSvc.createSubscriberOrgUsingBaseName(req, { name: subscriberOrgName }, user, subscriberOrgId, stripeSubscriptionId);
         }
         userCreated(req, user);
         const awsCustomerId = await req.app.locals.redis.getAsync(`${config.redisPrefix}${emailAddress}#awsCustomerId`);
