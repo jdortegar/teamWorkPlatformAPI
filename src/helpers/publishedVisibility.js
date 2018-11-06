@@ -117,7 +117,7 @@ const publicInvitations = (invitations) => {
 
 const privateSubscriberOrg = (subscriberOrg) => {
     const subscriberOrgId = subscriberOrg.subscriberOrgId;
-    const { name, icon, enabled, preferences, created, lastModified } = subscriberOrg;
+    const { name, icon, enabled, preferences, created, lastModified, stripeSubscriptionId } = subscriberOrg;
     return {
         subscriberOrgId,
         name,
@@ -125,7 +125,8 @@ const privateSubscriberOrg = (subscriberOrg) => {
         enabled,
         preferences: _.cloneDeep(preferences),
         created,
-        lastModified
+        lastModified,
+        stripeSubscriptionId 
     };
 };
 

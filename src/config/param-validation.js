@@ -5,7 +5,8 @@ import validate from 'express-validation';
 const validationSchemas = {
     registerUser: {
         body: {
-            email: Joi.string().email().required()
+            email: Joi.string().email().required(),
+            subscriptionId: Joi.string()
         }
     },
     createUser: {
