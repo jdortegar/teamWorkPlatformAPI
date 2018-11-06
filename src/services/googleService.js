@@ -1,8 +1,10 @@
 import _ from 'lodash';
 import uuid from 'uuid';
+import axios from 'axios';
 import { IntegrationAccessError, SubscriberOrgNotExistError } from './errors';
 import { composeAuthorizationUrl, exchangeAuthorizationCodeForAccessToken, getUserInfo, revokeIntegration, validateWebhookMessage } from '../integrations/google';
 import { integrationsUpdated, googleWebhookEvent } from './messaging';
+import config from '../config/env';
 import * as subscriberUsersTable from '../repositories/db/subscriberUsersTable';
 import * as teamMembersTable from '../repositories/db/teamMembersTable';
 
@@ -95,36 +97,50 @@ export const googleAccessResponse = async (req, { code, state, error }) => {
 };
 
 export const revokeGoogle = async (req, userId, subscriberId) => {
-    const teamLevel = typeof req.query.teamLevel !== 'undefined' && req.query.teamLevel == 1;
-    userId = req.query.userId || userId;
-    let subscriber;
-
-    if (teamLevel) {
-
-        subscriber = await teamMembersTable.getTeamMemberByTeamIdAndUserId(req, subscriberId, userId);
-
-    }  else {
-        subscriber = await subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberId);
-    }
-    if (!subscriber) {
-        throw new SubscriberOrgNotExistError(subscriberId);
-    }
-    const { integrations } = subscriber;
-    const userAccessToken = (subscriber.integrations && subscriber.integrations.google) ? 
-        subscriber.integrations.google.access_token : undefined;
-    if (!userAccessToken) {
-        throw new IntegrationAccessError('Google integration deoesn\'t exist.');
-    }
-    integrations.google = { revoked: true };
-    let subscriberInfo;
-    if (teamLevel) {
-        subscriberInfo = teamMembersTable.updateTeamMembersIntegrations(req, userId, subscriberId, integrations);
-    } else {
-        subscriberInfo = await subscriberUsersTable.updateSubscriberUserIntegrations(req, subscriber.subscriberUserId, integrations);
-    }
+    try {
+        const teamLevel = typeof req.query.teamLevel !== 'undefined' && req.query.teamLevel == 1;
+        userId = req.query.userId || userId;
+        let subscriber;
     
-    await revokeIntegration(req, userAccessToken);
-    integrationsUpdated(req, subscriberInfo);        
+        if (teamLevel) {
+    
+            subscriber = await teamMembersTable.getTeamMemberByTeamIdAndUserId(req, subscriberId, userId);
+    
+        }  else {
+            subscriber = await subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberId);
+        }
+        if (!subscriber) {
+            throw new SubscriberOrgNotExistError(subscriberId);
+        }
+        const { integrations } = subscriber;
+        const userAccessToken = (subscriber.integrations && subscriber.integrations.google) ? 
+            subscriber.integrations.google.access_token : undefined;
+        if (!userAccessToken) {
+            throw new IntegrationAccessError('Google integration deoesn\'t exist.');
+        }
+        integrations.google = { revoked: true };
+        let subscriberInfo;
+        const revokeData = {
+            subscriberOrgId: subscriber.subscriberOrgId,
+            hablaUserId: userId,
+            source: 'google',
+            subscriberUserId: null,
+            teamId: null
+        };
+    
+        if (teamLevel) {
+            revokeData.teamId = subscriber.teamId;
+            subscriberInfo = teamMembersTable.updateTeamMembersIntegrations(req, userId, subscriberId, integrations);
+        } else {
+            revokeData.subscriberUserId = subscriber.subscriberUserId;
+            subscriberInfo = await subscriberUsersTable.updateSubscriberUserIntegrations(req, subscriber.subscriberUserId, integrations);
+        }
+        await axios.post(`${config.knowledgeApiEndpoint}/revoke/user`, revokeData);
+        await revokeIntegration(req, userAccessToken);
+        integrationsUpdated(req, subscriberInfo);        
+    } catch (err) {
+        Promise.reject(err);
+    }
 };
 
 export const webhookEvent = (req) => {
