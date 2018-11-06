@@ -1,5 +1,7 @@
 import axios from 'axios';
 import https from 'https';
+import fetch from 'isomorphic-fetch';
+import { Dropbox } from 'dropbox';
 import config from '../config/env';
 import { IntegrationAccessError } from '../services/errors';
 
@@ -64,32 +66,14 @@ const makeRevoke = (accessToken) => {
 };
 
 export const revokeIntegration = async (req, userAccessToken) => {
-    return Promise.resolve(); // TODO: Figure out how to revoke without errors.
-    // try {
-    //     const response = await makeRevoke(userAccessToken);
-    //     console.log('*** RESPONSE ***', response );
-    //     // const response = await axios.post('https://api.dropboxapi.com/1/disable_access_token', {
-    //     // const response = await axios({
-    //     //     method: 'post',
-    //     //     url: 'https://api.dropboxapi.com/2/auth/token/revoke',
-    //     //     headers: {
-    //     //         'Authorization': `Bearer ${userAccessToken}`,
-    //     //         'Content-Type': 'application/json'
-    //     //     },
-    //     //     data: ''
-    //     // });
-    //     // const response = await axios.post('https://api.dropboxapi.com/2/auth/token/revoke', '', {
-    //     //     headers: {
-    //     //         Authorization: `Bearer ${userAccessToken}`,
-    //     //         'Content-Type': 'text/plain; charset=dropbox-cors-hack'
-    //     //     }
-    //     // });
-    //     // console.log('****RESPONSE DATA***', response.status, response.data);
-    //     // if (response.status !== 200) {
-    //     //     throw new IntegrationAccessError(`Failed to revoke dropbox integration. ${JSON.stringify(response.data)}`)
-    //     // }
-    // } catch (err) {
-    //     // console.log('****ERROR DATA INTEGRATION', err.response.status, err.response.data);
-    //     throw new IntegrationAccessError(`Failed to revoke dropbox integration ${err}`);
-    // }
+    try {
+        const dropbox = new Dropbox({
+            accessToken: userAccessToken,
+            fetch
+        });
+        await  dropbox.authTokenRevoke();
+
+    } catch (err) {
+        Promise.reject(new IntegrationAccessError(`Failed to revoke dropbox integration. ${JSON.stringify(err)}`));
+    }
 };

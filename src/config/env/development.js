@@ -98,3 +98,5 @@ export const stripeConfig = {
       secretKey: 'sk_test_kDDtLeXmTDqyHxkLiwbrBTQR'
    }
 };
+
+export const knowledgeApiEndpoint = 'https://habla-be-api-dev.habla.ai';

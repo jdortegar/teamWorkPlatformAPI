@@ -83,7 +83,8 @@ const config = {
    },
    surveyTable: process.env.SURVEY_TABLE || defaultConfig.surveyTable,
 
-   stripeConfig: defaultConfig.stripeConfig
+   stripeConfig: defaultConfig.stripeConfig,
+   knowledgeApiEndpoint: process.env.KNOWLEDGE_API || defaultConfig.knowledgeApiEndpoint,
 };
 
 export const applyPropertiesFromDbToConfig = propertiesFromDb => {
@@ -145,6 +146,8 @@ export const applyEnvironmentToConfig = () => {
 
    config.dropboxClientId = process.env.DROPBOX_CLIENT_ID || config.dropboxClientId;
    config.dropboxClientSecret = process.env.DROPBOX_CLIENT_SECRET || config.dropboxClientSecret;
+   
+
 
    return Promise.resolve();
 };
