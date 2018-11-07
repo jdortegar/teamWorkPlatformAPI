@@ -4,151 +4,120 @@ import { IntegrationAccessError, SubscriberOrgNotExistError } from './errors';
 import { composeAuthorizationUrl, exchangeAuthorizationCodeForAccessToken, revokeIntegration } from '../integrations/salesforce';
 import { integrationsUpdated } from './messaging';
 import * as subscriberUsersTable from '../repositories/db/subscriberUsersTable';
+import * as teamMembersTable from '../repositories/db/teamMembersTable';
 
 const defaultExpiration = 30 * 60; // 30 minutes.
 
 const hashKey = (state) => {
-   return `${state}#salesforceIntegrationState`;
+    return `${state}#salesforceIntegrationState`;
 };
 
-const createRedisSalesforceIntegrationState = (req, userId, subscriberOrgId) => {
-   return new Promise((resolve, reject) => {
-      const state = uuid.v4();
-      req.app.locals.redis.hmsetAsync(hashKey(state), 'userId', userId, 'subscriberOrgId', subscriberOrgId, 'EX', defaultExpiration)
-         .then(() => resolve(state))
-         .catch(err => reject(err));
-   });
+const createRedisSalesforceIntegrationState = async (req, userId, subscriberOrgId, teamLevel) => {
+    const state = uuid.v4();
+    const subscriberField = (teamLevel == 1) ? 'teamId' : 'subscriberOrgId';
+    await req.app.locals.redis.setAsync(`${hashKey(state)}#teamLevel`, teamLevel, 'EX', defaultExpiration);
+    await req.app.locals.redis.hmsetAsync(hashKey(state), 'userId', userId, subscriberField, subscriberOrgId, 'EX', defaultExpiration);
+    return state;
 };
 
-const deleteRedisSalesforceIntegrationState = (req, state) => {
-   return new Promise((resolve, reject) => {
-      let userId;
-      let subscriberOrgId;
+const deleteRedisSalesforceIntegrationState = async (req, state,teamLevel) => {
+    const subscriberField = (teamLevel == 1) ? 'teamId' : 'subscriberOrgId';
+    const redisResponse = await req.app.locals.redis.hmgetAsync(hashKey(state), 'userId', subscriberField);
+    const userId = redisResponse[0];
+    const subscriberOrgId = redisResponse[1];
+    if (userId === null || subscriberOrgId === null) {
+        throw new IntegrationAccessError(subscriberOrgId,'No Oauth 2 state found.');
+    }
+    req.app.locals.redis.delAsync(hashKey(state));
+    req.app.locals.redis.delAsync(`${hashKey(state)}#teamLevel`);
+    const result = { userId };
+    result[subscriberField] = subscriberOrgId;
+    return result;        
+}
 
-      req.app.locals.redis.hmgetAsync(hashKey(state), 'userId', 'subscriberOrgId')
-         .then((redisResponse) => {
-            userId = redisResponse[0];
-            subscriberOrgId = redisResponse[1];
-            if ((userId === null) || (subscriberOrgId === null)) {
-               throw new IntegrationAccessError(subscriberOrgId, 'No OAuth 2 state found.');
-            }
-
-            return req.app.locals.redis.delAsync(hashKey(state));
-         })
-         .then(() => {
-            resolve({ userId, subscriberOrgId });
-         })
-         .catch(err => reject(err));
-   });
+export const integrateSalesforce = async (req, userId, subscriberOrgId) => {
+    let subscriber;
+    const teamLevelVal = req.query.teamLevel || 0;
+    if (typeof req.query.teamLevel !== 'undefined' && req.query.teamLevel == 1) {
+        subscriber = await teamMembersTable.getTeamMemberByTeamIdAndUserId(req, subscriberOrgId, userId);
+    } else {
+        subscriber = await subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId);
+    }
+    if (!subscriber) {
+        throw new SubscriberOrgNotExistError(subscriberOrgId);
+    }
+    const state = await createRedisSalesforceIntegrationState(req, userId, subscriberOrgId, teamLevelVal);
+    return composeAuthorizationUrl(state);
 };
 
+export const salesforceAccessResponse = async (req, { code, state, error }) => {
+    if (error) {
+        throw new IntegrationAccessError(error);
+    }
+    const teamLevelVal = await req.app.locals.redis.getAsync(`${hashKey(state)}#teamLevel`) || 0;
+    const teamLevel = teamLevelVal == 1;
+    const authorizationCode = code;
+    const integrationContext = await deleteRedisSalesforceIntegrationState(req, state, teamLevelVal);
+    const userId = integrationContext.userId;
+    const subscriberOrgId = (typeof integrationContext.subscriberOrgId !== 'undefined') ? integrationContext.subscriberOrgId : integrationContext.teamId;
+    const tokenInfo = await exchangeAuthorizationCodeForAccessToken(authorizationCode);
 
-export const integrateSalesforce = (req, userId, subscriberOrgId) => {
-   return new Promise((resolve, reject) => {
-      subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId)
-         .then((subscriberUser) => {
-            if (!subscriberUser) {
-               throw new SubscriberOrgNotExistError(subscriberOrgId);
-            }
+    req.logger.debug(`Salesforce access info for userId:${userId} = ${JSON.stringify(tokenInfo)}`);
+    let subscriber;
+    if (teamLevel) {
+        subscriber = await teamMembersTable.getTeamMemberByTeamIdAndUserId(req, subscriberOrgId, userId);
+    
+    } else {
+        subscriber = await subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId);
+    }
+    const userInfo = await getUserInfo(req, tokenInfo.access_token);
 
-            return createRedisSalesforceIntegrationState(req, userId, subscriberOrgId);
-         })
-         .then((state) => {
-            const salesforceUri = composeAuthorizationUrl(state);
-            resolve(salesforceUri);
-         })
-         .catch(err => reject(err));
-   });
-};
+    if (!subscriber) {
+        throw new SubscriberOrgNotExistError(subscriberOrgId);
+    }
+    tokenInfo.userId = userInfo.id;
+    tokenInfo.expired = false;
+    const salesforceInfo = {
+        salesforce: tokenInfo
+    };
+    const updateInfo = _.merge(subscriber, { integrations: salesforceInfo });
+    delete updateInfo.integrations.salesforce.revoked;
+    const integrations = updateInfo.integrations;
+    if (teamLevel) {
+        await teamMembersTable.updateTeamMembersIntegrations(req, userId, subscriberOrgId, integrations);
 
-export const salesforceAccessResponse = (req, { code, state, error, error_description }) => {
-   if (error) {
-      return Promise.reject(new IntegrationAccessError(`${error}: ${error_description}`)); // eslint-disable-line camelcase
-   }
-
-   const authorizationCode = code;
-
-   return new Promise((resolve, reject) => {
-      let integrationInfo;
-      let userId;
-      let subscriberOrgId;
-      let updateInfo;
-
-      deleteRedisSalesforceIntegrationState(req, state)
-         .then((integrationContext) => {
-            userId = integrationContext.userId;
-            subscriberOrgId = integrationContext.subscriberOrgId;
-
-            return exchangeAuthorizationCodeForAccessToken(authorizationCode);
-         })
-         .then((tokenInfo) => {
-            req.logger.debug(`Salesforce access info for userId=${userId}/subscriberOrgId=${subscriberOrgId} = ${JSON.stringify(tokenInfo)}`);
-            integrationInfo = tokenInfo;
-            return Promise.all([
-               subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId)
-            ]);
-         })
-         .then((subscriberUsers) => {
-            if ((!subscriberUsers) || (subscriberUsers.length < 1)) {
-               throw new SubscriberOrgNotExistError(subscriberOrgId);
-            }
-
-            const subscriberUser = subscriberUsers[0];
-            const { subscriberUserId } = subscriberUser;
-            integrationInfo.userId = integrationInfo.id;
-            integrationInfo.expired = false;
-            const salesforceInfo = {
-               salesforce: integrationInfo
-            };
-            updateInfo = _.merge(subscriberUser, { integrations: salesforceInfo });
-            delete updateInfo.integrations.salesforce.revoked;
-            const integrations = updateInfo.integrations;
-            return subscriberUsersTable.updateSubscriberUserIntegrations(req, subscriberUserId, integrations);
-         })
-         .then(() => {
-            integrationsUpdated(req, updateInfo);
-            resolve(subscriberOrgId);
-         })
-         .catch((err) => {
-            let integrationError;
-            if (err instanceof IntegrationAccessError) {
-               integrationError = err;
-            } else {
-               integrationError = new IntegrationAccessError();
-               integrationError._chainedError = err;
-            }
-
-            integrationError._subscriberOrgId = subscriberOrgId;
-            reject(integrationError);
-         });
-   });
+    } else {
+        await subscriberUsersTable.updateSubscriberUserIntegrations(req, subscriber.subscriberUserId, integrations);
+    }
+    integrationsUpdated(req, updateInfo);
+    return subscriberOrgId;
 };
 
 export const revokeSalesforce = (req, userId, subscriberOrgId) => {
-   return new Promise((resolve, reject) => {
-      subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId)
-         .then((subscriberUser) => {
-            if (!subscriberUser) {
-               throw new SubscriberOrgNotExistError(subscriberOrgId);
-            }
+    return new Promise((resolve, reject) => {
+        subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId)
+            .then((subscriberUser) => {
+                if (!subscriberUser) {
+                    throw new SubscriberOrgNotExistError(subscriberOrgId);
+                }
 
-            const { subscriberUserId, integrations } = subscriberUser;
-            const userAccessToken = ((subscriberUser.integrations) && (subscriberUser.integrations.salesforce)) ? subscriberUser.integrations.salesforce.access_token : undefined;
-            const promises = [];
+                const { subscriberUserId, integrations } = subscriberUser;
+                const userAccessToken = ((subscriberUser.integrations) && (subscriberUser.integrations.salesforce)) ? subscriberUser.integrations.salesforce.access_token : undefined;
+                const promises = [];
 
-            if (userAccessToken) {
-               integrations.salesforce = { revoked: true };
-               promises.push(subscriberUsersTable.updateSubscriberUserIntegrations(req, subscriberUserId, integrations));
-               promises.push(revokeIntegration(req, userAccessToken));
-            } else {
-               throw new IntegrationAccessError('Salesforce integration doesn\'t exist.');
-            }
-            return Promise.all(promises);
-         })
-         .then(([subscriberUserInfo]) => {
-            resolve();
-            integrationsUpdated(req, subscriberUserInfo);
-         })
-         .catch(err => reject(err));
-   });
+                if (userAccessToken) {
+                    integrations.salesforce = { revoked: true };
+                    promises.push(subscriberUsersTable.updateSubscriberUserIntegrations(req, subscriberUserId, integrations));
+                    promises.push(revokeIntegration(req, userAccessToken));
+                } else {
+                    throw new IntegrationAccessError('Salesforce integration doesn\'t exist.');
+                }
+                return Promise.all(promises);
+            })
+            .then(([subscriberUserInfo]) => {
+                resolve();
+                integrationsUpdated(req, subscriberUserInfo);
+            })
+            .catch(err => reject(err));
+    });
 };
