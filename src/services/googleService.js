@@ -137,7 +137,7 @@ export const revokeGoogle = async (req, userId, subscriberId) => {
         }
         await axios.post(`${config.knowledgeApiEndpoint}/revoke/user`, revokeData);
         await revokeIntegration(req, userAccessToken);
-        integrationsUpdated(req, subscriberInfo);        
+        integrationsUpdated(req, subscriberInfo);       
     } catch (err) {
         Promise.reject(err);
     }
