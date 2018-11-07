@@ -76,18 +76,12 @@ export const getUserInfo = (req, userAccessToken) => {
    });
 };
 
-export const revokeIntegration = (req, userAccessToken) => { // eslint-disable-line no-unused-vars
-   return Promise.resolve();
-   // Moved to AI layer, since they need to do some work before actually revoking
-   // return new Promise((resolve, reject) => {
-   //    sdk.revokeTokens(userAccessToken, (err) => {
-   //       if (err) {
-   //          reject(new IntegrationAccessError(`Failed to revoke box integration: ${err}`));
-   //       } else {
-   //          resolve();
-   //       }
-   //    });
-   // });
+export const revokeIntegration = async (req, userAccessToken) => {
+    try {
+        const status =  await sdk.revokeTokens(userAccessToken);
+    } catch (err) {
+        return Promise.reject(new IntegrationAccessError(`Failed to revoke dropbox integration: ${err}`));
+    }
 };
 
 export const validateWebhookMessage = (req) => {

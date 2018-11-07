@@ -2,6 +2,7 @@ import google from 'googleapis';
 import config from '../config/env';
 import { IntegrationAccessError } from '../services/errors';
 import axios from 'axios';
+import { type } from 'os';
 
 const clientId = config.googleClientId;
 const clientSecret = config.googleClientSecret;
@@ -83,7 +84,8 @@ export const revokeIntegration = async (req, userAccessToken) => { // eslint-dis
             throw new IntegrationAccessError(`Failed to revoke google integration. ${JSON.stringify(response.data)}`);
         }
     } catch (err) {
-        throw new IntegrationAccessError(`Failed to revoke google Integration. ${err}`);
+        const typedError = (err instanceof IntegrationAccessError) ? err : new IntegrationAccessError(`Failed to revoke google Integration. ${err}`)
+        return Promise.reject(typedError);
     }
 };
 
