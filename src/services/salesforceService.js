@@ -1,5 +1,7 @@
 import _ from 'lodash';
 import uuid from 'uuid';
+import axios from 'axios';
+import config from '../config/env';
 import { IntegrationAccessError, SubscriberOrgNotExistError } from './errors';
 import { composeAuthorizationUrl, exchangeAuthorizationCodeForAccessToken, revokeIntegration } from '../integrations/salesforce';
 import { integrationsUpdated } from './messaging';
@@ -93,31 +95,45 @@ export const salesforceAccessResponse = async (req, { code, state, error }) => {
     return subscriberOrgId;
 };
 
-export const revokeSalesforce = (req, userId, subscriberOrgId) => {
-    return new Promise((resolve, reject) => {
-        subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId)
-            .then((subscriberUser) => {
-                if (!subscriberUser) {
-                    throw new SubscriberOrgNotExistError(subscriberOrgId);
-                }
-
-                const { subscriberUserId, integrations } = subscriberUser;
-                const userAccessToken = ((subscriberUser.integrations) && (subscriberUser.integrations.salesforce)) ? subscriberUser.integrations.salesforce.access_token : undefined;
-                const promises = [];
-
-                if (userAccessToken) {
-                    integrations.salesforce = { revoked: true };
-                    promises.push(subscriberUsersTable.updateSubscriberUserIntegrations(req, subscriberUserId, integrations));
-                    promises.push(revokeIntegration(req, userAccessToken));
-                } else {
-                    throw new IntegrationAccessError('Salesforce integration doesn\'t exist.');
-                }
-                return Promise.all(promises);
-            })
-            .then(([subscriberUserInfo]) => {
-                resolve();
-                integrationsUpdated(req, subscriberUserInfo);
-            })
-            .catch(err => reject(err));
-    });
+export const revokeSalesforce = async (req, userId, subscriberOrgId) => {
+    try {
+        const teamLevel = typeof req.query.teamLevel !== 'undefined' && req.query.teamLevel == 1;
+        userId = req.query.userId || userId;
+        let subscriber;
+        if (teamLevel) {
+            subscriber = await teamMembersTable.getTeamMemberByTeamIdAndUserId(req, subscriberId, userId);
+        }  else {
+            subscriber = await subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberId);
+        }
+        if (!subscriber) {
+            throw new SubscriberOrgNotExistError(subscriberId);
+        }
+        const { integrations } = subscriber;
+        const userAccessToken = (subscriber.integrations && subscriber.integrations.salesforce) ?
+            subscriber.integrations.salesforce.access_token : undefined;
+        if (!userAccessToken) {
+            throw new IntegrationAccessError('Salesforce integration doesn\`t exist.');
+        }
+        integrations.salesforce = { revoked: true };
+        let subscriberInfo;
+        const revokeData = {
+            subscriberOrgId: subscriber.subscriberOrgId,
+            hablaUserId: userId,
+            source: 'salesforce',
+            subscriberUserId: null,
+            teamId: null
+        };
+        if (teamLevel) {
+            revokeData.teamId = subscriber.teamId;
+            subscriberInfo = teamMembersTable.updateTeamMembersIntegrations(req, userId, subscriberId, integrations);
+        } else {
+            revokeData.subscriberUserId = subscriber.subscriberUserId;
+            subscriberInfo = await subscriberUsersTable.updateSubscriberUserIntegrations(req, subscriber.subscriberUserId, integrations);
+        }
+        await axios.post(`${config.knowledgeApiEndpoint}/revoke/user`, revokeData);
+        await revokeIntegration(req, userAccessToken);
+        integrationsUpdated(req, subscriberInfo);
+    } catch (err) {
+        Promise.reject(err);
+    }
 };
