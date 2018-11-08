@@ -156,8 +156,6 @@ export const revokeOnedrive = async (req, userId, subscriberOrgId) => {
             throw new SubscriberOrgNotExistError(subscriberId);
         }
         const { integrations } = subscriber;
-        //
-        const { integrations } = subscriber;
         const userAccessToken = (subscriber.integrations && subscriber.integrations.onedrive) ? 
             subscriber.integrations.onedrive.access_token : undefined;
         if (!userAccessToken) {

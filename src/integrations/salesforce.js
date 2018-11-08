@@ -40,7 +40,7 @@ export const exchangeAuthorizationCodeForAccessToken = (authorizationCode) => {
     });
 };
 
-export const revokeIntegration = (req, userAccessToken) => {
+export const revokeIntegration = async (req, userAccessToken) => {
     try {
         const uri = `https://login.salesforce.com/services/oauth2/revoke?token=${userAccessToken}`;        
         const response = await axios.get(uri);

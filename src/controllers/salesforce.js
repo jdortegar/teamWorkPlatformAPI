@@ -24,7 +24,7 @@ export const integrateSalesforce = (req, res, next) => {
         });
 };
 
-export const salesforceAccess = (req, res) => {
+export const salesforceAccess = async (req, res) => {
     try {
         const teamLevelVal = await req.app.locals.redis.getAsync(`${salesforceSvc.hashKey(req.query.state)}#teamLevel`) || 0;
         const teamLevel = teamLevelVal == 1;

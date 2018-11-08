@@ -2,7 +2,7 @@ import httpStatus from 'http-status';
 import config from '../config/env';
 import * as onedriveSvc from '../services/onedriveService';
 import { APIError, APIWarning, IntegrationAccessError, SubscriberOrgNotExistError } from '../services/errors';
-onedriveSvc
+
 export const integrateOnedrive = (req, res, next) => {
     const userId = req.user._id;
     const subscriberOrgId = req.params.subscriberOrgId;
@@ -24,7 +24,7 @@ export const integrateOnedrive = (req, res, next) => {
         });
 };
 
-export const onedriveAccess = (req, res) => {
+export const onedriveAccess = async (req, res) => {
     try {
         const teamLevelVal = await req.app.locals.redis.getAsync(`${onedriveSvc.hashKey(req.query.state)}#teamLevel`) || 0;
         const teamLevel = teamLevelVal == 1;
