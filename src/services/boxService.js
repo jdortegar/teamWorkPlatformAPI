@@ -11,7 +11,7 @@ import * as teamMembersTable from '../repositories/db/teamMembersTable';
 
 const defaultExpiration = 30 * 60; // 30 minutes.
 
-const hashKey = (state) => {
+export const hashKey = (state) => {
     return `${state}#boxIntegrationState`;
 };
 
