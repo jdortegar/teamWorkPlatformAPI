@@ -27,7 +27,7 @@ export const integrateBox = (req, res, next) => {
 
 export const boxAccess = async (req, res) => {
     try {
-        const teamLevelVal = await req.app.locals.redis.getAsync(`${googleSvc.hashKey(req.query.state)}#teamLevel`) || 0;
+        const teamLevelVal = await req.app.locals.redis.getAsync(`${boxSvc.hashKey(req.query.state)}#teamLevel`) || 0;
         const teamLevel = teamLevelVal == 1;
         let redirectUri;
         if (teamLevel) {

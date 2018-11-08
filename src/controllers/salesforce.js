@@ -3,8 +3,6 @@ import config from '../config/env';
 import * as salesforceSvc from '../services/salesforceService';
 import { APIError, APIWarning, IntegrationAccessError, SubscriberOrgNotExistError } from '../services/errors';
 
-const webappIntegrationUri = `${config.webappBaseUri}/app/integrations`;
-
 export const integrateSalesforce = (req, res, next) => {
     const userId = req.user._id;
     const subscriberOrgId = req.params.subscriberOrgId;
@@ -28,7 +26,7 @@ export const integrateSalesforce = (req, res, next) => {
 
 export const salesforceAccess = (req, res) => {
     try {
-        const teamLevelVal = await req.app.locals.redis.getAsync(`${googleSvc.hashKey(req.query.state)}#teamLevel`) || 0;
+        const teamLevelVal = await req.app.locals.redis.getAsync(`${salesforceSvc.hashKey(req.query.state)}#teamLevel`) || 0;
         const teamLevel = teamLevelVal == 1;
         let redirectUri;
         if (teamLevel) {
