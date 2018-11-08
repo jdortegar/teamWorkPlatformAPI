@@ -1,15 +1,23 @@
 // Stripe service for billing
 import config from '../../config/env';
 import Stripe from 'stripe';
+import { SubscriberUserExistsError } from '../../services/errors';
+import * as usersTable from '../../repositories/db/usersTable';
 const stripe = Stripe(config.stripeConfig.stripe.secretKey);
 stripe.setApiVersion(config.stripeConfig.stripe.apiVersion);
 
 export const doPayment = async (req, res, next) => {
-   // subscripber data
+   // Subscripber data
    let paymentData = req.body;
-
-   // Create customer
+   // Get customer email
    const customerEmail = paymentData.email;
+
+   // validate if email exists
+   const existingUser = await usersTable.getUserByEmailAddress(req, customerEmail);
+   if (existingUser) {
+      throw new SubscriberUserExistsError(customerEmail);
+   }
+
    // Encrypted credit crad data
    const token = paymentData.stripeToken;
    // Amount to charge in cents
