@@ -65,8 +65,8 @@ export const onedriveClientSecret = 'bxzwNVL89)!gssEEKD812^=';
 // export const salesforceClientId = '3MVG9zlTNB8o8BA3yxc0Y3VFQq5pZNVvejwizNZqqwXxlyUCCnf_4aHlR4QK5sP41BspCZ2Hjf56LoJfCJs08';
 // export const salesforceClientSecret = '1586929814816678095';
 export const salesforceClientId =
-   '3MVG9CEn_O3jvv0z6aRiUukKKhckrgCvcTQYVLI_vhr7GEffhHcRoW0_mAXanBQtJU2aTwaM5aPE4WeQWo2X3';
-export const salesforceClientSecret = '1130800630408373913';
+   '3MVG9oNqAtcJCF.Ea6OlRa89hxdSbH_QlHqGyqB099ZQ9N1vzqLHC9fMdElFKXDDsh7AUHI2QKhpgb4oowUqa';
+export const salesforceClientSecret = '3843359686979533442';
 // export const salesforceClientId = '3MVG9oNqAtcJCF.Hipaqdn8RbUN9YmDIby5aSVbkdExNKPvizD_nfOhxPVcYoqMLWfkmkwuWPXg==';
 // export const salesforceClientSecret = '6768971095996066050';
 
