@@ -42,8 +42,8 @@ export const signedCookieSecret = '4fIv(E2@';
 export const loggerLevel = 'debug';
 export const loggerJson = false;
 
-export const boxClientId = 'csha3gfiw1ujah73e3t5sb43lthkbk6s';
-export const boxClientSecret = 'IiQlk9hzKwHLDpeZi002E32pQDQ61kim';
+export const boxClientId = 'vxgmdcz8mdmi6c34r16ds7luymbsesz9';
+export const boxClientSecret = 'apOslMTxN3qidF3PTSkVuwLY4kdHPWPn';
 // export const boxClientId = 'a666hm00w8qtw6cuxutbb9et7bxvso7j'; // ngrok
 // export const boxClientSecret = 'KdRfL9bePDT4BnhYGTWQX7Uukfn7ygRU'; // ngrok
 export const boxWebhooksPrimaryKey = 'fWo4rJNBbVeSpQ0llAdiM5GnDer1CPLE';
