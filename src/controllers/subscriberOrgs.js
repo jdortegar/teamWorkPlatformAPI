@@ -10,7 +10,8 @@ import {
 	SubscriberOrgExistsError,
 	SubscriberOrgNotExistError,
 	UserNotExistError,
-	SubscriberUserExistsError
+	SubscriberUserExistsError,
+	UserLimitReached,
 } from '../services/errors';
 
 export const getSubscriberOrgs = (req, res, next) => {
@@ -102,6 +103,12 @@ export const inviteSubscribers = (req, res, next) => {
 					error: 'Conflict',
 					message: 'User already exists.'
             	})
+			} else if (err instanceof UserLimitReached) { 
+				return res.status(httpStatus.FORBIDDEN).json({
+					error: 'Forbidden',
+					type: 'UserLimitReached',
+					message: 'Max limit of invitation Reached.'
+				});
 			} else {
 				next(new APIError(httpStatus.INTERNAL_SERVER_ERROR, err));
 			}

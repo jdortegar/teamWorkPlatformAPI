@@ -3,7 +3,7 @@ import uuid from 'uuid';
 import app from '../config/express';
 import config from '../config/env';
 import * as mailer from '../helpers/mailer';
-import { APIError, APIWarning, NoPermissionsError, UserNotExistError } from '../services/errors';
+import { APIError, APIWarning, NoPermissionsError, UserNotExistError, UserLimitReached } from '../services/errors';
 import * as userSvc from '../services/userService';
 import { AWS_CUSTOMER_ID_HEADER_NAME } from './auth';
 import { apiVersionedVisibility, publishByApiVersion } from '../helpers/publishedVisibility';
@@ -17,6 +17,7 @@ export const createReservation = (req, res) => {
     const email = req.body.email || '';
     const stripeSubscriptionId = req.body.subscriptionId || null;
     const awsCustomerId = req.get(AWS_CUSTOMER_ID_HEADER_NAME);
+    const userLimit = req.body.userLimit || 5;
 
     // Add new reservation to cache
 
@@ -45,6 +46,7 @@ export const createReservation = (req, res) => {
    if (stripeSubscriptionId) {
       req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#stripeSubscriptionId`, stripeSubscriptionId);
    }
+   req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#userLimit`, userLimit);
 };
 
 export const forgotPassword = (req, res) => {
@@ -152,6 +154,12 @@ export const createUser = (req, res, next) => {
         .catch((err) => {
             if (err instanceof NoPermissionsError) {
                 next(new APIWarning(httpStatus.FORBIDDEN, err));
+            } else if (err instanceof UserLimitReached) {
+                return res.status(httpStatus.FORBIDDEN).json({
+                    error: 'Forbidden',
+                    type: 'UserLimitReached',
+                    message: 'Max Limit of user Reached',
+                })
             } else {
                 next(new APIError(httpStatus.SERVICE_UNAVAILABLE, err));
             }
