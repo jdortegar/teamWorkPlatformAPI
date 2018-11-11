@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import uuid from 'uuid';
 import config from '../config/env';
-import { NoPermissionsError, UserNotExistError, CustomerExistsError } from './errors';
+import { NoPermissionsError, UserNotExistError, CustomerExistsError, UserLimitReached } from './errors';
 import { getRandomColor } from './util';
 import { hashPassword, passwordMatch } from '../models/user';
 import { deactivateTeamMembersByUserId } from './teamService';
@@ -14,6 +14,7 @@ import * as awsMarketplaceSvc from './awsMarketplaceService';
 import * as subscriberOrgSvc from './subscriberOrgService';
 import * as subscriberUserTable from '../repositories/db/subscriberUsersTable';
 import * as invitationsTable from '../repositories/db/invitationsTable';
+import * as subscriberOrgsTable from '../repositories/db/subscriberOrgsTable';
 import { userCreated, userUpdated, userPrivateInfoUpdated, userBookmarksUpdated, sentInvitationStatus } from './messaging';
 
 const getUserByEmail = (req, email) => {
@@ -69,6 +70,12 @@ export const createUser = async (req, userInfo) => {
         const invitations = await getInvitations(req, emailAddress);
         if (invitations instanceof Array && invitations.length > 0) {
             // Here we need to create a normal user to suscriber user and reply the invite.
+            const organization = await subscriberOrgsTable.getSubscriberOrgBySubscriberOrgId(req, invitations[0].subscriberOrgId);
+            const userLimit = organization.userLimit || 5;
+            const orgActiveUsers = await subscriberOrgSvc.getOrganizationActiveUsers(req, organization.subscriberOrgId);
+            if (userLimit <= orgActiveUsers.length) {
+                throw new UserLimitReached(userLimit);
+            }
             const subscriberUserId = uuid.v4();
             const subscriberUser = await subscriberUserTable.createSubscriberUser(req, subscriberUserId, userId, invitations[0].subscriberOrgId, 'user', user.displayName);
             const changedInvitations = await invitationsTable.updateInvitationsStateByInviteeEmail(req, user.emailAddress, invitationsKeys.subscriberOrgId, invitations[0].subscriberOrgId, 'ACCEPTED');
@@ -78,7 +85,8 @@ export const createUser = async (req, userInfo) => {
             const subscriberOrgId = uuid.v4();
             const subscriberOrgName = req.body.displayName;
             const stripeSubscriptionId = await req.app.locals.redis.getAsync(`${config.redisPrefix}${emailAddress}#stripeSubscriptionId`);
-	    await subscriberOrgSvc.createSubscriberOrgUsingBaseName(req, { name: subscriberOrgName }, user, subscriberOrgId, stripeSubscriptionId);
+            const userLimit = await req.app.locals.redis.getAsync(`${config.redisPrefix}${emailAddress}#userLimit`) || 5;
+	        await subscriberOrgSvc.createSubscriberOrgUsingBaseName(req, { name: subscriberOrgName }, user, subscriberOrgId, stripeSubscriptionId, userLimit);
         }
         userCreated(req, user);
         const awsCustomerId = await req.app.locals.redis.getAsync(`${config.redisPrefix}${emailAddress}#awsCustomerId`);
