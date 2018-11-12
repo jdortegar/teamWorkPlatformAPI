@@ -107,7 +107,7 @@ export const inviteSubscribers = (req, res, next) => {
 				return res.status(httpStatus.FORBIDDEN).json({
 					error: 'Forbidden',
 					type: 'UserLimitReached',
-					message: 'Max limit of invitation Reached.'
+					message: `Max limit of  ${err.userLimit} invitation Reached.`
 				});
 			} else {
 				next(new APIError(httpStatus.INTERNAL_SERVER_ERROR, err));

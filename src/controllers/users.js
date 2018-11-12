@@ -158,7 +158,7 @@ export const createUser = (req, res, next) => {
                 return res.status(httpStatus.FORBIDDEN).json({
                     error: 'Forbidden',
                     type: 'UserLimitReached',
-                    message: 'Max Limit of user Reached',
+                    message: `Max Limit of ${err.userLimit} user Reached`,
                 })
             } else {
                 next(new APIError(httpStatus.SERVICE_UNAVAILABLE, err));
