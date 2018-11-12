@@ -85,8 +85,9 @@ export class SubscriberUserExistsError extends Error {
 }
 
 export class UserLimitReached extends Error {
-    constructor(...args) {
+    constructor(userLimit, ...args) {
         super(...args);
+        this.userLimit = userLimit;
         Error.captureStackTrace(this, UserLimitReached);
     }
 }
