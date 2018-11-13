@@ -71,7 +71,7 @@ export const getFiles = async (req, res) => {
         files = await getFileCollection(url, req.app.locals.redis, req.headers.authorization);
     } catch (err) {
         if (typeof err.response !== 'undefined') {
-            return res.status(err.respnonse.status).json({ error: err.response.data });
+            return res.status(err.response.status).json({ error: err.response.data });
         }
         return res.status(500).json({ error: 'Something went wrong' });
     }
