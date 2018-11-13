@@ -74,16 +74,16 @@ export const createTeamNoCheck = (req, subscriberOrgId, teamInfo, subscriberUser
 
         teamsTable.createTeam(req, actualTeamId, subscriberOrgId, teamInfo.name, icon, primary, preferences)
             .then((createdTeam) => {
-                team = createdTeam;
-                return teamMembersTable.createTeamMember(req, teamMemberId, user.userId, actualTeamId, subscriberUserId, subscriberOrgId, Roles.admin);
+               team = createdTeam;
+               return teamMembersTable.createTeamMember(req, teamMemberId, user.userId, actualTeamId, subscriberUserId, subscriberOrgId, Roles.admin);
             })
             .then(() => {
-                teamCreated(req, team, teamAdminUserIds);
-                teamMemberAdded(req, team, user, role, teamMemberId);
+               teamCreated(req, team, teamAdminUserIds);
+               teamMemberAdded(req, team, user, role, teamMemberId);
 
-		return conversationSvc.createConversationNoCheck(req, subscriberOrgId, actualTeamId, user.userId, teamAdminUserIds);
+               return conversationSvc.createConversationNoCheck(req, subscriberOrgId, actualTeamId, user.userId, teamAdminUserIds);
             })
-	    .then(() => {
+            .then(() => {
                 resolve(team);
             })
             .catch(err => reject(err));
