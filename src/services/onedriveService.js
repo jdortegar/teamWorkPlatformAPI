@@ -5,6 +5,7 @@ import { IntegrationAccessError, SubscriberOrgNotExistError } from './errors';
 import { composeAuthorizationUrl, exchangeAuthorizationCodeForAccessToken, getUserInfo, revokeIntegration } from '../integrations/onedrive';
 import { integrationsUpdated } from './messaging';
 import * as subscriberUsersTable from '../repositories/db/subscriberUsersTable';
+import * as teamMembersTable from '../repositories/db/teamMembersTable';
 
 const defaultExpiration = 5 * 60; // 5 minutes.
 
@@ -30,15 +31,6 @@ const createRedisOnedriveIntegrationState = async (req, userId, subscriberId, te
     } catch (err) {
         return Promise.reject(err);
     }
-    // return new Promise((resolve, reject) => {
-    //     const state = deduceState(req);
-    //     req.app.locals.redis.hmsetAsync(hashKey(state),
-    //         'userId', userId,
-    //         'subscriberOrgId', subscriberOrgId,
-    //         'EX', defaultExpiration)
-    //         .then(() => resolve(state))
-    //         .catch(err => reject(err));
-    // });
 };
 
 const deleteRedisOnedriveIntegrationState = async (req, teamLevel) => {
@@ -62,30 +54,6 @@ const deleteRedisOnedriveIntegrationState = async (req, teamLevel) => {
     } catch (err) {
         return Promise.reject(err);
     }
-    // return new Promise((resolve, reject) => {
-    //     const state = deduceState(req);
-    //     let userId;
-    //     let subscriberOrgId;
-
-    //     req.app.locals.redis.hmgetAsync(hashKey(state), 'userId', 'subscriberOrgId')
-    //         .then((redisResponse) => {
-    //             userId = redisResponse[0];
-    //             subscriberOrgId = redisResponse[1];
-    //             if ((userId === null) || (subscriberOrgId === null)) {
-    //                 throw new IntegrationAccessError('No OAuth 2 state found.');
-    //             }
-
-    //             return req.app.locals.redis.delAsync(hashKey(state));
-    //         })
-    //         .then(() => {
-    //             resolve({ userId, subscriberOrgId });
-    //         })
-    //         .catch((err) => {
-    //             req.logger.debug('AD: redis get failed');
-    //             req.logger.error(err);
-    //             reject(err);
-    //         });
-    // });
 };
 
 
@@ -106,21 +74,6 @@ export const integrateOnedrive = async (req, userId, subscriberId) => {
     } catch (err) {
         return Promise.reject(err);
     }
-    // return new Promise((resolve, reject) => {
-    //     subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId)
-    //         .then((subscriberUser) => {
-    //             if (!subscriberUser) {
-    //                 throw new SubscriberOrgNotExistError(subscriberOrgId);
-    //             }
-
-    //             return createRedisOnedriveIntegrationState(req, userId, subscriberOrgId);
-    //         })
-    //         .then(() => {
-    //             const onedriveUri = composeAuthorizationUrl();
-    //             resolve(onedriveUri);
-    //         })
-    //         .catch(err => reject(err));
-    // });
 };
 
 export const onedriveAccessResponse = async (req, { code, error, error_description }) => {
@@ -165,64 +118,6 @@ export const onedriveAccessResponse = async (req, { code, error, error_descripti
         console.log(err);
         return Promise.reject(err);
     }
-    // return new Promise((resolve, reject) => {
-    //     let integrationInfo;
-    //     let userId;
-    //     let subscriberOrgId;
-    //     let updateInfo;
-
-    //     deleteRedisOnedriveIntegrationState(req)
-    //         .then((integrationContext) => {
-    //             userId = integrationContext.userId;
-    //             subscriberOrgId = integrationContext.subscriberOrgId;
-
-    //             if (error) {
-    //                 throw new IntegrationAccessError(`${error}: ${error_description}`); // eslint-disable-line camelcase
-    //             }
-
-    //             return exchangeAuthorizationCodeForAccessToken(req, code);
-    //         })
-    //         .then((tokenInfo) => {
-    //             req.logger.debug(`OneDrive access info for userId=${userId}/subscriberOrgId=${subscriberOrgId} = ${JSON.stringify(tokenInfo)}`);
-    //             integrationInfo = tokenInfo;
-    //             return Promise.all([
-    //                 subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId),
-    //                 getUserInfo(req, integrationInfo.access_token)
-    //             ]);
-    //         })
-    //         .then(([subscriberUser, userInfo]) => {
-    //             if (!subscriberUser) {
-    //                 throw new SubscriberOrgNotExistError(subscriberOrgId);
-    //             }
-
-    //             const subscriberUserId = subscriberUser.subscriberUserId;
-    //             integrationInfo.userId = userInfo.id;
-    //             integrationInfo.expired = false;
-    //             const onedriveInfo = {
-    //                 onedrive: integrationInfo
-    //             };
-    //             updateInfo = _.merge(subscriberUser, { integrations: onedriveInfo });
-    //             delete updateInfo.integrations.onedrive.revoked;
-    //             const integrations = updateInfo.integrations;
-    //             return subscriberUsersTable.updateSubscriberUserIntegrations(req, subscriberUserId, integrations);
-    //         })
-    //         .then(() => {
-    //             integrationsUpdated(req, updateInfo);
-    //             resolve(subscriberOrgId);
-    //         })
-    //         .catch((err) => {
-    //             let integrationError;
-    //             if (err instanceof IntegrationAccessError) {
-    //                 integrationError = err;
-    //             } else {
-    //                 integrationError = new IntegrationAccessError();
-    //                 integrationError._chainedError = err;
-    //             }
-
-    //             integrationError.subscriberOrgId = subscriberOrgId;
-    //             reject(integrationError);
-    //         });
-    // });
 };
 
 export const revokeOnedrive = async (req, userId, subscriberId) => {
