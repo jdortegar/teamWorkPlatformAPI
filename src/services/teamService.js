@@ -20,6 +20,7 @@ import * as subscriberOrgsTable from '../repositories/db/subscriberOrgsTable';
 import * as subscriberUsersTable from '../repositories/db/subscriberUsersTable';
 import * as teamsTable from '../repositories/db/teamsTable';
 import * as teamMembersTable from '../repositories/db/teamMembersTable';
+import * as conversationSvc from './conversationService';
 import { deleteInvitation } from '../repositories/cache/invitationsCache';
 import { inviteExistingUsersToTeam } from './invitationsUtil';
 import {
@@ -34,7 +35,7 @@ import {
 import { getPresence } from './messaging/presence';
 import Roles from './roles';
 
-export const defaultTeamName = 'All';
+export const defaultTeamName = 'Project Team One';
 
 export async function getUserTeams(req, userId, subscriberOrgId = undefined) {
     let teamMembers;
@@ -79,6 +80,10 @@ export const createTeamNoCheck = (req, subscriberOrgId, teamInfo, subscriberUser
             .then(() => {
                 teamCreated(req, team, teamAdminUserIds);
                 teamMemberAdded(req, team, user, role, teamMemberId);
+
+		return conversationSvc.createConversationNoCheck(req, subscriberOrgId, actualTeamId, user.userId, teamAdminUserIds);
+            })
+	    .then(() => {
                 resolve(team);
             })
             .catch(err => reject(err));
