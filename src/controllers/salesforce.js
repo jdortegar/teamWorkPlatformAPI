@@ -35,7 +35,7 @@ export const salesforceAccess = async (req, res) => {
             redirectUri = `${config.webappBaseUri}/app/integrations`;
         }
         const subscriberId = await salesforceSvc.salesforceAccessResponse(req, req.query);
-        res.redirect(`${redirectUri}/${subscriberId}/salsesforce/CREATED`);
+        res.redirect(`${redirectUri}/${subscriberId}/salesforce/CREATED`);
     } catch (err) {
         const subscriberId = err.subscriberOrgId;
         const realError = err._chainedError || err;
