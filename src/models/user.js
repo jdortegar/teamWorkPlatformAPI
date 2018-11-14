@@ -22,6 +22,10 @@ export const passwordMatch = (user, password) => {
 };
 
 export const getAuthData = (req, user, id) => {
+   let roles = [user.role];
+   if (user.roleMemberships) {
+      roles = roles.concat(user.roleMemberships);
+   }
    return {
       _id: id,
       username: user.userName,
@@ -31,7 +35,7 @@ export const getAuthData = (req, user, id) => {
          address: req.ip,
          userAgent: req.headers['user-agent']
       },
-      roles: user.roleMemberships,
+      roles: roles,
       siteGuid: user.siteGuid
    };
 };
