@@ -33,18 +33,18 @@ const getUserByEmail = (req, email) => {
     });
 };
 
-export const login = (req, email, password) => {
-    return new Promise((resolve, reject) => {
-        getUserByEmail(req, email)
-            .then((user) => {
-                if ((user) && (passwordMatch(user, password))) {
-                    resolve(user);
-                } else {
-                    throw new NoPermissionsError(email);
-                }
-            })
-            .catch(err => reject(err));
-    });
+export const login = async (req, email, password) => {
+    try {
+        const user = await getUserByEmail(req, email);
+        if (!user || !passwordMatch(user, password)) {
+            throw new NoPermissionsError(email);
+        }
+        const subscriberUser = await subscriberUserTable.getSubscriberUsersByUserId(req, user.userId);
+        user.role = subscriberUser[0].role;
+        return user
+    } catch (err) {
+        return Promise.reject(err);
+    }
 };
 
 export const createUser = async (req, userInfo) => {
