@@ -3,6 +3,7 @@ import config from '../../config/env';
 import Stripe from 'stripe';
 import { SubscriberUserExistsError } from '../../services/errors';
 import * as usersTable from '../../repositories/db/usersTable';
+import * as subscriberOrgsTable from '../../repositories/db/subscriberOrgsTable';
 const stripe = Stripe(config.stripeConfig.stripe.secretKey);
 stripe.setApiVersion(config.stripeConfig.stripe.apiVersion);
 
@@ -39,8 +40,6 @@ export const doPayment = async (req, res, next) => {
       const subscriptions = await stripe.plans.list();
 
       subscriptions.data.map(subs => {
-         console.log(paymentData.planId, subs.id);
-
          if (paymentData.planId === subs.id) {
             return (stripeResponse = stripe.subscriptions.create({
                customer: customer.id,
@@ -76,40 +75,47 @@ export const getCoupons = async (req, res) => {
 export const updateSubscription = async (req, res, next) => {
    const subscriptionUpdateData = req.body;
    const subscriptionId = subscriptionUpdateData.subscriptionId;
+   const subscriberOrgId = subscriptionUpdateData.subscriberOrgId;
    const coupon = subscriptionUpdateData.promocode || null;
    let stripeResponse;
 
    try {
       const subscription = await stripe.subscriptions.retrieve(subscriptionUpdateData.subscriptionId);
+      const subscriptions = await stripe.plans.list();
+      let selectedPlanId, yearPlanId, monthPlanId;
+      const userLimit = subscriptionUpdateData.users;
+
+      subscriptions.data.map(subs => {
+         if (subs.interval === 'year' && !subs.trial_period_days) {
+            yearPlanId = subs.id;
+         } else if (subs.interval === 'month' && !subs.trial_period_days) {
+            monthPlanId = subs.id;
+         }
+      });
+
+      if (subscriptionUpdateData.subscriptionType === 'monthly') {
+         selectedPlanId = monthPlanId;
+      } else if (subscriptionUpdateData.subscriptionType === 'annually') {
+         selectedPlanId = yearPlanId;
+      }
 
       if ('cancel_at_period_end' in subscriptionUpdateData) {
          stripeResponse = stripe.subscriptions.update(subscriptionId, {
             cancel_at_period_end: subscriptionUpdateData.cancel_at_period_end
          });
-      }
+      } else {
+         stripeResponse = stripe.subscriptions.update(subscriptionId, {
+            coupon: coupon,
+            items: [
+               {
+                  id: subscription.items.data[0].id,
+                  plan: selectedPlanId,
+                  quantity: subscriptionUpdateData.users
+               }
+            ]
+         });
 
-      if (subscriptionUpdateData.subscriptionType === 'monthly') {
-         stripeResponse = stripe.subscriptions.update(subscriptionId, {
-            coupon: coupon,
-            items: [
-               {
-                  id: subscription.items.data[0].id,
-                  plan: 'plan_DsRNYJSVq6yPgh',
-                  quantity: subscriptionUpdateData.users
-               }
-            ]
-         });
-      } else if (subscriptionUpdateData.subscriptionType === 'annually') {
-         stripeResponse = stripe.subscriptions.update(subscriptionId, {
-            coupon: coupon,
-            items: [
-               {
-                  id: subscription.items.data[0].id,
-                  plan: 'plan_DsSgjJ4Mm9vnIR',
-                  quantity: subscriptionUpdateData.users
-               }
-            ]
-         });
+         await subscriberOrgsTable.updateSubscriberOrg(req, subscriberOrgId, { userLimit });
       }
 
       return stripeResponse;
