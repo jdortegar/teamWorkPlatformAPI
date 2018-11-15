@@ -36,40 +36,22 @@ export const doPayment = async (req, res, next) => {
          source: token
       });
 
-      if (paymentData.contract === 'subscription' && paymentData.subscriptionType === 'monthly') {
-         stripeResponse = stripe.subscriptions.create({
-            customer: customer.id,
-            coupon: coupon,
-            items: [
-               {
-                  plan: 'plan_DsRNYJSVq6yPgh',
-                  quantity: paymentData.users
-               }
-            ]
-         });
-      } else if (paymentData.contract === 'subscription' && paymentData.subscriptionType === 'annually') {
-         stripeResponse = stripe.subscriptions.create({
-            customer: customer.id,
-            coupon: coupon,
-            items: [
-               {
-                  plan: 'plan_DsSgjJ4Mm9vnIR',
-                  quantity: paymentData.users
-               }
-            ]
-         });
-      } else {
-         stripeResponse = stripe.subscriptions.create({
-            customer: customer.id,
-            coupon: coupon,
-            items: [
-               {
-                  plan: 'plan_DtzToEv1gIBqa0',
-                  quantity: paymentData.users
-               }
-            ]
-         });
-      }
+      const subscriptions = await stripe.plans.list();
+
+      subscriptions.data.map(subs => {
+         if (paymentData.planId === subs.id) {
+            return (stripeResponse = stripe.subscriptions.create({
+               customer: customer.id,
+               coupon: coupon,
+               items: [
+                  {
+                     plan: subs.id,
+                     quantity: paymentData.users
+                  }
+               ]
+            }));
+         }
+      });
 
       return stripeResponse;
    } catch (err) {
