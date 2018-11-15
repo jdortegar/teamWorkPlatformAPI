@@ -39,8 +39,6 @@ export const doPayment = async (req, res, next) => {
       const subscriptions = await stripe.plans.list();
 
       subscriptions.data.map(subs => {
-         console.log(paymentData.planId, subs.id);
-
          if (paymentData.planId === subs.id) {
             return (stripeResponse = stripe.subscriptions.create({
                customer: customer.id,
