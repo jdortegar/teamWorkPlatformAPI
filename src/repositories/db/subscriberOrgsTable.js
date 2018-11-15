@@ -3,7 +3,6 @@ import config from '../../config/env';
 import * as util from './util';
 import { SubscriberOrgNotExistError } from '../../services/errors';
 
-
 /**
  * hash: subscriberOrgId
  * v
@@ -49,7 +48,9 @@ export const createSubscriberOrg = (req, subscriberOrgId, name, icon, preference
          }
       };
 
-      req.app.locals.docClient.put(params).promise()
+      req.app.locals.docClient
+         .put(params)
+         .promise()
          .then(result => resolve(result.$response.request.rawParams.Item))
          .catch(err => reject(err));
    });
@@ -64,16 +65,18 @@ export const getSubscriberOrgBySubscriberOrgId = (req, subscriberOrgId) => {
             ':subscriberOrgId': subscriberOrgId
          }
       };
-      util.query(req, params)
+      util
+         .query(req, params)
          .then(originalResults => upgradeSchema(req, originalResults))
-         .then(latestResults => resolve((latestResults.length > 0) ? latestResults[0] : undefined))
+         .then(latestResults => resolve(latestResults.length > 0 ? latestResults[0] : undefined))
          .catch(err => reject(err));
    });
 };
 
 export const getSubscriberOrgsBySubscriberOrgIds = (req, subscriberOrgIds) => {
    return new Promise((resolve, reject) => {
-      util.batchGet(req, tableName(), 'subscriberOrgId', subscriberOrgIds)
+      util
+         .batchGet(req, tableName(), 'subscriberOrgId', subscriberOrgIds)
          .then(originalResults => upgradeSchema(req, originalResults))
          .then(latestResults => resolve(latestResults))
          .catch(err => reject(err));
@@ -93,19 +96,20 @@ export const getSubscriberOrgByName = (req, name) => {
             ':name': name
          }
       };
-      util.query(req, params)
+      util
+         .query(req, params)
          .then(originalResults => upgradeSchema(req, originalResults))
-         .then(latestResults => resolve((latestResults.length > 0) ? latestResults[0] : undefined))
+         .then(latestResults => resolve(latestResults.length > 0 ? latestResults[0] : undefined))
          .catch(err => reject(err));
    });
 };
 
-export const updateSubscriberOrg = (req, subscriberOrgId, { name, icon, enabled, preferences } = {}) => {
+export const updateSubscriberOrg = (req, subscriberOrgId, { name, icon, enabled, preferences, userLimit } = {}) => {
    return new Promise((resolve, reject) => {
       const lastModified = req.now.format();
       let subscriberOrg;
       getSubscriberOrgBySubscriberOrgId(req, subscriberOrgId)
-         .then((retrievedSubscriberOrg) => {
+         .then(retrievedSubscriberOrg => {
             subscriberOrg = retrievedSubscriberOrg;
             if (!subscriberOrg) {
                throw new SubscriberOrgNotExistError(subscriberOrgId);
@@ -138,17 +142,25 @@ export const updateSubscriberOrg = (req, subscriberOrgId, { name, icon, enabled,
                params.UpdateExpression += ', preferences = :preferences';
                params.ExpressionAttributeValues[':preferences'] = preferences;
             }
+            if (userLimit) {
+               params.UpdateExpression += ', #userLimit = :userLimit';
+               params.ExpressionAttributeNames['#userLimit'] = 'userLimit';
+               params.ExpressionAttributeValues[':userLimit'] = userLimit;
+            }
 
             return req.app.locals.docClient.update(params).promise();
          })
          .then(() => {
-            resolve(_.merge({}, subscriberOrg, {
-               name,
-               icon,
-               enabled,
-               lastModified,
-               preferences
-            }));
+            resolve(
+               _.merge({}, subscriberOrg, {
+                  name,
+                  icon,
+                  enabled,
+                  lastModified,
+                  preferences,
+                  userLimit
+               })
+            );
          })
          .catch(err => reject(err));
    });
