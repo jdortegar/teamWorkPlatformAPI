@@ -115,7 +115,7 @@ export const updateSubscription = async (req, res, next) => {
             ]
          });
 
-         await subscriberOrgsTable.updateSubscriberOrg(req, subscriberOrgId, { userLimit })
+         await subscriberOrgsTable.updateSubscriberOrg(req, subscriberOrgId, { userLimit });
       }
 
       return stripeResponse;
