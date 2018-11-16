@@ -100,11 +100,11 @@ export const updateSubscription = async (req, res, next) => {
       }
 
       if ('cancel_at_period_end' in subscriptionUpdateData) {
-         stripeResponse = stripe.subscriptions.update(subscriptionId, {
+         stripeResponse = await stripe.subscriptions.update(subscriptionId, {
             cancel_at_period_end: subscriptionUpdateData.cancel_at_period_end
          });
       } else {
-         stripeResponse = stripe.subscriptions.update(subscriptionId, {
+         stripeResponse = await stripe.subscriptions.update(subscriptionId, {
             coupon: coupon,
             items: [
                {
