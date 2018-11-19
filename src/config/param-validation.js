@@ -266,6 +266,15 @@ const validationSchemas = {
                 fileSource: Joi.array().items(Joi.string())
             }
         }
+    },
+    updateStripeSubscription: {
+        body:{
+            promocode: Joi.string().allow(''),
+            subscriberOrgId:Joi.string().required(),
+            subscriptionId:Joi.string().required(),
+            subscriptionType:Joi.string(),
+            users:Joi.number(),
+        }
     }
 };
 
@@ -381,6 +390,9 @@ export const apiVersionedValidators = {
     },
     queryFiles: {
         2: validate(validationSchemas.queryFiles)
+    },
+    updateStripeSubscription: {
+        2: validate(validationSchemas.updateStripeSubscription)
     }
 };
 
@@ -400,4 +412,3 @@ export const validateByApiVersion = (validators) => {
     const apiValidator = new ApiValidator(validators);
     return apiValidator.doValidation.bind(apiValidator);
 };
-

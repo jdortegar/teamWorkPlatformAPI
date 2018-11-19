@@ -47,7 +47,9 @@ export const createConversation = (req, conversationId, subscriberOrgId, teamId 
          }
       };
 
-      req.app.locals.docClient.put(params).promise()
+      req.app.locals.docClient
+         .put(params)
+         .promise()
          .then(result => resolve(result.$response.request.rawParams.Item))
          .catch(err => reject(err));
    });
@@ -90,14 +92,21 @@ export const getConversationByConversationId = (req, conversationId) => {
             ':conversationId': conversationId
          }
       };
-      util.query(req, params)
+      util
+         .query(req, params)
          .then(originalResults => upgradeSchema(req, originalResults))
-         .then(latestResults => resolve((latestResults.length > 0) ? latestResults[0] : undefined))
+         .then(latestResults => resolve(latestResults.length > 0 ? latestResults[0] : undefined))
          .catch(err => reject(err));
    });
 };
 
-const updateConversationMessageCountAndByteCount = (req, conversationId, currentMessageCount, newMessageCount, byteCount) => {
+const updateConversationMessageCountAndByteCount = (
+   req,
+   conversationId,
+   currentMessageCount,
+   newMessageCount,
+   byteCount
+) => {
    const params = {
       TableName: tableName(),
       Key: { conversationId },
@@ -115,13 +124,19 @@ const updateConversationMessageCountAndByteCount = (req, conversationId, current
 };
 
 export const incrementConversationByteCount = (req, conversationId, byteCount) => {
-   return new Promise((resolve) => {
+   return new Promise(resolve => {
       let conversation;
       getConversationByConversationId(req, conversationId)
-         .then((retrievedConversation) => {
+         .then(retrievedConversation => {
             conversation = retrievedConversation;
             const { messageCount } = conversation;
-            return updateConversationMessageCountAndByteCount(req, conversationId, messageCount, messageCount, conversation.byteCount + byteCount);
+            return updateConversationMessageCountAndByteCount(
+               req,
+               conversationId,
+               messageCount,
+               messageCount,
+               conversation.byteCount + byteCount
+            );
          })
          .then(() => {
             conversation.byteCount += byteCount;
@@ -134,13 +149,19 @@ export const incrementConversationByteCount = (req, conversationId, byteCount) =
 };
 
 export const incrementConversationMessageCountAndByteCount = (req, conversationId, byteCount) => {
-   return new Promise((resolve) => {
+   return new Promise(resolve => {
       let conversation;
       getConversationByConversationId(req, conversationId)
-         .then((retrievedConversation) => {
+         .then(retrievedConversation => {
             conversation = retrievedConversation;
             const { messageCount } = conversation;
-            return updateConversationMessageCountAndByteCount(req, conversationId, messageCount, messageCount + 1, conversation.byteCount + byteCount);
+            return updateConversationMessageCountAndByteCount(
+               req,
+               conversationId,
+               messageCount,
+               messageCount + 1,
+               conversation.byteCount + byteCount
+            );
          })
          .then(() => {
             conversation.messageCount += 1;
@@ -172,9 +193,10 @@ export const getConversationByTeamId = (req, teamId) => {
             ':teamId': teamId
          }
       };
-      util.query(req, params)
+      util
+         .query(req, params)
          .then(originalResults => upgradeSchema(req, originalResults))
-         .then(latestResults => resolve((latestResults.length > 0) ? latestResults[0] : undefined))
+         .then(latestResults => resolve(latestResults.length > 0 ? latestResults[0] : undefined))
          .catch(err => reject(err));
    });
 };

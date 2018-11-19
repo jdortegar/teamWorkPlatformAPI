@@ -53,46 +53,50 @@ export const integrateSalesforce = async (req, userId, subscriberOrgId) => {
 };
 
 export const salesforceAccessResponse = async (req, { code, state, error }) => {
-    if (error) {
-        throw new IntegrationAccessError(error);
-    }
-    const teamLevelVal = await req.app.locals.redis.getAsync(`${hashKey(state)}#teamLevel`) || 0;
-    const teamLevel = teamLevelVal == 1;
-    const authorizationCode = code;
-    const integrationContext = await deleteRedisSalesforceIntegrationState(req, state, teamLevelVal);
-    const userId = integrationContext.userId;
-    const subscriberOrgId = (typeof integrationContext.subscriberOrgId !== 'undefined') ? integrationContext.subscriberOrgId : integrationContext.teamId;
-    const tokenInfo = await exchangeAuthorizationCodeForAccessToken(authorizationCode);
+    try {
 
-    req.logger.debug(`Salesforce access info for userId:${userId} = ${JSON.stringify(tokenInfo)}`);
-    let subscriber;
-    if (teamLevel) {
-        subscriber = await teamMembersTable.getTeamMemberByTeamIdAndUserId(req, subscriberOrgId, userId);
+        if (error) {
+            throw new IntegrationAccessError(error);
+        }
+        const teamLevelVal = await req.app.locals.redis.getAsync(`${hashKey(state)}#teamLevel`) || 0;
+        const teamLevel = teamLevelVal == 1;
+        const authorizationCode = code;
+        const integrationContext = await deleteRedisSalesforceIntegrationState(req, state, teamLevelVal);
+        const userId = integrationContext.userId;
+        const subscriberOrgId = (typeof integrationContext.subscriberOrgId !== 'undefined') ? integrationContext.subscriberOrgId : integrationContext.teamId;
+        const tokenInfo = await exchangeAuthorizationCodeForAccessToken(authorizationCode);
     
-    } else {
-        subscriber = await subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId);
+        req.logger.debug(`Salesforce access info for userId:${userId} = ${JSON.stringify(tokenInfo)}`);
+        let subscriber;
+        if (teamLevel) {
+            subscriber = await teamMembersTable.getTeamMemberByTeamIdAndUserId(req, subscriberOrgId, userId);
+        
+        } else {
+            subscriber = await subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId);
+        }
+    
+        if (!subscriber) {
+            throw new SubscriberOrgNotExistError(subscriberOrgId);
+        }
+        tokenInfo.userId = tokenInfo.id;
+        tokenInfo.expired = false;
+        const salesforceInfo = {
+            salesforce: tokenInfo
+        };
+        const updateInfo = _.merge(subscriber, { integrations: salesforceInfo });
+        delete updateInfo.integrations.salesforce.revoked;
+        const integrations = updateInfo.integrations;
+        if (teamLevel) {
+            await teamMembersTable.updateTeamMembersIntegrations(req, userId, subscriberOrgId, integrations);
+    
+        } else {
+            await subscriberUsersTable.updateSubscriberUserIntegrations(req, subscriber.subscriberUserId, integrations);
+        }
+        integrationsUpdated(req, updateInfo);
+        return subscriberOrgId;
+    } catch (err) {
+        return Promise.reject(err);
     }
-    const userInfo = await getUserInfo(req, tokenInfo.access_token);
-
-    if (!subscriber) {
-        throw new SubscriberOrgNotExistError(subscriberOrgId);
-    }
-    tokenInfo.userId = userInfo.id;
-    tokenInfo.expired = false;
-    const salesforceInfo = {
-        salesforce: tokenInfo
-    };
-    const updateInfo = _.merge(subscriber, { integrations: salesforceInfo });
-    delete updateInfo.integrations.salesforce.revoked;
-    const integrations = updateInfo.integrations;
-    if (teamLevel) {
-        await teamMembersTable.updateTeamMembersIntegrations(req, userId, subscriberOrgId, integrations);
-
-    } else {
-        await subscriberUsersTable.updateSubscriberUserIntegrations(req, subscriber.subscriberUserId, integrations);
-    }
-    integrationsUpdated(req, updateInfo);
-    return subscriberOrgId;
 };
 
 export const revokeSalesforce = async (req, userId, subscriberOrgId) => {
