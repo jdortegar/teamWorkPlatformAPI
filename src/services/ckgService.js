@@ -44,7 +44,7 @@ const getFiles = async (query, neo4jSession, fileRecords=[]) => {
             lastModified: fileNode.properties.lastModified,
             fileOwnerName: fileNode.properties.ownerName,
             fileOwnerId: userNode.properties.hablaUserId,
-            fileCreatedAt: userNode.properties.createdAt,
+            fileCreatedAt: fileNode.properties.createdAt,
         };
     });
     return files;
@@ -912,7 +912,7 @@ const getFiles = async (query, neo4jSession, fileRecords=[]) => {
         lastModified: fileNode.properties.lastModified,
         fileOwnerName: fileNode.properties.ownerName,
         fileOwnerId: userNode.properties.hablaUserId,
-        fileCreatedAt: userNode.properties.createdAt,
+        fileCreatedAt: fileNode.properties.createdAt,
     };
  });
  return files;
