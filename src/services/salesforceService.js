@@ -134,7 +134,6 @@ export const revokeSalesforce = async (req, userId, subscriberId) => {
             revokeData.subscriberUserId = subscriber.subscriberUserId;
             subscriberInfo = await subscriberUsersTable.updateSubscriberUserIntegrations(req, subscriber.subscriberUserId, integrations);
         }
-        console.log('****SUBSCRIBER INFO**', subscriberInfo);   
         await axios.post(`${config.knowledgeApiEndpoint}/revoke/user`, revokeData);
         await revokeIntegration(req, userAccessToken);
         integrationsUpdated(req, subscriberInfo);
