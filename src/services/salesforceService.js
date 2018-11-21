@@ -99,7 +99,7 @@ export const salesforceAccessResponse = async (req, { code, state, error }) => {
     }
 };
 
-export const revokeSalesforce = async (req, userId, subscriberOrgId) => {
+export const revokeSalesforce = async (req, userId, subscriberId) => {
     try {
         const teamLevel = typeof req.query.teamLevel !== 'undefined' && req.query.teamLevel == 1;
         userId = req.query.userId || userId;
