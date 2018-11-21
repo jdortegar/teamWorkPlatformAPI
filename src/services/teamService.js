@@ -377,7 +377,7 @@ export function addUserToTeam(req, user, subscriberUserId, teamId, role) {
             );
          })
          .then(member => {
-            teamMemberAdded(req, team, user, role, teamMemberId);
+            teamMemberAdded(req, team, user[0], role, teamMemberId);
             return conversationSvc.addUserToConversationByTeamId(req, user[0], teamId);
          })
          .then(() => {
