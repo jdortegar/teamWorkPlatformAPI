@@ -29,6 +29,7 @@ export const integrateSharepoint = (req, res, next) => {
 };
 
 export const sharepointAccess = async (req, res) => {
+   let redirectUri =  `${config.webappBaseUri}/app/integrations`;
    try {
       console.log('**SHAREPOINT ACCESS', req.query);
       const teamLevelVal = await req.app.locals.redis.getAsync(`${sharepointSvc.hashKey(req.query.state)}#teamLevel`);
@@ -37,15 +38,13 @@ export const sharepointAccess = async (req, res) => {
       let redirectUri;
       if (teamLevel) {
          redirectUri = `${config.webappBaseUri}/app/teamIntegrations`;
-      } else  {
-         redirectUri = `${config.webappBaseUri}/app/integrations`;
       } 
 
       const subscriberId = await sharepointSvc.sharepointAccessResponse(req, req.query);
       console.log('***SHAREPOINT SUCCESS', subscriberId);
       res.redirect(`${redirectUri}/${subscriberId}/sharepoint/CREATED`);
    } catch (err) {
-      console.log('*****SHAREPOINT ERR', err);
+      console.log('*****SHAREPOINT ERR', err, err.message);
       const subscriberId = err.subscriberOrgId;
       const realError = err._chainedError || err;
       if (realError instanceof IntegrationAccessError) {
