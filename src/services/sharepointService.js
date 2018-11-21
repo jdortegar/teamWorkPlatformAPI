@@ -80,6 +80,7 @@ export const integrateSharepoint = async (req, userId, subscriberId, sharepointO
 export const sharepointAccessResponse = async (req, { code, error, error_description }) => {
     try {
         if (error) {
+            console.log(error);
             throw new IntegrationAccessError(error);
         }
         const teamLevelVal = await req.app.locals.redis.getAsync(`${hashKey(deduceState(req))}#teamLevel`) || 0;
