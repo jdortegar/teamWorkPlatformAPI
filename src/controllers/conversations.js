@@ -157,7 +157,7 @@ export const deleteMessage = (req, res, next) => {
 
    conversationsSvc.deleteMessage(req, conversationId, messageId, userId)
       .then(() => {
-         next(new APIWarning(httpStatus.NOT_CONTENT));
+         next(new APIWarning(httpStatus.NO_CONTENT));
       })
       .catch((err) => {
          if (err instanceof ConversationNotExistError) {
