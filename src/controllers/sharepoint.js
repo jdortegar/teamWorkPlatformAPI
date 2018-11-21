@@ -33,10 +33,8 @@ export const sharepointAccess = async (req, res) => {
    let teamLevel;
    let integrationContext;
    try {
-      console.log('**SHAREPOINT ACCESS', req.query);
       const teamLevelVal = await req.app.locals.redis.getAsync(`${sharepointSvc.hashKey(req.query.state)}#teamLevel`);
       integrationContext = await req.app.locals.redis.hgetallAsync(sharepointSvc.hashKey(sharepointSvc.deduceState(req)));
-      console.log('****SHAREPOINT TEAM LEVEL VAL', teamLevelVal);
       teamLevel = teamLevelVal == 1;
       let redirectUri;
       if (teamLevel) {
@@ -44,11 +42,8 @@ export const sharepointAccess = async (req, res) => {
       } 
 
       const subscriberId = await sharepointSvc.sharepointAccessResponse(req, req.query);
-      console.log('***SHAREPOINT SUCCESS', subscriberId);
       res.redirect(`${redirectUri}/${subscriberId}/sharepoint/CREATED`);
    } catch (err) {
-      console.log('*****SHAREPOINT ERR', err, err.message);
-      console.log('*** INTEGRATION CONTEXT', integrationContext);
       const subscriberField = (teamLevel) ? 'teamId' : 'subscriberOrgId';
       const realError = err._chainedError || err;
       if (realError instanceof IntegrationAccessError) {
