@@ -30,9 +30,11 @@ export const integrateSharepoint = (req, res, next) => {
 
 export const sharepointAccess = async (req, res) => {
    let redirectUri =  `${config.webappBaseUri}/app/integrations`;
+   let integrationContext;
    try {
       console.log('**SHAREPOINT ACCESS', req.query);
       const teamLevelVal = await req.app.locals.redis.getAsync(`${sharepointSvc.hashKey(req.query.state)}#teamLevel`);
+      integrationContext = await req.app.locals.hmgetall(sharepointSvc.hashKey(req.query.state));
       console.log('****SHAREPOINT TEAM LEVEL VAL', teamLevelVal);
       const teamLevel = teamLevelVal == 1;
       let redirectUri;
@@ -45,14 +47,13 @@ export const sharepointAccess = async (req, res) => {
       res.redirect(`${redirectUri}/${subscriberId}/sharepoint/CREATED`);
    } catch (err) {
       console.log('*****SHAREPOINT ERR', err, err.message);
-      const subscriberId = err.subscriberOrgId;
       const realError = err._chainedError || err;
       if (realError instanceof IntegrationAccessError) {
-         res.redirect(`${redirectUri}/${subscriberId}/sharepoint/FORBIDDEN`);
+         res.redirect(`${redirectUri}/${integrationContext[3]}/sharepoint/FORBIDDEN`);
       } else if (realError instanceof SubscriberOrgNotExistError) {
-         res.redirect(`${redirectUri}/${subscriberId}/sharepoint/NOT_FOUND`);
+         res.redirect(`${redirectUri}/${integrationContext[3]}/sharepoint/NOT_FOUND`);
       } else {
-         res.redirect(`${redirectUri}/${subscriberId}/sharepoint/INERNAL_SERVER_ERROR`);
+         res.redirect(`${redirectUri}/${integrationContext[3]}/sharepoint/INERNAL_SERVER_ERROR`);
       }
 
    }
