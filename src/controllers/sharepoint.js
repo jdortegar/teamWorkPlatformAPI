@@ -36,12 +36,11 @@ export const sharepointAccess = async (req, res) => {
       const teamLevel = teamLevelVal == 1;
       let redirectUri;
       if (teamLevel) {
-         if (teamLevel) {
-            redirectUri = `${config.webappBaseUri}/app/teamIntegrations`;
-        } else  {
-            redirectUri = `${config.webappBaseUri}/app/integrations`;
-        } 
-      }
+         redirectUri = `${config.webappBaseUri}/app/teamIntegrations`;
+      } else  {
+         redirectUri = `${config.webappBaseUri}/app/integrations`;
+      } 
+
       const subscriberId = await sharepointSvc.sharepointAccessResponse(req, req.query);
       console.log('***SHAREPOINT SUCCESS', subscriberId);
       res.redirect(`${redirectUri}/${subscriberId}/sharepoint/CREATED`);
