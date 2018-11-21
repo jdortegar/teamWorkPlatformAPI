@@ -38,7 +38,6 @@ const deleteRedisOnedriveIntegrationState = async (req, teamLevel) => {
         const subscriberField = (teamLevel == 1) ? 'teamId' : 'subscriberOrgId';
         const state = deduceState(req)
         const redisResponse = await req.app.locals.redis.hmgetAsync(hashKey(state), 'userId', subscriberField);
-        console.log('*** REDIS RESPONSE** ', redisResponse, subscriberField, state,);
         const userId = redisResponse[0];
         const subscriberId = redisResponse[1];
         if (userId === null || subscriberId === null) {
@@ -154,7 +153,7 @@ export const revokeOnedrive = async (req, userId, subscriberId) => {
     
         if (teamLevel) {
             revokeData.teamId = subscriber.teamId;
-            subscriberInfo = teamMembersTable.updateTeamMembersIntegrations(req, userId, subscriberId, integrations);
+            subscriberInfo = await teamMembersTable.updateTeamMembersIntegrations(req, userId, subscriberId, integrations);
         } else {
             revokeData.subscriberUserId = subscriber.subscriberUserId;
             subscriberInfo = await subscriberUsersTable.updateSubscriberUserIntegrations(req, subscriber.subscriberUserId, integrations);

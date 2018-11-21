@@ -28,26 +28,32 @@ export const integrateSharepoint = (req, res, next) => {
       });
 };
 
-export const sharepointAccess = (req, res) => {
-   const redirectUri = `${webappIntegrationUri}`;
-   let subscriberOrgId;
+export const sharepointAccess = async (req, res) => {
+   try {
+      const teamLevelVal = await req.app.locals.redis.getAsync(`${sharepointSvc.hashKey(req.query.state)}#teamLevel`);
+      const teamLevel = teamLevelVal == 1;
+      let redirectUri;
+      if (teamLevel) {
+         if (teamLevel) {
+            redirectUri = `${config.webappBaseUri}/app/teamIntegrations`;
+        } else  {
+            redirectUri = `${config.webappBaseUri}/app/integrations`;
+        } 
+      }
+      const subscriberId = await sharepointSvc.sharepointAccessResponse(req, req.query);
+      res.redirect(`${redirectUri}/${subscriberId}/sharepoint/CREATED`);
+   } catch (err) {
+      const subscriberId = err.subscriberOrgId;
+      const realError = err._chainedError || err;
+      if (realError instanceof IntegrationAccessError) {
+         res.redirect(`${redirectUri}/${subscriberId}/sharepoint/FORBIDDEN`);
+      } else if (realError instanceof SubscriberOrgNotExistError) {
+         res.redirect(`${redirectUri}/${subscriberId}/sharepoint/NOT_FOUND`);
+      } else {
+         res.redirect(`${redirectUri}/${subscriberId}/sharepoint/INERNAL_SERVER_ERROR`);
+      }
 
-   sharepointSvc.sharepointAccessResponse(req, req.query)
-      .then((stateSubscriberOrgId) => {
-         subscriberOrgId = stateSubscriberOrgId;
-         res.redirect(`${redirectUri}/${subscriberOrgId}/sharepoint/CREATED`);
-      })
-      .catch((err) => { // err is always instance of IntegrationAccessError, which has subscriberOrgId and chained error.
-         subscriberOrgId = subscriberOrgId || err.subscriberOrgId;
-         const realError = err._chainedError || err;
-         if (realError instanceof IntegrationAccessError) {
-            res.redirect(`${redirectUri}/${subscriberOrgId}/sharepoint/FORBIDDEN`);
-         } else if (realError instanceof SubscriberOrgNotExistError) {
-            res.redirect(`${redirectUri}/${subscriberOrgId}/sharepoint/NOT_FOUND`);
-         } else {
-            res.redirect(`${redirectUri}/${subscriberOrgId}/sharepoint/INTERNAL_SERVER_ERROR`);
-         }
-      });
+   }
 };
 
 export const revokeSharepoint = (req, res, next) => {
