@@ -13,7 +13,7 @@ export const hashKey = (state) => {
     return `${state}#sharepointIntegrationState`;
 };
 
-const deduceState = (req) => {
+export const deduceState = (req) => {
     let ipAddress = req.headers['x-forwarded-for'] || '127.0.0.1';
     const ipAddresses = ipAddress.split(', ');
     ipAddress = (ipAddresses.length > 1) ? ipAddresses[0] : ipAddress;
@@ -80,6 +80,7 @@ export const integrateSharepoint = async (req, userId, subscriberId, sharepointO
 export const sharepointAccessResponse = async (req, { code, error, error_description }) => {
     try {
         if (error) {
+            console.log(error);
             throw new IntegrationAccessError(error);
         }
         const teamLevelVal = await req.app.locals.redis.getAsync(`${hashKey(deduceState(req))}#teamLevel`) || 0;
