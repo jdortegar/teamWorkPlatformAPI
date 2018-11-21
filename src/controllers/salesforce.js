@@ -52,7 +52,6 @@ export const salesforceAccess = async (req, res) => {
 export const revokeSalesforce = (req, res, next) => {
     const userId = req.user._id;
     const subscriberOrgId = req.params.subscriberOrgId;
-
     salesforceSvc.revokeSalesforce(req, userId, subscriberOrgId)
         .then(() => {
             res.status(httpStatus.OK).end();
