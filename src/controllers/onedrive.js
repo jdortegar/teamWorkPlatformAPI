@@ -26,7 +26,7 @@ export const integrateOnedrive = (req, res, next) => {
 
 export const onedriveAccess = async (req, res) => {
     try {
-        const teamLevelVal = await req.app.locals.redis.getAsync(`${onedriveSvc.hashKey(req.query.state)}#teamLevel`) || 0;
+        const teamLevelVal = await req.app.locals.redis.getAsync(`${onedriveSvc.hashKey(onedriveSvc.deduceState(req))}#teamLevel`) || 0;
         const teamLevel = teamLevelVal == 1;
         let redirectUri;
         if (teamLevel) {
