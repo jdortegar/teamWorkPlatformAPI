@@ -99,7 +99,7 @@ export const salesforceAccessResponse = async (req, { code, state, error }) => {
     }
 };
 
-export const revokeSalesforce = async (req, userId, subscriberOrgId) => {
+export const revokeSalesforce = async (req, userId, subscriberId) => {
     try {
         const teamLevel = typeof req.query.teamLevel !== 'undefined' && req.query.teamLevel == 1;
         userId = req.query.userId || userId;
@@ -134,6 +134,7 @@ export const revokeSalesforce = async (req, userId, subscriberOrgId) => {
             revokeData.subscriberUserId = subscriber.subscriberUserId;
             subscriberInfo = await subscriberUsersTable.updateSubscriberUserIntegrations(req, subscriber.subscriberUserId, integrations);
         }
+        console.log('****SUBSCRIBER INFO**', subscriberInfo);   
         await axios.post(`${config.knowledgeApiEndpoint}/revoke/user`, revokeData);
         await revokeIntegration(req, userAccessToken);
         integrationsUpdated(req, subscriberInfo);
