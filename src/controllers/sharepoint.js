@@ -47,6 +47,7 @@ export const sharepointAccess = async (req, res) => {
       res.redirect(`${redirectUri}/${subscriberId}/sharepoint/CREATED`);
    } catch (err) {
       console.log('*****SHAREPOINT ERR', err, err.message);
+      console.log('*** INTEGRATION CONTEXT', integrationContext);
       const realError = err._chainedError || err;
       if (realError instanceof IntegrationAccessError) {
          res.redirect(`${redirectUri}/${integrationContext[3]}/sharepoint/FORBIDDEN`);
