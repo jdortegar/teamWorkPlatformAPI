@@ -13,7 +13,7 @@ export const hashKey = (state) => {
     return `${state}#sharepointIntegrationState`;
 };
 
-const deduceState = (req) => {
+export const deduceState = (req) => {
     let ipAddress = req.headers['x-forwarded-for'] || '127.0.0.1';
     const ipAddresses = ipAddress.split(', ');
     ipAddress = (ipAddresses.length > 1) ? ipAddresses[0] : ipAddress;
