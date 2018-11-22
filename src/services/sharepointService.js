@@ -98,7 +98,7 @@ export const sharepointAccessResponse = async (req, { code, error, error_descrip
         } else {
             subscriber = await subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberId);
         }
-        const userInfo = await getUserInfo(req, tokenInfo.sharepointOrg );
+        const userInfo = await getUserInfo(req, tokenInfo.sharepointOrg, tokenInfo.access_token );
         console.log('***USER INFO', userInfo);
         const sites = await getSites(req, tokenInfo.sharepointOrg, tokenInfo.access_token);
         console.log('****SITES', sites);
