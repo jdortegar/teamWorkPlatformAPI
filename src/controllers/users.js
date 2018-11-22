@@ -166,20 +166,20 @@ export const createUser = (req, res, next) => {
         });
 };
 
-export const updateUser = (req, res, next) => {
+export const updateUser = async (req, res, next) => {
     const userId = req.query.userId || req.user._id;
 
-    userSvc.updateUser(req, userId, req.body)
-        .then(() => {
-            res.status(httpStatus.NO_CONTENT).end();
-        })
-        .catch((err) => {
-            if (err instanceof UserNotExistError) {
-                next(new APIWarning(httpStatus.NOT_FOUND, err));
-            } else {
-                next(new APIError(httpStatus.SERVICE_UNAVAILABLE, err));
-            }
-        });
+    try {
+        const updatedUser = await userSvc.updateUser(req, userId, req.body)
+        return res.json(updatedUser[0]);
+     } catch (err) {
+        // Return error when email exists
+        if (err instanceof UserNotExistError) {
+            next(new APIWarning(httpStatus.NOT_FOUND, err));
+        } else {
+            next(new APIError(httpStatus.SERVICE_UNAVAILABLE, err));
+        }
+     }
 };
 
 export const updatePassword = (req, res, next) => {
