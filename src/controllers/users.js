@@ -24,7 +24,7 @@ export const createReservation = (req, res) => {
     req.logger.debug(`createReservation: user ${email}`);
     const rid = uuid.v4(); // get a uid to represent the reservation
     req.logger.debug(`createReservation: new rid: ${rid}`);
-    req.app.locals.redis.set(`${config.redisPrefix}${rid}`, email, 'EX', 1800, (err) => {
+    req.app.locals.redis.hmset(`${config.redisPrefix}${rid}`, 'email', email, 'EX', 1800, (err) => {
         if (err) {
             req.logger.debug('createReservation: hset status - redis error');
         } else {
@@ -103,9 +103,13 @@ export const validateEmail = (req, res, next) => {
             req.logger.debug(`validateEmail: found reservation for email: ${reply}`);
             const response = {
                 status: 'SUCCESS',
-                email: reply.email,
-                subscriberOrgName: reply.subscriberOrgName
+                email: reply.email
             };
+
+            // If exists subscriberOrgName add to object
+            if (reply && reply.subscriberOrgName){
+                response.subscriberOrgName = reply.subscriberOrgName;
+            }
 
             if (req.accepts('json')) {
                 res.status(httpStatus.OK).json(response);
