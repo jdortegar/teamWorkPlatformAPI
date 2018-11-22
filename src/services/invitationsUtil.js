@@ -114,7 +114,7 @@ export const inviteExternalUsersToSubscriberOrg = (req, invitingDbUser, emails, 
             .then((createdInvitations) => {
                const dbinvitation = createdInvitations[1];
                sentInvitationStatus(req, dbinvitation);
-               return createRegistration(req, email, defaultExpirationMinutes);
+               return createRegistration(req, email, subscriberOrg.name, defaultExpirationMinutes);
             })
             .then(rid => sendSubscriberOrgInviteToExternalUser(email, subscriberOrg.name, invitingDbUser, rid));
          promises.push(promise);

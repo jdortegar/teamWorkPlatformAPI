@@ -96,14 +96,15 @@ export const validateEmail = (req, res, next) => {
 
     // Find reservation in cache
     req.logger.debug(`find Reservation: id = ${rid}`);
-    req.app.locals.redis.get(`${config.redisPrefix}${rid}`, (err, reply) => {
+    req.app.locals.redis.hgetall(`${config.redisPrefix}${rid}`, (err, reply) => {
         if (err) {
             req.logger.debug('validateEmail: get status - redis error');
         } else if (reply) {
             req.logger.debug(`validateEmail: found reservation for email: ${reply}`);
             const response = {
                 status: 'SUCCESS',
-                email: reply
+                email: reply.email,
+                subscriberOrgName: reply.subscriberOrgName
             };
 
             if (req.accepts('json')) {
