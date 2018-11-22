@@ -42,6 +42,7 @@ export const sharepointAccess = async (req, res) => {
       } 
 
       const subscriberId = await sharepointSvc.sharepointAccessResponse(req, req.query);
+      console.log('***REDIRECT URI', subscriberId, redirectUri);
       res.redirect(`${redirectUri}/${subscriberId}/sharepoint/CREATED`);
    } catch (err) {
       console.log('*******ERROR', err.message);
