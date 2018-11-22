@@ -52,8 +52,8 @@ export const boxWebhooksSecondaryKey = 'Q5Ht4J6nucMSxTnXKRKk1w9LwJaBefLY';
 export const googleClientId = '801943186202-5cp3slnr8mi8vmtdruiessk3i5ugneg0.apps.googleusercontent.com';
 export const googleClientSecret = 'VPDsaJ5aAKs9gNt4y1CQBl1Z';
 
-export const sharepointClientId = 'fbb7c315-632e-47c4-acae-a5536c4ed0e2';
-export const sharepointClientSecret = 'j/Ej/sP7YMA/fHlN4Yb1DEpdsUsDLq2+zq/ZPkfY3xU=';
+export const sharepointClientId = '371c2267-55a2-4189-9af8-53c18bbdb605';
+export const sharepointClientSecret = 'p1CbLjcM0/Vqr1TP4s6yzR6CPPfyRpQ+mlBqtrvarAw=';
 // export const sharepointClientId = 'd0032bb6-4898-4da3-8a0f-d16f185dfe44'; // ngrok
 // export const sharepointClientSecret = 'sKtwfhTxjtBriCzu249/8BpHlptChV07zEJkG37G6WU='; // ngrok
 
