@@ -29,14 +29,13 @@ export const integrateSharepoint = (req, res, next) => {
 };
 
 export const sharepointAccess = async (req, res) => {
-   let redirectUri =  `${config.webappBaseUri}/app/integrations`;
+   let redirectUri = `${config.webappBaseUri}/app/integrations`;
    let teamLevel;
    let integrationContext;
    try {
       const teamLevelVal = await req.app.locals.redis.getAsync(`${sharepointSvc.hashKey(req.query.state)}#teamLevel`);
       integrationContext = await req.app.locals.redis.hgetallAsync(sharepointSvc.hashKey(sharepointSvc.deduceState(req)));
       teamLevel = teamLevelVal == 1;
-      let redirectUri;
       if (teamLevel) {
          redirectUri = `${config.webappBaseUri}/app/teamIntegrations`;
       } 
