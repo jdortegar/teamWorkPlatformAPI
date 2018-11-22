@@ -251,7 +251,7 @@ export const getSubscriberOrgUsers = (req, subscriberOrgId, userId = undefined) 
 };
 
 export const inviteSubscribers = (req, subscriberOrgId, subscriberUserIdEmails, userId) => {
-    
+
     return new Promise((resolve, reject) => {
         let subscriberOrg;
         let dbUser;
@@ -435,7 +435,7 @@ export const getOrganizationInfo = async (req, orgId) => {
     if (!organization) {
         throw new SubscriberOrgNotExistError(orgId);
     }
-    
+
     const subscriberUser = await subscriberUsersTable.getSubscriberUsersByUserId(req, req.user._id) || [];
     let orgAdmin = false;
      if (subscriberUser instanceof Array && subscriberUser.length > 0 && subscriberUser[0].role === 'admin') {
@@ -454,7 +454,7 @@ export const getOrganizationInfo = async (req, orgId) => {
             primary: val.primary,
             active: val.active,
             teamMembers: _.map(val.teamMembers, (member) => {
-                return { 
+                return {
                     userId: member.userId,
                     active: member.enabled,
                     role: member.role,
@@ -462,7 +462,7 @@ export const getOrganizationInfo = async (req, orgId) => {
                 }
             })
         };
-         
+
     });
     return {
         orgId,
