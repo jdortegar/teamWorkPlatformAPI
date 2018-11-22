@@ -90,6 +90,7 @@ export const sharepointAccessResponse = async (req, { code, error, error_descrip
         const subscriberId = (typeof integrationContext.subscriberOrgId !== 'undefined') ? integrationContext.subscriberOrgId : integrationContext.teamId;
         const { sharepointOrg } = integrationContext;
         const tokenInfo = await exchangeAuthorizationCodeForAccessToken(req, code, sharepointOrg);
+        console.log('****TOKEN INFO', tokenInfo)
         req.logger.debug(`Sharepoint access info for userId=${userId} = ${JSON.stringify(tokenInfo)}`);
         let subscriber;
         if (teamLevel) {
