@@ -55,7 +55,7 @@ export const createUser = async (req, userInfo) => {
         const existingUser = await usersTable.getUserByEmailAddress(req, emailAddress);
         if (existingUser) {
             throw new  NoPermissionsError(emailAddress);
-        }  
+        }
         const { firstName, lastName, displayName, country, timeZone } = userInfo;
         const password = hashPassword(userInfo.password);
         const icon = userInfo.icon || null;
@@ -136,7 +136,6 @@ export const updateUser = (req, userId, updateInfo) => {
     return new Promise((resolve, reject) => {
         usersTable.updateUser(req, userId, updateInfo)
             .then((user) => {
-                resolve(user);
                 userUpdated(req, user);
                 if ((updateInfo.preferences) && (updateInfo.preferences.private)) {
                     userPrivateInfoUpdated(req, user);
@@ -148,6 +147,9 @@ export const updateUser = (req, userId, updateInfo) => {
                 if (updateInfo.active === false) {
                     deactivateTeamMembersByUserId(req, userId);
                 }
+            }).then(()=>{
+                const user = usersTable.getUserByUserId(req, userId)
+                resolve(user);
             })
             .catch(err => reject(err));
     });
