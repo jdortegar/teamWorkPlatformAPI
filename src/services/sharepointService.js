@@ -90,7 +90,6 @@ export const sharepointAccessResponse = async (req, { code, error, error_descrip
         const subscriberId = (typeof integrationContext.subscriberOrgId !== 'undefined') ? integrationContext.subscriberOrgId : integrationContext.teamId;
         const { sharepointOrg } = integrationContext;
         const tokenInfo = await exchangeAuthorizationCodeForAccessToken(req, code, sharepointOrg);
-        console.log('****TOKEN INFO', tokenInfo)
         req.logger.debug(`Sharepoint access info for userId=${userId} = ${JSON.stringify(tokenInfo)}`);
         let subscriber;
         if (teamLevel) {
@@ -99,9 +98,7 @@ export const sharepointAccessResponse = async (req, { code, error, error_descrip
             subscriber = await subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberId);
         }
         const userInfo = await getUserInfo(req, tokenInfo.sharepointOrg, tokenInfo.access_token );
-        console.log('***USER INFO', userInfo);
         const sites = await getSites(req, tokenInfo.sharepointOrg, tokenInfo.access_token);
-        console.log('****SITES', sites);
         if (!subscriber) {
             throw new SubscriberOrgNotExistError(subscriberOrgId);
         }
