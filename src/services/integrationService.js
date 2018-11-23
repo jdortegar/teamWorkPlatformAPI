@@ -50,7 +50,7 @@ export const configureIntegration = async (req, userId, subscriberId, target, co
             throw new BadIntegrationConfigurationError(configuration);
         }
 
-        if (teamLevel == 1) {
+        if (teamLevelVal == 1) {
             await teamMembersTable.updateTeamMembersIntegrations(req, userId, teamId, integrations);
         } else {
             await subscriberUsersTable.updateSubscriberUserIntegrations(req, subscriber.subscriberUserId, integrations);
