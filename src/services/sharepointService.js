@@ -149,6 +149,7 @@ export const revokeSharepoint = async (req, userId, subscriberId) => {
         if (!userAccessToken) {
             throw new IntegrationAccessError('Sharepoint integration deoesn\'t exist.');
         }
+        integrations.sharepoint = { revoked: true };
         let subscriberInfo;
         const revokeData = {
             subscriberOrgId: subscriber.subscriberOrgId,

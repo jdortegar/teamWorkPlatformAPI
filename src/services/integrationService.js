@@ -58,6 +58,7 @@ export const configureIntegration = async (req, userId, subscriberId, target, co
         integrationsUpdated(req, subscriber);
         return subscriber;
     } catch (err) {
+        console.log('****ERROR CONFIGURE', err);
         return Promise.reject(err);
     }
 };
