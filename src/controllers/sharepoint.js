@@ -41,10 +41,8 @@ export const sharepointAccess = async (req, res) => {
       } 
 
       const subscriberId = await sharepointSvc.sharepointAccessResponse(req, req.query);
-      console.log('***REDIRECT URI', subscriberId, redirectUri);
       res.redirect(`${redirectUri}/${subscriberId}/sharepoint/CREATED`);
    } catch (err) {
-      console.log('*******ERROR', err.message);
       const subscriberField = (teamLevel) ? 'teamId' : 'subscriberOrgId';
       const realError = err._chainedError || err;
       if (realError instanceof IntegrationAccessError) {
