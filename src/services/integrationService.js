@@ -51,7 +51,7 @@ export const configureIntegration = async (req, userId, subscriberId, target, co
         }
 
         if (teamLevelVal == 1) {
-            await teamMembersTable.updateTeamMembersIntegrations(req, userId, teamId, integrations);
+            await teamMembersTable.updateTeamMembersIntegrations(req, userId, subscriberId, integrations);
         } else {
             await subscriberUsersTable.updateSubscriberUserIntegrations(req, subscriber.subscriberUserId, integrations);
         }
