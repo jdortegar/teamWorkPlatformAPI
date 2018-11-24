@@ -83,7 +83,18 @@ const config = {
    },
    surveyTable: process.env.SURVEY_TABLE || defaultConfig.surveyTable,
 
-   stripeConfig: defaultConfig.stripeConfig,
+   // stripeConfig: defaultConfig.stripeConfig,
+   stripeConfig: {
+      country: 'US',
+      currency: 'usd',
+      stripe: {
+         country: 'US',
+         apiVersion: '2018-10-31',
+         publishableKey: process.env.STRIPE_PUBLIC_KEY || defaultConfig.stripeConfig.stripe.publishableKey,
+         secretKey: process.env.STRIPE_SECRET_KEY || defaultConfig.stripeConfig.stripe.secretKey
+      }
+   },
+   
    knowledgeApiEndpoint: process.env.KNOWLEDGE_API || defaultConfig.knowledgeApiEndpoint,
 };
 
