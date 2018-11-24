@@ -131,7 +131,7 @@ export const getUserByUserId = async (req, userId) => {
     let subscriberUsers = await util.query(req, subscriberUserParams);
     let role = 'user';
     if (subscriberUsers) {
-        role = (subscriberUsers instanceof Array) ? subscriberUsers[0].role : subscriberUsers.role;
+        role = (subscriberUsers instanceof Array && subscriberUsers.length > 0) ? subscriberUsers[0].role : subscriberUsers.role ;
     }
     const originalResults = await util.query(req, userParams);
     const latestResults = upgradeSchema(req, originalResults);
@@ -204,7 +204,8 @@ export const updateUser = (req, userId,
         defaultLocale,
         presenceStatus,
         bookmarks,
-        preferences
+        preferences,
+        active
     }) => {
     return new Promise((resolve, reject) => {
         let user;
@@ -230,7 +231,7 @@ export const updateUser = (req, userId,
                 updateExpression.addUpdate('bookmarks', bookmarks);
                 updateExpression.addUpdate('preferences', preferences);
                 updateExpression.addUpdate('lastModified', lastModified);
-
+                updateExpression.addUpdate('enabled', active);
                 const params = {
                     TableName: tableName(),
                     Key: { userId },
@@ -256,7 +257,8 @@ export const updateUser = (req, userId,
                 presenceStatus,
                 bookmarks,
                 preferences,
-                lastModified
+                lastModified,
+                active,
             })))
             .catch(err => reject(err));
     });

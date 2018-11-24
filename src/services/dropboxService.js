@@ -1,14 +1,16 @@
 import _ from 'lodash';
 import uuid from 'uuid';
+import axios from 'axios';
 import { IntegrationAccessError, SubscriberOrgNotExistError } from './errors';
 import { composeAuthorizationUrl, exchangeAuthorizationCodeForAccessToken, revokeIntegration } from '../integrations/dropbox';
 import { integrationsUpdated } from './messaging';
+import config from '../config/env';
 import * as subscriberUsersTable from '../repositories/db/subscriberUsersTable';
 import * as teamMembersTable from '../repositories/db/teamMembersTable';
 
 const defaultExpiration = 30 * 60; // 30 minutes
 
-const hashKey = (state) => {
+export const hashKey = (state) => {
     return `${state}#dropboxIntegrationState`;
 };
 
@@ -91,30 +93,45 @@ export const dropboxAccessResponse = async (req, { code, state, error, error_des
 };
 
 export const revokeDropbox = async (req, userId, subscriberId) => {
-    const teamLevel = typeof req.query.teamLevel !== 'undefined' && req.query.teamLevel == 1;
-    userId = req.query.userId || userId;
-    let subscriber;
-    if (teamLevel) {
-        subscriber = await teamMembersTable.getTeamMemberByTeamIdAndUserId(req, subscriberId, userId);
-    }  else {
-        subscriber = await subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberId);
+    try {
+        const teamLevel = typeof req.query.teamLevel !== 'undefined' && req.query.teamLevel == 1;
+        userId = req.query.userId || userId;
+        let subscriber;
+        if (teamLevel) {
+            subscriber = await teamMembersTable.getTeamMemberByTeamIdAndUserId(req, subscriberId, userId);
+        }  else {
+            subscriber = await subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberId);
+        }
+        if (!subscriber) {
+            throw new SubscriberOrgNotExistError(subscriberId);
+        }
+        const { integrations } = subscriber;
+        const userAccessToken = (subscriber.integrations && subscriber.integrations.dropbox) ?
+            subscriber.integrations.dropbox.access_token : undefined;
+        if (!userAccessToken) {
+            throw new IntegrationAccessError('Dropbox integration doesn\'t exist.');
+        }
+        integrations.dropbox = { revoked: true };
+        let subscriberInfo;
+        const revokeData = {
+            subscriberOrgId: subscriber.subscriberOrgId,
+            hablaUserId: userId,
+            source: 'dropbox',
+            subscriberUserId: null,
+            teamId: null,
+        }
+        if (teamLevel) {
+            revokeData.teamId = subscriber.teamId;
+            subscriberInfo = teamMembersTable.updateTeamMembersIntegrations(req, userId, subscriberId, integrations);
+        } else {
+            revokeData.subscriberUserId = subscriber.subscriberUserId;
+            subscriberInfo = await subscriberUsersTable.updateSubscriberUserIntegrations(req, subscriber.subscriberUserId, integrations);
+        }
+        await axios.post(`${config.knowledgeApiEndpoint}/revoke/user`, revokeData);
+
+        await revokeIntegration(req, userAccessToken);
+        integrationsUpdated(req, subscriberInfo);
+    } catch (err) {
+        Promise.reject(err);
     }
-    if (!subscriber) {
-        throw new SubscriberOrgNotExistError(subscriberId);
-    }
-    const { integrations } = subscriber;
-    const userAccessToken = (subscriber.integrations && subscriber.integrations.dropbox) ?
-        subscriber.integrations.dropbox.access_token : undefined;
-    if (!userAccessToken) {
-        throw new IntegrationAccessError('Dropbox integration doesn\'t exist.');
-    }
-    integrations.dropbox = { revoked: true };
-    let subscriberInfo;
-    if (teamLevel) {
-        subscriberInfo = teamMembersTable.updateTeamMembersIntegrations(req, userId, subscriberId, integrations);
-    } else {
-        subscriberInfo = await subscriberUsersTable.updateSubscriberUserIntegrations(req, subscriber.subscriberUserId, integrations);
-    }
-    await revokeIntegration(req, userAccessToken);
-    integrationsUpdated(req, subscriberInfo);
 };

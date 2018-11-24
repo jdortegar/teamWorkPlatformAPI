@@ -84,6 +84,13 @@ export class SubscriberUserExistsError extends Error {
    }
 }
 
+export class UserLimitReached extends Error {
+    constructor(userLimit, ...args) {
+        super(...args);
+        this.userLimit = userLimit;
+        Error.captureStackTrace(this, UserLimitReached);
+    }
+}
 export class SubscriberUserNotExistError extends Error {
    constructor(...args) {
       super(...args);
@@ -106,6 +113,13 @@ export class TeamNotExistError extends Error {
 }
 
 export class TeamMemberExistsError extends Error {
+   constructor(...args) {
+      super(...args);
+      Error.captureStackTrace(this, TeamMemberExistsError);
+   }
+}
+
+export class TeamMemberNotExistsError extends Error {
    constructor(...args) {
       super(...args);
       Error.captureStackTrace(this, TeamMemberExistsError);
@@ -185,7 +199,6 @@ export class IntegrationAccessError extends Error {
       Error.captureStackTrace(this, IntegrationAccessError);
    }
 }
-
 
 export class BadIntegrationConfigurationError extends Error {
    _configuration;

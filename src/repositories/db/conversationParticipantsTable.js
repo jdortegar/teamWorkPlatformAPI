@@ -47,7 +47,9 @@ export const createConversationParticipant = (req, conversationId, userId, teamI
          }
       };
 
-      req.app.locals.docClient.put(params).promise()
+      req.app.locals.docClient
+         .put(params)
+         .promise()
          .then(result => resolve(result.$response.request.rawParams.Item))
          .catch(err => reject(err));
    });
@@ -62,7 +64,8 @@ export const getConversationParticipantsByConversationId = (req, conversationId)
             ':conversationId': conversationId
          }
       };
-      util.query(req, params)
+      util
+         .query(req, params)
          .then(originalResults => upgradeSchema(req, originalResults))
          .then(latestResults => resolve(latestResults))
          .catch(err => reject(err));
@@ -79,9 +82,10 @@ export const getConversationParticipantByConversationIdAndUserId = (req, convers
             ':userId': userId
          }
       };
-      util.query(req, params)
+      util
+         .query(req, params)
          .then(originalResults => upgradeSchema(req, originalResults))
-         .then(latestResults => resolve((latestResults && latestResults.length > 0) ? latestResults[0] : undefined))
+         .then(latestResults => resolve(latestResults && latestResults.length > 0 ? latestResults[0] : undefined))
          .catch(err => reject(err));
    });
 };
@@ -96,7 +100,8 @@ export const getConversationParticipantsByUserId = (req, userId) => {
             ':userId': userId
          }
       };
-      util.query(req, params)
+      util
+         .query(req, params)
          .then(originalResults => upgradeSchema(req, originalResults))
          .then(latestResults => resolve(latestResults))
          .catch(err => reject(err));
@@ -113,7 +118,9 @@ export const getConversationParticipantsByTeamId = (req, teamId) => {
             ':teamId': teamId
          }
       };
-      req.app.locals.docClient.get(params).promise()
+      req.app.locals.docClient
+         .get(params)
+         .promise()
          .then(originalResults => upgradeSchema(req, originalResults))
          .then(latestResults => resolve(latestResults))
          .catch(err => reject(err));

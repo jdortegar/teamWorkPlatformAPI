@@ -4,29 +4,29 @@ const getFiles = async (query, neo4jSession, fileRecords=[]) => {
  };
  
  
- export const getFilesBySubscriberOrgId = async (neo4jSession, subscriberOrgId) => {
+ export const getFilesBySubscriberTeamId = async (neo4jSession, subscriberTeamId) => {
     let fileRecords = [];
     const ownFilesInsideFolders = `
        MATCH (u:User)-[:OWNS]->(folder:Folder)-[:HAS *0..]->(f:File)
-       WHERE u.subscriberOrgId = '${subscriberOrgId}' AND u.teamId is null AND u.active = true
+       WHERE u.teamId = '${subscriberTeamId}' AND u.active = true
        RETURN DISTINCT f, u`;
     fileRecords = await getFiles(ownFilesInsideFolders, neo4jSession);
  
     const ownFiles = `
        MATCH (u:User)-[:OWNS]->(f:File)
-       WHERE u.subscriberOrgId = '${subscriberOrgId}' AND u.teamId is null AND u.active = true
+       WHERE u.teamId = '${subscriberTeamId}' AND u.active = true
        RETURN DISTINCT f, u`;
     fileRecords = await getFiles(ownFiles, neo4jSession, fileRecords);
  
     const shareFilesInsideFolders = `
        MATCH (f:File)<-[:HAS *0..]-(folder:Folder)-[:SHARE_WITH]->(u:User)
-       WHERE u.subscriberOrgId = '${subscriberOrgId}' AND u.teamId is null AND u.active = true
+       WHERE u.teamId = '${subscriberTeamId}' AND u.active = true
        RETURN DISTINCT f, u`;
     fileRecords = await getFiles(shareFilesInsideFolders, neo4jSession, fileRecords);
  
     const shareFiles = `
        MATCH (f:File)-[:SHARE_WITH]->(u:User)
-       WHERE u.subscriberOrgId = '${subscriberOrgId}' AND u.teamId is null AND u.active = true
+       WHERE u.teamId = '${subscriberTeamId}' AND u.active = true
        RETURN DISTINCT f, u`;
     fileRecords = await getFiles(shareFiles, neo4jSession, fileRecords);
  
@@ -51,7 +51,7 @@ const getFiles = async (query, neo4jSession, fileRecords=[]) => {
  };
 
  
- export const getFilesBySubscriberOrgIdSearchTerm = async (neo4jSession, subscriberOrgId, searchTerm, caseInsensitive, andOperator) => {
+ export const getFilesBySubscriberTeamIdSearchTerm = async (neo4jSession, subscriberTeamId, searchTerm, caseInsensitive, andOperator) => {
     var arr = null;
     var arrLen = null;
   
@@ -74,191 +74,191 @@ const getFiles = async (query, neo4jSession, fileRecords=[]) => {
             if (arrLen == 1) {
                 const ownFilesInsideFolders = `
                 MATCH (u:User)-[:OWNS]->(folder:Folder)-[:HAS *0..]->(f:File)
-                WHERE u.subscriberOrgId = '${subscriberOrgId}' AND f.fileName contains('${arr[0]}')
-                AND u.teamId is null AND u.active = true
+                WHERE u.teamId = '${subscriberTeamId}' AND f.fileName contains('${arr[0]}')
+                AND u.active = true
                 RETURN DISTINCT f, u`;
                 fileRecords = await getFiles(ownFilesInsideFolders, neo4jSession);       
           
              const ownFiles = `
                 MATCH (u:User)-[:OWNS]->(f:File)
-                WHERE u.subscriberOrgId = '${subscriberOrgId}' AND f.fileName contains('${arr[0]}')
-                AND  u.teamId is null AND u.active = true
+                WHERE u.teamId = '${subscriberTeamId}' AND f.fileName contains('${arr[0]}')
+                AND  u.active = true
                 RETURN DISTINCT f, u`;
                 fileRecords = await getFiles(ownFiles, neo4jSession, fileRecords);
           
              const shareFilesInsideFolders = `
                 MATCH (f:File)<-[:HAS *0..]-(folder:Folder)-[:SHARE_WITH]->(u:User)
-                WHERE u.subscriberOrgId = '${subscriberOrgId}' AND f.fileName contains('${arr[0]}')
-                AND u.teamId is null AND u.active = true
+                WHERE u.teamId = '${subscriberTeamId}' AND f.fileName contains('${arr[0]}')
+                AND u.active = true
                 RETURN DISTINCT f, u`;
                 fileRecords = await getFiles(shareFilesInsideFolders, neo4jSession, fileRecords);
           
              const shareFiles = `
                 MATCH (f:File)-[:SHARE_WITH]->(u:User)
-                WHERE u.subscriberOrgId = '${subscriberOrgId}' AND f.fileName contains('${arr[0]}') AND u.teamId is null AND u.active = true
+                WHERE u.teamId = '${subscriberTeamId}' AND f.fileName contains('${arr[0]}') AND u.active = true
                 RETURN DISTINCT f, u`;
                 fileRecords = await getFiles(shareFiles, neo4jSession, fileRecords);
             
             } else if (arrLen == 2) {
                const ownFilesInsideFolders = `
                 MATCH (u:User)-[:OWNS]->(folder:Folder)-[:HAS *0..]->(f:File)
-                WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (f.fileName contains('${arr[0]}') AND
-                f.fileName contains('${arr[1]}')) AND u.teamId is null AND u.active = true
+                WHERE u.teamId = '${subscriberTeamId}' AND (f.fileName contains('${arr[0]}') AND
+                f.fileName contains('${arr[1]}')) AND u.active = true
                 RETURN DISTINCT f, u`;
                 fileRecords = await getFiles(ownFilesInsideFolders, neo4jSession);       
           
              const ownFiles = `
                 MATCH (u:User)-[:OWNS]->(f:File)
-                WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (f.fileName contains('${arr[0]}') AND
-                f.fileName contains('${arr[1]}')) AND  u.teamId is null AND u.active = true
+                WHERE u.teamId = '${subscriberTeamId}' AND (f.fileName contains('${arr[0]}') AND
+                f.fileName contains('${arr[1]}')) AND  u.active = true
                 RETURN DISTINCT f, u`;
                 fileRecords = await getFiles(ownFiles, neo4jSession, fileRecords);
           
              const shareFilesInsideFolders = `
                 MATCH (f:File)<-[:HAS *0..]-(folder:Folder)-[:SHARE_WITH]->(u:User)
-                WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (f.fileName contains('${arr[0]}') AND
-                f.fileName contains('${arr[1]}')) AND u.teamId is null AND u.active = true
+                WHERE u.teamId = '${subscriberTeamId}' AND (f.fileName contains('${arr[0]}') AND
+                f.fileName contains('${arr[1]}')) AND u.active = true
                 RETURN DISTINCT f, u`;
                 fileRecords = await getFiles(shareFilesInsideFolders, neo4jSession, fileRecords);
           
              const shareFiles = `
                 MATCH (f:File)-[:SHARE_WITH]->(u:User)
-                WHERE u.subscriberOrgId = '${subscriberOrgId}' 
-                AND (f.fileName contains('${arr[0]}') AND f.fileName contains('${arr[1]}')) AND u.teamId is null AND u.active = true 
+                WHERE u.teamId = '${subscriberTeamId}'
+                AND (f.fileName contains('${arr[0]}') AND f.fileName contains('${arr[1]}')) AND u.active = true 
                 RETURN DISTINCT f, u`;
                 fileRecords = await getFiles(shareFiles, neo4jSession, fileRecords);
             
             } else if (arrLen == 3) {
                 const ownFilesInsideFolders = `
                 MATCH (u:User)-[:OWNS]->(folder:Folder)-[:HAS *0..]->(f:File)
-                WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (f.fileName contains('${arr[0]}') AND
-                f.fileName contains('${arr[1]}') AND f.fileName contains('${arr[2]}')) AND u.teamId is null AND u.active = true
+                WHERE u.teamId = '${subscriberTeamId}' AND (f.fileName contains('${arr[0]}') AND
+                f.fileName contains('${arr[1]}') AND f.fileName contains('${arr[2]}')) AND u.active = true
                 RETURN DISTINCT f, u`;
                 fileRecords = await getFiles(ownFilesInsideFolders, neo4jSession);     
           
              const ownFiles = `
                 MATCH (u:User)-[:OWNS]->(f:File)
-                WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (f.fileName contains('${arr[0]}') AND
-                f.fileName contains('${arr[1]}') AND f.fileName contains('${arr[2]}')) AND  u.teamId is null AND u.active = true
+                WHERE u.teamId = '${subscriberTeamId}' AND (f.fileName contains('${arr[0]}') AND
+                f.fileName contains('${arr[1]}') AND f.fileName contains('${arr[2]}')) AND  u.active = true
                 RETURN DISTINCT f, u`;
                 fileRecords = await getFiles(ownFiles, neo4jSession, fileRecords);
           
              const shareFilesInsideFolders = `
                 MATCH (f:File)<-[:HAS *0..]-(folder:Folder)-[:SHARE_WITH]->(u:User)
-                WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (f.fileName contains('${arr[0]}') AND
-                f.fileName contains('${arr[1]}') AND f.fileName contains('${arr[2]}')) AND u.teamId is null AND u.active = true
+                WHERE u.teamId = '${subscriberTeamId}' AND (f.fileName contains('${arr[0]}') AND
+                f.fileName contains('${arr[1]}') AND f.fileName contains('${arr[2]}')) AND u.active = true
                 RETURN DISTINCT f, u`;
                 fileRecords = await getFiles(shareFilesInsideFolders, neo4jSession, fileRecords);
           
              const shareFiles = `
                 MATCH (f:File)-[:SHARE_WITH]->(u:User)
-                WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (f.fileName contains('${arr[0]}') AND
-                f.fileName contains('${arr[1]}') AND f.fileName contains('${arr[2]}')) AND u.teamId is null AND u.active = true 
+                WHERE u.teamId = '${subscriberTeamId}' AND (f.fileName contains('${arr[0]}') AND
+                f.fileName contains('${arr[1]}') AND f.fileName contains('${arr[2]}')) AND u.active = true 
                 RETURN DISTINCT f, u`;
                 fileRecords = await getFiles(shareFiles, neo4jSession, fileRecords);
              
             } else if ((arrLen == 4)) { 
                 const ownFilesInsideFolders = `
                 MATCH (u:User)-[:OWNS]->(folder:Folder)-[:HAS *0..]->(f:File)
-                WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (f.fileName contains('${arr[0]}') AND
+                WHERE u.teamId = '${subscriberTeamId}' AND (f.fileName contains('${arr[0]}') AND
                 f.fileName contains('${arr[1]}') AND f.fileName contains('${arr[2]}')
-                AND f.fileName contains('${arr[3]}')) AND u.teamId is null AND u.active = true
+                AND f.fileName contains('${arr[3]}')) AND u.active = true
                 RETURN DISTINCT f, u`;
                 fileRecords = await getFiles(ownFilesInsideFolders, neo4jSession);
                   
              const ownFiles = `
                 MATCH (u:User)-[:OWNS]->(f:File)
-                WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (f.fileName contains('${arr[0]}') AND
+                WHERE u.teamId = '${subscriberTeamId}' AND (f.fileName contains('${arr[0]}') AND
                 f.fileName contains('${arr[1]}') AND f.fileName contains('${arr[2]}')
-                AND f.fileName contains('${arr[3]}')) AND  u.teamId is null AND u.active = true
+                AND f.fileName contains('${arr[3]}')) AND  u.active = true
                 RETURN DISTINCT f, u`;
                 fileRecords = await getFiles(ownFiles, neo4jSession, fileRecords);
           
              const shareFilesInsideFolders = `
                 MATCH (f:File)<-[:HAS *0..]-(folder:Folder)-[:SHARE_WITH]->(u:User)
-                WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (f.fileName contains('${arr[0]}') AND
+                WHERE u.teamId = '${subscriberTeamId}' AND (f.fileName contains('${arr[0]}') AND
                 f.fileName contains('${arr[1]}') AND f.fileName contains('${arr[2]}')
-                AND f.fileName contains('${arr[3]}')) AND u.teamId is null AND u.active = true
+                AND f.fileName contains('${arr[3]}')) AND u.active = true
                 RETURN DISTINCT f, u`;
                 fileRecords = await getFiles(shareFilesInsideFolders, neo4jSession, fileRecords);
           
              const shareFiles = `
                 MATCH (f:File)-[:SHARE_WITH]->(u:User)
-                WHERE u.subscriberOrgId = '${subscriberOrgId}' 
+                WHERE u.teamId = '${subscriberTeamId}'
                 AND (f.fileName contains('${arr[0]}') AND
                 f.fileName contains('${arr[1]}') AND f.fileName contains('${arr[2]}')
-                AND f.fileName contains('${arr[3]}')) AND u.teamId is null AND u.active = true RETURN DISTINCT f, u`;
+                AND f.fileName contains('${arr[3]}')) AND u.active = true RETURN DISTINCT f, u`;
                 fileRecords = await getFiles(shareFiles, neo4jSession, fileRecords);
                
             } else if ((arrLen == 5)) { 
             const ownFilesInsideFolders = `
                 MATCH (u:User)-[:OWNS]->(folder:Folder)-[:HAS *0..]->(f:File)
-                WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (f.fileName contains('${arr[0]}') AND
+                WHERE u.teamId = '${subscriberTeamId}' AND (f.fileName contains('${arr[0]}') AND
                 f.fileName contains('${arr[1]}') AND f.fileName contains('${arr[2]}')
-                AND f.fileName contains('${arr[3]}') AND f.fileName contains('${arr[4]}')) AND u.teamId is null AND u.active = true
+                AND f.fileName contains('${arr[3]}') AND f.fileName contains('${arr[4]}')) AND u.active = true
                 RETURN DISTINCT f, u`;
                 fileRecords = await getFiles(ownFilesInsideFolders, neo4jSession);
                   
              const ownFiles = `
                 MATCH (u:User)-[:OWNS]->(f:File)
-                WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (f.fileName contains('${arr[0]}') AND
+                WHERE u.teamId = '${subscriberTeamId}' AND (f.fileName contains('${arr[0]}') AND
                 f.fileName contains('${arr[1]}') AND f.fileName contains('${arr[2]}')
-                AND f.fileName contains('${arr[3]}') AND f.fileName contains('${arr[4]}')) AND  u.teamId is null AND u.active = true
+                AND f.fileName contains('${arr[3]}') AND f.fileName contains('${arr[4]}')) AND  u.active = true
                 RETURN DISTINCT f, u`;
                 fileRecords = await getFiles(ownFiles, neo4jSession, fileRecords);
           
              const shareFilesInsideFolders = `
                 MATCH (f:File)<-[:HAS *0..]-(folder:Folder)-[:SHARE_WITH]->(u:User)
-                WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (f.fileName contains('${arr[0]}') AND
+                WHERE u.teamId = '${subscriberTeamId}' AND (f.fileName contains('${arr[0]}') AND
                 f.fileName contains('${arr[1]}') AND f.fileName contains('${arr[2]}')
-                AND f.fileName contains('${arr[3]}') AND f.fileName contains('${arr[4]}')) AND u.teamId is null AND u.active = true
+                AND f.fileName contains('${arr[3]}') AND f.fileName contains('${arr[4]}')) AND u.active = true
                 RETURN DISTINCT f, u`;
                 fileRecords = await getFiles(shareFilesInsideFolders, neo4jSession, fileRecords);
           
              const shareFiles = `
                 MATCH (f:File)-[:SHARE_WITH]->(u:User)
-                WHERE u.subscriberOrgId = '${subscriberOrgId}' 
+                WHERE u.teamId = '${subscriberTeamId}' 
                 AND (f.fileName contains('${arr[0]}') AND
                 f.fileName contains('${arr[1]}') AND f.fileName contains('${arr[2]}')
-                AND f.fileName contains('${arr[3]}') AND f.fileName contains('${arr[4]}')) AND u.teamId is null AND u.active = true 
+                AND f.fileName contains('${arr[3]}') AND f.fileName contains('${arr[4]}')) AND u.active = true 
                 RETURN DISTINCT f, u`;
                 fileRecords = await getFiles(shareFiles, neo4jSession, fileRecords);
                    
             } else {
                 const ownFilesInsideFolders = `
                     MATCH (u:User)-[:OWNS]->(folder:Folder)-[:HAS *0..]->(f:File)
-                    WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (f.fileName contains('${arr[0]}') AND
+                    WHERE u.teamId = '${subscriberTeamId}' AND (f.fileName contains('${arr[0]}') AND
                     f.fileName contains('${arr[1]}') AND f.fileName contains('${arr[2]}')
                     AND f.fileName contains('${arr[3]}') AND f.fileName contains('${arr[4]}') AND
-                    f.fileName contains('${arr[5]}')) AND u.teamId is null AND u.active = true
+                    f.fileName contains('${arr[5]}')) AND u.active = true
                     RETURN DISTINCT f, u`;
                     fileRecords = await getFiles(ownFilesInsideFolders, neo4jSession);
                              
                  const ownFiles = `
                     MATCH (u:User)-[:OWNS]->(f:File)
-                    WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (f.fileName contains('${arr[0]}') AND
+                    WHERE u.teamId = '${subscriberTeamId}' AND (f.fileName contains('${arr[0]}') AND
                     f.fileName contains('${arr[1]}') AND f.fileName contains('${arr[2]}')
                     AND f.fileName contains('${arr[3]}') AND f.fileName contains('${arr[4]}') AND
-                    f.fileName contains('${arr[5]}')) AND  u.teamId is null AND u.active = true
+                    f.fileName contains('${arr[5]}')) AND  u.active = true
                     RETURN DISTINCT f, u`;
                     fileRecords = await getFiles(ownFiles, neo4jSession, fileRecords);
               
                  const shareFilesInsideFolders = `
                     MATCH (f:File)<-[:HAS *0..]-(folder:Folder)-[:SHARE_WITH]->(u:User)
-                    WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (f.fileName contains('${arr[0]}') AND
+                    WHERE u.teamId = '${subscriberTeamId}' AND (f.fileName contains('${arr[0]}') AND
                     f.fileName contains('${arr[1]}') AND f.fileName contains('${arr[2]}')
                     AND f.fileName contains('${arr[3]}') AND f.fileName contains('${arr[4]}') AND
-                    f.fileName contains('${arr[5]}')) AND u.teamId is null AND u.active = true
+                    f.fileName contains('${arr[5]}')) AND u.active = true
                     RETURN DISTINCT f, u`;
                     fileRecords = await getFiles(shareFilesInsideFolders, neo4jSession, fileRecords);
               
                  const shareFiles = `
                     MATCH (f:File)-[:SHARE_WITH]->(u:User)
-                    WHERE u.subscriberOrgId = '${subscriberOrgId}' 
+                    WHERE u.teamId = '${subscriberTeamId}'
                     AND (f.fileName contains('${arr[0]}') AND
                     f.fileName contains('${arr[1]}') AND f.fileName contains('${arr[2]}')
                     AND f.fileName contains('${arr[3]}') AND f.fileName contains('${arr[4]}') AND
-                    f.fileName contains('${arr[5]}')) AND u.teamId is null AND u.active = true RETURN DISTINCT f, u`;
+                    f.fileName contains('${arr[5]}')) AND u.active = true RETURN DISTINCT f, u`;
                     fileRecords = await getFiles(shareFiles, neo4jSession, fileRecords);
                               
                 }
@@ -266,132 +266,132 @@ const getFiles = async (query, neo4jSession, fileRecords=[]) => {
         if (arrLen == 1) {
            const ownFilesInsideFolders = `
            MATCH (u:User)-[:OWNS]->(folder:Folder)-[:HAS *0..]->(f:File)
-           WHERE u.subscriberOrgId = '${subscriberOrgId}' AND toLower(f.fileName) contains(toLower('${arr[0]}'))
-           AND u.teamId is null AND u.active = true
+           WHERE u.teamId = '${subscriberTeamId}' AND toLower(f.fileName) contains(toLower('${arr[0]}'))
+           AND u.active = true
            RETURN DISTINCT f, u`;
            fileRecords = await getFiles(ownFilesInsideFolders, neo4jSession);       
      
         const ownFiles = `
            MATCH (u:User)-[:OWNS]->(f:File)
-           WHERE u.subscriberOrgId = '${subscriberOrgId}' AND toLower(f.fileName) contains(toLower('${arr[0]}'))
-           AND  u.teamId is null AND u.active = true
+           WHERE u.teamId = '${subscriberTeamId}' AND toLower(f.fileName) contains(toLower('${arr[0]}'))
+           AND  u.active = true
            RETURN DISTINCT f, u`;
            fileRecords = await getFiles(ownFiles, neo4jSession, fileRecords);
      
         const shareFilesInsideFolders = `
            MATCH (f:File)<-[:HAS *0..]-(folder:Folder)-[:SHARE_WITH]->(u:User)
-           WHERE u.subscriberOrgId = '${subscriberOrgId}' AND toLower(f.fileName) contains(toLower('${arr[0]}'))
-           AND u.teamId is null AND u.active = true
+           WHERE u.teamId = '${subscriberTeamId}' AND toLower(f.fileName) contains(toLower('${arr[0]}'))
+           AND u.active = true
            RETURN DISTINCT f, u`;
            fileRecords = await getFiles(shareFilesInsideFolders, neo4jSession, fileRecords);
      
         const shareFiles = `
            MATCH (f:File)-[:SHARE_WITH]->(u:User)
-           WHERE u.subscriberOrgId = '${subscriberOrgId}' AND toLower(f.fileName) contains(toLower('${arr[0]}'))
-           AND u.teamId is null AND u.active = true
+           WHERE u.teamId = '${subscriberTeamId}' AND toLower(f.fileName) contains(toLower('${arr[0]}'))
+           AND u.active = true
            RETURN DISTINCT f, u`;
            fileRecords = await getFiles(shareFiles, neo4jSession, fileRecords);
            
         } else if (arrLen == 2) {
             const ownFilesInsideFolders = `
             MATCH (u:User)-[:OWNS]->(folder:Folder)-[:HAS *0..]->(f:File)
-            WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
+            WHERE u.teamId = '${subscriberTeamId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
             AND toLower(f.fileName) contains(toLower('${arr[1]}')))
-            AND u.teamId is null AND u.active = true
+            AND u.active = true
             RETURN DISTINCT f, u`;
             fileRecords = await getFiles(ownFilesInsideFolders, neo4jSession);       
       
          const ownFiles = `
             MATCH (u:User)-[:OWNS]->(f:File)
-            WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
+            WHERE u.teamId = '${subscriberTeamId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
             AND toLower(f.fileName) contains(toLower('${arr[1]}')))
-            AND  u.teamId is null AND u.active = true
+            AND  u.active = true
             RETURN DISTINCT f, u`;
             fileRecords = await getFiles(ownFiles, neo4jSession, fileRecords);
       
          const shareFilesInsideFolders = `
             MATCH (f:File)<-[:HAS *0..]-(folder:Folder)-[:SHARE_WITH]->(u:User)
-            WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
+            WHERE u.teamId = '${subscriberTeamId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
             AND toLower(f.fileName) contains(toLower('${arr[1]}')))
-            AND u.teamId is null AND u.active = true
+            AND u.active = true
             RETURN DISTINCT f, u`;
             fileRecords = await getFiles(shareFilesInsideFolders, neo4jSession, fileRecords);
       
          const shareFiles = `
             MATCH (f:File)-[:SHARE_WITH]->(u:User)
-            WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
+            WHERE u.teamId = '${subscriberTeamId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
             AND toLower(f.fileName) contains(toLower('${arr[1]}')))
-            AND u.teamId is null AND u.active = true
+            AND u.active = true
             RETURN DISTINCT f, u`;
             fileRecords = await getFiles(shareFiles, neo4jSession, fileRecords);
            
         } else if (arrLen == 3) {
             const ownFilesInsideFolders = `
             MATCH (u:User)-[:OWNS]->(folder:Folder)-[:HAS *0..]->(f:File)
-            WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
+            WHERE u.teamId = '${subscriberTeamId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
             AND toLower(f.fileName) contains(toLower('${arr[1]}')) AND toLower(f.fileName) contains(toLower('${arr[2]}')))
-            AND u.teamId is null AND u.active = true
+            AND u.active = true
             RETURN DISTINCT f, u`;
             fileRecords = await getFiles(ownFilesInsideFolders, neo4jSession);       
       
          const ownFiles = `
             MATCH (u:User)-[:OWNS]->(f:File)
-            WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
+            WHERE u.teamId = '${subscriberTeamId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
             AND toLower(f.fileName) contains(toLower('${arr[1]}')) AND toLower(f.fileName) contains(toLower('${arr[2]}')))
-            AND  u.teamId is null AND u.active = true
+            AND  u.active = true
             RETURN DISTINCT f, u`;
             fileRecords = await getFiles(ownFiles, neo4jSession, fileRecords);
       
          const shareFilesInsideFolders = `
             MATCH (f:File)<-[:HAS *0..]-(folder:Folder)-[:SHARE_WITH]->(u:User)
-            WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
+            WHERE u.teamId = '${subscriberTeamId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
             AND toLower(f.fileName) contains(toLower('${arr[1]}')) AND toLower(f.fileName) contains(toLower('${arr[2]}')))
-            AND u.teamId is null AND u.active = true
+            AND u.active = true
             RETURN DISTINCT f, u`;
             fileRecords = await getFiles(shareFilesInsideFolders, neo4jSession, fileRecords);
       
          const shareFiles = `
             MATCH (f:File)-[:SHARE_WITH]->(u:User)
-            WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
+            WHERE u.teamId = '${subscriberTeamId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
             AND toLower(f.fileName) contains(toLower('${arr[1]}')) AND toLower(f.fileName) contains(toLower('${arr[2]}')))
-            AND u.teamId is null AND u.active = true
+            AND u.active = true
             RETURN DISTINCT f, u`;
             fileRecords = await getFiles(shareFiles, neo4jSession, fileRecords);
            
         } else if ((arrLen == 4)) { 
             const ownFilesInsideFolders = `
             MATCH (u:User)-[:OWNS]->(folder:Folder)-[:HAS *0..]->(f:File)
-            WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
+            WHERE u.teamId = '${subscriberTeamId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
             AND toLower(f.fileName) contains(toLower('${arr[1]}')) AND toLower(f.fileName) contains(toLower('${arr[2]}'))
             AND toLower(f.fileName) contains(toLower('${arr[3]}')))
-            AND u.teamId is null AND u.active = true
+            AND u.active = true
             RETURN DISTINCT f, u`;
             fileRecords = await getFiles(ownFilesInsideFolders, neo4jSession);       
       
          const ownFiles = `
             MATCH (u:User)-[:OWNS]->(f:File)
-            WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
+            WHERE u.teamId = '${subscriberTeamId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
             AND toLower(f.fileName) contains(toLower('${arr[1]}')) AND toLower(f.fileName) contains(toLower('${arr[2]}'))
             AND toLower(f.fileName) contains(toLower('${arr[3]}')))
-            AND  u.teamId is null AND u.active = true
+            AND  u.active = true
             RETURN DISTINCT f, u`;
             fileRecords = await getFiles(ownFiles, neo4jSession, fileRecords);
       
          const shareFilesInsideFolders = `
             MATCH (f:File)<-[:HAS *0..]-(folder:Folder)-[:SHARE_WITH]->(u:User)
-            WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
+            WHERE u.teamId = '${subscriberTeamId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
             AND toLower(f.fileName) contains(toLower('${arr[1]}')) AND toLower(f.fileName) contains(toLower('${arr[2]}')) 
             AND toLower(f.fileName) contains(toLower('${arr[3]}')))
-            AND u.teamId is null AND u.active = true
+            AND u.active = true
             RETURN DISTINCT f, u`;
             fileRecords = await getFiles(shareFilesInsideFolders, neo4jSession, fileRecords);
       
          const shareFiles = `
             MATCH (f:File)-[:SHARE_WITH]->(u:User)
-            WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
+            WHERE u.teamId = '${subscriberTeamId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
             AND toLower(f.fileName) contains(toLower('${arr[1]}')) AND toLower(f.fileName) contains(toLower('${arr[2]}'))
             AND toLower(f.fileName) contains(toLower('${arr[3]}')))
-            AND u.teamId is null AND u.active = true
+            AND u.active = true
             RETURN DISTINCT f, u`;
             fileRecords = await getFiles(shareFiles, neo4jSession, fileRecords);
     
@@ -399,84 +399,84 @@ const getFiles = async (query, neo4jSession, fileRecords=[]) => {
         } else if ((arrLen == 5)) { 
             const ownFilesInsideFolders = `
             MATCH (u:User)-[:OWNS]->(folder:Folder)-[:HAS *0..]->(f:File)
-            WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
+            WHERE u.teamId = '${subscriberTeamId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
             AND toLower(f.fileName) contains(toLower('${arr[1]}')) AND toLower(f.fileName) contains(toLower('${arr[2]}'))
             AND toLower(f.fileName) contains(toLower('${arr[3]}'))
             AND toLower(f.fileName) contains(toLower('${arr[4]}')))
-            AND u.teamId is null AND u.active = true
+            AND u.active = true
             RETURN DISTINCT f, u`;
             fileRecords = await getFiles(ownFilesInsideFolders, neo4jSession);       
       
          const ownFiles = `
             MATCH (u:User)-[:OWNS]->(f:File)
-            WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
+            WHERE u.teamId = '${subscriberTeamId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
             AND toLower(f.fileName) contains(toLower('${arr[1]}')) AND toLower(f.fileName) contains(toLower('${arr[2]}'))
             AND toLower(f.fileName) contains(toLower('${arr[3]}'))
             AND toLower(f.fileName) contains(toLower('${arr[4]}')))
-            AND  u.teamId is null AND u.active = true
+            AND  u.active = true
             RETURN DISTINCT f, u`;
             fileRecords = await getFiles(ownFiles, neo4jSession, fileRecords);
       
          const shareFilesInsideFolders = `
             MATCH (f:File)<-[:HAS *0..]-(folder:Folder)-[:SHARE_WITH]->(u:User)
-            WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
+            WHERE u.teamId = '${subscriberTeamId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
             AND toLower(f.fileName) contains(toLower('${arr[1]}')) AND toLower(f.fileName) contains(toLower('${arr[2]}')) 
             AND toLower(f.fileName) contains(toLower('${arr[3]}')) AND toLower(f.fileName) contains(toLower('${arr[4]}')))
-            AND u.teamId is null AND u.active = true
+            AND u.active = true
             RETURN DISTINCT f, u`;
             fileRecords = await getFiles(shareFilesInsideFolders, neo4jSession, fileRecords);
       
          const shareFiles = `
             MATCH (f:File)-[:SHARE_WITH]->(u:User)
-            WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
+            WHERE u.teamId = '${subscriberTeamId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
             AND toLower(f.fileName) contains(toLower('${arr[1]}')) AND toLower(f.fileName) contains(toLower('${arr[2]}'))
             AND toLower(f.fileName) contains(toLower('${arr[3]}'))
             AND toLower(f.fileName) contains(toLower('${arr[4]}')))
-            AND u.teamId is null AND u.active = true
+            AND u.active = true
             RETURN DISTINCT f, u`;
             fileRecords = await getFiles(shareFiles, neo4jSession, fileRecords);
     
         } else {
             const ownFilesInsideFolders = `
             MATCH (u:User)-[:OWNS]->(folder:Folder)-[:HAS *0..]->(f:File)
-            WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
+            WHERE u.teamId = '${subscriberTeamId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
             AND toLower(f.fileName) contains(toLower('${arr[1]}')) AND toLower(f.fileName) contains(toLower('${arr[2]}'))
             AND toLower(f.fileName) contains(toLower('${arr[3]}'))
             AND toLower(f.fileName) contains(toLower('${arr[4]}'))
             AND toLower(f.fileName) contains(toLower('${arr[5]}')))
-            AND u.teamId is null AND u.active = true
+            AND u.active = true
             RETURN DISTINCT f, u`;
             fileRecords = await getFiles(ownFilesInsideFolders, neo4jSession);       
       
          const ownFiles = `
             MATCH (u:User)-[:OWNS]->(f:File)
-            WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
+            WHERE u.teamId = '${subscriberTeamId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
             AND toLower(f.fileName) contains(toLower('${arr[1]}')) AND toLower(f.fileName) contains(toLower('${arr[2]}'))
             AND toLower(f.fileName) contains(toLower('${arr[3]}'))
             AND toLower(f.fileName) contains(toLower('${arr[4]}'))
             AND toLower(f.fileName) contains(toLower('${arr[5]}')))
-            AND  u.teamId is null AND u.active = true
+            AND  u.active = true
             RETURN DISTINCT f, u`;
             fileRecords = await getFiles(ownFiles, neo4jSession, fileRecords);
       
          const shareFilesInsideFolders = `
             MATCH (f:File)<-[:HAS *0..]-(folder:Folder)-[:SHARE_WITH]->(u:User)
-            WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
+            WHERE u.teamId = '${subscriberTeamId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
             AND toLower(f.fileName) contains(toLower('${arr[1]}')) AND toLower(f.fileName) contains(toLower('${arr[2]}')) 
             AND toLower(f.fileName) contains(toLower('${arr[3]}')) AND toLower(f.fileName) contains(toLower('${arr[4]}'))
             AND toLower(f.fileName) contains(toLower('${arr[5]}')))
-            AND u.teamId is null AND u.active = true
+            AND u.active = true
             RETURN DISTINCT f, u`;
             fileRecords = await getFiles(shareFilesInsideFolders, neo4jSession, fileRecords);
       
          const shareFiles = `
             MATCH (f:File)-[:SHARE_WITH]->(u:User)
-            WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
+            WHERE u.teamId = '${subscriberTeamId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
             AND toLower(f.fileName) contains(toLower('${arr[1]}')) AND toLower(f.fileName) contains(toLower('${arr[2]}'))
             AND toLower(f.fileName) contains(toLower('${arr[3]}'))
             AND toLower(f.fileName) contains(toLower('${arr[4]}')) 
             AND toLower(f.fileName) contains(toLower('${arr[5]}')))
-            AND u.teamId is null AND u.active = true
+            AND u.active = true
             RETURN DISTINCT f, u`;
             fileRecords = await getFiles(shareFiles, neo4jSession, fileRecords);
     
@@ -488,191 +488,191 @@ const getFiles = async (query, neo4jSession, fileRecords=[]) => {
         if (arrLen == 1) {
             const ownFilesInsideFolders = `
             MATCH (u:User)-[:OWNS]->(folder:Folder)-[:HAS *0..]->(f:File)
-            WHERE u.subscriberOrgId = '${subscriberOrgId}' AND f.fileName contains('${arr[0]}')
-            AND u.teamId is null AND u.active = true
+            WHERE u.teamId = '${subscriberTeamId}' AND f.fileName contains('${arr[0]}')
+            AND u.active = true
             RETURN DISTINCT f, u`;
             fileRecords = await getFiles(ownFilesInsideFolders, neo4jSession);       
       
          const ownFiles = `
             MATCH (u:User)-[:OWNS]->(f:File)
-            WHERE u.subscriberOrgId = '${subscriberOrgId}' AND f.fileName contains('${arr[0]}')
-            AND  u.teamId is null AND u.active = true
+            WHERE u.teamId = '${subscriberTeamId}' AND f.fileName contains('${arr[0]}')
+            AND  u.active = true
             RETURN DISTINCT f, u`;
             fileRecords = await getFiles(ownFiles, neo4jSession, fileRecords);
       
          const shareFilesInsideFolders = `
             MATCH (f:File)<-[:HAS *0..]-(folder:Folder)-[:SHARE_WITH]->(u:User)
-            WHERE u.subscriberOrgId = '${subscriberOrgId}' AND f.fileName contains('${arr[0]}')
-            AND u.teamId is null AND u.active = true
+            WHERE u.teamId = '${subscriberTeamId}' AND f.fileName contains('${arr[0]}')
+            AND u.active = true
             RETURN DISTINCT f, u`;
             fileRecords = await getFiles(shareFilesInsideFolders, neo4jSession, fileRecords);
       
          const shareFiles = `
             MATCH (f:File)-[:SHARE_WITH]->(u:User)
-            WHERE u.subscriberOrgId = '${subscriberOrgId}' AND f.fileName contains('${arr[0]}') AND u.teamId is null AND u.active = true
+            WHERE u.teamId = '${subscriberTeamId}' AND f.fileName contains('${arr[0]}') AND u.active = true
             RETURN DISTINCT f, u`;
             fileRecords = await getFiles(shareFiles, neo4jSession, fileRecords);
         
         } else if (arrLen == 2) {
            const ownFilesInsideFolders = `
             MATCH (u:User)-[:OWNS]->(folder:Folder)-[:HAS *0..]->(f:File)
-            WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (f.fileName contains('${arr[0]}') OR
-            f.fileName contains('${arr[1]}')) AND u.teamId is null AND u.active = true
+            WHERE u.teamId = '${subscriberTeamId}' AND (f.fileName contains('${arr[0]}') OR
+            f.fileName contains('${arr[1]}')) AND u.active = true
             RETURN DISTINCT f, u`;
             fileRecords = await getFiles(ownFilesInsideFolders, neo4jSession);       
       
          const ownFiles = `
             MATCH (u:User)-[:OWNS]->(f:File)
-            WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (f.fileName contains('${arr[0]}') OR
-            f.fileName contains('${arr[1]}')) AND  u.teamId is null AND u.active = true
+            WHERE u.teamId = '${subscriberTeamId}' AND (f.fileName contains('${arr[0]}') OR
+            f.fileName contains('${arr[1]}')) AND  u.active = true
             RETURN DISTINCT f, u`;
             fileRecords = await getFiles(ownFiles, neo4jSession, fileRecords);
       
          const shareFilesInsideFolders = `
             MATCH (f:File)<-[:HAS *0..]-(folder:Folder)-[:SHARE_WITH]->(u:User)
-            WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (f.fileName contains('${arr[0]}') OR
-            f.fileName contains('${arr[1]}')) AND u.teamId is null AND u.active = true
+            WHERE u.teamId = '${subscriberTeamId}' AND (f.fileName contains('${arr[0]}') OR
+            f.fileName contains('${arr[1]}')) AND u.active = true
             RETURN DISTINCT f, u`;
             fileRecords = await getFiles(shareFilesInsideFolders, neo4jSession, fileRecords);
       
          const shareFiles = `
             MATCH (f:File)-[:SHARE_WITH]->(u:User)
-            WHERE u.subscriberOrgId = '${subscriberOrgId}' 
-            AND (f.fileName contains('${arr[0]}') OR f.fileName contains('${arr[1]}')) AND u.teamId is null AND u.active = true 
+            WHERE u.teamId = '${subscriberTeamId}' 
+            AND (f.fileName contains('${arr[0]}') OR f.fileName contains('${arr[1]}')) AND u.active = true 
             RETURN DISTINCT f, u`;
             fileRecords = await getFiles(shareFiles, neo4jSession, fileRecords);
         
         } else if (arrLen == 3) {
             const ownFilesInsideFolders = `
             MATCH (u:User)-[:OWNS]->(folder:Folder)-[:HAS *0..]->(f:File)
-            WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (f.fileName contains('${arr[0]}') OR
-            f.fileName contains('${arr[1]}') OR f.fileName contains('${arr[2]}')) AND u.teamId is null AND u.active = true
+            WHERE u.teamId = '${subscriberTeamId}' AND (f.fileName contains('${arr[0]}') OR
+            f.fileName contains('${arr[1]}') OR f.fileName contains('${arr[2]}')) AND u.active = true
             RETURN DISTINCT f, u`;
             fileRecords = await getFiles(ownFilesInsideFolders, neo4jSession);     
       
          const ownFiles = `
             MATCH (u:User)-[:OWNS]->(f:File)
-            WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (f.fileName contains('${arr[0]}') OR
-            f.fileName contains('${arr[1]}') OR f.fileName contains('${arr[2]}')) AND  u.teamId is null AND u.active = true
+            WHERE u.teamId = '${subscriberTeamId}' AND (f.fileName contains('${arr[0]}') OR
+            f.fileName contains('${arr[1]}') OR f.fileName contains('${arr[2]}')) AND  u.active = true
             RETURN DISTINCT f, u`;
             fileRecords = await getFiles(ownFiles, neo4jSession, fileRecords);
       
          const shareFilesInsideFolders = `
             MATCH (f:File)<-[:HAS *0..]-(folder:Folder)-[:SHARE_WITH]->(u:User)
-            WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (f.fileName contains('${arr[0]}') OR
-            f.fileName contains('${arr[1]}') OR f.fileName contains('${arr[2]}')) AND u.teamId is null AND u.active = true
+            WHERE u.teamId = '${subscriberTeamId}' AND (f.fileName contains('${arr[0]}') OR
+            f.fileName contains('${arr[1]}') OR f.fileName contains('${arr[2]}')) AND u.active = true
             RETURN DISTINCT f, u`;
             fileRecords = await getFiles(shareFilesInsideFolders, neo4jSession, fileRecords);
       
          const shareFiles = `
             MATCH (f:File)-[:SHARE_WITH]->(u:User)
-            WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (f.fileName contains('${arr[0]}') OR 
-            f.fileName contains('${arr[1]}') OR f.fileName contains('${arr[2]}')) AND u.teamId is null AND u.active = true 
+            WHERE u.teamId = '${subscriberTeamId}' AND (f.fileName contains('${arr[0]}') OR 
+            f.fileName contains('${arr[1]}') OR f.fileName contains('${arr[2]}')) AND u.active = true 
             RETURN DISTINCT f, u`;
             fileRecords = await getFiles(shareFiles, neo4jSession, fileRecords);
          
         } else if ((arrLen == 4)) { 
             const ownFilesInsideFolders = `
             MATCH (u:User)-[:OWNS]->(folder:Folder)-[:HAS *0..]->(f:File)
-            WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (f.fileName contains('${arr[0]}') OR
+            WHERE u.teamId = '${subscriberTeamId}' AND (f.fileName contains('${arr[0]}') OR
             f.fileName contains('${arr[1]}') OR f.fileName contains('${arr[2]}')
-            OR f.fileName contains('${arr[3]}')) AND u.teamId is null AND u.active = true
+            OR f.fileName contains('${arr[3]}')) AND u.active = true
             RETURN DISTINCT f, u`;
             fileRecords = await getFiles(ownFilesInsideFolders, neo4jSession);
               
          const ownFiles = `
             MATCH (u:User)-[:OWNS]->(f:File)
-            WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (f.fileName contains('${arr[0]}') OR
+            WHERE u.teamId = '${subscriberTeamId}' AND (f.fileName contains('${arr[0]}') OR
             f.fileName contains('${arr[1]}') OR f.fileName contains('${arr[2]}')
-            OR f.fileName contains('${arr[3]}')) AND  u.teamId is null AND u.active = true
+            OR f.fileName contains('${arr[3]}')) AND  u.active = true
             RETURN DISTINCT f, u`;
             fileRecords = await getFiles(ownFiles, neo4jSession, fileRecords);
       
          const shareFilesInsideFolders = `
             MATCH (f:File)<-[:HAS *0..]-(folder:Folder)-[:SHARE_WITH]->(u:User)
-            WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (f.fileName contains('${arr[0]}') OR
+            WHERE u.teamId = '${subscriberTeamId}' AND (f.fileName contains('${arr[0]}') OR
             f.fileName contains('${arr[1]}') OR f.fileName contains('${arr[2]}')
-            OR f.fileName contains('${arr[3]}')) AND u.teamId is null AND u.active = true
+            OR f.fileName contains('${arr[3]}')) AND u.active = true
             RETURN DISTINCT f, u`;
             fileRecords = await getFiles(shareFilesInsideFolders, neo4jSession, fileRecords);
       
          const shareFiles = `
             MATCH (f:File)-[:SHARE_WITH]->(u:User)
-            WHERE u.subscriberOrgId = '${subscriberOrgId}' 
+            WHERE u.teamId = '${subscriberTeamId}' 
             AND (f.fileName contains('${arr[0]}') OR
             f.fileName contains('${arr[1]}') OR f.fileName contains('${arr[2]}')
-            OR f.fileName contains('${arr[3]}')) AND u.teamId is null AND u.active = true RETURN DISTINCT f, u`;
+            OR f.fileName contains('${arr[3]}')) AND u.active = true RETURN DISTINCT f, u`;
             fileRecords = await getFiles(shareFiles, neo4jSession, fileRecords);
            
         } else if ((arrLen == 5)) { 
         const ownFilesInsideFolders = `
             MATCH (u:User)-[:OWNS]->(folder:Folder)-[:HAS *0..]->(f:File)
-            WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (f.fileName contains('${arr[0]}') OR
+            WHERE u.teamId = '${subscriberTeamId}' AND (f.fileName contains('${arr[0]}') OR
             f.fileName contains('${arr[1]}') OR f.fileName contains('${arr[2]}')
-            OR f.fileName contains('${arr[3]}')OR f.fileName contains('${arr[4]}')) AND u.teamId is null AND u.active = true
+            OR f.fileName contains('${arr[3]}')OR f.fileName contains('${arr[4]}')) AND u.active = true
             RETURN DISTINCT f, u`;
             fileRecords = await getFiles(ownFilesInsideFolders, neo4jSession);
               
          const ownFiles = `
             MATCH (u:User)-[:OWNS]->(f:File)
-            WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (f.fileName contains('${arr[0]}') OR
+            WHERE u.teamId = '${subscriberTeamId}' AND (f.fileName contains('${arr[0]}') OR
             f.fileName contains('${arr[1]}') OR f.fileName contains('${arr[2]}')
-            OR f.fileName contains('${arr[3]}')OR f.fileName contains('${arr[4]}')) AND  u.teamId is null AND u.active = true
+            OR f.fileName contains('${arr[3]}')OR f.fileName contains('${arr[4]}')) AND  u.active = true
             RETURN DISTINCT f, u`;
             fileRecords = await getFiles(ownFiles, neo4jSession, fileRecords);
       
          const shareFilesInsideFolders = `
             MATCH (f:File)<-[:HAS *0..]-(folder:Folder)-[:SHARE_WITH]->(u:User)
-            WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (f.fileName contains('${arr[0]}') OR
+            WHERE u.teamId = '${subscriberTeamId}' AND (f.fileName contains('${arr[0]}') OR
             f.fileName contains('${arr[1]}') OR f.fileName contains('${arr[2]}')
-            OR f.fileName contains('${arr[3]}')OR f.fileName contains('${arr[4]}')) AND u.teamId is null AND u.active = true
+            OR f.fileName contains('${arr[3]}')OR f.fileName contains('${arr[4]}')) AND u.active = true
             RETURN DISTINCT f, u`;
             fileRecords = await getFiles(shareFilesInsideFolders, neo4jSession, fileRecords);
       
          const shareFiles = `
             MATCH (f:File)-[:SHARE_WITH]->(u:User)
-            WHERE u.subscriberOrgId = '${subscriberOrgId}' 
+            WHERE u.teamId = '${subscriberTeamId}' 
             AND (f.fileName contains('${arr[0]}') OR
             f.fileName contains('${arr[1]}') OR f.fileName contains('${arr[2]}')
-            OR f.fileName contains('${arr[3]}')OR f.fileName contains('${arr[4]}')) AND u.teamId is null AND u.active = true 
+            OR f.fileName contains('${arr[3]}')OR f.fileName contains('${arr[4]}')) AND u.active = true 
             RETURN DISTINCT f, u`;
             fileRecords = await getFiles(shareFiles, neo4jSession, fileRecords);
                
         } else {
             const ownFilesInsideFolders = `
                 MATCH (u:User)-[:OWNS]->(folder:Folder)-[:HAS *0..]->(f:File)
-                WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (f.fileName contains('${arr[0]}') OR
+                WHERE u.teamId = '${subscriberTeamId}' AND (f.fileName contains('${arr[0]}') OR
                 f.fileName contains('${arr[1]}') OR f.fileName contains('${arr[2]}')
                 OR f.fileName contains('${arr[3]}') OR f.fileName contains('${arr[4]}') OR 
-                f.fileName contains('${arr[5]}')) AND u.teamId is null AND u.active = true
+                f.fileName contains('${arr[5]}')) AND u.active = true
                 RETURN DISTINCT f, u`;
                 fileRecords = await getFiles(ownFilesInsideFolders, neo4jSession);
                          
              const ownFiles = `
                 MATCH (u:User)-[:OWNS]->(f:File)
-                WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (f.fileName contains('${arr[0]}') OR
+                WHERE u.teamId = '${subscriberTeamId}' AND (f.fileName contains('${arr[0]}') OR
                 f.fileName contains('${arr[1]}') OR f.fileName contains('${arr[2]}')
                 OR f.fileName contains('${arr[3]}') OR f.fileName contains('${arr[4]}') OR 
-                f.fileName contains('${arr[5]}')) AND  u.teamId is null AND u.active = true
+                f.fileName contains('${arr[5]}')) AND  u.active = true
                 RETURN DISTINCT f, u`;
                 fileRecords = await getFiles(ownFiles, neo4jSession, fileRecords);
           
              const shareFilesInsideFolders = `
                 MATCH (f:File)<-[:HAS *0..]-(folder:Folder)-[:SHARE_WITH]->(u:User)
-                WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (f.fileName contains('${arr[0]}') OR
+                WHERE u.teamId = '${subscriberTeamId}' AND (f.fileName contains('${arr[0]}') OR
                 f.fileName contains('${arr[1]}') OR f.fileName contains('${arr[2]}')
                 OR f.fileName contains('${arr[3]}') OR f.fileName contains('${arr[4]}') OR 
-                f.fileName contains('${arr[5]}')) AND u.teamId is null AND u.active = true
+                f.fileName contains('${arr[5]}')) AND u.active = true
                 RETURN DISTINCT f, u`;
                 fileRecords = await getFiles(shareFilesInsideFolders, neo4jSession, fileRecords);
           
              const shareFiles = `
                 MATCH (f:File)-[:SHARE_WITH]->(u:User)
-                WHERE u.subscriberOrgId = '${subscriberOrgId}' 
+                WHERE u.teamId = '${subscriberTeamId}' 
                 AND (f.fileName contains('${arr[0]}') OR
                 f.fileName contains('${arr[1]}') OR f.fileName contains('${arr[2]}')
                 OR f.fileName contains('${arr[3]}') OR f.fileName contains('${arr[4]}') OR 
-                f.fileName contains('${arr[5]}')) AND u.teamId is null AND u.active = true RETURN DISTINCT f, u`;
+                f.fileName contains('${arr[5]}')) AND u.active = true RETURN DISTINCT f, u`;
                 fileRecords = await getFiles(shareFiles, neo4jSession, fileRecords);
                           
             }
@@ -680,132 +680,132 @@ const getFiles = async (query, neo4jSession, fileRecords=[]) => {
     if (arrLen == 1) {
        const ownFilesInsideFolders = `
        MATCH (u:User)-[:OWNS]->(folder:Folder)-[:HAS *0..]->(f:File)
-       WHERE u.subscriberOrgId = '${subscriberOrgId}' AND toLower(f.fileName) contains(toLower('${arr[0]}'))
-       AND u.teamId is null AND u.active = true
+       WHERE u.teamId = '${subscriberTeamId}' AND toLower(f.fileName) contains(toLower('${arr[0]}'))
+       AND u.active = true
        RETURN DISTINCT f, u`;
        fileRecords = await getFiles(ownFilesInsideFolders, neo4jSession);       
  
     const ownFiles = `
        MATCH (u:User)-[:OWNS]->(f:File)
-       WHERE u.subscriberOrgId = '${subscriberOrgId}' AND toLower(f.fileName) contains(toLower('${arr[0]}'))
-       AND  u.teamId is null AND u.active = true
+       WHERE u.teamId = '${subscriberTeamId}' AND toLower(f.fileName) contains(toLower('${arr[0]}'))
+       AND  u.active = true
        RETURN DISTINCT f, u`;
        fileRecords = await getFiles(ownFiles, neo4jSession, fileRecords);
  
     const shareFilesInsideFolders = `
        MATCH (f:File)<-[:HAS *0..]-(folder:Folder)-[:SHARE_WITH]->(u:User)
-       WHERE u.subscriberOrgId = '${subscriberOrgId}' AND toLower(f.fileName) contains(toLower('${arr[0]}'))
-       AND u.teamId is null AND u.active = true
+       WHERE u.teamId = '${subscriberTeamId}' AND toLower(f.fileName) contains(toLower('${arr[0]}'))
+       AND u.active = true
        RETURN DISTINCT f, u`;
        fileRecords = await getFiles(shareFilesInsideFolders, neo4jSession, fileRecords);
  
     const shareFiles = `
        MATCH (f:File)-[:SHARE_WITH]->(u:User)
-       WHERE u.subscriberOrgId = '${subscriberOrgId}' AND toLower(f.fileName) contains(toLower('${arr[0]}'))
-       AND u.teamId is null AND u.active = true
+       WHERE u.teamId = '${subscriberTeamId}' AND toLower(f.fileName) contains(toLower('${arr[0]}'))
+       AND u.active = true
        RETURN DISTINCT f, u`;
        fileRecords = await getFiles(shareFiles, neo4jSession, fileRecords);
        
     } else if (arrLen == 2) {
         const ownFilesInsideFolders = `
         MATCH (u:User)-[:OWNS]->(folder:Folder)-[:HAS *0..]->(f:File)
-        WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
+        WHERE u.teamId = '${subscriberTeamId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
         OR toLower(f.fileName) contains(toLower('${arr[1]}')))
-        AND u.teamId is null AND u.active = true
+        AND u.active = true
         RETURN DISTINCT f, u`;
         fileRecords = await getFiles(ownFilesInsideFolders, neo4jSession);       
   
      const ownFiles = `
         MATCH (u:User)-[:OWNS]->(f:File)
-        WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
+        WHERE u.teamId = '${subscriberTeamId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
         OR toLower(f.fileName) contains(toLower('${arr[1]}')))
-        AND  u.teamId is null AND u.active = true
+        AND  u.active = true
         RETURN DISTINCT f, u`;
         fileRecords = await getFiles(ownFiles, neo4jSession, fileRecords);
   
      const shareFilesInsideFolders = `
         MATCH (f:File)<-[:HAS *0..]-(folder:Folder)-[:SHARE_WITH]->(u:User)
-        WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
+        WHERE u.teamId = '${subscriberTeamId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
         OR toLower(f.fileName) contains(toLower('${arr[1]}')))
-        AND u.teamId is null AND u.active = true
+        AND u.active = true
         RETURN DISTINCT f, u`;
         fileRecords = await getFiles(shareFilesInsideFolders, neo4jSession, fileRecords);
   
      const shareFiles = `
         MATCH (f:File)-[:SHARE_WITH]->(u:User)
-        WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
+        WHERE u.teamId = '${subscriberTeamId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
         OR toLower(f.fileName) contains(toLower('${arr[1]}')))
-        AND u.teamId is null AND u.active = true
+        AND u.active = true
         RETURN DISTINCT f, u`;
         fileRecords = await getFiles(shareFiles, neo4jSession, fileRecords);
        
     } else if (arrLen == 3) {
         const ownFilesInsideFolders = `
         MATCH (u:User)-[:OWNS]->(folder:Folder)-[:HAS *0..]->(f:File)
-        WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
+        WHERE u.teamId = '${subscriberTeamId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
         OR toLower(f.fileName) contains(toLower('${arr[1]}')) OR toLower(f.fileName) contains(toLower('${arr[2]}')))
-        AND u.teamId is null AND u.active = true
+        AND u.active = true
         RETURN DISTINCT f, u`;
         fileRecords = await getFiles(ownFilesInsideFolders, neo4jSession);       
   
      const ownFiles = `
         MATCH (u:User)-[:OWNS]->(f:File)
-        WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
+        WHERE u.teamId = '${subscriberTeamId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
         OR toLower(f.fileName) contains(toLower('${arr[1]}')) OR toLower(f.fileName) contains(toLower('${arr[2]}')))
-        AND  u.teamId is null AND u.active = true
+        AND  u.active = true
         RETURN DISTINCT f, u`;
         fileRecords = await getFiles(ownFiles, neo4jSession, fileRecords);
   
      const shareFilesInsideFolders = `
         MATCH (f:File)<-[:HAS *0..]-(folder:Folder)-[:SHARE_WITH]->(u:User)
-        WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
+        WHERE u.teamId = '${subscriberTeamId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
         OR toLower(f.fileName) contains(toLower('${arr[1]}')) OR toLower(f.fileName) contains(toLower('${arr[2]}')))
-        AND u.teamId is null AND u.active = true
+        AND u.active = true
         RETURN DISTINCT f, u`;
         fileRecords = await getFiles(shareFilesInsideFolders, neo4jSession, fileRecords);
   
      const shareFiles = `
         MATCH (f:File)-[:SHARE_WITH]->(u:User)
-        WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
+        WHERE u.teamId = '${subscriberTeamId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
         OR toLower(f.fileName) contains(toLower('${arr[1]}')) OR toLower(f.fileName) contains(toLower('${arr[2]}')))
-        AND u.teamId is null AND u.active = true
+        AND u.active = true
         RETURN DISTINCT f, u`;
         fileRecords = await getFiles(shareFiles, neo4jSession, fileRecords);
        
     } else if ((arrLen == 4)) { 
         const ownFilesInsideFolders = `
         MATCH (u:User)-[:OWNS]->(folder:Folder)-[:HAS *0..]->(f:File)
-        WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
+        WHERE u.teamId = '${subscriberTeamId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
         OR toLower(f.fileName) contains(toLower('${arr[1]}')) OR toLower(f.fileName) contains(toLower('${arr[2]}'))
         OR toLower(f.fileName) contains(toLower('${arr[3]}')))
-        AND u.teamId is null AND u.active = true
+        AND u.active = true
         RETURN DISTINCT f, u`;
         fileRecords = await getFiles(ownFilesInsideFolders, neo4jSession);       
   
      const ownFiles = `
         MATCH (u:User)-[:OWNS]->(f:File)
-        WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
+        WHERE u.teamId = '${subscriberTeamId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
         OR toLower(f.fileName) contains(toLower('${arr[1]}')) OR toLower(f.fileName) contains(toLower('${arr[2]}'))
         OR toLower(f.fileName) contains(toLower('${arr[3]}')))
-        AND  u.teamId is null AND u.active = true
+        AND  u.active = true
         RETURN DISTINCT f, u`;
         fileRecords = await getFiles(ownFiles, neo4jSession, fileRecords);
   
      const shareFilesInsideFolders = `
         MATCH (f:File)<-[:HAS *0..]-(folder:Folder)-[:SHARE_WITH]->(u:User)
-        WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
+        WHERE u.teamId = '${subscriberTeamId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
         OR toLower(f.fileName) contains(toLower('${arr[1]}')) OR toLower(f.fileName) contains(toLower('${arr[2]}')) 
         OR toLower(f.fileName) contains(toLower('${arr[3]}')))
-        AND u.teamId is null AND u.active = true
+        AND u.active = true
         RETURN DISTINCT f, u`;
         fileRecords = await getFiles(shareFilesInsideFolders, neo4jSession, fileRecords);
   
      const shareFiles = `
         MATCH (f:File)-[:SHARE_WITH]->(u:User)
-        WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
+        WHERE u.teamId = '${subscriberTeamId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
         OR toLower(f.fileName) contains(toLower('${arr[1]}')) OR toLower(f.fileName) contains(toLower('${arr[2]}'))
         OR toLower(f.fileName) contains(toLower('${arr[3]}')))
-        AND u.teamId is null AND u.active = true
+        AND u.active = true
         RETURN DISTINCT f, u`;
         fileRecords = await getFiles(shareFiles, neo4jSession, fileRecords);
 
@@ -813,84 +813,84 @@ const getFiles = async (query, neo4jSession, fileRecords=[]) => {
     } else if ((arrLen == 5)) { 
         const ownFilesInsideFolders = `
         MATCH (u:User)-[:OWNS]->(folder:Folder)-[:HAS *0..]->(f:File)
-        WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
+        WHERE u.teamId = '${subscriberTeamId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
         OR toLower(f.fileName) contains(toLower('${arr[1]}')) OR toLower(f.fileName) contains(toLower('${arr[2]}'))
         OR toLower(f.fileName) contains(toLower('${arr[3]}'))
         OR toLower(f.fileName) contains(toLower('${arr[4]}')))
-        AND u.teamId is null AND u.active = true
+        AND u.active = true
         RETURN DISTINCT f, u`;
         fileRecords = await getFiles(ownFilesInsideFolders, neo4jSession);       
   
      const ownFiles = `
         MATCH (u:User)-[:OWNS]->(f:File)
-        WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
+        WHERE u.teamId = '${subscriberTeamId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
         OR toLower(f.fileName) contains(toLower('${arr[1]}')) OR toLower(f.fileName) contains(toLower('${arr[2]}'))
         OR toLower(f.fileName) contains(toLower('${arr[3]}'))
         OR toLower(f.fileName) contains(toLower('${arr[4]}')))
-        AND  u.teamId is null AND u.active = true
+        AND  u.active = true
         RETURN DISTINCT f, u`;
         fileRecords = await getFiles(ownFiles, neo4jSession, fileRecords);
   
      const shareFilesInsideFolders = `
         MATCH (f:File)<-[:HAS *0..]-(folder:Folder)-[:SHARE_WITH]->(u:User)
-        WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
+        WHERE u.teamId = '${subscriberTeamId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
         OR toLower(f.fileName) contains(toLower('${arr[1]}')) OR toLower(f.fileName) contains(toLower('${arr[2]}')) 
         OR toLower(f.fileName) contains(toLower('${arr[3]}')) OR toLower(f.fileName) contains(toLower('${arr[4]}')))
-        AND u.teamId is null AND u.active = true
+        AND u.active = true
         RETURN DISTINCT f, u`;
         fileRecords = await getFiles(shareFilesInsideFolders, neo4jSession, fileRecords);
   
      const shareFiles = `
         MATCH (f:File)-[:SHARE_WITH]->(u:User)
-        WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
+        WHERE u.teamId = '${subscriberTeamId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
         OR toLower(f.fileName) contains(toLower('${arr[1]}')) OR toLower(f.fileName) contains(toLower('${arr[2]}'))
         OR toLower(f.fileName) contains(toLower('${arr[3]}'))
         OR toLower(f.fileName) contains(toLower('${arr[4]}')))
-        AND u.teamId is null AND u.active = true
+        AND u.active = true
         RETURN DISTINCT f, u`;
         fileRecords = await getFiles(shareFiles, neo4jSession, fileRecords);
 
     } else {
         const ownFilesInsideFolders = `
         MATCH (u:User)-[:OWNS]->(folder:Folder)-[:HAS *0..]->(f:File)
-        WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
+        WHERE u.teamId = '${subscriberTeamId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
         OR toLower(f.fileName) contains(toLower('${arr[1]}')) OR toLower(f.fileName) contains(toLower('${arr[2]}'))
         OR toLower(f.fileName) contains(toLower('${arr[3]}'))
         OR toLower(f.fileName) contains(toLower('${arr[4]}'))
         OR toLower(f.fileName) contains(toLower('${arr[5]}')))
-        AND u.teamId is null AND u.active = true
+        AND u.active = true
         RETURN DISTINCT f, u`;
         fileRecords = await getFiles(ownFilesInsideFolders, neo4jSession);       
   
      const ownFiles = `
         MATCH (u:User)-[:OWNS]->(f:File)
-        WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
+        WHERE u.teamId = '${subscriberTeamId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
         OR toLower(f.fileName) contains(toLower('${arr[1]}')) OR toLower(f.fileName) contains(toLower('${arr[2]}'))
         OR toLower(f.fileName) contains(toLower('${arr[3]}'))
         OR toLower(f.fileName) contains(toLower('${arr[4]}'))
         OR toLower(f.fileName) contains(toLower('${arr[5]}')))
-        AND  u.teamId is null AND u.active = true
+        AND  u.active = true
         RETURN DISTINCT f, u`;
         fileRecords = await getFiles(ownFiles, neo4jSession, fileRecords);
   
      const shareFilesInsideFolders = `
         MATCH (f:File)<-[:HAS *0..]-(folder:Folder)-[:SHARE_WITH]->(u:User)
-        WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
+        WHERE u.teamId = '${subscriberTeamId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
         OR toLower(f.fileName) contains(toLower('${arr[1]}')) OR toLower(f.fileName) contains(toLower('${arr[2]}')) 
         OR toLower(f.fileName) contains(toLower('${arr[3]}')) OR toLower(f.fileName) contains(toLower('${arr[4]}'))
         OR toLower(f.fileName) contains(toLower('${arr[5]}')))
-        AND u.teamId is null AND u.active = true
+        AND u.active = true
         RETURN DISTINCT f, u`;
         fileRecords = await getFiles(shareFilesInsideFolders, neo4jSession, fileRecords);
   
      const shareFiles = `
         MATCH (f:File)-[:SHARE_WITH]->(u:User)
-        WHERE u.subscriberOrgId = '${subscriberOrgId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
+        WHERE u.teamId = '${subscriberTeamId}' AND (toLower(f.fileName) contains(toLower('${arr[0]}'))
         OR toLower(f.fileName) contains(toLower('${arr[1]}')) OR toLower(f.fileName) contains(toLower('${arr[2]}'))
         OR toLower(f.fileName) contains(toLower('${arr[3]}'))
         OR toLower(f.fileName) contains(toLower('${arr[4]}')) 
         OR toLower(f.fileName) contains(toLower('${arr[5]}')))
-        AND u.teamId is null AND u.active = true
+        AND u.active = true
         RETURN DISTINCT f, u`;
         fileRecords = await getFiles(shareFiles, neo4jSession, fileRecords);
 

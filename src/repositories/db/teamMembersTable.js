@@ -97,7 +97,6 @@ export const createTeamMember = (req, teamMemberId, userId, teamId, subscriberUs
                 lastModified: req.now.format()
             }
         };
-
         req.app.locals.docClient.put(params).promise()
             .then(result => resolve(result.$response.request.rawParams.Item))
             .catch(err => reject(err));
@@ -282,4 +281,19 @@ export const updateTeamMembersIntegrations = async (req, userId, teamId, integra
     await req.app.locals.docClient.update(params).promise();
     delete teamMember.integrations;
     return _.merge({}, teamMember, { integrations, lastModified });
+}
+
+
+export const updateTeamMemberActive = async (req, teamMemberId, active) => {
+    const lastModified = req.now.format();
+    const params = {
+        TableName: tableName(),
+        Key: { teamMemberId },
+        UpdateExpression: 'set enabled = :enabled, lastModified = :lastModified',
+        ExpressionAttributeValues: {
+            ':lastModified': lastModified,
+            ':enabled': active
+        }
+    }
+    return await req.app.locals.docClient.update(params).promise();
 }

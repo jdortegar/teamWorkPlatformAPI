@@ -81,7 +81,7 @@ Replace `{host}` whith the running instance host of the api:
 
 |            | Organization Level                                                  | Team Level                                                                      |
 |------------|:-------------------------------------------------------------------:|--------------------------------------------------------------------------------:|
-|**URI**     |`{{host}}/integrations/{integrationName}/integrate/{subscriberOrgId}`| `{{host}}/integrations/{integrationName}/integrate/{subscriberOrgId}?temLevel=1`| 
+|**URI**     |`{{host}}/integrations/{integrationName}/integrate/{subscriberOrgId}`| `{{host}}/integrations/{integrationName}/integrate/{teamId}?temLevel=1`| 
 |**Security**| Secured                                                             | Secured                                                                         |
 
 #### Response Format
@@ -97,7 +97,7 @@ Replace `{host}` whith the running instance host of the api:
 
 |            | Organization Level                                               | Team Level                                                                      |
 |------------|:----------------------------------------------------------------:|--------------------------------------------------------------------------------:|
-|**URI**     |`{{host}}/integrations/{integrationName}/revoke/{subscriberOrgId}`| `{{host}}/integrations/{integrationName}/revoke/{subscriberOrgId}?temLevel=1?teamlevel=1&teamId={teamId}`| 
+|**URI**     |`{{host}}/integrations/{integrationName}/revoke/{subscriberOrgId}`| `{{host}}/integrations/{integrationName}/revoke/{teamId}?teamlevel=1&userId={userId}`| 
 |**Security**| Secured                                                          | Secured                                                                         |
 
 ##### Response Format

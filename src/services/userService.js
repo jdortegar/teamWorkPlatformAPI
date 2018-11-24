@@ -1,16 +1,21 @@
 import _ from 'lodash';
 import uuid from 'uuid';
 import config from '../config/env';
-import { NoPermissionsError, UserNotExistError, CustomerExistsError } from './errors';
+import { NoPermissionsError, UserNotExistError, CustomerExistsError, UserLimitReached } from './errors';
 import { getRandomColor } from './util';
 import { hashPassword, passwordMatch } from '../models/user';
+import { deactivateTeamMembersByUserId } from './teamService';
+import invitationsKeys from '../repositories/InvitationKeys';
 import * as usersTable from '../repositories/db/usersTable';
 import * as messagesTable from '../repositories/db/messagesTable';
 import * as usersCache from '../repositories/cache/usersCache';
 import * as invitationsRepo from '../repositories/invitationsRepo';
 import * as awsMarketplaceSvc from './awsMarketplaceService';
 import * as subscriberOrgSvc from './subscriberOrgService';
-import { userCreated, userUpdated, userPrivateInfoUpdated, userBookmarksUpdated } from './messaging';
+import * as subscriberUserTable from '../repositories/db/subscriberUsersTable';
+import * as invitationsTable from '../repositories/db/invitationsTable';
+import * as subscriberOrgsTable from '../repositories/db/subscriberOrgsTable';
+import { userCreated, userUpdated, userPrivateInfoUpdated, userBookmarksUpdated, sentInvitationStatus } from './messaging';
 
 const getUserByEmail = (req, email) => {
     return new Promise((resolve, reject) => {
@@ -28,77 +33,69 @@ const getUserByEmail = (req, email) => {
     });
 };
 
-export const login = (req, email, password) => {
-    return new Promise((resolve, reject) => {
-        getUserByEmail(req, email)
-            .then((user) => {
-                if ((user) && (passwordMatch(user, password))) {
-                    resolve(user);
-                } else {
-                    throw new NoPermissionsError(email);
-                }
-            })
-            .catch(err => reject(err));
-    });
+export const login = async (req, email, password) => {
+    try {
+        const user = await getUserByEmail(req, email);
+        if (!user || !passwordMatch(user, password)) {
+            throw new NoPermissionsError(email);
+        }
+        const subscriberUser = await subscriberUserTable.getSubscriberUsersByUserId(req, user.userId);
+        user.role = subscriberUser[0].role;
+        return user
+    } catch (err) {
+        return Promise.reject(err);
+    }
 };
 
-export const createUser = (req, userInfo) => {
-    return new Promise((resolve, reject) => {
-        const { email: emailAddress } = userInfo;
-        const userId = uuid.v4();
-        let user;
-
-        usersTable.getUserByEmailAddress(req, emailAddress)
-            .then((existingUser) => {
-                user = existingUser;
-                if (user) {
-                    throw new NoPermissionsError(emailAddress);
-                }
-
-                const { firstName, lastName, displayName, country, timeZone } = userInfo;
-                const password = hashPassword(userInfo.password);
-                const icon = userInfo.icon || null;
-                const preferences = userInfo.preferences || { private: {} };
-                if (preferences.private === undefined) {
-                    preferences.private = {};
-                }
-                preferences.iconColor = preferences.iconColor || getRandomColor();
-                return Promise.all([
-                    usersTable.createUser(req, userId, firstName, lastName, displayName, emailAddress, password, country, timeZone, icon, preferences),
-                    usersCache.createUser(req, emailAddress, userId)
-                ]);
-            })
-            .then((promiseResults) => {
-                user = promiseResults[0];
-                const subscriberOrgId = uuid.v4();
-                const subscriberOrgName = req.body.displayName;
-                return subscriberOrgSvc.createSubscriberOrgUsingBaseName(req, { name: subscriberOrgName }, user, subscriberOrgId);
-            })
-            .then(() => {
-                userCreated(req, user);
-
-                // See if it's a new AWS customer. // TODO: refactor into cache dir.
-                return req.app.locals.redis.getAsync(`${config.redisPrefix}${emailAddress}#awsCustomerId`);
-            })
-            .then((awsCustomerId) => {
-                if ((awsCustomerId) && (awsCustomerId !== null)) {
-                    return new Promise((resolve2, reject2) => {
-                        awsMarketplaceSvc.registerCustomer(req, awsCustomerId, user)
-                            .then(() => resolve2())
-                            .catch((err) => {
-                                if (err instanceof CustomerExistsError) {
-                                    // TODO: do we auto invite, etc.
-                                } else {
-                                    reject2(err); // TODO:
-                                }
-                            });
-                    });
-                }
-                return undefined;
-            })
-            .then(() => resolve(user))
-            .catch(err => reject(err));
-    });
+export const createUser = async (req, userInfo) => {
+    const { email: emailAddress } = userInfo;
+    const userId = uuid.v4();
+    let user;
+    try {
+        const existingUser = await usersTable.getUserByEmailAddress(req, emailAddress);
+        if (existingUser) {
+            throw new  NoPermissionsError(emailAddress);
+        }
+        const { firstName, lastName, displayName, country, timeZone } = userInfo;
+        const password = hashPassword(userInfo.password);
+        const icon = userInfo.icon || null;
+        const preferences = userInfo.preferences || { private:  {} };
+        if (typeof preferences.private === 'undefined') {
+            preferences.private = {};
+        }
+        preferences.iconColor = preferences.iconColor || getRandomColor();
+        user = await usersTable.createUser(req, userId, firstName, lastName, displayName, emailAddress, password, country, timeZone, icon, preferences);
+        await usersCache.createUser(req, emailAddress, userId);
+        // Check if there are invitations if not create a new organization.
+        const invitations = await getInvitations(req, emailAddress);
+        if (invitations instanceof Array && invitations.length > 0) {
+            // Here we need to create a normal user to suscriber user and reply the invite.
+            const organization = await subscriberOrgsTable.getSubscriberOrgBySubscriberOrgId(req, invitations[0].subscriberOrgId);
+            const userLimit = organization.userLimit || 5;
+            const orgActiveUsers = await subscriberOrgSvc.getOrganizationActiveUsers(req, organization.subscriberOrgId);
+            if (userLimit <= orgActiveUsers.length) {
+                throw new UserLimitReached(userLimit);
+            }
+            const subscriberUserId = uuid.v4();
+            const subscriberUser = await subscriberUserTable.createSubscriberUser(req, subscriberUserId, userId, invitations[0].subscriberOrgId, 'user', user.displayName);
+            const changedInvitations = await invitationsTable.updateInvitationsStateByInviteeEmail(req, user.emailAddress, invitationsKeys.subscriberOrgId, invitations[0].subscriberOrgId, 'ACCEPTED');
+            sentInvitationStatus(req, changedInvitations);
+            await req.app.locals.redis.delAsync(`${user.emailAddress}#pendingInvites`);
+        } else {
+            const subscriberOrgId = uuid.v4();
+            const subscriberOrgName = req.body.displayName;
+            const stripeSubscriptionId = await req.app.locals.redis.getAsync(`${config.redisPrefix}${emailAddress}#stripeSubscriptionId`);
+            const userLimit = await req.app.locals.redis.getAsync(`${config.redisPrefix}${emailAddress}#userLimit`) || 5;
+	        await subscriberOrgSvc.createSubscriberOrgUsingBaseName(req, { name: subscriberOrgName }, user, subscriberOrgId, stripeSubscriptionId, undefined, userLimit);
+        }
+        userCreated(req, user);
+        const awsCustomerId = await req.app.locals.redis.getAsync(`${config.redisPrefix}${emailAddress}#awsCustomerId`);
+        if (awsCustomerId && (awsCustomerId !== null)) {
+            await awsMarketplaceSvc.registerCustomer(req, awsCustomerId, user);
+        }
+    } catch (err) {
+        return Promise.reject(err);
+    }
 };
 
 const resolveBookmarks = (req, bookmarks) => {
@@ -139,7 +136,6 @@ export const updateUser = (req, userId, updateInfo) => {
     return new Promise((resolve, reject) => {
         usersTable.updateUser(req, userId, updateInfo)
             .then((user) => {
-                resolve(user);
                 userUpdated(req, user);
                 if ((updateInfo.preferences) && (updateInfo.preferences.private)) {
                     userPrivateInfoUpdated(req, user);
@@ -148,6 +144,12 @@ export const updateUser = (req, userId, updateInfo) => {
                     resolveBookmarks(req, user.bookmarks)
                         .then(resolvedBookmarks => userBookmarksUpdated(req, user, resolvedBookmarks));
                 }
+                if (updateInfo.active === false) {
+                    deactivateTeamMembersByUserId(req, userId);
+                }
+            }).then(()=>{
+                const user = usersTable.getUserByUserId(req, userId)
+                resolve(user);
             })
             .catch(err => reject(err));
     });

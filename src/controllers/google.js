@@ -3,8 +3,6 @@ import config from '../config/env';
 import * as googleSvc from '../services/googleService';
 import { APIError, APIWarning, IntegrationAccessError, SubscriberOrgNotExistError } from '../services/errors';
 
-const webappIntegrationUri = `${config.webappBaseUri}/app/integrations`;
-
 export const integrateGoogle = (req, res, next) => {
     const userId = req.user._id;
     const subscriberOrgId = req.params.subscriberOrgId;
@@ -26,30 +24,32 @@ export const integrateGoogle = (req, res, next) => {
         });
 };
 
-export const googleAccess = (req, res) => {
+export const googleAccess = async (req, res) => {
     // Use referrer to get subscriberOrgId.
     // TODO: remove  const refererToks = req.headers.referer.split('/');
     // TODO: remove  const subscriberOrgId = refererToks[refererToks.length - 1];
-    const redirectUri = `${webappIntegrationUri}`;
-
-    let subscriberOrgId;
-
-    googleSvc.googleAccessResponse(req, req.query)
-        .then((stateSubscriberOrgId) => {
-            subscriberOrgId = stateSubscriberOrgId;
-            res.redirect(`${redirectUri}/${subscriberOrgId}/google/CREATED`);
-        })
-        .catch((err) => {
-            subscriberOrgId = subscriberOrgId || err.subscriberOrgId;
-            const realError = err._chainedError || err;
-            if (realError instanceof IntegrationAccessError) {
-                res.redirect(`${redirectUri}/${subscriberOrgId}/google/FORBIDDEN`);
-            } else if (realError instanceof SubscriberOrgNotExistError) {
-                res.redirect(`${redirectUri}/${subscriberOrgId}/google/NOT_FOUND`);
-            } else {
-                res.redirect(`${redirectUri}/${subscriberOrgId}/google/INTERNAL_SERVER_ERROR`);
-            }
-        });
+    try {
+        const teamLevelVal = await req.app.locals.redis.getAsync(`${googleSvc.hashKey(req.query.state)}#teamLevel`) || 0;
+        const teamLevel = teamLevelVal == 1;
+        let redirectUri;
+        if (teamLevel) {
+            redirectUri = `${config.webappBaseUri}/app/teamIntegrations`;
+        } else  {
+            redirectUri = `${config.webappBaseUri}/app/integrations`;
+        }
+        const subscriberId = await googleSvc.googleAccessResponse(req, req.query);
+        res.redirect(`${redirectUri}/${subscriberId}/google/CREATED`);
+    } catch (err) {
+        const subscriberId = err.subscriberOrgId;
+        const realError = err._chainedError || err;
+        if (realError instanceof IntegrationAccessError) {
+            res.redirect(`${redirectUri}/${subscriberId}/google/FORBIDDEN`);
+        } else if (realError instanceof SubscriberOrgNotExistError) {
+            res.redirect(`${redirectUri}/${subscriberId}/google/NOT_FOUND`);
+        } else {
+            res.redirect(`${redirectUri}/${subscriberId}/google/INERNAL_SERVER_ERROR`);
+        }
+    }
 };
 
 export const revokeGoogle = (req, res, next) => {

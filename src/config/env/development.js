@@ -14,7 +14,7 @@ export const aws = {
 };
 
 export const neo4j = {
-    /*
+   /*
       host: 'localhost',
       port: '7687',
       user: 'neo4j',
@@ -22,12 +22,11 @@ export const neo4j = {
       */
    // DEV
 
-  // host: '34.214.167.0',
-   host:'34.214.167.0',
+   // host: '34.214.167.0',
+   host: '34.214.167.0',
    port: '7687',
    user: 'neo4j',
    password: 'habla12345'
-
 };
 // export const dynamoDbEndpoint = 'http://localhost:8000';
 // export const dynamoDbEndpoint = 'https://dynamodb.us-west-2.amazonaws.com';
@@ -43,9 +42,8 @@ export const signedCookieSecret = '4fIv(E2@';
 export const loggerLevel = 'debug';
 export const loggerJson = false;
 
-
-export const boxClientId = 'csha3gfiw1ujah73e3t5sb43lthkbk6s';
-export const boxClientSecret = 'IiQlk9hzKwHLDpeZi002E32pQDQ61kim';
+export const boxClientId = 'vxgmdcz8mdmi6c34r16ds7luymbsesz9';
+export const boxClientSecret = 'apOslMTxN3qidF3PTSkVuwLY4kdHPWPn';
 // export const boxClientId = 'a666hm00w8qtw6cuxutbb9et7bxvso7j'; // ngrok
 // export const boxClientSecret = 'KdRfL9bePDT4BnhYGTWQX7Uukfn7ygRU'; // ngrok
 export const boxWebhooksPrimaryKey = 'fWo4rJNBbVeSpQ0llAdiM5GnDer1CPLE';
@@ -54,20 +52,21 @@ export const boxWebhooksSecondaryKey = 'Q5Ht4J6nucMSxTnXKRKk1w9LwJaBefLY';
 export const googleClientId = '801943186202-5cp3slnr8mi8vmtdruiessk3i5ugneg0.apps.googleusercontent.com';
 export const googleClientSecret = 'VPDsaJ5aAKs9gNt4y1CQBl1Z';
 
-export const sharepointClientId = 'a5a13f17-353a-493c-8121-f0659cd32ab4';
-export const sharepointClientSecret = 'cYk8V8WFLk/zaa7C8G8q2bt8UV2Tun6zoZqA4rhL8Og=';
+export const sharepointClientId = '371c2267-55a2-4189-9af8-53c18bbdb605';
+export const sharepointClientSecret = 'p1CbLjcM0/Vqr1TP4s6yzR6CPPfyRpQ+mlBqtrvarAw=';
 // export const sharepointClientId = 'd0032bb6-4898-4da3-8a0f-d16f185dfe44'; // ngrok
 // export const sharepointClientSecret = 'sKtwfhTxjtBriCzu249/8BpHlptChV07zEJkG37G6WU='; // ngrok
 
-export const onedriveClientId = '1be05c43-a7db-4127-af14-6e5e0c3e6be1';
-export const onedriveClientSecret = 'jrosbYCP12;[;)dqSOSW322';
+export const onedriveClientId = '2057588a-6553-45cd-ba97-eed9c941a51c';
+export const onedriveClientSecret = 'bxzwNVL89)!gssEEKD812^=';
 // export const onedriveClientId = 'd2061ee6-7c0d-415f-942f-8318952579c8';
 // export const onedriveClientSecret = 'kbWGVYM93_)koyjbQK557!)';
 
 // export const salesforceClientId = '3MVG9zlTNB8o8BA3yxc0Y3VFQq5pZNVvejwizNZqqwXxlyUCCnf_4aHlR4QK5sP41BspCZ2Hjf56LoJfCJs08';
 // export const salesforceClientSecret = '1586929814816678095';
-export const salesforceClientId = '3MVG9CEn_O3jvv0z6aRiUukKKhckrgCvcTQYVLI_vhr7GEffhHcRoW0_mAXanBQtJU2aTwaM5aPE4WeQWo2X3';
-export const salesforceClientSecret = '1130800630408373913';
+export const salesforceClientId =
+   '3MVG9oNqAtcJCF.Ea6OlRa89hxdSbH_QlHqGyqB099ZQ9N1vzqLHC9fMdElFKXDDsh7AUHI2QKhpgb4oowUqa';
+export const salesforceClientSecret = '3843359686979533442';
 // export const salesforceClientId = '3MVG9oNqAtcJCF.Hipaqdn8RbUN9YmDIby5aSVbkdExNKPvizD_nfOhxPVcYoqMLWfkmkwuWPXg==';
 // export const salesforceClientSecret = '6768971095996066050';
 
@@ -83,3 +82,21 @@ export const redshift = {
    port: 5439
 };
 export const surveyTable = 'dev_usage_survey';
+
+// Stripe Config
+
+export const stripeConfig = {
+   // Default country for the checkout form.
+   country: 'US',
+   currency: 'usd',
+
+   // Configuration for Stripe.
+   stripe: {
+      country: 'US',
+      apiVersion: '2018-10-31',
+      publishableKey: 'pk_test_LvwApQvFOvPMs0bUSNUnplbb',
+      secretKey: 'sk_test_kDDtLeXmTDqyHxkLiwbrBTQR'
+   }
+};
+
+export const knowledgeApiEndpoint = 'https://habla-be-api-dev.habla.ai';
