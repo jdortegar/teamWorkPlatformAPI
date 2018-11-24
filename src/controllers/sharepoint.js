@@ -33,7 +33,7 @@ export const sharepointAccess = async (req, res) => {
    let teamLevel;
    let integrationContext;
    try {
-      const teamLevelVal = await req.app.locals.redis.getAsync(`${sharepointSvc.hashKey(req.query.state)}#teamLevel`);
+      const teamLevelVal = await req.app.locals.redis.getAsync(`${sharepointSvc.hashKey(sharepointSvc.deduceState(req))}#teamLevel`);
       integrationContext = await req.app.locals.redis.hgetallAsync(sharepointSvc.hashKey(sharepointSvc.deduceState(req)));
       teamLevel = teamLevelVal == 1;
       if (teamLevel) {
