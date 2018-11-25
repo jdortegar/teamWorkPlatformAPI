@@ -99,4 +99,20 @@ export const stripeConfig = {
    }
 };
 
+// Stripe Config
+
+export const stripeConfig = {
+   // Default country for the checkout form.
+   country: 'US',
+   currency: 'usd',
+
+   // Configuration for Stripe.
+   stripe: {
+      country: 'US',
+      apiVersion: '2018-10-31',
+      publishableKey: 'pk_live_EYULQ2u9a4EBUMKjoEwFX8W3',
+      secretKey: 'sk_live_1zwgvM8siP8VRhR4dqCg2mIV'
+   }
+};
+
 export const knowledgeApiEndpoint = 'https://habla-be-api-dev.habla.ai';
