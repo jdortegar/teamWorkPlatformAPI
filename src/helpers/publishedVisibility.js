@@ -117,7 +117,7 @@ const publicInvitations = (invitations) => {
 
 const privateSubscriberOrg = (subscriberOrg) => {
     const subscriberOrgId = subscriberOrg.subscriberOrgId;
-    const { name, icon, enabled, preferences, created, lastModified, stripeSubscriptionId } = subscriberOrg;
+    const { name, icon, enabled, preferences, created, lastModified, stripeSubscriptionId, userLimit } = subscriberOrg;
     return {
         subscriberOrgId,
         name,
@@ -126,7 +126,8 @@ const privateSubscriberOrg = (subscriberOrg) => {
         preferences: _.cloneDeep(preferences),
         created,
         lastModified,
-        stripeSubscriptionId 
+        stripeSubscriptionId,
+        userLimit
     };
 };
 
@@ -381,4 +382,3 @@ export const publishByApiVersion = (req, publishers, ...args) => {
     return publishers.latest(...args);
     // return publishers[req.apiVersion.toString()](...args);
 };
-
