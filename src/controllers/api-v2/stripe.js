@@ -66,3 +66,20 @@ export const getSubscription = async (req, res) => {
       });
    }
 };
+
+export const doTrialSubscription = async (req, res) => {
+   try {
+      const trial = await stripeSvc.doTrialSubscription(req, req.body);
+      return res.json(trial);
+   } catch (err) {
+      // Return error when email exists
+      if (err instanceof SubscriberUserExistsError) {
+         return res.status(httpStatus.CONFLICT).json({ error: 'Conflict', message: 'This email already exists' });
+      }
+
+      return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+         error: 'Internal Server Error',
+         message: 'Something went wrong'
+      });
+   }
+};

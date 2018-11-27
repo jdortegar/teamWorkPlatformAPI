@@ -10,6 +10,8 @@ router.route('/coupons').get(payment.getCoupons);
 
 router.route('/subscriptions/:subscriptionId').get(payment.getSubscription);
 
+router.route('/trials').post(payment.doTrialSubscription);
+
 router.route('/subscriptions')
     .patch(validateByApiVersion(apiVersionedValidators.updateStripeSubscription), payment.updateSubscription);
 
