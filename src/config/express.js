@@ -78,6 +78,7 @@ app.use(
          /^\/(v\d+\/)?users\/passwordreset/,
          /^\/(v\d+\/)?passwordupdate/,
          /^\/(v\d+\/)?payments/,
+         /^\/(v\d+\/)?trials/,
          /^\/(v\d+\/)?coupons/
       ]
    })

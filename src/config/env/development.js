@@ -100,3 +100,4 @@ export const stripeConfig = {
 };
 
 export const knowledgeApiEndpoint = 'https://habla-be-api-dev.habla.ai';
+
