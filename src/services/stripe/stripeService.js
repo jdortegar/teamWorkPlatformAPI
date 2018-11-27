@@ -31,7 +31,7 @@ export const doPayment = async (req, res, next) => {
          email: customerEmail,
          description: paymentData.name,
          metadata: {
-            adress: paymentData.address_line1,
+            address: paymentData.address_line1,
             city: paymentData.address_city
          },
          source: token
@@ -141,6 +141,59 @@ export const deleteSubscription = async (req, res) => {
 export const getSubscription = async (req, subscriptionId) => {
    try {
       return await stripe.subscriptions.retrieve(subscriptionId);
+   } catch (err) {
+      // This is where you handle declines and errors.
+      // For the demo we simply set to failed.
+      Promise.reject(err);
+   }
+};
+
+
+export const doTrialSubscription = async (req, res, next) => {
+   // Subscripber data
+   let trialData = req.body;
+
+   // Get customer email
+   const customerEmail = trialData.email;
+
+   // validate if email exists
+   const existingUser = await usersTable.getUserByEmailAddress(req, customerEmail);
+   if (existingUser) {
+      throw new SubscriberUserExistsError(customerEmail);
+   }
+
+   let stripeResponse;
+
+   try {
+      const customer = await stripe.customers.create({
+         email: customerEmail,
+         description: `${trialData.firstName} ${trialData.lastName}`,
+         metadata: {
+            address: trialData.address,
+            phone: trialData.phone,
+            company: trialData.company,
+         }
+      });
+
+      const subscriptions = await stripe.plans.list();
+
+      subscriptions.data.map(subs => {
+         if (trialData.trialPlanId === subs.id) {
+            return (stripeResponse = stripe.subscriptions.create({
+               customer: customer.id,
+               items: [
+                  {
+                     plan: subs.id,
+                     quantity: trialData.users
+                  }
+               ],
+               trial_end: 1544558441,
+               billing_cycle_anchor: 1544558441,
+            }));
+         }
+      });
+
+      return stripeResponse;
    } catch (err) {
       // This is where you handle declines and errors.
       // For the demo we simply set to failed.
