@@ -46,21 +46,21 @@ const htmlContents = (cid, html) => {
        ${html}
      </div>
      <div style="padding-top: 20px; width: 400; font-family: 'Arial'; color: lightslategray; font-size: 12">
-       This email was sent because your email is registered in Habla AI.
-       If you don’t want to receive this email please click <a href="https://app.habla.ai">here</a> to manage your email settings.
-     </div> 
+     This email was sent to you because your email is registered in Habla AI. If this wasn’t you, please email us at <a href="mailto:support@habla.ai">support@habla.ai</a> so we can help.
+     </div>
    `;
 };
 
 export const sendActivationLink = (email, rid) => {
    const cid = uuid.v4();
    const html = htmlContents(cid,
-       `<br>Thank you for registering for Habla AI.<br>
-        <br>Please <a href="${config.webappBaseUri}/verifyAccount/${rid}">click here</a> to activate your account.<br>`);
+       `<br>Thank you for creating an account on Habla AI.<br>
+        <br>Please <a href="${config.webappBaseUri}/verifyAccount/${rid}">click here</a> to activate your account and setup your Company’s Organization and first Project Team. Here is a link to our Help Center with everything you need to know to Get Started <a href="https://www.habla.ai/help-center.html" target="_blank">www.habla.ai/help-center.html</a><br>
+        <br>If you have any other questions please contact us at <a href="mailto:support@habla.ai">support@habla.ai</a><br>`);
    return sendMail(cid, {
       from: 'habla-mailer-dev@habla.ai',
       to: email,
-      subject: 'Your Habla.ai Account',
+      subject: 'Your Habla AI Account and Subscriber Org',
       html
    });
 };
@@ -83,12 +83,13 @@ export const sendResetPassword = (email, rid) => {
 export const sendSubscriberOrgInviteToExternalUser = (email, subscriberOrgName, byUserInfo, rid) => {
    const cid = uuid.v4();
    const html = htmlContents(cid,
-      `<br>${byUserInfo.firstName} ${byUserInfo.lastName} has invited you to the "${subscriberOrgName}" organization in Habla AI.<br>
-       <br>Please <a href="${config.webappBaseUri}/verifyAccount/${rid}">click here</a> to create your account and join them.<br>`);
+      `<br>${byUserInfo.firstName} ${byUserInfo.lastName} has invited you to join the "${subscriberOrgName}" organization in Habla AI.<br>
+       <br>Please <a href="${config.webappBaseUri}/verifyAccount/${rid}">click here</a> to activate your account and setup your Company’s Organization and first Project Team. Here is a link to our Help Center with everything you need to know to Get Started <a href="https://www.habla.ai/help-center.html" target="_blank">www.habla.ai/help-center.html</a><br>
+       <br>If you have any other questions please contact us at <a href="mailto:support@habla.ai">support@habla.ai</a><br>`);
    return sendMail(cid, {
       from: 'habla-mailer-dev@habla.ai',
       to: email,
-      subject: `Invitation to join "${subscriberOrgName}" on Habla.ai`,
+      subject: `Invitation to join "${subscriberOrgName}" Company Organization`,
       html,
    });
 };
@@ -113,12 +114,12 @@ export const sendTeamInviteToExistingUser = (email, subscriberOrgName, teamName,
    const cid = uuid.v4();
    const html = htmlContents(cid,
       `<br>Hi ${invitedUserInfo.firstName},</br>
-       <br>${byUserInfo.firstName} ${byUserInfo.lastName} has invited you to the "${teamName}" team in the "${subscriberOrgName}" organization.<br>
+       <br>${byUserInfo.firstName} ${byUserInfo.lastName} has invited you to the "${teamName}" team in the "${subscriberOrgName}" organization. Please join the project team, start sharing all your files and data relevant to the team, Smart Search, find, knowledge graph, and gain back hours every month in precious time.<br>
        <br>Please <a href="${config.webappBaseUri}/app/acceptinvitation/team/${webKey}">click here</a> to join them.<br>`);
    return sendMail(cid, {
       from: 'habla-mailer-dev@habla.ai',
       to: email,
-      subject: `Invitation to join "${teamName}" of "${subscriberOrgName}" on Habla AI`,
+      subject: `Invitation to join Project Team "${teamName}" of "${subscriberOrgName}" on Habla AI`,
       html
    });
 };
@@ -137,4 +138,3 @@ export const sendTeamRoomInviteToExistingUser = (email, subscriberOrgName, teamN
       html
    });
 };
-
