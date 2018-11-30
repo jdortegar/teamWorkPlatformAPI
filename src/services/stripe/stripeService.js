@@ -85,6 +85,12 @@ export const updateSubscription = async (req, res, next) => {
       let selectedPlanId, yearPlanId, monthPlanId;
       const userLimit = subscriptionUpdateData.users;
 
+      if ('token' in subscriptionUpdateData && 'customerId' in subscriptionUpdateData) {
+         stripeResponse = await stripe.customers.update(subscriptionUpdateData.customerId, {
+            source: subscriptionUpdateData.token
+          });
+      }
+
       subscriptions.data.map(subs => {
          if (subs.interval === 'year' && !subs.trial_period_days) {
             yearPlanId = subs.id;
@@ -106,6 +112,9 @@ export const updateSubscription = async (req, res, next) => {
       } else {
          stripeResponse = await stripe.subscriptions.update(subscriptionId, {
             coupon: coupon,
+            billing_cycle_anchor: 'now',
+            trial_end: 'now',
+            prorate: true,
             items: [
                {
                   id: subscription.items.data[0].id,
