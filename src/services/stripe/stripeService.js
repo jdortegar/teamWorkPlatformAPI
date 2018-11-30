@@ -1,9 +1,11 @@
 // Stripe service for billing
 import config from '../../config/env';
 import Stripe from 'stripe';
+import moment from 'moment';
 import { SubscriberUserExistsError } from '../../services/errors';
 import * as usersTable from '../../repositories/db/usersTable';
 import * as subscriberOrgsTable from '../../repositories/db/subscriberOrgsTable';
+
 const stripe = Stripe(config.stripeConfig.stripe.secretKey);
 stripe.setApiVersion(config.stripeConfig.stripe.apiVersion);
 
@@ -186,6 +188,8 @@ export const doTrialSubscription = async (req, res, next) => {
 
       const subscriptions = await stripe.plans.list();
 
+      const trialDateEnd = moment().add(14, 'days').unix()
+
       subscriptions.data.map(subs => {
          if (trialData.trialPlanId === subs.id) {
             return (stripeResponse = stripe.subscriptions.create({
@@ -196,8 +200,8 @@ export const doTrialSubscription = async (req, res, next) => {
                      quantity: trialData.users
                   }
                ],
-               trial_end: 1544558441,
-               billing_cycle_anchor: 1544558441,
+               trial_end: trialDateEnd,
+               billing_cycle_anchor: trialDateEnd,
             }));
          }
       });
