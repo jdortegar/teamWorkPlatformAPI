@@ -138,3 +138,15 @@ export const sendTeamRoomInviteToExistingUser = (email, subscriberOrgName, teamN
       html
    });
 };
+
+export const sendNewUserDataToAdmin = (byUserInfo) => {
+   const cid = uuid.v4();
+   const html = htmlContents(cid,
+      `<br>${byUserInfo.firstName} ${byUserInfo.lastName} (${byUserInfo.email}) has registered for a New Free Starter Plan`);
+   return sendMail(cid, {
+      from: 'habla-mailer-dev@habla.ai',
+      to: config.notificationEmail,
+      subject: `New Free Starter Plan User registered in Habla AI`,
+      html,
+   });
+};
