@@ -17,7 +17,7 @@ export const createReservation = (req, res) => {
     const email = req.body.email || '';
     const stripeSubscriptionId = req.body.subscriptionId || null;
     const awsCustomerId = req.get(AWS_CUSTOMER_ID_HEADER_NAME);
-    const userLimit = req.body.userLimit || 5;
+    const userLimit = req.body.userLimit || 9;
 
     // Add new reservation to cache
 

@@ -58,7 +58,7 @@ export const getOrganizationActiveUsers = async (req, orgId) => {
     }
 }
 
-export const createSubscriberOrgNoCheck = (req, subscriberOrgInfo, user, subscriberOrgId = undefined, stripeSubscriptionId = null, userLimit = 5) => {
+export const createSubscriberOrgNoCheck = (req, subscriberOrgInfo, user, subscriberOrgId = undefined, stripeSubscriptionId = null, userLimit = 9) => {
     return new Promise((resolve, reject) => {
         const actualSubscriberOrgId = subscriberOrgId || uuid.v4();
         const icon = subscriberOrgInfo.icon || null;
@@ -86,7 +86,7 @@ export const createSubscriberOrgNoCheck = (req, subscriberOrgInfo, user, subscri
     });
 };
 
-export const createSubscriberOrg = (req, subscriberOrgInfo, userOrUserId, subscriberOrgId = undefined, stripeSubscriptionId = null, userLimit = 5) => {
+export const createSubscriberOrg = (req, subscriberOrgInfo, userOrUserId, subscriberOrgId = undefined, stripeSubscriptionId = null, userLimit = 9) => {
     return new Promise((resolve, reject) => {
         subscriberOrgsTable.getSubscriberOrgByName(req, subscriberOrgInfo.name)
             .then((subscriberOrg) => {
@@ -113,7 +113,7 @@ export const createSubscriberOrg = (req, subscriberOrgInfo, userOrUserId, subscr
  * @param subscriberOrgName
  * @param appendNumber (optional)
  */
-export const createSubscriberOrgUsingBaseName = (req, info, user, subscriberOrgId = undefined,  stripeSubscriptionId = null, appendNumber = undefined, userLimit = 5) => {
+export const createSubscriberOrgUsingBaseName = (req, info, user, subscriberOrgId = undefined,  stripeSubscriptionId = null, appendNumber = undefined, userLimit = 9) => {
     const tryInfo = {
         name: info.name + ((appendNumber) ? ` (${appendNumber})` : ''),
         preferences: info.preferences
@@ -266,7 +266,7 @@ export const inviteSubscribers = (req, subscriberOrgId, subscriberUserIdEmails, 
         ])
             .then(([retrievedSubscriberOrg, subscriberUser, orgUsers]) => {
                 subscriberOrg = retrievedSubscriberOrg;
-                const userLimit = subscriberOrg.userLimit || 5;
+                const userLimit = subscriberOrg.userLimit || 9;
                 if (!subscriberOrg) {
                     throw new SubscriberOrgNotExistError(subscriberOrgId);
                 }
