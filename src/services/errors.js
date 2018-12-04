@@ -230,3 +230,10 @@ export class CustomerNotExistError extends Error {
       Error.captureStackTrace(this, CustomerNotExistError);
    }
 }
+
+export class CouponExpiredError extends Error {
+   constructor(...args) {
+      super(...args);
+      Error.captureStackTrace(this, CouponExpiredError);
+   }
+}

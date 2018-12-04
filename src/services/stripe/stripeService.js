@@ -2,9 +2,10 @@
 import config from '../../config/env';
 import Stripe from 'stripe';
 import moment from 'moment';
-import { SubscriberUserExistsError } from '../../services/errors';
+import { SubscriberUserExistsError, CouponExpiredError } from '../../services/errors';
 import * as usersTable from '../../repositories/db/usersTable';
 import * as subscriberOrgsTable from '../../repositories/db/subscriberOrgsTable';
+import * as mailer from '../../helpers/mailer';
 
 const stripe = Stripe(config.stripeConfig.stripe.secretKey);
 stripe.setApiVersion(config.stripeConfig.stripe.apiVersion);
@@ -24,7 +25,6 @@ export const doPayment = async (req, res, next) => {
    // Encrypted credit crad data
    const token = paymentData.stripeToken;
    // Amount to charge in cents
-   const amount = parseFloat(req.body.amount) * 100;
    const coupon = paymentData.promocode || null;
    let stripeResponse;
 
@@ -40,27 +40,43 @@ export const doPayment = async (req, res, next) => {
       });
 
       const subscriptions = await stripe.plans.list();
+      let selectedPlanId, yearPlanId, monthPlanId;
 
       subscriptions.data.map(subs => {
-         if (paymentData.planId === subs.id) {
-            return (stripeResponse = stripe.subscriptions.create({
+         if (subs.interval === 'year' && !subs.trial_period_days) {
+            yearPlanId = subs.id;
+         } else if (subs.interval === 'month' && !subs.trial_period_days) {
+            monthPlanId = subs.id;
+         }
+      });
+
+
+      if (paymentData.subscriptionType === 'month') {
+         selectedPlanId = monthPlanId;
+      } else if (paymentData.subscriptionType === 'year') {
+         selectedPlanId = yearPlanId;
+      }
+
+      stripeResponse = await stripe.subscriptions.create({
                customer: customer.id,
                coupon: coupon,
                items: [
                   {
-                     plan: subs.id,
+                     plan: selectedPlanId,
                      quantity: paymentData.users
                   }
                ]
-            }));
-         }
-      });
+            });
 
       return stripeResponse;
+
    } catch (err) {
+      if (typeof err.code !=='undefined' && err.code ==='coupon_expired'){
+         throw new CouponExpiredError(coupon);
+      }
       // This is where you handle declines and errors.
       // For the demo we simply set to failed.
-      Promise.reject(err);
+      return Promise.reject(err);
    }
 };
 
@@ -70,7 +86,7 @@ export const getCoupons = async (req, res) => {
    } catch (err) {
       // This is where you handle declines and errors.
       // For the demo we simply set to failed.
-      Promise.reject(err);
+      return Promise.reject(err);
    }
 };
 
@@ -133,7 +149,7 @@ export const updateSubscription = async (req, res, next) => {
    } catch (err) {
       // This is where you handle declines and errors.
       // For the demo we simply set to failed.
-      Promise.reject(err);
+      return Promise.reject(err);
    }
 };
 
@@ -145,7 +161,7 @@ export const deleteSubscription = async (req, res) => {
    } catch (err) {
       // This is where you handle declines and errors.
       // For the demo we simply set to failed.
-      Promise.reject(err);
+      return Promise.reject(err);
    }
 };
 
@@ -155,7 +171,7 @@ export const getSubscription = async (req, subscriptionId) => {
    } catch (err) {
       // This is where you handle declines and errors.
       // For the demo we simply set to failed.
-      Promise.reject(err);
+      return Promise.reject(err);
    }
 };
 
@@ -187,29 +203,44 @@ export const doTrialSubscription = async (req, res, next) => {
       });
 
       const subscriptions = await stripe.plans.list();
+      let selectedPlanId, yearPlanId, monthPlanId;
+
+      subscriptions.data.map(subs => {
+         if (subs.interval === 'year' && !subs.trial_period_days) {
+            yearPlanId = subs.id;
+         } else if (subs.interval === 'month' && !subs.trial_period_days) {
+            monthPlanId = subs.id;
+         }
+      });
+
+
+      if (trialData.subscriptionType === 'month') {
+         selectedPlanId = monthPlanId;
+      } else if (trialData.subscriptionType === 'year') {
+         selectedPlanId = yearPlanId;
+      }
 
       const trialDateEnd = moment().add(14, 'days').unix()
 
-      subscriptions.data.map(subs => {
-         if (trialData.trialPlanId === subs.id) {
-            return (stripeResponse = stripe.subscriptions.create({
+      stripeResponse = await stripe.subscriptions.create({
                customer: customer.id,
                items: [
                   {
-                     plan: subs.id,
+                     plan: selectedPlanId,
                      quantity: trialData.users
                   }
                ],
                trial_end: trialDateEnd,
                billing_cycle_anchor: trialDateEnd,
-            }));
-         }
-      });
+            });
+
+      // Send notification to Admin
+      mailer.sendNewUserDataToAdmin(trialData);
 
       return stripeResponse;
    } catch (err) {
       // This is where you handle declines and errors.
       // For the demo we simply set to failed.
-      Promise.reject(err);
+      return Promise.reject(err);
    }
 };
