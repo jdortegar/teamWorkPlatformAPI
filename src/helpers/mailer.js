@@ -142,11 +142,11 @@ export const sendTeamRoomInviteToExistingUser = (email, subscriberOrgName, teamN
 export const sendNewUserDataToAdmin = (byUserInfo) => {
    const cid = uuid.v4();
    const html = htmlContents(cid,
-      `<br>${byUserInfo.firstName} ${byUserInfo.lastName} (${byUserInfo.email}) has registered for a New Free Starter Plan`);
+      `<br>${byUserInfo.firstName} ${byUserInfo.lastName} (${byUserInfo.email}) has been registered to Get Started for a 30 Days Free Plan at Habla AI`);
    return sendMail(cid, {
       from: 'habla-mailer-dev@habla.ai',
       to: config.notificationEmail,
-      subject: `New Free Starter Plan User registered in Habla AI`,
+      subject: `A New User has been registered to Get Started for a 30 Days Free Plan at Habla AI`,
       html,
    });
 };
