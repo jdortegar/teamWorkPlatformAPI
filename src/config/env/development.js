@@ -110,3 +110,5 @@ export const knowledgeApiEndpoint = 'https://habla-be-api-dev.habla.ai';
 // Test Account
 // publishableKey: 'pk_test_Ps3YX1kKZUOPHfZu9DjtAJRr',
 // secretKey: 'sk_test_rEf899cFVromgNDVHewmYhzj'
+
+export const notificationEmail = 'thomas.knapp@habla.io';

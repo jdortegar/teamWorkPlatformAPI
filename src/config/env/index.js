@@ -94,8 +94,10 @@ const config = {
          secretKey: process.env.STRIPE_SECRET_KEY || defaultConfig.stripeConfig.stripe.secretKey
       }
    },
-   
+
    knowledgeApiEndpoint: process.env.KNOWLEDGE_API || defaultConfig.knowledgeApiEndpoint,
+
+   notificationEmail: process.env.NOTIFICATION_EMAIL ||defaultConfig.notificationEmail
 };
 
 export const applyPropertiesFromDbToConfig = propertiesFromDb => {
@@ -157,7 +159,7 @@ export const applyEnvironmentToConfig = () => {
 
    config.dropboxClientId = process.env.DROPBOX_CLIENT_ID || config.dropboxClientId;
    config.dropboxClientSecret = process.env.DROPBOX_CLIENT_SECRET || config.dropboxClientSecret;
-   
+
 
 
    return Promise.resolve();

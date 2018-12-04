@@ -145,7 +145,7 @@ export const sendNewUserDataToAdmin = (byUserInfo) => {
       `<br>${byUserInfo.firstName} ${byUserInfo.lastName} (${byUserInfo.email}) has registered for a New Free Starter Plan`);
    return sendMail(cid, {
       from: 'habla-mailer-dev@habla.ai',
-      to: 'thomas.knapp@habla.io',
+      to: config.notificationEmail,
       subject: `New Free Starter Plan User registered in Habla AI`,
       html,
    });
