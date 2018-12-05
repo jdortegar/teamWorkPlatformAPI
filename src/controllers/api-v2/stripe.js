@@ -1,6 +1,6 @@
 import httpStatus from 'http-status';
 import * as stripeSvc from '../../services/stripe/stripeService';
-import { SubscriberUserExistsError } from '../../services/errors';
+import { SubscriberUserExistsError, CouponExpiredError } from '../../services/errors';
 
 export const doPayment = async (req, res) => {
    try {
@@ -8,6 +8,9 @@ export const doPayment = async (req, res) => {
       return res.json(payment);
    } catch (err) {
       // Return error when email exists
+      if (err instanceof CouponExpiredError){
+         return res.status(httpStatus.BAD_REQUEST).json({error: 'Bad Request', message: 'Promo Code Expired'})
+      }
       if (err instanceof SubscriberUserExistsError) {
          return res.status(httpStatus.CONFLICT).json({ error: 'Conflict', message: 'This email already exists' });
       }

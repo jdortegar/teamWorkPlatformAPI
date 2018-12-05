@@ -71,7 +71,7 @@ export const createUser = async (req, userInfo) => {
         if (invitations instanceof Array && invitations.length > 0) {
             // Here we need to create a normal user to suscriber user and reply the invite.
             const organization = await subscriberOrgsTable.getSubscriberOrgBySubscriberOrgId(req, invitations[0].subscriberOrgId);
-            const userLimit = organization.userLimit || 5;
+            const userLimit = organization.userLimit || 9;
             const orgActiveUsers = await subscriberOrgSvc.getOrganizationActiveUsers(req, organization.subscriberOrgId);
             if (userLimit <= orgActiveUsers.length) {
                 throw new UserLimitReached(userLimit);
@@ -85,7 +85,7 @@ export const createUser = async (req, userInfo) => {
             const subscriberOrgId = uuid.v4();
             const subscriberOrgName = req.body.displayName;
             const stripeSubscriptionId = await req.app.locals.redis.getAsync(`${config.redisPrefix}${emailAddress}#stripeSubscriptionId`);
-            const userLimit = await req.app.locals.redis.getAsync(`${config.redisPrefix}${emailAddress}#userLimit`) || 5;
+            const userLimit = await req.app.locals.redis.getAsync(`${config.redisPrefix}${emailAddress}#userLimit`) || 9;
 	        await subscriberOrgSvc.createSubscriberOrgUsingBaseName(req, { name: subscriberOrgName }, user, subscriberOrgId, stripeSubscriptionId, undefined, userLimit);
         }
         userCreated(req, user);
