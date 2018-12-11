@@ -366,7 +366,7 @@ const constructReadMessages = (req, userId = undefined, conversationId = undefin
             const readMessagesResponse = { userId, conversationIds: {} };
             let idx = 0;
             allReadMessages.forEach((readMessages) => {
-               const transcriptStat = transcriptStats[idx];
+               const transcriptStat = transcriptStats[idx] || {};
                const conversationStats = {
                   messageCount: transcriptStat.messageCount,
                   lastTimestamp: transcriptStat.lastTimestamp,
