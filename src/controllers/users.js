@@ -18,6 +18,8 @@ export const createReservation = (req, res) => {
     const stripeSubscriptionId = req.body.subscriptionId || null;
     const awsCustomerId = req.get(AWS_CUSTOMER_ID_HEADER_NAME);
     const userLimit = req.body.userLimit || 9;
+    const subscriptionStatus = req.body.subscriptionStatus || 'trialing';
+    const subscriptionExpireDate = req.body.subscriptionExpireDate || 0;
 
     // Add new reservation to cache
 
@@ -46,6 +48,10 @@ export const createReservation = (req, res) => {
    if (stripeSubscriptionId) {
       req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#stripeSubscriptionId`, stripeSubscriptionId);
    }
+
+   // Subcriptions data
+   req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#subscriptionStatus`, subscriptionStatus);
+   req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#subscriptionExpireDate`, subscriptionExpireDate);
    req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#userLimit`, userLimit);
 };
 
