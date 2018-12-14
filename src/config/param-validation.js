@@ -112,7 +112,7 @@ const validationSchemas = {
             icon: Joi.string().base64().allow(null),
             preferences: Joi.object().keys({
                 iconColor: Joi.string().min(1),
-                private: Joi.object().required()
+                private: Joi.object()
             })
         }
     },
