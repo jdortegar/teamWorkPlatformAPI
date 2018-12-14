@@ -150,29 +150,3 @@ export const sendNewUserDataToAdmin = (byUserInfo) => {
       html,
    });
 };
-
-export const sendDaysReminder = (email, byUserInfo, days) => {
-   const cid = uuid.v4();
-   const html = htmlContents(cid,
-      `<br>${byUserInfo.firstName}, You have ${days} days left on your 30 Day Free Trial. Please take a moment and choose a plan now that best suits your Project Team needs and keep them Data Driven. Thank you and contact us for any questions.<br>
-       <br>If you have any other questions please contact us at <a href="mailto:support@habla.ai">support@habla.ai</a><br>`);
-   return sendMail(cid, {
-      from: 'habla-mailer-dev@habla.ai',
-      to: email,
-      subject: `Thanks again for test driving Habla AI, your Enterprise Knowledge Cloud.`,
-      html,
-   });
-};
-
-export const sendSubcriptionFinish = (email, byUserInfo) => {
-   const cid = uuid.v4();
-   const html = htmlContents(cid,
-      `<br>${byUserInfo.firstName}, Your subscription is over. We will keep your information for 30 days, if you do not subscribe before that period, your information will be removed from Habla AI.<br>
-       <br>If you have any other questions please contact us at <a href="mailto:support@habla.ai">support@habla.ai</a><br>`);
-   return sendMail(cid, {
-      from: 'habla-mailer-dev@habla.ai',
-      to: email,
-      subject: `Thanks again for used driving Habla AI, your Enterprise Knowledge Cloud.`,
-      html,
-   });
-};
