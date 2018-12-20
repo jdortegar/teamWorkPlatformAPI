@@ -79,7 +79,8 @@ app.use(
          /^\/(v\d+\/)?passwordupdate/,
          /^\/(v\d+\/)?payments/,
          /^\/(v\d+\/)?trials/,
-         /^\/(v\d+\/)?coupons/
+         /^\/(v\d+\/)?coupons/,
+         /^\/(v\d+\/)?subscriptions\/paypal\/success/
       ]
    })
 );

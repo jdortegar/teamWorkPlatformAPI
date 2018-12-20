@@ -125,6 +125,7 @@
     "node-cron": "^1.2.1",
     "node-redshift": "^0.1.5",
     "nodemailer": "^4.4.2",
+    "paypal-rest-sdk": "^1.8.1",
     "redis": "^2.8.0",
     "shortid": "^2.2.8",
     "sift": "^6.0.0",
