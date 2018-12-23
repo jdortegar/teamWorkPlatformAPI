@@ -179,12 +179,12 @@ export default class Messaging {
       this.socket.send(EventTypes.makePersonalCall, { callerId, receiverId });
    }
 
-   answerCall(callerId, accepted) {
-      this.socket.send(EventTypes.answerCall, { callerId, accepted });
-   }
-
    makeTeamCall(callerId, receiverTeamId) {
       this.socket.send(EventTypes.makeTeamCall, { callerId, receiverTeamId });
+   }
+
+   answerCall(callerId, accepted) {
+      this.socket.send(EventTypes.answerCall, { callerId, accepted });
    }
 
    /**
