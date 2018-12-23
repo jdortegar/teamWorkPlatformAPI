@@ -175,6 +175,18 @@ export default class Messaging {
       this.socket.send(EventTypes.typing, { conversationId, isTyping });
    }
 
+   makePersonalCall(callerId, receiverId) {
+      this.socket.send(EventTypes.makePersonalCall, { callerId, receiverId });
+   }
+
+   makeTeamCall(callerId, receiverTeamId) {
+      this.socket.send(EventTypes.makeTeamCall, { callerId, receiverTeamId });
+   }
+
+   answerCall(callerId, accepted) {
+      this.socket.send(EventTypes.answerCall, { callerId, accepted });
+   }
+
    /**
     *
     * @param lat Number

@@ -47,6 +47,10 @@ export const EventTypes = Object.freeze({
    typing: 'typing',
    location: 'location',
 
+   makePersonalCall: 'makePersonalCall',
+   answerCall: 'answerCall',
+   makeTeamCall: 'makeTeamCall',
+
    integrationsUpdated: 'integrationsUpdated',
    boxWebhookEvent: 'boxWebhookEvent',
    googleWebhookEvent: 'googleWebhookEvent',
@@ -265,6 +269,22 @@ class MessagingService {
             const channel = ChannelFactory.conversationChannel(conversationId);
             socket.to(channel).emit(eventType, { userId, conversationId, isTyping: event.isTyping });
          }
+
+      } else if (eventType === EventTypes.makePersonalCall) {
+
+         const channel = ChannelFactory.personalChannel(event.receiverId)
+         this.io.in(channel).emit(eventType, event);
+
+      } else if (eventType === EventTypes.answerCall) {
+
+         const channel = ChannelFactory.personalChannel(event.callerId)
+         this.io.in(channel).emit(eventType, event);
+
+      } else if (eventType === EventTypes.makeTeamCall) {
+
+         const channel = ChannelFactory.teamChannel(event.receiverTeamId)
+         this.io.in(channel).emit(eventType, event);
+
       } else if (eventType === EventTypes.location) {
          const { lat, lon, alt, accuracy } = event;
          if ((lat) && (lon)) {
@@ -381,4 +401,3 @@ export const _joinChannels = (req, userId, channels) => {
 export const _leaveChannels = (req, userId, channels) => {
    messagingService._leaveChannels(req, userId, channels);
 };
-
