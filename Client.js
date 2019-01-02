@@ -183,8 +183,8 @@ export default class Messaging {
       this.socket.send(EventTypes.makeTeamCall, { callerId, receiverTeamId });
    }
 
-   answerCall(callerId, accepted) {
-      this.socket.send(EventTypes.answerCall, { callerId, accepted });
+   answerCall(callerId, status) {
+      this.socket.send(EventTypes.answerCall, { callerId, status });
    }
 
    /**
