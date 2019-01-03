@@ -187,6 +187,10 @@ export default class Messaging {
       this.socket.send(EventTypes.answerCall, { callerId, status });
    }
 
+   answerTeamCall(callerId, status) {
+      this.socket.send(EventTypes.answerTeamCall, { receiverId, receiverTeamId, status });
+   }
+
    /**
     *
     * @param lat Number
