@@ -264,8 +264,6 @@ class MessagingService {
 
    _message(socket, eventType, event) {
 
-console.log(eventType, event);
-
       if (eventType === EventTypes.typing) {
          const conversationId = event.conversationId;
          if (conversationId) {
@@ -291,7 +289,6 @@ console.log(eventType, event);
 
       } else if (eventType === EventTypes.answerTeamCall) {
 
-         console.log('teeeemmm');
          const channel = ChannelFactory.teamChannel(event.receiverTeamId)
          this.io.in(channel).emit(eventType, event);
 
