@@ -1,6 +1,6 @@
 import httpStatus from 'http-status';
 import uuid from 'uuid';
-import shortid from 'shortid';
+import moment from 'moment';
 import app from '../config/express';
 import config from '../config/env';
 import * as mailer from '../helpers/mailer';
@@ -24,9 +24,9 @@ export const createReservation = (req, res) => {
 
     // Add new reservation to cache
     req.logger.debug(`createReservation: user ${email}`);
-    const rid = shortid.generate(); // get a uid to represent the reservation
+    const rid = String(moment().valueOf()).slice(-8);
     req.logger.debug(`createReservation: new rid: ${rid}`);
-    req.app.locals.redis.set(`${config.redisPrefix}${rid}`, email, err => {
+    req.app.locals.redis.set(`${config.redisPrefix}#reservation#${rid}`, email, 'EX', 1800, err => {
         if (err) {
             req.logger.debug('createReservation: set status - redis error');
         } else {
@@ -90,7 +90,8 @@ export const validateCode = async (req, res, next) => {
         const rid = req.params.rid;
         req.logger.debug(`find Reservation: id = ${rid}`);
 
-        const email = await req.app.locals.redis.getAsync(`${config.redisPrefix}${rid}`);
+        const email = await req.app.locals.redis.getAsync(`${config.redisPrefix}#reservation#${rid}`);
+        await req.app.locals.redis.delAsync(`${config.redisPrefix}#reservation#${rid}`);
         if (!email) throw new APIWarning(httpStatus.NOT_FOUND);
         req.logger.debug(`validateCode: found reservation for email: ${email}`);
 
@@ -98,7 +99,7 @@ export const validateCode = async (req, res, next) => {
         return res.status(httpStatus.OK).json(response);
     } catch (error) {
         req.logger.debug('validateCode: get status - redis error');
-        return Promise.reject(error);
+        return next(error);
     }
 }
 
