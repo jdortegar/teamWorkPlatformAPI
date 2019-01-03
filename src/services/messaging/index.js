@@ -6,11 +6,10 @@ import Roles from '../roles';
 
 // EventType = user
 
-export const userCreated = (req, user) => { // eslint-disable-line no-unused-vars
-   // No need to broadcast this, since the user is by themselves at this point, and not logged-in.
-   // return _broadcastEvent(req, EventTypes.userCreated, publicUser(user), [
-   //    ChannelFactory.publicChannel()
-   // ]);
+export const userCreated = (req, user) => {
+   return _broadcastEvent(req, EventTypes.userCreated, publishByApiVersion(req, apiVersionedVisibility.publicUser, user), [
+      ChannelFactory.publicChannel()
+   ]);
 };
 
 export const userUpdated = (req, user) => {
@@ -250,7 +249,7 @@ export const messageDeleted = (req, message) => {
 };
 
 
-// EventType = integration 
+// EventType = integration
 
 export const integrationsUpdated = (req, subscriberUser) => {
    // Send to internal channel.
