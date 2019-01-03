@@ -50,6 +50,7 @@ export const EventTypes = Object.freeze({
    makePersonalCall: 'makePersonalCall',
    answerCall: 'answerCall',
    makeTeamCall: 'makeTeamCall',
+   answerTeamCall: 'answerTeamCall',
 
    integrationsUpdated: 'integrationsUpdated',
    boxWebhookEvent: 'boxWebhookEvent',
@@ -262,6 +263,9 @@ class MessagingService {
    }
 
    _message(socket, eventType, event) {
+
+console.log(eventType, event);
+
       if (eventType === EventTypes.typing) {
          const conversationId = event.conversationId;
          if (conversationId) {
@@ -282,6 +286,12 @@ class MessagingService {
 
       } else if (eventType === EventTypes.makeTeamCall) {
 
+         const channel = ChannelFactory.teamChannel(event.receiverTeamId)
+         this.io.in(channel).emit(eventType, event);
+
+      } else if (eventType === EventTypes.answerTeamCall) {
+
+         console.log('teeeemmm');
          const channel = ChannelFactory.teamChannel(event.receiverTeamId)
          this.io.in(channel).emit(eventType, event);
 
