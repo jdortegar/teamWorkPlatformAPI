@@ -264,8 +264,6 @@ class MessagingService {
 
    _message(socket, eventType, event) {
 
-console.log(eventType, event);
-
       if (eventType === EventTypes.typing) {
          const conversationId = event.conversationId;
          if (conversationId) {
