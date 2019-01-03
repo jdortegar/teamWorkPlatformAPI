@@ -291,7 +291,6 @@ console.log(eventType, event);
 
       } else if (eventType === EventTypes.answerTeamCall) {
 
-         console.log('teeeemmm');
          const channel = ChannelFactory.teamChannel(event.receiverTeamId)
          this.io.in(channel).emit(eventType, event);
 
