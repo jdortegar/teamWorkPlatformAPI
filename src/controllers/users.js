@@ -24,7 +24,7 @@ export const createReservation = (req, res) => {
 
     // Add new reservation to cache
     req.logger.debug(`createReservation: user ${email}`);
-    const rid = String(moment().valueOf()).slice(-8);
+    const rid = String(moment().valueOf()).slice(-6);
     req.logger.debug(`createReservation: new rid: ${rid}`);
     req.app.locals.redis.set(`${config.redisPrefix}#reservation#${rid}`, email, 'EX', 1800, err => {
         if (err) {
