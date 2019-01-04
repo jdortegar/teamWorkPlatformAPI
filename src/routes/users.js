@@ -8,8 +8,8 @@ const router = express.Router();
 router.route('/registerUser')
    .post(validateByApiVersion(apiVersionedValidators.registerUser), users.createReservation);
 
-router.route('/validateEmail/:rid')
-   .get(users.validateEmail);
+router.route('/validateCode/:rid')
+   .get(users.validateCode);
 
 router.route('/createUser')
   .post(validateByApiVersion(apiVersionedValidators.createUser), users.createUser);
