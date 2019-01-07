@@ -21,7 +21,8 @@ const privateUser = (user) => {
         subscriberUserId,
         teamMemberId,
         teamRoomMemberId,
-        presence
+        presence,
+        onboarding
     } = user;
     return {
         userId,
@@ -45,6 +46,7 @@ const privateUser = (user) => {
         teamMemberId,
         teamRoomMemberId,
         presence,
+        onboarding: onboarding || true,
         // roleMemberships: dbUser.roleMemberships,
         // defaultPage: dbUser.defaultPage,
         userType: user.userType || 'hablaUser'
@@ -61,6 +63,9 @@ const publicUser = (user) => {
     delete ret.roleMemberships;
     delete ret.defaultPage;
     delete ret.userType;
+    if (typeof user.onboarding === 'undefined') {
+        ret.onboarding = false;
+    }
     return ret;
 };
 
