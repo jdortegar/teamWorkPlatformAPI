@@ -61,7 +61,7 @@ export const sendConfirmationCode = (email, rid) => {
         <h1>${rid}</h1>
         <br>This email contains private information for your Habla AI account — please
         don’t forward it. Questions about setting up Habla AI? Email us at
-        <a href="mailto:support@habla.ai">support@habla.ai</a> or support a support request <a href="https://helpcenter.habla.ai" target="_blank">here</a>.<br>`);
+        <a href="mailto:support@habla.ai">support@habla.ai</a> or submit a support request <a href="https://helpcenter.habla.ai" target="_blank">here</a>.<br>`);
    return sendMail(cid, {
       from: 'habla-mailer-dev@habla.ai',
       to: email,
