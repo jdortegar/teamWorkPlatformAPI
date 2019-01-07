@@ -39,6 +39,7 @@ const validationSchemas = {
             presenceStatus: Joi.string().min(1),
             bookmarks: Joi.object(),
             active: Joi.boolean(),
+            onboarding: Joi.boolean(),
             preferences: Joi.object().keys({
                 iconColor: Joi.string().min(1),
                 private: Joi.object()

@@ -58,6 +58,7 @@ export const login = (req, res, next) => {
          }
       })
       .catch((err) => {
+          console.log(err);
          if (err instanceof NoPermissionsError) {
             next(new APIWarning(httpStatus.UNAUTHORIZED, 'Invalid credentials'));
          } else {
