@@ -94,7 +94,7 @@ export const createUser = (req,
                 created: req.now.format(),
                 lastModified: req.now.format(),
                 preferences,
-                onboarding: false
+                onboarding: true
             }
         };
 
