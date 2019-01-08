@@ -24,6 +24,7 @@ const privateUser = (user) => {
         presence,
         onboarding
     } = user;
+    onboarding = (typeof onboarding === 'undefined') ? false : onboarding;
     return {
         userId,
         username: emailAddress,
@@ -46,7 +47,7 @@ const privateUser = (user) => {
         teamMemberId,
         teamRoomMemberId,
         presence,
-        onboarding: onboarding || true,
+        onboarding,
         // roleMemberships: dbUser.roleMemberships,
         // defaultPage: dbUser.defaultPage,
         userType: user.userType || 'hablaUser'
