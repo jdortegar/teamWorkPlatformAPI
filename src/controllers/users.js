@@ -93,7 +93,7 @@ export const validateCode = async (req, res, next) => {
 
         if (email) {
           // reservation found, delete it
-          await req.app.locals.redis.delAsync(`${config.redisPrefix}#reservation#${rid}`);
+          await req.app.locals.redis.delAsync(`${config.redisPrefix}#reservation#${code}`);
           req.logger.debug(`validateCode: found reservation for email: ${email}`);
 
           return res.status(httpStatus.OK).json({ email });
@@ -119,6 +119,7 @@ export const validateCode = async (req, res, next) => {
         const response = { email: registration.email, orgName: registration.subscriberOrgName };
         return res.status(httpStatus.OK).json(response);
     } catch (error) {
+        console.log(error);
         req.logger.debug('validateCode: get status - redis error');
         return next(error);
     }
