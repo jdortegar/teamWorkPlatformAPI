@@ -87,17 +87,39 @@ export const deleteRedisKey = (rid) => {
 
 export const validateCode = async (req, res, next) => {
     try {
-        const rid = req.params.rid;
-        req.logger.debug(`find Reservation: id = ${rid}`);
+        // find reservation (admin user)
+        const code = req.params.code;
+        const email = await req.app.locals.redis.getAsync(`${config.redisPrefix}#reservation#${code}`);
 
-        const email = await req.app.locals.redis.getAsync(`${config.redisPrefix}#reservation#${rid}`);
-        await req.app.locals.redis.delAsync(`${config.redisPrefix}#reservation#${rid}`);
-        if (!email) throw new APIWarning(httpStatus.NOT_FOUND);
-        req.logger.debug(`validateCode: found reservation for email: ${email}`);
+        if (email) {
+          // reservation found, delete it
+          await req.app.locals.redis.delAsync(`${config.redisPrefix}#reservation#${code}`);
+          req.logger.debug(`validateCode: found reservation for email: ${email}`);
 
-        const response = { email };
+          return res.status(httpStatus.OK).json({ email });
+        }
+
+        req.logger.debug(`validateCode: reservation not found for code: ${code}`);
+
+        // find registration (invited user)
+        const rid = req.query.rid;
+        const registration = await req.app.locals.redis.hgetallAsync(`${config.redisPrefix}#registration#${rid}`);
+
+        if (!registration) {
+          req.logger.debug(`validateCode: registration not found for rid: ${rid}`);
+          throw new APIWarning(httpStatus.NOT_FOUND);
+        }
+        if (code !== registration.confirmationCode) {
+          req.logger.debug(`validateCode: registration found but code invalid: ${code}`);
+          throw new APIWarning(httpStatus.NOT_FOUND);
+        }
+
+        req.logger.debug(`validateCode: found reservation for email: ${registration.email}`);
+
+        const response = { email: registration.email, orgName: registration.subscriberOrgName };
         return res.status(httpStatus.OK).json(response);
     } catch (error) {
+        console.log(error);
         req.logger.debug('validateCode: get status - redis error');
         return next(error);
     }
