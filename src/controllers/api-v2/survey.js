@@ -11,6 +11,7 @@ export const createSurvey = async (req, res, next) => {
         const survey = await surveySvc.createSurvey(name, questions);
         return res.status(httpStatus.CREATED).json(survey);
     } catch (err) {
+        console.log(err);
         next(err);
     }
     // const orgId = req.params.orgId;

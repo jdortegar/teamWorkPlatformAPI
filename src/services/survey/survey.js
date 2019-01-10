@@ -9,7 +9,7 @@ export const createSurvey = async (name, questions) => {
         const survey = await surveyTable.addSurvey(name);
         const surveyQuestions = [];
         for (let i =0; i < questions.length; i++) {
-            const question = await surveyTable.addQuestion(survey.id, questions[i]);
+            const question = await surveyTable.addQuestion(survey.id, questions[i].value, questions[i].options);
             surveyQuestions.push(question);
         }
         return {
