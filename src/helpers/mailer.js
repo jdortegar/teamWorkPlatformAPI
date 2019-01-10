@@ -59,9 +59,8 @@ export const sendConfirmationCode = (email, rid) => {
         <br>Enter the following code in the window where you began creating your new
         Habla AI account:<br>
         <h1>${rid}</h1>
-        <br>This email contains private information for your Habla AI account — please
-        don’t forward it. Questions about setting up Habla AI? Email us at
-        <a href="mailto:support@habla.ai">support@habla.ai</a> or support a support request <a href="https://helpcenter.habla.ai" target="_blank">here</a>.<br>`);
+        <br>This email contains private information for your Habla AI account — please don’t forward it. Questions about setting up Habla AI? Email us at
+        <a href="mailto:support@habla.ai">support@habla.ai</a> or submit a support request <a href="https://helpcenter.habla.ai" target="_blank">here</a>.<br>`);
    return sendMail(cid, {
       from: 'habla-mailer-dev@habla.ai',
       to: email,
@@ -85,12 +84,14 @@ export const sendResetPassword = (email, rid) => {
    });
 };
 
-export const sendSubscriberOrgInviteToExternalUser = (email, subscriberOrgName, byUserInfo, rid) => {
+export const sendSubscriberOrgInviteToExternalUser = (email, subscriberOrgName, byUserInfo, rid, confirmationCode) => {
    const cid = uuid.v4();
    const html = htmlContents(cid,
       `<br>${byUserInfo.firstName} ${byUserInfo.lastName} has invited you to join the "${subscriberOrgName}" organization in Habla AI.<br>
-       <br>Please <a href="${config.webappBaseUri}/verifyAccount/${rid}">click here</a> to activate your account and setup your Company’s Organization and first Project Team. Here is a link to our Help Center with everything you need to know to Get Started <a href="https://www.habla.ai/help-center.html" target="_blank">www.habla.ai/help-center.html</a><br>
-       <br>If you have any other questions please contact us at <a href="mailto:support@habla.ai">support@habla.ai</a><br>`);
+       <br>Please <a href="${config.webappBaseUri}/createAccount?rid=${rid}">click here</a> to create your account and enter the following code:<br>
+       <h1>${confirmationCode}</h1>
+       <br>This email contains private information for your Habla AI account — please don’t forward it. Questions about setting up Habla AI? Email us at
+       <a href="mailto:support@habla.ai">support@habla.ai</a> or submit a support request <a href="https://helpcenter.habla.ai" target="_blank">here</a>.<br>`);
    return sendMail(cid, {
       from: 'habla-mailer-dev@habla.ai',
       to: email,

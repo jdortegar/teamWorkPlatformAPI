@@ -93,7 +93,8 @@ export const createUser = (req,
                 bookmarks: {},
                 created: req.now.format(),
                 lastModified: req.now.format(),
-                preferences
+                preferences,
+                onboarding: true
             }
         };
 
@@ -205,7 +206,8 @@ export const updateUser = (req, userId,
         presenceStatus,
         bookmarks,
         preferences,
-        active
+        active,
+        onboarding
     }) => {
     return new Promise((resolve, reject) => {
         let user;
@@ -232,6 +234,7 @@ export const updateUser = (req, userId,
                 updateExpression.addUpdate('preferences', preferences);
                 updateExpression.addUpdate('lastModified', lastModified);
                 updateExpression.addUpdate('enabled', active);
+                updateExpression.addUpdate('onboarding', onboarding);
                 const params = {
                     TableName: tableName(),
                     Key: { userId },
@@ -262,4 +265,5 @@ export const updateUser = (req, userId,
             })))
             .catch(err => reject(err));
     });
+
 };
