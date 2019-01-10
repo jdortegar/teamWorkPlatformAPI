@@ -79,7 +79,8 @@ const config = {
       database: process.env.REDSHIFT_DATABASE || defaultConfig.redshift.database,
       password: process.env.REDSHIFT_PASSWORD || defaultConfig.redshift.password,
       host: process.env.REDSHIFT_HOST || defaultConfig.redshift.host,
-      port: process.env.REDSHIFT_PORT || defaultConfig.redshift.port
+      port: process.env.REDSHIFT_PORT || defaultConfig.redshift.port,
+      tablePrefix: process.env.REDSHIFT_TABLE_PREFIX || defaultConfig.redshift.tablePrefix
    },
    surveyTable: process.env.SURVEY_TABLE || defaultConfig.surveyTable,
 

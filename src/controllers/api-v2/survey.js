@@ -5,23 +5,31 @@ import * as surveySvc from '../../services/survey/survey';
 import config from '../../config/env';
 
 export const createSurvey = async (req, res, next) => {
-    const orgId = req.params.orgId;
-    const userId = req.params.userId;
-    const answers = req.body;
-    const formatedAnswers = {};
-    _.forEach(answers, (val, key) => {
-        formatedAnswers[key] = val.join(' | ');
-    });
+    const name = req.body.name;
+    const questions = req.body.questions;
     try {
-        await surveySvc.createSurvey(orgId, userId, formatedAnswers);
-        return res.status(httpStatus.CREATED).json({
-            organizationId: orgId,
-            userId,
-            answers: answers
-        });
+        const survey = await surveySvc.createSurvey(name, questions);
+        return res.status(httpStatus.CREATED).json(survey);
     } catch (err) {
         next(err);
     }
+    // const orgId = req.params.orgId;
+    // const userId = req.params.userId;
+    // const answers = req.body;
+    // const formatedAnswers = {};
+    // _.forEach(answers, (val, key) => {
+    //     formatedAnswers[key] = val.join(' | ');
+    // });
+    // try {
+    //     await surveySvc.createSurvey(orgId, userId, formatedAnswers);
+    //     return res.status(httpStatus.CREATED).json({
+    //         organizationId: orgId,
+    //         userId,
+    //         answers: answers
+    //     });
+    // } catch (err) {
+    //     next(err);
+    // }
 }
 
 export const getLastSurveyDate = async (req, res, next) => {
