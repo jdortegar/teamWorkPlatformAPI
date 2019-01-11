@@ -46,7 +46,7 @@ const htmlContents = (cid, html) => {
        ${html}
      </div>
      <div style="padding-top: 20px; width: 400; font-family: 'Arial'; color: lightslategray; font-size: 12">
-     This email was sent to you because your email is registered in Habla AI. If this wasn’t you, please email us at <a href="mailto:support@habla.ai">support@habla.ai</a> so we can help.
+     This email was sent to you because your email is registered in Habla AI. If this wasn’t you, please email us at <a href="mailto:support@habla.io">support@habla.io</a> so we can help.
      </div>
    `;
 };
@@ -60,7 +60,7 @@ export const sendConfirmationCode = (email, rid) => {
         Habla AI account:<br>
         <h1>${rid}</h1>
         <br>This email contains private information for your Habla AI account — please don’t forward it. Questions about setting up Habla AI? Email us at
-        <a href="mailto:support@habla.ai">support@habla.ai</a> or submit a support request <a href="https://helpcenter.habla.ai" target="_blank">here</a>.<br>`);
+        <a href="mailto:support@habla.io">support@habla.io</a> or submit a support request <a href="https://helpcenter.habla.ai/hc/en-us" target="_blank">here</a>.<br>`);
    return sendMail(cid, {
       from: 'habla-mailer-dev@habla.ai',
       to: email,
@@ -91,7 +91,7 @@ export const sendSubscriberOrgInviteToExternalUser = (email, subscriberOrgName, 
        <br>Please <a href="${config.webappBaseUri}/createAccount?rid=${rid}">click here</a> to create your account and enter the following code:<br>
        <h1>${confirmationCode}</h1>
        <br>This email contains private information for your Habla AI account — please don’t forward it. Questions about setting up Habla AI? Email us at
-       <a href="mailto:support@habla.ai">support@habla.ai</a> or submit a support request <a href="https://helpcenter.habla.ai" target="_blank">here</a>.<br>`);
+       <a href="mailto:support@habla.io">support@habla.io</a> or submit a support request <a href="https://helpcenter.habla.ai/hc/en-us" target="_blank">here</a>.<br>`);
    return sendMail(cid, {
       from: 'habla-mailer-dev@habla.ai',
       to: email,
