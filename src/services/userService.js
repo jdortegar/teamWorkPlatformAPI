@@ -196,7 +196,10 @@ export const resetPassword = (req, email, password) => {
                 resolve(user);
                 // userPasswordUpdated(req, user);
             })
-            .catch(err => reject(err));
+            .catch((err) => {
+                console.log('ERROR IN TABLE ', err);
+                reject(err)
+            } );
     });
 };
 
