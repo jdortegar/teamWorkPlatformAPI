@@ -54,20 +54,27 @@ export const getLastSurveyDate = async (req, res, next) => {
 }
 
 export const getSurveys = async (req, res, next) => {
-    const orgId = req.params.orgId;
-    const userId = req.params.userId;
     try {
-        const result = await surveySvc.getSurveys(orgId, userId);
-        const dates = [];
-        _.forEach(result.rows, (row) => {
-            dates.push(moment(row.created_at).format('YYYY-MM-DD'))
-        });
-        return res.status(httpStatus.OK).json({
-            organizationId: orgId,
-            userId,
-            dates
-        });
+        const surveys = await surveySvc.getSurveys();
+        return res.json(surveys);
     } catch (err) {
+        console.log(err);
         next(err);
     }
+    // const orgId = req.params.orgId;
+    // const userId = req.params.userId;
+    // try {
+    //     const result = await surveySvc.getSurveys(orgId, userId);
+    //     const dates = [];
+    //     _.forEach(result.rows, (row) => {
+    //         dates.push(moment(row.created_at).format('YYYY-MM-DD'))
+    //     });
+    //     return res.status(httpStatus.OK).json({
+    //         organizationId: orgId,
+    //         userId,
+    //         dates
+    //     });
+    // } catch (err) {
+    //     next(err);
+    // }
 }

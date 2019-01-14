@@ -22,6 +22,15 @@ export const createSurvey = async (name, questions) => {
     }
 } 
 
+export const getSurveys = async () => {
+    try {
+        const surveys = await surveyTable.getSurveys();
+        return surveys;
+
+    } catch (err) {
+        return Promise.reject(err);
+    }
+}
 
 // export const createSurvey = (orgId, userId, questions = []) => {
 //     let questionsColumnsNames = '';

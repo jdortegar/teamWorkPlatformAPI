@@ -1,6 +1,8 @@
 import uuid from 'uuid';
+import _ from 'lodash';
 import client from '../../../services/redshiftClient';
 import config from '../../../config/env';
+import { forgotPassword } from '../../../controllers/users';
 
 export const addSurvey = async (name) => {
     try {
@@ -48,3 +50,41 @@ export const addAnswer = async (questionId, userId, orgId, answer) => {
         return Promise.reject(err);
     }
 }
+
+export const getSurveys = async () => {
+    try {
+        const query = `SELECT s.id as survey_id, s.name, s.created_at,q.id as question_id, q.question, q.question_options as options 
+            FROM ${config.redshift.tablePrefix}_surveys s
+            INNER JOIN ${config.redshift.tablePrefix}_survey_questions q ON s.id = q.survey_id;`;
+
+        const rawData = await client.query(query);
+        const formated = [];
+        _.forEach(rawData.rows, (val) => {
+            const ix = _.findIndex(formated, { id: val.survey_id });
+            if (ix < 0) {
+                formated.push({
+                    id: val.survey_id,
+                    name: val.name,
+                    questions: [
+                        {
+                            id: val.question_id,
+                            question: val.question,
+                            options: (val.options.length > 0) ? val.options.split('|') : []
+                        }
+                    ]
+                });
+            } else {
+                formated[ix].questions.push({
+                    id: val.question_id,
+                    question: val.question,
+                    options: (val.options.length > 0) ? val.options.split('|') : []
+                });
+            }
+        });
+        return formated;
+    } catch (err) {
+        return Promise.reject(err);
+    } 
+}
+
+
