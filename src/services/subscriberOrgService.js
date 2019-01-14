@@ -58,7 +58,7 @@ export const getOrganizationActiveUsers = async (req, orgId) => {
     }
 }
 
-export const createSubscriberOrgNoCheck = (req, subscriberOrgInfo, user, subscriberOrgId = undefined, stripeSubscriptionId = null, userLimit = 9) => {
+export const createSubscriberOrgNoCheck = (req, subscriberOrgInfo, user, subscriberOrgId = undefined, stripeSubscriptionId = null, paypalSubscriptionId = null, userLimit = 9) => {
     return new Promise((resolve, reject) => {
         const actualSubscriberOrgId = subscriberOrgId || uuid.v4();
         const icon = subscriberOrgInfo.icon || null;
@@ -71,7 +71,7 @@ export const createSubscriberOrgNoCheck = (req, subscriberOrgInfo, user, subscri
         const subscriberUserId = uuid.v4();
         const role = Roles.admin;
 
-        subscriberOrgsTable.createSubscriberOrg(req, actualSubscriberOrgId, subscriberOrgInfo.name, icon, preferences, stripeSubscriptionId, userLimit)
+        subscriberOrgsTable.createSubscriberOrg(req, actualSubscriberOrgId, subscriberOrgInfo.name, icon, preferences, stripeSubscriptionId, paypalSubscriptionId, userLimit)
             .then((createdSubscriberOrg) => {
                 subscriberOrg = createdSubscriberOrg;
                 return subscriberUsersTable.createSubscriberUser(req, subscriberUserId, user.userId, actualSubscriberOrgId, role, user.displayName);
@@ -86,7 +86,7 @@ export const createSubscriberOrgNoCheck = (req, subscriberOrgInfo, user, subscri
     });
 };
 
-export const createSubscriberOrg = (req, subscriberOrgInfo, userOrUserId, subscriberOrgId = undefined, stripeSubscriptionId = null, userLimit = 9) => {
+export const createSubscriberOrg = (req, subscriberOrgInfo, userOrUserId, subscriberOrgId = undefined, stripeSubscriptionId = null, paypalSubscriptionId = null, userLimit = 9) => {
     return new Promise((resolve, reject) => {
         subscriberOrgsTable.getSubscriberOrgByName(req, subscriberOrgInfo.name)
             .then((subscriberOrg) => {
@@ -99,7 +99,7 @@ export const createSubscriberOrg = (req, subscriberOrgInfo, userOrUserId, subscr
                 }
                 return userOrUserId;
             })
-            .then(user => createSubscriberOrgNoCheck(req, subscriberOrgInfo, user, subscriberOrgId, stripeSubscriptionId, userLimit))
+            .then(user => createSubscriberOrgNoCheck(req, subscriberOrgInfo, user, subscriberOrgId, stripeSubscriptionId, paypalSubscriptionId, userLimit))
             .then(subscriberOrg => resolve(subscriberOrg))
             .catch(err => reject(err));
     });
@@ -113,18 +113,18 @@ export const createSubscriberOrg = (req, subscriberOrgInfo, userOrUserId, subscr
  * @param subscriberOrgName
  * @param appendNumber (optional)
  */
-export const createSubscriberOrgUsingBaseName = (req, info, user, subscriberOrgId = undefined,  stripeSubscriptionId = null, appendNumber = undefined, userLimit = 9) => {
+export const createSubscriberOrgUsingBaseName = (req, info, user, subscriberOrgId = undefined,  stripeSubscriptionId = null, paypalSubscriptionId = null, appendNumber = undefined, userLimit = 9) => {
     const tryInfo = {
         name: info.name + ((appendNumber) ? ` (${appendNumber})` : ''),
         preferences: info.preferences
     };
     return new Promise((resolve, reject) => {
-        createSubscriberOrg(req, tryInfo, user, subscriberOrgId, stripeSubscriptionId, userLimit)
+        createSubscriberOrg(req, tryInfo, user, subscriberOrgId, stripeSubscriptionId, paypalSubscriptionId, userLimit)
             .then(createdSubscriberOrg => resolve(createdSubscriberOrg))
             .catch((err) => {
                 if (err instanceof SubscriberOrgExistsError) {
                     const tryNumber = (appendNumber) ? appendNumber + 1 : 1;
-                    createSubscriberOrgUsingBaseName(req, info, user, subscriberOrgId, stripeSubscriptionId, tryNumber)
+                    createSubscriberOrgUsingBaseName(req, info, user, subscriberOrgId, stripeSubscriptionId, paypalSubscriptionId, tryNumber)
                         .then(createdSubscriberOrg => resolve(createdSubscriberOrg))
                         .catch(err2 => reject(err2));
                 } else {

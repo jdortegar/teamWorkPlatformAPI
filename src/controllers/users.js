@@ -15,7 +15,8 @@ import { apiVersionedVisibility, publishByApiVersion } from '../helpers/publishe
 */
 export const createReservation = (req, res) => {
     const email = req.body.email || '';
-    const stripeSubscriptionId = req.body.subscriptionId || null;
+    const stripeSubscriptionId = req.body.stripeSubscriptionId || null;
+    const paypalSubscriptionId = req.body.paypalSubscriptionId || null;
     const awsCustomerId = req.get(AWS_CUSTOMER_ID_HEADER_NAME);
     const userLimit = req.body.userLimit || 9;
 
@@ -43,9 +44,15 @@ export const createReservation = (req, res) => {
     }
 
     // If User comes from stripe
-   if (stripeSubscriptionId) {
-      req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#stripeSubscriptionId`, stripeSubscriptionId);
-   }
+    if (stripeSubscriptionId) {
+        req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#stripeSubscriptionId`, stripeSubscriptionId);
+    }
+
+    // If User comes from paypal
+    if (paypalSubscriptionId) {
+        req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#paypalSubscriptionId`, paypalSubscriptionId);
+    }
+
    req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#userLimit`, userLimit);
 };
 

@@ -117,7 +117,7 @@ const publicInvitations = (invitations) => {
 
 const privateSubscriberOrg = (subscriberOrg) => {
     const subscriberOrgId = subscriberOrg.subscriberOrgId;
-    const { name, icon, enabled, preferences, created, lastModified, stripeSubscriptionId, userLimit } = subscriberOrg;
+    const { name, icon, enabled, preferences, created, lastModified, stripeSubscriptionId, paypalSubscriptionId, userLimit } = subscriberOrg;
     return {
         subscriberOrgId,
         name,
@@ -127,6 +127,7 @@ const privateSubscriberOrg = (subscriberOrg) => {
         created,
         lastModified,
         stripeSubscriptionId,
+        paypalSubscriptionId,
         userLimit
     };
 };
