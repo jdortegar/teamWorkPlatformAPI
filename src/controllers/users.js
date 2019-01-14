@@ -134,7 +134,9 @@ export const resetPassword = (req, res, next) => {
     // Find reservation in cache
     req.logger.debug(`find Reservation: id = ${rid}`);
     req.app.locals.redis.get(`${config.redisPrefix}${rid}`, (err, reply) => {
+        console.log('****REPLY', reply);
         if (err) {
+            console.log('**REDIS ERROR**', err);
             req.logger.debug('validateEmail: get status - redis error');
         } else if (reply) {
             req.logger.debug(`validateEmail: found reservation for email: ${reply}`);

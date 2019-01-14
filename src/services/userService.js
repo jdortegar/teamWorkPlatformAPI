@@ -185,6 +185,7 @@ export const resetPassword = (req, email, password) => {
         console.log('**EMAIL**', email);
         usersTable.getUserByEmailAddress(req, email)
             .then((user) => {
+                console.log('***USER****', user);
                 if (!user) {
                     throw new UserNotExistError(email);
                 }
