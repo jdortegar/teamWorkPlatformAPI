@@ -119,7 +119,6 @@ export const validateCode = async (req, res, next) => {
         const response = { email: registration.email, orgName: registration.subscriberOrgName };
         return res.status(httpStatus.OK).json(response);
     } catch (error) {
-        console.log(error);
         req.logger.debug('validateCode: get status - redis error');
         return next(error);
     }
@@ -134,9 +133,7 @@ export const resetPassword = (req, res, next) => {
     // Find reservation in cache
     req.logger.debug(`find Reservation: id = ${rid}`);
     req.app.locals.redis.get(`${config.redisPrefix}${rid}`, (err, reply) => {
-        console.log('****REPLY', reply);
         if (err) {
-            console.log('**REDIS ERROR**', err);
             req.logger.debug('validateEmail: get status - redis error');
         } else if (reply) {
             req.logger.debug(`validateEmail: found reservation for email: ${reply}`);
@@ -152,7 +149,9 @@ export const resetPassword = (req, res, next) => {
                         next(new APIWarning(httpStatus.BAD_REQUEST));
                     }
                 }).catch((err) => {
-                    console.log(err);
+                    if (err instanceof UserNotExistError) {
+                        return res.status(httpStatus.NOT_FOUND).json({ error: 'user not found'});
+                    }
                     next(err);
                 }) ;
         } else {

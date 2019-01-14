@@ -182,10 +182,8 @@ export const updatePassword = (req, userId, oldPassword, newPassword) => {
 
 export const resetPassword = (req, email, password) => {
     return new Promise((resolve, reject) => {
-        console.log('**EMAIL**', email);
         usersTable.getUserByEmailAddress(req, email)
             .then((user) => {
-                console.log('***USER****', user);
                 if (!user) {
                     throw new UserNotExistError(email);
                 }
@@ -198,7 +196,6 @@ export const resetPassword = (req, email, password) => {
                 // userPasswordUpdated(req, user);
             })
             .catch((err) => {
-                console.log('ERROR IN TABLE ', err);
                 reject(err)
             } );
     });
