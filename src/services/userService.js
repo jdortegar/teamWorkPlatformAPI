@@ -182,6 +182,7 @@ export const updatePassword = (req, userId, oldPassword, newPassword) => {
 
 export const resetPassword = (req, email, password) => {
     return new Promise((resolve, reject) => {
+        console.log('**EMAIL**', email);
         usersTable.getUserByEmailAddress(req, email)
             .then((user) => {
                 if (!user) {
