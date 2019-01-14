@@ -149,7 +149,10 @@ export const resetPassword = (req, res, next) => {
                     } else {
                         next(new APIWarning(httpStatus.BAD_REQUEST));
                     }
-                });
+                }).catch((err) => {
+                    console.log(err);
+                    next(err);
+                }) ;
         } else {
             next(new APIWarning(httpStatus.NOT_FOUND));
         }
