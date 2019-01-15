@@ -60,7 +60,7 @@ export const sendConfirmationCode = (email, rid) => {
         Habla AI account:<br>
         <h1>${rid}</h1>
         <br>This email contains private information for your Habla AI account — please don’t forward it. Questions about setting up Habla AI? Email us at
-        <a href="mailto:support@habla.io">support@habla.io</a> or submit a support request <a href="https://helpcenter.habla.ai/hc/en-us" target="_blank">here</a>.<br>`);
+        <a href="mailto:support@habla.io">support@habla.io</a> or submit a support request <a href="https://helpcenter.habla.ai/hc/en-us/requests/new" target="_blank">here</a>.<br>`);
    return sendMail(cid, {
       from: 'habla-mailer-dev@habla.ai',
       to: email,
@@ -91,7 +91,7 @@ export const sendSubscriberOrgInviteToExternalUser = (email, subscriberOrgName, 
        <br>Please <a href="${config.webappBaseUri}/createAccount?rid=${rid}">click here</a> to create your account and enter the following code:<br>
        <h1>${confirmationCode}</h1>
        <br>This email contains private information for your Habla AI account — please don’t forward it. Questions about setting up Habla AI? Email us at
-       <a href="mailto:support@habla.io">support@habla.io</a> or submit a support request <a href="https://helpcenter.habla.ai/hc/en-us" target="_blank">here</a>.<br>`);
+       <a href="mailto:support@habla.io">support@habla.io</a> or submit a support request <a href="https://helpcenter.habla.ai/hc/en-us/requests/new" target="_blank">here</a>.<br>`);
    return sendMail(cid, {
       from: 'habla-mailer-dev@habla.ai',
       to: email,
