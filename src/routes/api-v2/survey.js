@@ -8,6 +8,9 @@ router.route('/surveys')
 
 router.route('/surveys')
     .get(survey.getSurveys);
+
+router.route('/surveys/:surveyId/answers')
+    .post(survey.answerSurvey)
 // router.route('/organizations/:orgId/users/:userId/surveys')
 //     .post(survey.createSurvey);
 

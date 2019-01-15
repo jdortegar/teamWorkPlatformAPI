@@ -37,7 +37,8 @@ export const addQuestion = async (surveyId, question, options = []) => {
 export const addAnswer = async (questionId, userId, orgId, answer) => {
     try {
         const id = uuid.v4();
-        const query = `INSERT INTO ${config.redshift.tablePrefix}_survey_answers VALUES('${id}', '${questionId}', '${userId}', '${orgId}', '${answer}')`;
+        const formatedAnswer = (answer instanceof Array) ? answer.join('|') : answer;
+        const query = `INSERT INTO ${config.redshift.tablePrefix}_survey_answers VALUES('${id}', '${questionId}', '${userId}', '${orgId}', '${formatedAnswer}')`;
         await client.query(query);
         return {
             id,
@@ -85,6 +86,35 @@ export const getSurveys = async () => {
     } catch (err) {
         return Promise.reject(err);
     } 
+}
+
+export const getSurveyById = async (id) => {
+    try {
+        const query = `SELECT s.id as survey_id, s.name, s.created_at,q.id as question_id, q.question, q.question_options as options 
+        FROM ${config.redshift.tablePrefix}_surveys s
+        INNER JOIN ${config.redshift.tablePrefix}_survey_questions q ON s.id = q.survey_id
+        WHERE s.id = '${id}'`;
+        const rawData = await client.query(query);
+        if (rawData.rows.length == 0) {
+            return null;
+        }
+        const formated = {
+            id: rawData.rows[0].survey_id,
+            name: rawData.rows[0].name,
+            questions: []
+        }
+        _.forEach(rawData.rows, (val) => {
+            formated.questions.push({
+                id: val.question_id,
+                question: val.question,
+                options: (val.options.length > 0) ? val.options.split('|') : []
+            });
+        });
+        return formated;
+        
+    } catch (err) {
+        return Promise.reject(err);
+    }
 }
 
 

@@ -1,6 +1,6 @@
 import _ from 'lodash';
-import config from '../../config/env';
 import * as surveyTable from '../../repositories/db/redshift/surveyTable';
+import { SurveyNotExistsError } from '../errors';
 
 // should return a promise.
 
@@ -27,6 +27,36 @@ export const getSurveys = async () => {
         const surveys = await surveyTable.getSurveys();
         return surveys;
 
+    } catch (err) {
+        return Promise.reject(err);
+    }
+}
+
+export const answerSurvey = async (surveyId, userId, orgId, answers) => {
+    try {
+        const survey = await surveyTable.getSurveyById(surveyId);
+        if (!survey) {
+            throw new SurveyNotExistsError(surveyId);
+        }
+        const promises = [];
+        _.forEach(answers, (val) => {
+            promises.push(surveyTable.addAnswer(val.questionId, userId, orgId, val.answer));
+        });
+        await Promise.all(promises);
+        const result = {
+            id: survey.id,
+            name: survey.name, 
+            questions: [] 
+        };
+        _.forEach(answers, (val) => {
+            const question = _.find(survey.questions, { id: val.questionId });
+            result.questions.push({
+                id: val.questionId,
+                question: val.question,
+                answer: val.answer
+            });
+        });
+        return result;
     } catch (err) {
         return Promise.reject(err);
     }
