@@ -1,5 +1,6 @@
 import httpStatus from 'http-status';
 import uuid from 'uuid';
+import moment from 'moment';
 import app from '../config/express';
 import config from '../config/env';
 import * as mailer from '../helpers/mailer';
@@ -55,46 +56,44 @@ export const deleteRedisKey = (rid) => {
     });
 };
 
-/**
- * Endpoint:   /user/validateEmail/:rid
- *
- * Method:     GET
- * Return 401: "Not Found"; body = { status: 'ERR_RESERVATION_NOT_FOUND' }
- *
- * @param req
- * @param res
- * @param next
- */
-export const validateEmail = (req, res, next) => {
-    const rid = req.params.rid || req.body.reservationId || '';
+export const validateCode = async (req, res, next) => {
+    try {
+        // find reservation (admin user)
+        const code = req.params.code;
+        const email = await req.app.locals.redis.getAsync(`${config.redisPrefix}#reservation#${code}`);
 
-    // Find reservation in cache
-    req.logger.debug(`find Reservation: id = ${rid}`);
-    req.app.locals.redis.hgetall(`${config.redisPrefix}${rid}`, (err, reply) => {
-        if (err) {
-            req.logger.debug('validateEmail: get status - redis error');
-        } else if (reply) {
-            req.logger.debug(`validateEmail: found reservation for email: ${reply}`);
-            const response = {
-                status: 'SUCCESS',
-                email: reply.email
-            };
+        if (email) {
+          // reservation found, delete it
+          await req.app.locals.redis.delAsync(`${config.redisPrefix}#reservation#${code}`);
+          req.logger.debug(`validateCode: found reservation for email: ${email}`);
 
-            // If exists subscriberOrgName add to object
-            if (reply && reply.subscriberOrgName){
-                response.subscriberOrgName = reply.subscriberOrgName;
-            }
-
-            if (req.accepts('json')) {
-                res.status(httpStatus.OK).json(response);
-            } else {
-                next(new APIWarning(httpStatus.BAD_REQUEST));
-            }
-        } else {
-            next(new APIWarning(httpStatus.NOT_FOUND));
+          return res.status(httpStatus.OK).json({ email });
         }
-    });
-};
+
+        req.logger.debug(`validateCode: reservation not found for code: ${code}`);
+
+        // find registration (invited user)
+        const rid = req.query.rid;
+        const registration = await req.app.locals.redis.hgetallAsync(`${config.redisPrefix}#registration#${rid}`);
+
+        if (!registration) {
+          req.logger.debug(`validateCode: registration not found for rid: ${rid}`);
+          throw new APIWarning(httpStatus.NOT_FOUND);
+        }
+        if (code !== registration.confirmationCode) {
+          req.logger.debug(`validateCode: registration found but code invalid: ${code}`);
+          throw new APIWarning(httpStatus.NOT_FOUND);
+        }
+
+        req.logger.debug(`validateCode: found reservation for email: ${registration.email}`);
+
+        const response = { email: registration.email, orgName: registration.subscriberOrgName };
+        return res.status(httpStatus.OK).json(response);
+    } catch (error) {
+        req.logger.debug('validateCode: get status - redis error');
+        return next(error);
+    }
+}
 
 export const resetPassword = (req, res, next) => {
     const rid = req.params.rid || '';
@@ -120,7 +119,12 @@ export const resetPassword = (req, res, next) => {
                     } else {
                         next(new APIWarning(httpStatus.BAD_REQUEST));
                     }
-                });
+                }).catch((err) => {
+                    if (err instanceof UserNotExistError) {
+                        return res.status(httpStatus.NOT_FOUND).json({ error: 'user not found'});
+                    }
+                    next(err);
+                }) ;
         } else {
             next(new APIWarning(httpStatus.NOT_FOUND));
         }

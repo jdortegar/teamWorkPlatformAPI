@@ -89,7 +89,10 @@ export const createUser = async (req, userInfo) => {
             const stripeSubscriptionId = await req.app.locals.redis.getAsync(`${config.redisPrefix}${emailAddress}#stripeSubscriptionId`);
             const paypalSubscriptionId = await req.app.locals.redis.getAsync(`${config.redisPrefix}${emailAddress}#paypalSubscriptionId`);
             const userLimit = await req.app.locals.redis.getAsync(`${config.redisPrefix}${emailAddress}#userLimit`) || 9;
-	        await subscriberOrgSvc.createSubscriberOrgUsingBaseName(req, { name: subscriberOrgName }, user, subscriberOrgId, stripeSubscriptionId, paypalSubscriptionId, undefined, userLimit);
+            // Geta subscription data from redis
+            const subscriptionStatus = await req.app.locals.redis.getAsync(`${config.redisPrefix}${emailAddress}#subscriptionStatus`);
+            const subscriptionExpireDate = await req.app.locals.redis.getAsync(`${config.redisPrefix}${emailAddress}#subscriptionExpireDate`);
+	        await subscriberOrgSvc.createSubscriberOrgUsingBaseName(req, { name: subscriberOrgName }, user, subscriberOrgId, stripeSubscriptionId, paypalSubscriptionId, undefined, userLimit, subscriptionStatus, subscriptionExpireDate);
         }
         userCreated(req, user);
         const awsCustomerId = await req.app.locals.redis.getAsync(`${config.redisPrefix}${emailAddress}#awsCustomerId`);
@@ -195,7 +198,9 @@ export const resetPassword = (req, email, password) => {
                 resolve(user);
                 // userPasswordUpdated(req, user);
             })
-            .catch(err => reject(err));
+            .catch((err) => {
+                reject(err)
+            } );
     });
 };
 
@@ -249,43 +254,46 @@ export const getUserNameHash = async (req, userIds = []) => {
 
 export const createReservation = (req, reservationData) => {
 
-        const { email } = reservationData || '';
-        const { stripeSubscriptionId } = reservationData || null;
-        const { paypalSubscriptionId } = reservationData || null;
-        const awsCustomerId = req.get(AWS_CUSTOMER_ID_HEADER_NAME);
-        const { userLimit } = reservationData || 9;
+    const { email } = reservationData || '';
+    const { stripeSubscriptionId } = reservationData || null;
+    const { paypalSubscriptionId } = reservationData || null;
+    const awsCustomerId = req.get(AWS_CUSTOMER_ID_HEADER_NAME);
+    const { userLimit } = reservationData || 9;
+    const { subscriptionStatus } = reservationData || 'trialing';
+    const { subscriptionExpireDate } = reservationData || 0;
 
-        // Add new reservation to cache
-
-        req.logger.debug(`createReservation: user ${email}`);
-        const rid = uuid.v4(); // get a uid to represent the reservation
-        req.logger.debug(`createReservation: new rid: ${rid}`);
-
-        // Save data on Redis
-
-        if (awsCustomerId) {
-            req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#awsCustomerId`, awsCustomerId);
+    // Add new reservation to cache
+    req.logger.debug(`createReservation: user ${email}`);
+    const rid = String(moment().valueOf()).slice(-6);
+    req.logger.debug(`createReservation: new rid: ${rid}`);
+    req.app.locals.redis.set(`${config.redisPrefix}#reservation#${rid}`, email, 'EX', 1800, err => {
+        if (err) {
+            req.logger.debug('createReservation: set status - redis error');
+        } else {
+            req.logger.debug(`createReservation: created reservation for email: ${email}`);
+            mailer.sendConfirmationCode(email, rid).then(() => {
+                const response = { status: 'SUCCESS' };
+                res.status(httpStatus.CREATED).json(response);
+            })
         }
+    });
 
-        // If User comes from stripe
-        if (stripeSubscriptionId) {
-            req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#stripeSubscriptionId`, stripeSubscriptionId);
-        }
+    if (awsCustomerId) {
+        req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#awsCustomerId`, awsCustomerId);
+    }
 
-        // If User comes from paypal
-        if (paypalSubscriptionId) {
-            req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#paypalSubscriptionId`, paypalSubscriptionId);
-        }
+    // If User comes from stripe
+    if (stripeSubscriptionId) {
+        req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#stripeSubscriptionId`, stripeSubscriptionId);
+    }
 
-        req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#userLimit`, userLimit);
+    // If User comes from paypal
+    if (paypalSubscriptionId) {
+        req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#paypalSubscriptionId`, paypalSubscriptionId);
+    }
 
-        req.app.locals.redis.hmset(`${config.redisPrefix}${rid}`, 'email', email, 'EX', 1800, (err) => {
-            if (err) {
-                req.logger.debug('createReservation: hset status - redis error');
-                return reject(err);
-            } else {
-                req.logger.debug(`createReservation: created reservation for email: ${email}`);
-                mailer.sendActivationLink(email, rid).catch(err => { throw err })
-            }
-        });
+    // Subcriptions data
+    req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#subscriptionStatus`, subscriptionStatus);
+    req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#subscriptionExpireDate`, subscriptionExpireDate);
+    req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#userLimit`, userLimit);
 };
