@@ -79,3 +79,14 @@ export const answerSurvey = async (req, res, next) => {
         next(err);
     }
 }
+
+export const getAnswers = async (req, res, next) => {
+    try {
+        const { orgId } = req.params;
+        const answers = await surveySvc.getAnswers(orgId);
+        console.log(answers);
+        return res.json(answers);
+    } catch (err) {
+        return Promise.reject(err);
+    }
+}

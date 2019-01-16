@@ -62,6 +62,15 @@ export const answerSurvey = async (surveyId, userId, orgId, answers) => {
     }
 }
 
+export const getAnswers = async (orgId) => {
+    try {
+        const surveys = await surveyTable.getSurveyAnswers(orgId);
+        return surveys;
+    } catch (err) {
+        return Promise.reject(err);
+    }
+}
+
 // export const createSurvey = (orgId, userId, questions = []) => {
 //     let questionsColumnsNames = '';
 //     let questionsVals = '';

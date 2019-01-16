@@ -11,6 +11,10 @@ router.route('/surveys')
 
 router.route('/surveys/:surveyId/answers')
     .post(survey.answerSurvey)
+
+router.route('/surveys/answers/:orgId')
+    .get(survey.getAnswers);
+
 // router.route('/organizations/:orgId/users/:userId/surveys')
 //     .post(survey.createSurvey);
 
@@ -18,6 +22,7 @@ router.route('/surveys/:surveyId/answers')
 //     .get(survey.getSurveys);
 
 // router.route('/organizations/:orgId/users/:userId/survey/date')
-    // .get(survey.getLastSurveyDate);
+    // .get(survey.getLastSurveyDate)
+    
     
 export default router;

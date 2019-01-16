@@ -1,8 +1,8 @@
 import uuid from 'uuid';
 import _ from 'lodash';
+import moment from 'moment';
 import client from '../../../services/redshiftClient';
 import config from '../../../config/env';
-import { forgotPassword } from '../../../controllers/users';
 
 export const addSurvey = async (name) => {
     try {
@@ -117,4 +117,49 @@ export const getSurveyById = async (id) => {
     }
 }
 
+export const getSurveyAnswers = async (orgId) => {
+    try {
+        const query = `SELECT s.id as survey_id, s.name, 
+            q.id as question_id, q.question, 
+            a.id as answer_id, a.answer, a.user_id, a.org_id, a.created_at
+            FROM ${config.redshift.tablePrefix}_surveys s
+            INNER JOIN ${config.redshift.tablePrefix}_survey_questions q ON s.id = q.survey_id
+            INNER JOIN ${config.redshift.tablePrefix}_survey_answers a ON q.id = a.question_id
+            WHERE a.org_id = '${orgId}'`
+        const rawData = await client.query(query);
+        const formated = [];
+        _.forEach(rawData.rows, (val) => {
+            const ix = _.findIndex(formated, {id: val.survey_id });
+            if (ix < 0) {
+                formated.push({
+                    id: val.survey_id, 
+                    name: val.name,
+                    questions: [
+                        {
+                            id: val.question_id,
+                            question: val.question,
+                            answer: val.answer,
+                            orgId: val.org_id,
+                            userId: val.user_id,
+                            date: moment(val.created_at).format('YYYY-MM-DD')
+                        }
+                    ]
+                });
+            } else {
+                formated[ix].questions.push({
+                    id: val.question_id,
+                    question: val.question,
+                    answer: val.answer,
+                    orgId: val.org_id,
+                    userId: val.user_id,
+                    date: moment(val.created_at).format('YYYY-MM-DD')
+                });
+            }
+        });
+        return formated;
+        
+    } catch (err) {
+        return Promise.reject(err);
+    }
+}
 
