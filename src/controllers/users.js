@@ -5,7 +5,6 @@ import config from '../config/env';
 import * as mailer from '../helpers/mailer';
 import { APIError, APIWarning, NoPermissionsError, UserNotExistError, UserLimitReached } from '../services/errors';
 import * as userSvc from '../services/userService';
-import { AWS_CUSTOMER_ID_HEADER_NAME } from './auth';
 import { apiVersionedVisibility, publishByApiVersion } from '../helpers/publishedVisibility';
 
 /**
@@ -13,47 +12,15 @@ import { apiVersionedVisibility, publishByApiVersion } from '../helpers/publishe
 * A user is not created here.
 * A reservation is ...
 */
-export const createReservation = (req, res) => {
-    const email = req.body.email || '';
-    const stripeSubscriptionId = req.body.stripeSubscriptionId || null;
-    const paypalSubscriptionId = req.body.paypalSubscriptionId || null;
-    const awsCustomerId = req.get(AWS_CUSTOMER_ID_HEADER_NAME);
-    const userLimit = req.body.userLimit || 9;
-
-    // Add new reservation to cache
-
-    req.logger.debug(`createReservation: user ${email}`);
-    const rid = uuid.v4(); // get a uid to represent the reservation
-    req.logger.debug(`createReservation: new rid: ${rid}`);
-    req.app.locals.redis.hmset(`${config.redisPrefix}${rid}`, 'email', email, 'EX', 1800, (err) => {
-        if (err) {
-            req.logger.debug('createReservation: hset status - redis error');
-        } else {
-            req.logger.debug(`createReservation: created reservation for email: ${email}`);
-            mailer.sendActivationLink(email, rid).then(() => {
-                const response = {
-                    status: 'SUCCESS'
-                };
-                res.status(httpStatus.CREATED).json(response);
-            });
-        }
-    });
-
-    if (awsCustomerId) {
-        req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#awsCustomerId`, awsCustomerId);
+export const createReservation = (req, res, next) => {
+    try {
+        const reservationData = req.body
+        userSvc.createReservation(req, reservationData);
+        return res.status(httpStatus.CREATED).json({ status: 'SUCCESS' });
+    } catch (err) {
+        req.logger.error(err);
+        return res.status(httpStatus.SERVICE_UNAVAILABLE).json({ error: 'Service Unavailable', message: 'Failed to create reservation' });
     }
-
-    // If User comes from stripe
-    if (stripeSubscriptionId) {
-        req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#stripeSubscriptionId`, stripeSubscriptionId);
-    }
-
-    // If User comes from paypal
-    if (paypalSubscriptionId) {
-        req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#paypalSubscriptionId`, paypalSubscriptionId);
-    }
-
-   req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#userLimit`, userLimit);
 };
 
 export const forgotPassword = (req, res) => {
@@ -161,6 +128,8 @@ export const resetPassword = (req, res, next) => {
 };
 
 export const createUser = (req, res, next) => {
+
+    console.log('eeeeeeelllo');
     userSvc.createUser(req, req.body)
         .then(() => res.status(httpStatus.CREATED).end())
         .catch((err) => {

@@ -16,6 +16,8 @@ import * as subscriberUserTable from '../repositories/db/subscriberUsersTable';
 import * as invitationsTable from '../repositories/db/invitationsTable';
 import * as subscriberOrgsTable from '../repositories/db/subscriberOrgsTable';
 import { userCreated, userUpdated, userPrivateInfoUpdated, userBookmarksUpdated, sentInvitationStatus } from './messaging';
+import { AWS_CUSTOMER_ID_HEADER_NAME } from '../controllers/auth';
+import * as mailer from '../helpers/mailer';
 
 const getUserByEmail = (req, email) => {
     return new Promise((resolve, reject) => {
@@ -243,4 +245,47 @@ export const getUserNameHash = async (req, userIds = []) => {
         hash[user.userId] = `${user.firstName} ${user.lastName}`
     });
     return hash;
-}
+};
+
+export const createReservation = (req, reservationData) => {
+
+        const { email } = reservationData || '';
+        const { stripeSubscriptionId } = reservationData || null;
+        const { paypalSubscriptionId } = reservationData || null;
+        const awsCustomerId = req.get(AWS_CUSTOMER_ID_HEADER_NAME);
+        const { userLimit } = reservationData || 9;
+
+        // Add new reservation to cache
+
+        req.logger.debug(`createReservation: user ${email}`);
+        const rid = uuid.v4(); // get a uid to represent the reservation
+        req.logger.debug(`createReservation: new rid: ${rid}`);
+
+        // Save data on Redis
+
+        if (awsCustomerId) {
+            req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#awsCustomerId`, awsCustomerId);
+        }
+
+        // If User comes from stripe
+        if (stripeSubscriptionId) {
+            req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#stripeSubscriptionId`, stripeSubscriptionId);
+        }
+
+        // If User comes from paypal
+        if (paypalSubscriptionId) {
+            req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#paypalSubscriptionId`, paypalSubscriptionId);
+        }
+
+        req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#userLimit`, userLimit);
+
+        req.app.locals.redis.hmset(`${config.redisPrefix}${rid}`, 'email', email, 'EX', 1800, (err) => {
+            if (err) {
+                req.logger.debug('createReservation: hset status - redis error');
+                return reject(err);
+            } else {
+                req.logger.debug(`createReservation: created reservation for email: ${email}`);
+                mailer.sendActivationLink(email, rid).catch(err => { throw err })
+            }
+        });
+};

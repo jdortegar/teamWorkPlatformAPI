@@ -4,7 +4,7 @@ import { SubscriberUserExistsError } from '../../services/errors';
 import * as usersTable from '../../repositories/db/usersTable';
 import * as subscriberOrgsTable from '../../repositories/db/subscriberOrgsTable';
 import paypal from 'paypal-rest-sdk';
-import createReservation from '../../controllers/users'
+import * as userSvc from '../../services/userService';
 
 // Paypal Setup (Mode and Credentials)
 
@@ -15,10 +15,12 @@ paypal.configure({
 });
 
 // Make Promise for handle async Paypal create subscriptions
-const subscriptionPromise = billingPlanAttributes => {
-   return new Promise((resolve, reject) => {
+const subscriptionPromise = (req,paymentData) => {
 
-      paypal.billingPlan.create(billingPlanAttributes, function (error, billingPlan) {
+   const { billingPlanAttributes, email, userLimit } = paymentData;
+
+   return new Promise((resolve, reject) => {
+      paypal.billingPlan.create(billingPlanAttributes, function(error, billingPlan) {
          if (error) {
             return reject(error);
          } else {
@@ -35,11 +37,10 @@ const subscriptionPromise = billingPlanAttributes => {
                }
             ];
 
-            paypal.billingPlan.update(billingPlan.id, billingPlanUpdateAttributes, function (error, response) {
+            paypal.billingPlan.update(billingPlan.id, billingPlanUpdateAttributes, function(error, response) {
                if (error) {
                   return reject(error);
                } else {
-
                   // Create Agreement
 
                   const isoDate = new Date();
@@ -58,14 +59,13 @@ const subscriptionPromise = billingPlanAttributes => {
                      }
                   };
 
-                  paypal.billingAgreement.create(billingAgreementAttributes, function (error, billingAgreement) {
+                  paypal.billingAgreement.create(billingAgreementAttributes, function(error, billingAgreement) {
                      if (error) {
-                        console.error(error.response.details);
                         return reject(error);
                      } else {
                         //capture HATEOAS links
                         const links = {};
-                        billingAgreement.links.forEach(function (linkObj) {
+                        billingAgreement.links.forEach(function(linkObj) {
                            links[linkObj.rel] = {
                               href: linkObj.href,
                               method: linkObj.method
@@ -74,7 +74,14 @@ const subscriptionPromise = billingPlanAttributes => {
 
                         //if redirect url present, redirect user
                         if (links.hasOwnProperty('approval_url')) {
-                           return resolve(links['approval_url'].href);
+
+                           const approval_url= links['approval_url'].href
+                           const token = approval_url.split('token=', 2).pop()
+
+                           // save Data on Redis until process Agreement
+                           req.app.locals.redis.hmset(`${config.redisPrefix}#paypal#${token}`, 'email', email, 'userLimit', userLimit, 'EX', 5000);
+
+                           return resolve(approval_url);
                         } else {
                            resolve('no redirect URI present');
                         }
@@ -90,138 +97,18 @@ const subscriptionPromise = billingPlanAttributes => {
 // Create Subcription Plans
 export const doSubscription = async (req, res, next) => {
    // Subscriber data
-   let paymentData = req.body;
-   // Get customer email
-   const customerEmail = paymentData.email;
-   const { billingPlanAttributes } = paymentData;
+   const paymentData = req.body;
+   const {email} = paymentData
 
+   // Save data on redis until proccess agreement
    // validate if email exists
-   const existingUser = await usersTable.getUserByEmailAddress(req, customerEmail);
+   const existingUser = await usersTable.getUserByEmailAddress(req, email);
    if (existingUser) {
-      throw new SubscriberUserExistsError(customerEmail);
+      throw new SubscriberUserExistsError(email);
    }
 
    try {
-      const paypalResponse = await subscriptionPromise(billingPlanAttributes);
-      return paypalResponse;
-   } catch (err) {
-      return Promise.reject(err);
-   }
-};
-
-
-// Make Promise for handle async Paypal create subscriptions
-const createPlanPromise = billingPlanAttributes => {
-   return new Promise((resolve, reject) => {
-
-      // JSON object for active plan
-      const billingPlanUpdateAttributes = [
-         {
-            op: 'replace',
-            path: '/',
-            value: {
-               state: 'ACTIVE'
-            }
-         }
-      ];
-
-      paypal.billingPlan.create(billingPlanAttributes, function (error, billingPlan) {
-         if (error) {
-            return reject(error);
-         } else {
-            // Activate the plan by changing status to Active
-            paypal.billingPlan.update(billingPlan.id, billingPlanUpdateAttributes, function (error, response) {
-               if (error) {
-                  return reject(error);
-               } else {
-                  return resolve(billingPlan);
-               }
-            });
-         }
-      });
-   });
-};
-
-// Create Paypal Plan
-
-export const createPlan = async (req, res, next) => {
-   // Subscriber data
-   let paymentData = req.body;
-   // Get customer email
-   const customerEmail = paymentData.email;
-   const { billingPlanAttributes } = paymentData;
-
-   // validate if email exists
-   const existingUser = await usersTable.getUserByEmailAddress(req, customerEmail);
-   if (existingUser) {
-      throw new SubscriberUserExistsError(customerEmail);
-   }
-
-   try {
-      const paypalResponse = await createPlanPromise(billingPlanAttributes);
-      return paypalResponse;
-   } catch (err) {
-      return Promise.reject(err);
-   }
-};
-
-// Create Agreement
-
-const createAgreementPromise = billingPlanId => {
-   return new Promise((resolve, reject) => {
-      paypal.billingPlan.get(billingPlanId, function (error, billingPlan) {
-         if (error) {
-            return reject(error);
-         } else {
-
-            const isoDate = new Date();
-            isoDate.setSeconds(isoDate.getSeconds() + 4);
-            isoDate.toISOString().slice(0, 19) + 'Z';
-
-            const billingAgreementAttributes = {
-               name: billingPlan.name,
-               description: billingPlan.description,
-               start_date: isoDate,
-               plan: {
-                  id: billingPlanId
-               },
-               payer: {
-                  payment_method: 'paypal'
-               }
-            };
-
-            paypal.billingAgreement.create(billingAgreementAttributes, function (error, billingAgreement) {
-               if (error) {
-                  console.error(error.response.details);
-                  return reject(error);
-               } else {
-                  //capture HATEOAS links
-                  const links = {};
-                  billingAgreement.links.forEach(function (linkObj) {
-                     links[linkObj.rel] = {
-                        href: linkObj.href,
-                        method: linkObj.method
-                     };
-                  });
-
-                  //if redirect url present, redirect user
-                  if (links.hasOwnProperty('approval_url')) {
-                     return resolve(links['approval_url'].href);
-                  } else {
-                     resolve('no redirect URI present');
-                  }
-               }
-            });
-         }
-      });
-   });
-};
-
-export const createAgreement = async (req, res, next) => {
-   const billingPlanId = req.query.plan;
-
-   try {
-      const paypalResponse = await createAgreementPromise(billingPlanId);
+      const paypalResponse = await subscriptionPromise(req, paymentData);
       return paypalResponse;
    } catch (err) {
       return Promise.reject(err);
@@ -230,23 +117,30 @@ export const createAgreement = async (req, res, next) => {
 
 // Process agreement
 
-const processAgreementPromise = token => {
+const processAgreementPromise = (req, token) => {
    return new Promise((resolve, reject) => {
-      paypal.billingAgreement.execute(token, {}, function (error, billingAgreement) {
+      paypal.billingAgreement.execute(token, {}, async (error, billingAgreement) => {
          if (error) {
             return reject(error);
          } else {
-            resolve(billingAgreement);
 
-            const userSubscriptionData = {
-               email: formData.email,
-               userLimit: formData.users,
-               subscriptionId: billingAgreement.id,
-               subscriptionStatus: billingAgreement.state,
-               subscriptionExpireDate: data.current_period_end
-             };
+            req.app.locals.redis.hgetall(`${config.redisPrefix}#paypal#${token}`, (err, reply) => {
+               if (err) {
+                   req.logger.debug('validateEmail: get status - redis error');
+               } else if (reply) {
 
+                  const userSubscriptionData = {
+                     email: reply.email,
+                     userLimit: reply.userLimit,
+                     paypalSubscriptionId: billingAgreement.id,
+                     subscriptionStatus: billingAgreement.state,
+                     subscriptionExpireDate: billingAgreement.agreement_details.next_billing_date
+                  };
 
+                  const createReservation = userSvc.createReservation(req, userSubscriptionData);
+                  resolve(billingAgreement);
+               }
+            });
          }
       });
    });
@@ -255,7 +149,7 @@ const processAgreementPromise = token => {
 export const processAgreement = async (req, res, next) => {
    const token = req.query.token;
    try {
-      const paypalResponse = await processAgreementPromise(token);
+      const paypalResponse = await processAgreementPromise(req, token);
       return paypalResponse;
    } catch (err) {
       return Promise.reject(err);
@@ -270,11 +164,11 @@ const cancelPromise = billingAgreementId => {
          note: 'Canceling the agreement'
       };
 
-      paypal.billingAgreement.cancel(billingAgreementId, cancel_note, function (error, response) {
+      paypal.billingAgreement.cancel(billingAgreementId, cancel_note, function(error, response) {
          if (error) {
             return reject(error);
          } else {
-            paypal.billingAgreement.get(billingAgreementId, function (error, billingAgreement) {
+            paypal.billingAgreement.get(billingAgreementId, function(error, billingAgreement) {
                if (error) {
                   return reject(error);
                } else {
@@ -301,11 +195,11 @@ export const cancelAgreement = async (req, res, next) => {
 
 const updatePromise = (billingAgreementId, billing_agreement_update_attributes) => {
    return new Promise((resolve, reject) => {
-      paypal.billingAgreement.get(billingAgreementId, function (error, billingAgreement) {
+      paypal.billingAgreement.get(billingAgreementId, function(error, billingAgreement) {
          if (error) {
             return reject(error);
          } else {
-            paypal.billingAgreement.update(billingAgreementId, billing_agreement_update_attributes, function (
+            paypal.billingAgreement.update(billingAgreementId, billing_agreement_update_attributes, function(
                error,
                response
             ) {
