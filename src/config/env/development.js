@@ -79,7 +79,8 @@ export const redshift = {
    database: 'habladb',
    password: 'MAnchi89',
    host: 'habla-ai.csvoexx0fghm.us-west-2.redshift.amazonaws.com',
-   port: 5439
+   port: 5439,
+   tablePrefix: 'dev'
 };
 export const surveyTable = 'dev_usage_survey';
 
