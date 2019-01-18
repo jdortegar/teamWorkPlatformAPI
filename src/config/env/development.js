@@ -100,6 +100,12 @@ export const stripeConfig = {
    }
 };
 
+export const paypalConfig = {
+   mode: 'sandbox', //sandbox or live
+   clientId: 'AfR0iHcE30_qzaGVZREy20rBvgN2qqVCL0mvjk-NjTUP51FocX9jIYUvxMDQESskEKKCwAn3trHCGNKm',
+   clientSecret: 'EC7tDDBeLQnB05na2RbyWtwWwl7xCE1QguqB_KAlFouWXsgtfpoBBnPw7-BGd7Z8r795xbJanPIkQV6U'
+}
+
 export const knowledgeApiEndpoint = 'https://habla-be-api-dev.habla.ai';
 
 

@@ -13,6 +13,7 @@ import { SubscriberOrgNotExistError } from '../../services/errors';
  * lastModified
  * preferences
  * stripeSubscriptionId
+ * paypalSubscriptionId
  * userLimit
  * subscriptionStatus
  * subscriptionExpireDate
@@ -32,7 +33,7 @@ const upgradeSchema = (req, dbObjects) => {
    return Promise.resolve(dbObjects);
 };
 
-export const createSubscriberOrg = (req, subscriberOrgId, name, icon, preferences, stripeSubscriptionId, userLimit, subscriptionStatus, subscriptionExpireDate) => {
+export const createSubscriberOrg = (req, subscriberOrgId, name, icon, preferences, stripeSubscriptionId, paypalSubscriptionId, userLimit, subscriptionStatus, subscriptionExpireDate) => {
    return new Promise((resolve, reject) => {
       const params = {
          TableName: tableName(),
@@ -46,6 +47,7 @@ export const createSubscriberOrg = (req, subscriberOrgId, name, icon, preference
             lastModified: req.now.format(),
             preferences,
             stripeSubscriptionId,
+            paypalSubscriptionId,
             userLimit,
             subscriptionStatus,
             subscriptionExpireDate

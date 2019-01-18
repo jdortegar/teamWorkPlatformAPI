@@ -16,6 +16,9 @@ import * as subscriberUserTable from '../repositories/db/subscriberUsersTable';
 import * as invitationsTable from '../repositories/db/invitationsTable';
 import * as subscriberOrgsTable from '../repositories/db/subscriberOrgsTable';
 import { userCreated, userUpdated, userPrivateInfoUpdated, userBookmarksUpdated, sentInvitationStatus } from './messaging';
+import { AWS_CUSTOMER_ID_HEADER_NAME } from '../controllers/auth';
+import * as mailer from '../helpers/mailer';
+import moment from 'moment';
 
 const getUserByEmail = (req, email) => {
     return new Promise((resolve, reject) => {
@@ -85,11 +88,12 @@ export const createUser = async (req, userInfo) => {
             const subscriberOrgId = uuid.v4();
             const subscriberOrgName = req.body.displayName;
             const stripeSubscriptionId = await req.app.locals.redis.getAsync(`${config.redisPrefix}${emailAddress}#stripeSubscriptionId`);
+            const paypalSubscriptionId = await req.app.locals.redis.getAsync(`${config.redisPrefix}${emailAddress}#paypalSubscriptionId`);
             const userLimit = await req.app.locals.redis.getAsync(`${config.redisPrefix}${emailAddress}#userLimit`) || 9;
             // Geta subscription data from redis
             const subscriptionStatus = await req.app.locals.redis.getAsync(`${config.redisPrefix}${emailAddress}#subscriptionStatus`);
             const subscriptionExpireDate = await req.app.locals.redis.getAsync(`${config.redisPrefix}${emailAddress}#subscriptionExpireDate`);
-	        await subscriberOrgSvc.createSubscriberOrgUsingBaseName(req, { name: subscriberOrgName }, user, subscriberOrgId, stripeSubscriptionId, undefined, userLimit, subscriptionStatus, subscriptionExpireDate);
+	        await subscriberOrgSvc.createSubscriberOrgUsingBaseName(req, { name: subscriberOrgName }, user, subscriberOrgId, stripeSubscriptionId, paypalSubscriptionId, undefined, userLimit, subscriptionStatus, subscriptionExpireDate);
         }
         userCreated(req, user);
         const awsCustomerId = await req.app.locals.redis.getAsync(`${config.redisPrefix}${emailAddress}#awsCustomerId`);
@@ -247,4 +251,47 @@ export const getUserNameHash = async (req, userIds = []) => {
         hash[user.userId] = `${user.firstName} ${user.lastName}`
     });
     return hash;
-}
+};
+
+export const createReservation = (req, reservationData) => {
+
+    const { email } = reservationData || '';
+    const { stripeSubscriptionId } = reservationData || null;
+    const { paypalSubscriptionId } = reservationData || null;
+    const awsCustomerId = req.get(AWS_CUSTOMER_ID_HEADER_NAME);
+    const { userLimit } = reservationData || 9;
+    const { subscriptionStatus } = reservationData || 'trialing';
+    const { subscriptionExpireDate } = reservationData || 0;
+
+    // Add new reservation to cache
+    req.logger.debug(`createReservation: user ${email}`);
+    const rid = String(moment().valueOf()).slice(-6);
+    req.logger.debug(`createReservation: new rid: ${rid}`);
+    req.app.locals.redis.set(`${config.redisPrefix}#reservation#${rid}`, email, 'EX', 1800, err => {
+        if (err) {
+            req.logger.debug('createReservation: set status - redis error');
+        } else {
+            req.logger.debug(`createReservation: created reservation for email: ${email}`);
+            mailer.sendConfirmationCode(email, rid)
+        }
+    });
+
+    if (awsCustomerId) {
+        req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#awsCustomerId`, awsCustomerId);
+    }
+
+    // If User comes from stripe
+    if (stripeSubscriptionId) {
+        req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#stripeSubscriptionId`, stripeSubscriptionId);
+    }
+
+    // If User comes from paypal
+    if (paypalSubscriptionId) {
+        req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#paypalSubscriptionId`, paypalSubscriptionId);
+    }
+
+    // Subcriptions data
+    req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#subscriptionStatus`, subscriptionStatus);
+    req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#subscriptionExpireDate`, subscriptionExpireDate);
+    req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#userLimit`, userLimit);
+};
