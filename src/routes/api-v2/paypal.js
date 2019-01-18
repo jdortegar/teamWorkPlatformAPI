@@ -6,6 +6,8 @@ const router = express.Router();
 
 router.route('/subscriptions/paypal').post(paypal.doSubscription);
 
+router.route('/subscriptions/paypal/agreement').get(paypal.getAgreement);
+
 router.route('/subscriptions/paypal/processagreement').get(paypal.processAgreement);
 
 router.route('/subscriptions/paypal/cancelagreement').get(paypal.cancelAgreement);

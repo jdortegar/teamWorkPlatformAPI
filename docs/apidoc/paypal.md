@@ -42,48 +42,7 @@
 ### Response Body Format
 
 ```javascript
-{
-    "id": "P-61R71843D9534404AH2HV6VY",
-    "state": "CREATED",
-    "name": "Habla AI Bronze Month to Month",
-    "description": "Monthly Subscription",
-    "type": "INFINITE",
-    "payment_definitions": [
-        {
-            "id": "PD-4VW02248V1015533EH2HV6VY",
-            "name": "Monthly",
-            "type": "REGULAR",
-            "frequency": "Month",
-            "amount": {
-                "currency": "USD",
-                "value": "15"
-            },
-            "cycles": "0",
-            "frequency_interval": "1"
-        }
-    ],
-    "merchant_preferences": {
-        "setup_fee": {
-            "currency": "USD",
-            "value": "0"
-        },
-        "max_fail_attempts": "1",
-        "return_url": "http://localhost:3000/v2/subscriptions/paypal/processagreement",
-        "cancel_url": "http://localhost:3000/v2/subscriptions/paypal/cancel",
-        "auto_bill_amount": "YES",
-        "initial_fail_amount_action": "CONTINUE"
-    },
-    "create_time": "2019-01-11T20:16:50.007Z",
-    "update_time": "2019-01-11T20:16:50.007Z",
-    "links": [
-        {
-            "href": "https://api.sandbox.paypal.com/v1/payments/billing-plans/P-61R71843D9534404AH2HV6VY",
-            "rel": "self",
-            "method": "GET"
-        }
-    ],
-    "httpStatusCode": 201
-}
+"https://www.sandbox.paypal.com/cgi-bin/webscr?cmd=_express-checkout&token=EC-90C05108N38284057"
 ```
 
 ### Request example
@@ -122,77 +81,6 @@ curl -X POST \
       "type":"INFINITE"
    }
 }'
-```
-
-```javascript
-{
-    "id": "P-61R71843D9534404AH2HV6VY",
-    "state": "CREATED",
-    "name": "Habla AI Bronze Month to Month",
-    "description": "Monthly Subscription",
-    "type": "INFINITE",
-    "payment_definitions": [
-        {
-            "id": "PD-4VW02248V1015533EH2HV6VY",
-            "name": "Monthly",
-            "type": "REGULAR",
-            "frequency": "Month",
-            "amount": {
-                "currency": "USD",
-                "value": "15"
-            },
-            "cycles": "0",
-            "frequency_interval": "1"
-        }
-    ],
-    "merchant_preferences": {
-        "setup_fee": {
-            "currency": "USD",
-            "value": "0"
-        },
-        "max_fail_attempts": "1",
-        "return_url": "http://localhost:3000/v2/subscriptions/paypal/processagreement",
-        "cancel_url": "http://localhost:3000/v2/subscriptions/paypal/cancel",
-        "auto_bill_amount": "YES",
-        "initial_fail_amount_action": "CONTINUE"
-    },
-    "create_time": "2019-01-11T20:16:50.007Z",
-    "update_time": "2019-01-11T20:16:50.007Z",
-    "links": [
-        {
-            "href": "https://api.sandbox.paypal.com/v1/payments/billing-plans/P-61R71843D9534404AH2HV6VY",
-            "rel": "self",
-            "method": "GET"
-        }
-    ],
-    "httpStatusCode": 201
-}
-```
-
-## Create Agreement [get]
-
-### URI Format
-
-`{{host}}/v2/subscriptions/paypal/createagreement?plan=planId`
-
-### Plan Id obtained in Create Plan
-
-### Response Body Format
-
-```javascript
-"https://www.sandbox.paypal.com/cgi-bin/webscr?cmd=_express-checkout&token=EC-90C05108N38284057"
-```
-
-### Request example
-
-```
-curl -X GET \
-  'http://localhost:3000/v2/subscriptions/paypal/createagreement?plan=P-7SV08640106715004H2MMAEQ' \
-  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiJjODVlOGZjNy04Y2YyLTRiMGYtOWY3ZS1iNzFjYzIyYmI2ODkiLCJlbWFpbCI6ImRhdmlkLm9ydGVnYUBoYWJsYS5pbyIsIl9zcmMiOnsidXNlcklkIjoiYzg1ZThmYzctOGNmMi00YjBmLTlmN2UtYjcxY2MyMmJiNjg5IiwiYWRkcmVzcyI6IjE5MC4xOTUuNDIuMTgxIiwidXNlckFnZW50IjoiTW96aWxsYS81LjAgKE1hY2ludG9zaDsgSW50ZWwgTWFjIE9TIFggMTBfMTRfMCkgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzcwLjAuMzUzOC43NyBTYWZhcmkvNTM3LjM2In0sImlhdCI6MTU0MjA1NjIxNH0.xBw1z6VOtIcNZLo3CkqkDpcITBn2vkT_esSLzOGBzE4' \
-  -H 'Content-Type: application/x-www-form-urlencoded' \
-  -H 'Postman-Token: 4c0bbf26-1e17-4724-a010-916941fbe79c' \
-  -H 'cache-control: no-cache' \
-  -d undefined=
 ```
 
 ```javascript

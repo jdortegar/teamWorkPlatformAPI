@@ -1,6 +1,5 @@
 import httpStatus from 'http-status';
 import uuid from 'uuid';
-import moment from 'moment';
 import app from '../config/express';
 import config from '../config/env';
 import * as mailer from '../helpers/mailer';
@@ -20,7 +19,7 @@ export const createReservation = (req, res, next) => {
         return res.status(httpStatus.CREATED).json({ status: 'SUCCESS' });
     } catch (err) {
         req.logger.error(err);
-        return res.status(httpStatus.SERVICE_UNAVAILABLE).json({ error: 'Service Unavailable', message: 'Failed to create reservation' });
+        return res.status(httpStatus.SERVICE_UNAVAILABLE).json({ error: 'Service Unavaliable', message: 'Failed to create reservation' });
     }
 };
 

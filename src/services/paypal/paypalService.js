@@ -1,6 +1,6 @@
 // Paypal service for billing
 import config from '../../config/env';
-import { SubscriberUserExistsError } from '../../services/errors';
+import { SubscriberUserExistsError, CancelSubscriptionError } from '../../services/errors';
 import * as usersTable from '../../repositories/db/usersTable';
 import * as subscriberOrgsTable from '../../repositories/db/subscriberOrgsTable';
 import paypal from 'paypal-rest-sdk';
@@ -15,81 +15,86 @@ paypal.configure({
 });
 
 // Make Promise for handle async Paypal create subscriptions
-const subscriptionPromise = (req,paymentData) => {
-
-   const { billingPlanAttributes, email, userLimit } = paymentData;
+const subscriptionPromise = (req, paymentData) => {
+   const { billingPlanAttributes, userLimit } = paymentData;
 
    return new Promise((resolve, reject) => {
-      paypal.billingPlan.create(billingPlanAttributes, function(error, billingPlan) {
+      paypal.billingPlan.create(billingPlanAttributes, function (error, billingPlan) {
          if (error) {
             return reject(error);
-         } else {
-            // Activate the plan by changing status to Active
+         }
 
-            // JSON object for active plan
-            const billingPlanUpdateAttributes = [
-               {
-                  op: 'replace',
-                  path: '/',
-                  value: {
-                     state: 'ACTIVE'
-                  }
+         // Activate the plan by changing status to Active
+
+         // JSON object for active plan
+         const billingPlanUpdateAttributes = [
+            {
+               op: 'replace',
+               path: '/',
+               value: {
+                  state: 'ACTIVE'
                }
-            ];
+            }
+         ];
 
-            paypal.billingPlan.update(billingPlan.id, billingPlanUpdateAttributes, function(error, response) {
+         paypal.billingPlan.update(billingPlan.id, billingPlanUpdateAttributes, function (error, response) {
+            if (error) {
+               return reject(error);
+            }
+
+            // Create Agreement
+
+            const isoDate = new Date();
+            isoDate.setSeconds(isoDate.getSeconds() + 4);
+            isoDate.toISOString().slice(0, 19) + 'Z';
+
+            const billingAgreementAttributes = {
+               name: billingPlan.name,
+               description: billingPlan.description,
+               start_date: isoDate,
+               plan: {
+                  id: billingPlan.id
+               },
+               payer: {
+                  payment_method: 'paypal'
+               }
+            };
+
+            paypal.billingAgreement.create(billingAgreementAttributes, function (error, billingAgreement) {
                if (error) {
                   return reject(error);
-               } else {
-                  // Create Agreement
-
-                  const isoDate = new Date();
-                  isoDate.setSeconds(isoDate.getSeconds() + 4);
-                  isoDate.toISOString().slice(0, 19) + 'Z';
-
-                  const billingAgreementAttributes = {
-                     name: billingPlan.name,
-                     description: billingPlan.description,
-                     start_date: isoDate,
-                     plan: {
-                        id: billingPlan.id
-                     },
-                     payer: {
-                        payment_method: 'paypal'
-                     }
-                  };
-
-                  paypal.billingAgreement.create(billingAgreementAttributes, function(error, billingAgreement) {
-                     if (error) {
-                        return reject(error);
-                     } else {
-                        //capture HATEOAS links
-                        const links = {};
-                        billingAgreement.links.forEach(function(linkObj) {
-                           links[linkObj.rel] = {
-                              href: linkObj.href,
-                              method: linkObj.method
-                           };
-                        });
-
-                        //if redirect url present, redirect user
-                        if (links.hasOwnProperty('approval_url')) {
-
-                           const approval_url= links['approval_url'].href
-                           const token = approval_url.split('token=', 2).pop()
-
-                           // save Data on Redis until process Agreement
-                           req.app.locals.redis.hmset(`${config.redisPrefix}#paypal#${token}`, 'email', email, 'userLimit', userLimit, 'EX', 5000);
-
-                           return resolve(approval_url);
-                        } else {
-                           resolve('no redirect URI present');
-                        }
-                     }
-                  });
                }
+
+               //capture HATEOAS links
+               const links = {};
+               billingAgreement.links.forEach(function (linkObj) {
+                  links[linkObj.rel] = {
+                     href: linkObj.href,
+                     method: linkObj.method
+                  };
+               });
+
+               //if redirect url present, redirect user
+               if (links.hasOwnProperty('approval_url')) {
+                  const approval_url = links['approval_url'].href;
+                  const token = approval_url.split('token=', 2).pop();
+
+                  // save Data on Redis until process Agreement
+                  req.app.locals.redis.hmset(
+                     `${config.redisPrefix}#paypal#${token}`,
+                     'userLimit',
+                     userLimit,
+                     'EX',
+                     5000
+                  );
+
+                  return resolve(approval_url);
+               }
+
+               resolve('no redirect URI present');
             });
-         }
+         });
+
       });
    });
 };
@@ -98,14 +103,6 @@ const subscriptionPromise = (req,paymentData) => {
 export const doSubscription = async (req, res, next) => {
    // Subscriber data
    const paymentData = req.body;
-   const {email} = paymentData
-
-   // Save data on redis until proccess agreement
-   // validate if email exists
-   const existingUser = await usersTable.getUserByEmailAddress(req, email);
-   if (existingUser) {
-      throw new SubscriberUserExistsError(email);
-   }
 
    try {
       const paypalResponse = await subscriptionPromise(req, paymentData);
@@ -122,32 +119,43 @@ const processAgreementPromise = (req, token) => {
       paypal.billingAgreement.execute(token, {}, async (error, billingAgreement) => {
          if (error) {
             return reject(error);
-         } else {
-
-            req.app.locals.redis.hgetall(`${config.redisPrefix}#paypal#${token}`, (err, reply) => {
-               if (err) {
-                   req.logger.debug('validateEmail: get status - redis error');
-               } else if (reply) {
-
-                  const userSubscriptionData = {
-                     email: reply.email,
-                     userLimit: reply.userLimit,
-                     paypalSubscriptionId: billingAgreement.id,
-                     subscriptionStatus: billingAgreement.state,
-                     subscriptionExpireDate: billingAgreement.agreement_details.next_billing_date
-                  };
-
-                  const createReservation = userSvc.createReservation(req, userSubscriptionData);
-                  resolve(billingAgreement);
-               }
-            });
          }
+
+         req.app.locals.redis.hgetall(`${config.redisPrefix}#paypal#${token}`, async (err, reply) => {
+            if (err) {
+               req.logger.debug('validateEmail: get status - redis error');
+            } else if (reply) {
+
+               const { email } = billingAgreement.payer.payer_info;
+               const { userLimit } = reply;
+
+               const userSubscriptionData = {
+                  email,
+                  userLimit,
+                  paypalSubscriptionId: billingAgreement.id,
+                  subscriptionStatus: billingAgreement.state,
+                  subscriptionExpireDate: billingAgreement.agreement_details.next_billing_date
+               };
+
+               // validate if email exists
+               const existingUser = await usersTable.getUserByEmailAddress(req, email);
+
+               if (existingUser) {
+                  const { orgId } = req.query;
+                  const updateOrg = await subscriberOrgsTable.updateSubscriberOrg(req, orgId, { userLimit });
+                  return resolve(billingAgreement);
+               }
+
+               const createReservation = userSvc.createReservation(req, userSubscriptionData);
+               resolve(billingAgreement);
+            }
+         });
       });
    });
 };
 
 export const processAgreement = async (req, res, next) => {
-   const token = req.query.token;
+   const { token } = req.query;
    try {
       const paypalResponse = await processAgreementPromise(req, token);
       return paypalResponse;
@@ -160,22 +168,25 @@ export const processAgreement = async (req, res, next) => {
 
 const cancelPromise = billingAgreementId => {
    return new Promise((resolve, reject) => {
-      var cancel_note = {
+      const cancel_note = {
          note: 'Canceling the agreement'
       };
 
-      paypal.billingAgreement.cancel(billingAgreementId, cancel_note, function(error, response) {
+      paypal.billingAgreement.cancel(billingAgreementId, cancel_note, function (error, response) {
          if (error) {
+            if (error.httpStatusCode !== '400') {
+               return reject(new CancelSubscriptionError());
+            }
             return reject(error);
-         } else {
-            paypal.billingAgreement.get(billingAgreementId, function(error, billingAgreement) {
-               if (error) {
-                  return reject(error);
-               } else {
-                  resolve(billingAgreement);
-               }
-            });
          }
+         paypal.billingAgreement.get(billingAgreementId, function (error, billingAgreement) {
+            if (error) {
+               return reject(error);
+            }
+
+            resolve(billingAgreement);
+
+         });
       });
    });
 };
@@ -195,21 +206,21 @@ export const cancelAgreement = async (req, res, next) => {
 
 const updatePromise = (billingAgreementId, billing_agreement_update_attributes) => {
    return new Promise((resolve, reject) => {
-      paypal.billingAgreement.get(billingAgreementId, function(error, billingAgreement) {
+      paypal.billingAgreement.get(billingAgreementId, function (error, billingAgreement) {
          if (error) {
             return reject(error);
-         } else {
-            paypal.billingAgreement.update(billingAgreementId, billing_agreement_update_attributes, function(
-               error,
-               response
-            ) {
-               if (error) {
-                  return reject(error);
-               } else {
-                  resolve(response);
-               }
-            });
          }
+
+         paypal.billingAgreement.update(billingAgreementId, billing_agreement_update_attributes, function (
+            error,
+            response
+         ) {
+            if (error) {
+               return reject(error);
+            }
+
+            resolve(response);
+         });
       });
    });
 };
@@ -221,6 +232,31 @@ export const updateAgreement = async (req, res, next) => {
 
    try {
       const paypalResponse = await updatePromise(billingAgreementId, billing_agreement_update_attributes);
+      return paypalResponse;
+   } catch (err) {
+      return Promise.reject(err);
+   }
+};
+
+// Get subscription
+
+const getAgreementPromise = billingAgreementId => {
+   return new Promise((resolve, reject) => {
+      paypal.billingAgreement.get(billingAgreementId, function (error, billingAgreement) {
+         if (error) {
+            return reject(error);
+         }
+
+         resolve(billingAgreement);
+      });
+   });
+};
+
+export const getAgreement = async (req, res, next) => {
+   const billingAgreementId = req.query.agreement;
+
+   try {
+      const paypalResponse = await getAgreementPromise(billingAgreementId);
       return paypalResponse;
    } catch (err) {
       return Promise.reject(err);

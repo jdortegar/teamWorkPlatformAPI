@@ -18,6 +18,7 @@ import * as subscriberOrgsTable from '../repositories/db/subscriberOrgsTable';
 import { userCreated, userUpdated, userPrivateInfoUpdated, userBookmarksUpdated, sentInvitationStatus } from './messaging';
 import { AWS_CUSTOMER_ID_HEADER_NAME } from '../controllers/auth';
 import * as mailer from '../helpers/mailer';
+import moment from 'moment';
 
 const getUserByEmail = (req, email) => {
     return new Promise((resolve, reject) => {
@@ -271,10 +272,7 @@ export const createReservation = (req, reservationData) => {
             req.logger.debug('createReservation: set status - redis error');
         } else {
             req.logger.debug(`createReservation: created reservation for email: ${email}`);
-            mailer.sendConfirmationCode(email, rid).then(() => {
-                const response = { status: 'SUCCESS' };
-                res.status(httpStatus.CREATED).json(response);
-            })
+            mailer.sendConfirmationCode(email, rid)
         }
     });
 

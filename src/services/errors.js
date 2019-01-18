@@ -237,3 +237,10 @@ export class CouponExpiredError extends Error {
       Error.captureStackTrace(this, CouponExpiredError);
    }
 }
+
+export class CancelSubscriptionError extends Error {
+   constructor(...args) {
+      super(...args);
+      Error.captureStackTrace(this, CancelSubscriptionError);
+   }
+}
