@@ -12,10 +12,10 @@ import { apiVersionedVisibility, publishByApiVersion } from '../helpers/publishe
 * A user is not created here.
 * A reservation is ...
 */
-export const createReservation = (req, res, next) => {
+export const createReservation = async (req, res, next) => {
     try {
         const reservationData = req.body
-        userSvc.createReservation(req, reservationData);
+        const reservation = await userSvc.createReservation(req, reservationData);
         return res.status(httpStatus.CREATED).json({ status: 'SUCCESS' });
     } catch (err) {
         req.logger.error(err);
@@ -132,7 +132,6 @@ export const resetPassword = (req, res, next) => {
 
 export const createUser = (req, res, next) => {
 
-    console.log('eeeeeeelllo');
     userSvc.createUser(req, req.body)
         .then(() => res.status(httpStatus.CREATED).end())
         .catch((err) => {

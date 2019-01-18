@@ -124,7 +124,10 @@ const processAgreementPromise = (req, token) => {
          req.app.locals.redis.hgetall(`${config.redisPrefix}#paypal#${token}`, async (err, reply) => {
             if (err) {
                req.logger.debug('validateEmail: get status - redis error');
-            } else if (reply) {
+               return reject(err);
+            }
+
+            if (reply) {
 
                const { email } = billingAgreement.payer.payer_info;
                const { userLimit } = reply;
