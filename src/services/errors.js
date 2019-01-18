@@ -244,3 +244,10 @@ export class CancelSubscriptionError extends Error {
       Error.captureStackTrace(this, CancelSubscriptionError);
    }
 }
+
+export class SurveyNotExistsError extends Error {
+   constructor(...args) {
+      super(...args);
+      Error.captureStackTrace(this, SurveyNotExistsError);
+   }
+}
