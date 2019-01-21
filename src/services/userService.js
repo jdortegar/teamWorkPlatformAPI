@@ -87,8 +87,11 @@ export const createUser = async (req, userInfo) => {
         } else {
             const subscriberOrgId = uuid.v4();
             const subscriberOrgName = req.body.displayName;
-            const stripeSubscriptionId = await req.app.locals.redis.getAsync(`${config.redisPrefix}${emailAddress}#stripeSubscriptionId`);
-            const paypalSubscriptionId = await req.app.locals.redis.getAsync(`${config.redisPrefix}${emailAddress}#paypalSubscriptionId`);
+            const stripeSubscriptionId = await req.app.locals.redis.getAsync(`${config.redisPrefix}${emailAddress}#stripeSubscriptionId`) || null;
+            const paypalSubscriptionId = await req.app.locals.redis.getAsync(`${config.redisPrefix}${emailAddress}#paypalSubscriptionId`) || null;
+            if(!stripeSubscriptionId && !paypalSubscriptionId){
+                throw new SubscriptionNotExists();
+            }
             const userLimit = await req.app.locals.redis.getAsync(`${config.redisPrefix}${emailAddress}#userLimit`) || 9;
             // Geta subscription data from redis
             const subscriptionStatus = await req.app.locals.redis.getAsync(`${config.redisPrefix}${emailAddress}#subscriptionStatus`);
