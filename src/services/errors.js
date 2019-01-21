@@ -251,3 +251,10 @@ export class SurveyNotExistsError extends Error {
       Error.captureStackTrace(this, SurveyNotExistsError);
    }
 }
+
+export class SubscriptionNotExists extends Error {
+   constructor(...args) {
+      super(...args);
+      Error.captureStackTrace(this, SubscriptionNotExists);
+   }
+}
