@@ -100,8 +100,17 @@ export const stripeConfig = {
    }
 };
 
+export const paypalConfig = {
+   mode: 'sandbox', //sandbox or live
+   clientId: 'AczTEVuMJOAV_15gnNTJB7-qRmpbiUsEdc9EYxAYjD6GRUZvnVdkRsbAyvzx_6b2iuc1P47VT8tY-M_F',
+   clientSecret: 'EEdcloOEfcC68aFTAUMbz5MbvjUtprwlTOKSQHMntgFSbei4Yv-nDEoJjvHB3YAfcduCjSkeKSgk6Ogp'
+}
+
 export const knowledgeApiEndpoint = 'https://habla-be-api-dev.habla.ai';
 
+// PayPal Live
+// Clientid: 'AauNES2FY9H6-1HOQxWm_d4IjuJ1Ramc6db2MttjJAq72eVMRyIcywGLLHn8S1pFWpyxCHTCYHZVu6Vj'
+// SecretId: EIXJrSshA3lZsRncfSvFvIxOULjmWrzUYlvanlV-iqQYhDKBEwVD8hupAvN7ZTzmoBs16FmUYvtwIjTF
 
 // publishableKey: 'pk_test_LvwApQvFOvPMs0bUSNUnplbb',
 // secretKey: 'sk_test_kDDtLeXmTDqyHxkLiwbrBTQR'

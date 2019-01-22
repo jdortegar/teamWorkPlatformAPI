@@ -238,9 +238,23 @@ export class CouponExpiredError extends Error {
    }
 }
 
+export class CancelSubscriptionError extends Error {
+   constructor(...args) {
+      super(...args);
+      Error.captureStackTrace(this, CancelSubscriptionError);
+   }
+}
+
 export class SurveyNotExistsError extends Error {
    constructor(...args) {
       super(...args);
       Error.captureStackTrace(this, SurveyNotExistsError);
+   }
+}
+
+export class SubscriptionNotExists extends Error {
+   constructor(...args) {
+      super(...args);
+      Error.captureStackTrace(this, SubscriptionNotExists);
    }
 }
