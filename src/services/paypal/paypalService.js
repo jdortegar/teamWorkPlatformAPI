@@ -175,7 +175,7 @@ const cancelPromise = billingAgreementId => {
          note: 'Canceling the agreement'
       };
 
-      paypal.billingAgreement.cancel(billingAgreementId, cancel_note, function (error, response) {
+      paypal.billingAgreement.suspend(billingAgreementId, cancel_note, function (error, response) {
          if (error) {
             if (error.httpStatusCode !== '400') {
                return reject(new CancelSubscriptionError());
