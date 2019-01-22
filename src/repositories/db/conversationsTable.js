@@ -206,13 +206,6 @@ export const getConversationByTeamId = (req, teamId) => {
 
 export const getDirectConversation = async (req, userIds) => {
    try {
-      // const filters = [];
-      // const values = {};
-      // _.forEach(userIds, (val, ix) => {
-      //    vaules[`:user${ix}`] = val;
-      //    filter.push(`contains(members, :user${ix})`)
-      // })
-      // console.log('***QUERY DATA***', filters.join(' and '), values)
       userIds.sort();
       const params = {
          TableName: tableName(),
