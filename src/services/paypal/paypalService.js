@@ -131,11 +131,12 @@ const processAgreementPromise = (req, token) => {
 
                const { email } = billingAgreement.payer.payer_info;
                const { userLimit } = reply;
+               const paypalSubscriptionId = billingAgreement.id
 
                const userSubscriptionData = {
                   email,
                   userLimit,
-                  paypalSubscriptionId: billingAgreement.id,
+                  paypalSubscriptionId,
                   subscriptionStatus: billingAgreement.state,
                   subscriptionExpireDate: billingAgreement.agreement_details.next_billing_date
                };
@@ -145,7 +146,7 @@ const processAgreementPromise = (req, token) => {
 
                if (existingUser) {
                   const { orgId } = req.query;
-                  const updateOrg = await subscriberOrgsTable.updateSubscriberOrg(req, orgId, { userLimit });
+                  const updateOrg = await subscriberOrgsTable.updateSubscriberOrg(req, orgId, { userLimit, paypalSubscriptionId });
                   return resolve(billingAgreement);
                }
 
