@@ -225,7 +225,7 @@ export const addUserToConversationByTeamId = (req, user, teamId) => {
     });
 };
 
-const sortMessagesArray = (messagsortMessagesArrayes) => {
+const sortMessagesArray = (messages) => {
     let sortedMessages = messages.sort((msg1, msg2) => {
         const epoch1 = moment(msg1.created).unix();
         const epoch2 = moment(msg2.created).unix();
@@ -320,7 +320,7 @@ export const getMessages = (req, conversationId, userId = undefined, { since, un
                     throw new ConversationNotExistError(conversationId);
                 }
 
-                if (userId) {
+                if (userId && typeof conversation.teamId !== 'undefined') {
                     const { teamId } = conversation;
                     return teamSvc.getTeamUsers(req, teamId, userId);
                 }
