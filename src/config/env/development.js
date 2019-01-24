@@ -109,8 +109,9 @@ export const paypalConfig = {
 export const knowledgeApiEndpoint = 'https://habla-be-api-dev.habla.ai';
 
 // PayPal Live
+// mode: 'live'
 // Clientid: 'AauNES2FY9H6-1HOQxWm_d4IjuJ1Ramc6db2MttjJAq72eVMRyIcywGLLHn8S1pFWpyxCHTCYHZVu6Vj'
-// SecretId: EIXJrSshA3lZsRncfSvFvIxOULjmWrzUYlvanlV-iqQYhDKBEwVD8hupAvN7ZTzmoBs16FmUYvtwIjTF
+// SecretId: 'EIXJrSshA3lZsRncfSvFvIxOULjmWrzUYlvanlV-iqQYhDKBEwVD8hupAvN7ZTzmoBs16FmUYvtwIjTF'
 
 // publishableKey: 'pk_test_LvwApQvFOvPMs0bUSNUnplbb',
 // secretKey: 'sk_test_kDDtLeXmTDqyHxkLiwbrBTQR'

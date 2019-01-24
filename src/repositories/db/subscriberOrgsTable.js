@@ -110,7 +110,7 @@ export const getSubscriberOrgByName = (req, name) => {
    });
 };
 
-export const updateSubscriberOrg = (req, subscriberOrgId, { name, icon, enabled, preferences, userLimit } = {}) => {
+export const updateSubscriberOrg = (req, subscriberOrgId, { name, icon, enabled, preferences, userLimit, paypalSubscriptionId } = {}) => {
    return new Promise((resolve, reject) => {
       const lastModified = req.now.format();
       let subscriberOrg;
@@ -154,6 +154,12 @@ export const updateSubscriberOrg = (req, subscriberOrgId, { name, icon, enabled,
                params.ExpressionAttributeValues[':userLimit'] = userLimit;
             }
 
+            if (paypalSubscriptionId){
+               params.UpdateExpression += ', #paypalSubscriptionId = :paypalSubscriptionId';
+               params.ExpressionAttributeNames['#paypalSubscriptionId'] = 'paypalSubscriptionId';
+               params.ExpressionAttributeValues[':paypalSubscriptionId'] = paypalSubscriptionId;
+            }
+
             return req.app.locals.docClient.update(params).promise();
          })
          .then(() => {
@@ -164,7 +170,8 @@ export const updateSubscriberOrg = (req, subscriberOrgId, { name, icon, enabled,
                   enabled,
                   lastModified,
                   preferences,
-                  userLimit
+                  userLimit,
+                  paypalSubscriptionId
                })
             );
          })
