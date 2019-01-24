@@ -23,7 +23,7 @@ export const processAgreement = async (req, res) => {
       const agreement = await paypalSvc.processAgreement(req, req.body);
       const { orgId } = req.query;
       if (orgId) {
-         return res.redirect(`${config.webappBaseUri}/app/organization/${orgId}/${agreement.id}`);
+         return res.redirect(`${config.webappBaseUri}/app/organization/${orgId}`);
       }
 
       return res.redirect(`${config.webappBaseUri}/createAccount`);
@@ -42,7 +42,7 @@ export const cancelAgreement = async (req, res) => {
       return res.json(agreement);
    } catch (err) {
       if (err instanceof CancelSubscriptionError){
-         return res.status(httpStatus.BAD_REQUEST).json({error: 'Bad Request', message: 'Subscription already cancelled'})
+         return res.status(httpStatus.NO_CONTENT).end();
       }
       return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
          error: 'Internal Server Error',

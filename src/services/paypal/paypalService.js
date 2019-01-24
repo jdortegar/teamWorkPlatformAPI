@@ -131,7 +131,7 @@ const processAgreementPromise = (req, token) => {
 
                const { email } = billingAgreement.payer.payer_info;
                const { userLimit } = reply;
-               const paypalSubscriptionId = billingAgreement.id
+               const paypalSubscriptionId = billingAgreement.id;
 
                const userSubscriptionData = {
                   email,
