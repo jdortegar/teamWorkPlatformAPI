@@ -110,7 +110,7 @@ export const getSubscriberOrgByName = (req, name) => {
    });
 };
 
-export const updateSubscriberOrg = (req, subscriberOrgId, { name, icon, enabled, preferences, userLimit, paypalSubscriptionId } = {}) => {
+export const updateSubscriberOrg = (req, subscriberOrgId, { name, icon, enabled, preferences, userLimit, stripeSubscriptionId, paypalSubscriptionId, subscriptionStatus, subscriptionExpireDate } = {}) => {
    return new Promise((resolve, reject) => {
       const lastModified = req.now.format();
       let subscriberOrg;
@@ -154,10 +154,28 @@ export const updateSubscriberOrg = (req, subscriberOrgId, { name, icon, enabled,
                params.ExpressionAttributeValues[':userLimit'] = userLimit;
             }
 
+            if (stripeSubscriptionId){
+               params.UpdateExpression += ', #stripeSubscriptionId = :stripeSubscriptionId';
+               params.ExpressionAttributeNames['#stripeSubscriptionId'] = 'stripeSubscriptionId';
+               params.ExpressionAttributeValues[':stripeSubscriptionId'] = stripeSubscriptionId;
+            }
+
             if (paypalSubscriptionId){
                params.UpdateExpression += ', #paypalSubscriptionId = :paypalSubscriptionId';
                params.ExpressionAttributeNames['#paypalSubscriptionId'] = 'paypalSubscriptionId';
                params.ExpressionAttributeValues[':paypalSubscriptionId'] = paypalSubscriptionId;
+            }
+
+            if (subscriptionStatus){
+               params.UpdateExpression += ', #subscriptionStatus = :subscriptionStatus';
+               params.ExpressionAttributeNames['#subscriptionStatus'] = 'subscriptionStatus';
+               params.ExpressionAttributeValues[':subscriptionStatus'] = subscriptionStatus;
+            }
+
+            if (subscriptionExpireDate){
+               params.UpdateExpression += ', #subscriptionExpireDate = :subscriptionExpireDate';
+               params.ExpressionAttributeNames['#subscriptionExpireDate'] = 'subscriptionExpireDate';
+               params.ExpressionAttributeValues[':subscriptionExpireDate'] = subscriptionExpireDate;
             }
 
             return req.app.locals.docClient.update(params).promise();
@@ -171,7 +189,10 @@ export const updateSubscriberOrg = (req, subscriberOrgId, { name, icon, enabled,
                   lastModified,
                   preferences,
                   userLimit,
-                  paypalSubscriptionId
+                  stripeSubscriptionId,
+                  paypalSubscriptionId,
+                  subscriptionStatus,
+                  subscriptionExpireDate
                })
             );
          })
