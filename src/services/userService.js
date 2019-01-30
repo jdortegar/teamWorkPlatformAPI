@@ -73,6 +73,7 @@ export const createUser = async (req, userInfo) => {
         const invitations = await getInvitations(req, emailAddress);
         if (invitations instanceof Array && invitations.length > 0) {
             // Here we need to create a normal user to suscriber user and reply the invite.
+            const subscriberOrgId = invitations[0].subscriberOrgId;
             const organization = await subscriberOrgsTable.getSubscriberOrgBySubscriberOrgId(req, invitations[0].subscriberOrgId);
             const userLimit = organization.userLimit || 9;
             const orgActiveUsers = await subscriberOrgSvc.getOrganizationActiveUsers(req, organization.subscriberOrgId);
@@ -82,8 +83,9 @@ export const createUser = async (req, userInfo) => {
             const subscriberUserId = uuid.v4();
             const subscriberUser = await subscriberUserTable.createSubscriberUser(req, subscriberUserId, userId, invitations[0].subscriberOrgId, 'user', user.displayName);
             const changedInvitations = await invitationsTable.updateInvitationsStateByInviteeEmail(req, user.emailAddress, invitationsKeys.subscriberOrgId, invitations[0].subscriberOrgId, 'ACCEPTED');
-            sentInvitationStatus(req, changedInvitations);
+            sentInvitationStatus(req, changedInvitations[0]);
             await req.app.locals.redis.delAsync(`${user.emailAddress}#pendingInvites`);
+            userCreated(req, user, subscriberOrgId);
         } else {
             const subscriberOrgId = uuid.v4();
             const subscriberOrgName = req.body.displayName;
@@ -97,8 +99,8 @@ export const createUser = async (req, userInfo) => {
             const subscriptionStatus = await req.app.locals.redis.getAsync(`${config.redisPrefix}${emailAddress}#subscriptionStatus`);
             const subscriptionExpireDate = await req.app.locals.redis.getAsync(`${config.redisPrefix}${emailAddress}#subscriptionExpireDate`);
 	        await subscriberOrgSvc.createSubscriberOrgUsingBaseName(req, { name: subscriberOrgName }, user, subscriberOrgId, stripeSubscriptionId, paypalSubscriptionId, undefined, userLimit, subscriptionStatus, subscriptionExpireDate);
+            userCreated(req, user);
         }
-        userCreated(req, user);
         const awsCustomerId = await req.app.locals.redis.getAsync(`${config.redisPrefix}${emailAddress}#awsCustomerId`);
         if (awsCustomerId && (awsCustomerId !== null)) {
             await awsMarketplaceSvc.registerCustomer(req, awsCustomerId, user);
