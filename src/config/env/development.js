@@ -79,7 +79,8 @@ export const redshift = {
    database: 'habladb',
    password: 'MAnchi89',
    host: 'habla-ai.csvoexx0fghm.us-west-2.redshift.amazonaws.com',
-   port: 5439
+   port: 5439,
+   tablePrefix: 'dev'
 };
 export const surveyTable = 'dev_usage_survey';
 
@@ -99,8 +100,25 @@ export const stripeConfig = {
    }
 };
 
+export const paypalConfig = {
+   mode: 'sandbox', //sandbox or live
+   clientId: 'AczTEVuMJOAV_15gnNTJB7-qRmpbiUsEdc9EYxAYjD6GRUZvnVdkRsbAyvzx_6b2iuc1P47VT8tY-M_F',
+   clientSecret: 'EEdcloOEfcC68aFTAUMbz5MbvjUtprwlTOKSQHMntgFSbei4Yv-nDEoJjvHB3YAfcduCjSkeKSgk6Ogp'
+}
+
 export const knowledgeApiEndpoint = 'https://habla-be-api-dev.habla.ai';
 
+<<<<<<< HEAD
+=======
+// PayPal Live
+// mode: 'live'
+// ClientId: 'AauNES2FY9H6-1HOQxWm_d4IjuJ1Ramc6db2MttjJAq72eVMRyIcywGLLHn8S1pFWpyxCHTCYHZVu6Vj'
+// SecretId: 'EIXJrSshA3lZsRncfSvFvIxOULjmWrzUYlvanlV-iqQYhDKBEwVD8hupAvN7ZTzmoBs16FmUYvtwIjTF'
+
+// publishableKey: 'pk_test_LvwApQvFOvPMs0bUSNUnplbb',
+// secretKey: 'sk_test_kDDtLeXmTDqyHxkLiwbrBTQR'
+// publishableKey: 'pk_live_EYULQ2u9a4EBUMKjoEwFX8W3',
+>>>>>>> develop
 // secretKey: 'sk_live_1zwgvM8siP8VRhR4dqCg2mIV'
 
 // Test Account

@@ -7,7 +7,12 @@ import * as conversationsTable from '../../repositories/db/conversationsTable';
 
 // EventType = user
 
-export const userCreated = (req, user) => {
+export const userCreated = (req, user, subscriberOrgId) => {
+   if (subscriberOrgId){
+      return _broadcastEvent(req, EventTypes.userCreated, publishByApiVersion(req, apiVersionedVisibility.publicUser, user), [
+         ChannelFactory.subscriberOrgChannel(subscriberOrgId),
+      ]);
+   }
    return _broadcastEvent(req, EventTypes.userCreated, publishByApiVersion(req, apiVersionedVisibility.publicUser, user), [
       ChannelFactory.publicChannel()
    ]);

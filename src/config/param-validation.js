@@ -6,7 +6,8 @@ const validationSchemas = {
     registerUser: {
         body: {
             email: Joi.string().email().required(),
-            subscriptionId: Joi.string(),
+            stripeSubscriptionId: Joi.string(),
+            paypalSubscriptionId: Joi.string(),
             userLimit: Joi.number().required()
         }
     },

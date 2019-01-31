@@ -123,12 +123,13 @@ export const updateSubscription = async (req, res, next) => {
          selectedPlanId = yearPlanId;
       }
 
-      if ('cancel_at_period_end' in subscriptionUpdateData) {
+      if ('cancel_at_period_end' in subscriptionUpdateData && subscriptionUpdateData.cancel_at_period_end === true) {
          stripeResponse = await stripe.subscriptions.update(subscriptionId, {
             cancel_at_period_end: subscriptionUpdateData.cancel_at_period_end
          });
       } else {
          stripeResponse = await stripe.subscriptions.update(subscriptionId, {
+            cancel_at_period_end: false,
             coupon: coupon,
             billing_cycle_anchor: 'now',
             trial_end: 'now',
@@ -142,7 +143,11 @@ export const updateSubscription = async (req, res, next) => {
             ]
          });
 
-         await subscriberOrgsTable.updateSubscriberOrg(req, subscriberOrgId, { userLimit });
+         const subscriptionStatus = stripeResponse.status;
+         const subscriptionExpireDate = stripeResponse.current_period_end;
+         const paypalSubscriptionId = null;
+
+         await subscriberOrgsTable.updateSubscriberOrg(req, subscriberOrgId, { userLimit, paypalSubscriptionId, subscriptionStatus, subscriptionExpireDate });
       }
 
       return stripeResponse;

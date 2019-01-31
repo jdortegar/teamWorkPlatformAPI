@@ -1,12 +1,10 @@
 import httpStatus from 'http-status';
 import uuid from 'uuid';
-import moment from 'moment';
 import app from '../config/express';
 import config from '../config/env';
 import * as mailer from '../helpers/mailer';
 import { APIError, APIWarning, NoPermissionsError, UserNotExistError, UserLimitReached } from '../services/errors';
 import * as userSvc from '../services/userService';
-import { AWS_CUSTOMER_ID_HEADER_NAME } from './auth';
 import { apiVersionedVisibility, publishByApiVersion } from '../helpers/publishedVisibility';
 
 /**
@@ -14,43 +12,15 @@ import { apiVersionedVisibility, publishByApiVersion } from '../helpers/publishe
 * A user is not created here.
 * A reservation is ...
 */
-export const createReservation = (req, res) => {
-    const email = req.body.email || '';
-    const stripeSubscriptionId = req.body.subscriptionId || null;
-    const awsCustomerId = req.get(AWS_CUSTOMER_ID_HEADER_NAME);
-    const userLimit = req.body.userLimit || 9;
-    const subscriptionStatus = req.body.subscriptionStatus || 'trialing';
-    const subscriptionExpireDate = req.body.subscriptionExpireDate || 0;
-
-    // Add new reservation to cache
-    req.logger.debug(`createReservation: user ${email}`);
-    const rid = String(moment().valueOf()).slice(-6);
-    req.logger.debug(`createReservation: new rid: ${rid}`);
-    req.app.locals.redis.set(`${config.redisPrefix}#reservation#${rid}`, email, 'EX', 1800, err => {
-        if (err) {
-            req.logger.debug('createReservation: set status - redis error');
-        } else {
-            req.logger.debug(`createReservation: created reservation for email: ${email}`);
-            mailer.sendConfirmationCode(email, rid).then(() => {
-                const response = { status: 'SUCCESS' };
-                res.status(httpStatus.CREATED).json(response);
-            })
-        }
-    });
-
-    if (awsCustomerId) {
-        req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#awsCustomerId`, awsCustomerId);
+export const createReservation = async (req, res, next) => {
+    try {
+        const reservationData = req.body
+        const reservation = await userSvc.createReservation(req, reservationData);
+        return res.status(httpStatus.CREATED).json({ status: 'SUCCESS' });
+    } catch (err) {
+        req.logger.error(err);
+        return res.status(httpStatus.SERVICE_UNAVAILABLE).json({ error: 'Service Unavaliable', message: 'Failed to create reservation' });
     }
-
-    // If User comes from stripe
-   if (stripeSubscriptionId) {
-      req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#stripeSubscriptionId`, stripeSubscriptionId);
-   }
-
-   // Subcriptions data
-   req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#subscriptionStatus`, subscriptionStatus);
-   req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#subscriptionExpireDate`, subscriptionExpireDate);
-   req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#userLimit`, userLimit);
 };
 
 export const forgotPassword = (req, res) => {
@@ -119,7 +89,6 @@ export const validateCode = async (req, res, next) => {
         const response = { email: registration.email, orgName: registration.subscriberOrgName };
         return res.status(httpStatus.OK).json(response);
     } catch (error) {
-        console.log(error);
         req.logger.debug('validateCode: get status - redis error');
         return next(error);
     }
@@ -149,7 +118,12 @@ export const resetPassword = (req, res, next) => {
                     } else {
                         next(new APIWarning(httpStatus.BAD_REQUEST));
                     }
-                });
+                }).catch((err) => {
+                    if (err instanceof UserNotExistError) {
+                        return res.status(httpStatus.NOT_FOUND).json({ error: 'user not found'});
+                    }
+                    next(err);
+                }) ;
         } else {
             next(new APIWarning(httpStatus.NOT_FOUND));
         }
@@ -157,6 +131,7 @@ export const resetPassword = (req, res, next) => {
 };
 
 export const createUser = (req, res, next) => {
+
     userSvc.createUser(req, req.body)
         .then(() => res.status(httpStatus.CREATED).end())
         .catch((err) => {
