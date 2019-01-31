@@ -30,7 +30,8 @@ import {
    teamUpdated,
    userInvitationAccepted,
    userInvitationDeclined,
-   sentInvitationStatus
+   sentInvitationStatus,
+   conversationMemberAdded
 } from './messaging';
 import { getPresence } from './messaging/presence';
 import Roles from './roles';
@@ -378,6 +379,7 @@ export function addUserToTeam(req, user, subscriberUserId, teamId, role) {
          })
          .then(member => {
             teamMemberAdded(req, team, user[0], role, teamMemberId);
+            conversationMemberAdded(req, user[0], teamId);
             return conversationSvc.addUserToConversationByTeamId(req, user[0], teamId);
          })
          .then(() => {
@@ -461,7 +463,7 @@ export function replyToInvite(req, teamId, accept, userId) {
          })
          .then(changedInvitations => {
             resolve();
-            sentInvitationStatus(req, changedInvitations);
+            sentInvitationStatus(req, changedInvitations[0]);
          })
          .catch(err => {
             if (err instanceof TeamMemberExistsError) {

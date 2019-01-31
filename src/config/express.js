@@ -64,7 +64,7 @@ app.use(
       path: [
          /^\/(v\d+\/)?test/,
          /^\/(v\d+\/)?users\/registerUser/,
-         /^\/(v\d+\/)?users\/validateEmail/,
+         /^\/(v\d+\/)?users\/validateCode/,
          /^\/(v\d+\/)?users\/createUser/,
          /^\/(v\d+\/)?users\/forgotPassword/,
          /^\/(v\d+\/)?users\/resetPassword/,
@@ -79,7 +79,8 @@ app.use(
          /^\/(v\d+\/)?passwordupdate/,
          /^\/(v\d+\/)?payments/,
          /^\/(v\d+\/)?trials/,
-         /^\/(v\d+\/)?coupons/
+         /^\/(v\d+\/)?coupons/,
+         /^\/(v\d+\/)?subscriptions\/paypal/
       ]
    })
 );

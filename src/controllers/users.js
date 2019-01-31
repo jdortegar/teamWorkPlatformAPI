@@ -5,7 +5,6 @@ import config from '../config/env';
 import * as mailer from '../helpers/mailer';
 import { APIError, APIWarning, NoPermissionsError, UserNotExistError, UserLimitReached } from '../services/errors';
 import * as userSvc from '../services/userService';
-import { AWS_CUSTOMER_ID_HEADER_NAME } from './auth';
 import { apiVersionedVisibility, publishByApiVersion } from '../helpers/publishedVisibility';
 
 /**
@@ -13,40 +12,15 @@ import { apiVersionedVisibility, publishByApiVersion } from '../helpers/publishe
 * A user is not created here.
 * A reservation is ...
 */
-export const createReservation = (req, res) => {
-    const email = req.body.email || '';
-    const stripeSubscriptionId = req.body.subscriptionId || null;
-    const awsCustomerId = req.get(AWS_CUSTOMER_ID_HEADER_NAME);
-    const userLimit = req.body.userLimit || 9;
-
-    // Add new reservation to cache
-
-    req.logger.debug(`createReservation: user ${email}`);
-    const rid = uuid.v4(); // get a uid to represent the reservation
-    req.logger.debug(`createReservation: new rid: ${rid}`);
-    req.app.locals.redis.hmset(`${config.redisPrefix}${rid}`, 'email', email, 'EX', 1800, (err) => {
-        if (err) {
-            req.logger.debug('createReservation: hset status - redis error');
-        } else {
-            req.logger.debug(`createReservation: created reservation for email: ${email}`);
-            mailer.sendActivationLink(email, rid).then(() => {
-                const response = {
-                    status: 'SUCCESS'
-                };
-                res.status(httpStatus.CREATED).json(response);
-            });
-        }
-    });
-
-    if (awsCustomerId) {
-        req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#awsCustomerId`, awsCustomerId);
+export const createReservation = async (req, res, next) => {
+    try {
+        const reservationData = req.body
+        const reservation = await userSvc.createReservation(req, reservationData);
+        return res.status(httpStatus.CREATED).json({ status: 'SUCCESS' });
+    } catch (err) {
+        req.logger.error(err);
+        return res.status(httpStatus.SERVICE_UNAVAILABLE).json({ error: 'Service Unavaliable', message: 'Failed to create reservation' });
     }
-
-    // If User comes from stripe
-   if (stripeSubscriptionId) {
-      req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#stripeSubscriptionId`, stripeSubscriptionId);
-   }
-   req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#userLimit`, userLimit);
 };
 
 export const forgotPassword = (req, res) => {
@@ -81,46 +55,44 @@ export const deleteRedisKey = (rid) => {
     });
 };
 
-/**
- * Endpoint:   /user/validateEmail/:rid
- *
- * Method:     GET
- * Return 401: "Not Found"; body = { status: 'ERR_RESERVATION_NOT_FOUND' }
- *
- * @param req
- * @param res
- * @param next
- */
-export const validateEmail = (req, res, next) => {
-    const rid = req.params.rid || req.body.reservationId || '';
+export const validateCode = async (req, res, next) => {
+    try {
+        // find reservation (admin user)
+        const code = req.params.code;
+        const email = await req.app.locals.redis.getAsync(`${config.redisPrefix}#reservation#${code}`);
 
-    // Find reservation in cache
-    req.logger.debug(`find Reservation: id = ${rid}`);
-    req.app.locals.redis.hgetall(`${config.redisPrefix}${rid}`, (err, reply) => {
-        if (err) {
-            req.logger.debug('validateEmail: get status - redis error');
-        } else if (reply) {
-            req.logger.debug(`validateEmail: found reservation for email: ${reply}`);
-            const response = {
-                status: 'SUCCESS',
-                email: reply.email
-            };
+        if (email) {
+          // reservation found, delete it
+          await req.app.locals.redis.delAsync(`${config.redisPrefix}#reservation#${code}`);
+          req.logger.debug(`validateCode: found reservation for email: ${email}`);
 
-            // If exists subscriberOrgName add to object
-            if (reply && reply.subscriberOrgName){
-                response.subscriberOrgName = reply.subscriberOrgName;
-            }
-
-            if (req.accepts('json')) {
-                res.status(httpStatus.OK).json(response);
-            } else {
-                next(new APIWarning(httpStatus.BAD_REQUEST));
-            }
-        } else {
-            next(new APIWarning(httpStatus.NOT_FOUND));
+          return res.status(httpStatus.OK).json({ email });
         }
-    });
-};
+
+        req.logger.debug(`validateCode: reservation not found for code: ${code}`);
+
+        // find registration (invited user)
+        const rid = req.query.rid;
+        const registration = await req.app.locals.redis.hgetallAsync(`${config.redisPrefix}#registration#${rid}`);
+
+        if (!registration) {
+          req.logger.debug(`validateCode: registration not found for rid: ${rid}`);
+          throw new APIWarning(httpStatus.NOT_FOUND);
+        }
+        if (code !== registration.confirmationCode) {
+          req.logger.debug(`validateCode: registration found but code invalid: ${code}`);
+          throw new APIWarning(httpStatus.NOT_FOUND);
+        }
+
+        req.logger.debug(`validateCode: found reservation for email: ${registration.email}`);
+
+        const response = { email: registration.email, orgName: registration.subscriberOrgName };
+        return res.status(httpStatus.OK).json(response);
+    } catch (error) {
+        req.logger.debug('validateCode: get status - redis error');
+        return next(error);
+    }
+}
 
 export const resetPassword = (req, res, next) => {
     const rid = req.params.rid || '';
@@ -146,7 +118,12 @@ export const resetPassword = (req, res, next) => {
                     } else {
                         next(new APIWarning(httpStatus.BAD_REQUEST));
                     }
-                });
+                }).catch((err) => {
+                    if (err instanceof UserNotExistError) {
+                        return res.status(httpStatus.NOT_FOUND).json({ error: 'user not found'});
+                    }
+                    next(err);
+                }) ;
         } else {
             next(new APIWarning(httpStatus.NOT_FOUND));
         }
@@ -154,6 +131,7 @@ export const resetPassword = (req, res, next) => {
 };
 
 export const createUser = (req, res, next) => {
+
     userSvc.createUser(req, req.body)
         .then(() => res.status(httpStatus.CREATED).end())
         .catch((err) => {

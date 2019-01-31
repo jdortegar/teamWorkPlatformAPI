@@ -79,7 +79,8 @@ const config = {
       database: process.env.REDSHIFT_DATABASE || defaultConfig.redshift.database,
       password: process.env.REDSHIFT_PASSWORD || defaultConfig.redshift.password,
       host: process.env.REDSHIFT_HOST || defaultConfig.redshift.host,
-      port: process.env.REDSHIFT_PORT || defaultConfig.redshift.port
+      port: process.env.REDSHIFT_PORT || defaultConfig.redshift.port,
+      tablePrefix: process.env.REDSHIFT_TABLE_PREFIX || defaultConfig.redshift.tablePrefix
    },
    surveyTable: process.env.SURVEY_TABLE || defaultConfig.surveyTable,
 
@@ -93,6 +94,12 @@ const config = {
          publishableKey: process.env.STRIPE_PUBLIC_KEY || defaultConfig.stripeConfig.stripe.publishableKey,
          secretKey: process.env.STRIPE_SECRET_KEY || defaultConfig.stripeConfig.stripe.secretKey
       }
+   },
+
+   paypalConfig: {
+      mode: process.env.PAYPAL_MODE || defaultConfig.paypalConfig.mode,
+      clientId: process.env.PAYPAL_CLIENT_ID || defaultConfig.paypalConfig.clientId,
+      clientSecret: process.env.PAYPAL_CLIENT_SECRET || defaultConfig.paypalConfig.clientSecret
    },
 
    knowledgeApiEndpoint: process.env.KNOWLEDGE_API || defaultConfig.knowledgeApiEndpoint,

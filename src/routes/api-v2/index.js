@@ -5,6 +5,8 @@ import integrationsV2Routes from './integrations';
 import teamRoutes from './teams';
 import organization from './organization';
 import stripeRoutes from './stripe';
+import conversationsRoutes from './conversations';
+import paypalRoutes from './paypal';
 
 const router = express.Router();
 
@@ -14,5 +16,7 @@ router.use(surveyRoutes);
 router.use(integrationsV2Routes);
 router.use(teamRoutes);
 router.use(stripeRoutes);
+router.use(conversationsRoutes);
+router.use(paypalRoutes);
 
 export default router;

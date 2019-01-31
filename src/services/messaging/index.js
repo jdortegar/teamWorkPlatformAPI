@@ -3,14 +3,19 @@ import { apiVersionedVisibility, publishByApiVersion } from '../../helpers/publi
 import * as internalQueue from './internalQueue';
 import { _broadcastEvent, _joinChannels, ChannelFactory, EventTypes } from './messagingService';
 import Roles from '../roles';
+import * as conversationsTable from '../../repositories/db/conversationsTable';
 
 // EventType = user
 
-export const userCreated = (req, user) => { // eslint-disable-line no-unused-vars
-   // No need to broadcast this, since the user is by themselves at this point, and not logged-in.
-   // return _broadcastEvent(req, EventTypes.userCreated, publicUser(user), [
-   //    ChannelFactory.publicChannel()
-   // ]);
+export const userCreated = (req, user, subscriberOrgId) => {
+   if (subscriberOrgId){
+      return _broadcastEvent(req, EventTypes.userCreated, publishByApiVersion(req, apiVersionedVisibility.publicUser, user), [
+         ChannelFactory.subscriberOrgChannel(subscriberOrgId),
+      ]);
+   }
+   return _broadcastEvent(req, EventTypes.userCreated, publishByApiVersion(req, apiVersionedVisibility.publicUser, user), [
+      ChannelFactory.publicChannel()
+   ]);
 };
 
 export const userUpdated = (req, user) => {
@@ -188,6 +193,23 @@ export const conversationUpdated = (req, conversation) => {
    ]);
 };
 
+export const conversationMemberAdded = (req, user, teamId) => {
+   let conversationId;
+   conversationsTable.getConversationByTeamId(req, teamId)
+      .then((conversation) => {
+         if (conversation) {
+            conversationId = conversation.conversationId;
+
+            const conversationChannel = ChannelFactory.conversationChannel(conversationId);
+            const channels = [ChannelFactory.conversationChannel(conversationId)];
+            return _joinChannels(req, user.userId, channels)
+               .catch(err => req.logger.error({ err }));
+
+         }
+         return undefined;
+      });
+};
+
 
 // EventType = message
 
@@ -250,7 +272,7 @@ export const messageDeleted = (req, message) => {
 };
 
 
-// EventType = integration 
+// EventType = integration
 
 export const integrationsUpdated = (req, subscriberUser) => {
    // Send to internal channel.

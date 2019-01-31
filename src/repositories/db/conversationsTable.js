@@ -1,3 +1,4 @@
+import _ from 'lodash';
 import config from '../../config/env';
 import * as util from './util';
 
@@ -29,15 +30,17 @@ const upgradeSchema = (req, dbObjects) => {
    return Promise.resolve(dbObjects);
 };
 
-export const createConversation = (req, conversationId, subscriberOrgId, teamId = undefined, topic = undefined) => {
+export const createConversation = (req, conversationId, subscriberOrgId, teamId = undefined, topic = undefined, members = []) => {
    return new Promise((resolve, reject) => {
+      members.sort();
       const params = {
          TableName: tableName(),
          Item: {
             conversationId,
             v,
             subscriberOrgId,
-            teamId,
+            teamId: teamId,
+            members,
             topic: topic || null,
             active: true,
             messageCount: 0,
@@ -200,3 +203,20 @@ export const getConversationByTeamId = (req, teamId) => {
          .catch(err => reject(err));
    });
 };
+
+export const getDirectConversation = async (req, userIds) => {
+   try {
+      userIds.sort();
+      const params = {
+         TableName: tableName(),
+         ExpressionAttributeValues: {
+            ':userIds': userIds
+         },
+         FilterExpression: 'members = :userIds',
+      }
+      return  await util.scan(req, params)
+   } catch (err) {
+      console.log('***DB ERROR', error);
+      return Promise.reject(err);
+   }
+}

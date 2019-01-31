@@ -13,7 +13,10 @@ import { SubscriberOrgNotExistError } from '../../services/errors';
  * lastModified
  * preferences
  * stripeSubscriptionId
+ * paypalSubscriptionId
  * userLimit
+ * subscriptionStatus
+ * subscriptionExpireDate
  *
  * GSI: nameIdx
  * hash: name
@@ -30,7 +33,7 @@ const upgradeSchema = (req, dbObjects) => {
    return Promise.resolve(dbObjects);
 };
 
-export const createSubscriberOrg = (req, subscriberOrgId, name, icon, preferences, stripeSubscriptionId, userLimit) => {
+export const createSubscriberOrg = (req, subscriberOrgId, name, icon, preferences, stripeSubscriptionId, paypalSubscriptionId, userLimit, subscriptionStatus, subscriptionExpireDate) => {
    return new Promise((resolve, reject) => {
       const params = {
          TableName: tableName(),
@@ -44,7 +47,10 @@ export const createSubscriberOrg = (req, subscriberOrgId, name, icon, preference
             lastModified: req.now.format(),
             preferences,
             stripeSubscriptionId,
-            userLimit
+            paypalSubscriptionId,
+            userLimit,
+            subscriptionStatus,
+            subscriptionExpireDate
          }
       };
 
@@ -104,7 +110,7 @@ export const getSubscriberOrgByName = (req, name) => {
    });
 };
 
-export const updateSubscriberOrg = (req, subscriberOrgId, { name, icon, enabled, preferences, userLimit } = {}) => {
+export const updateSubscriberOrg = (req, subscriberOrgId, { name, icon, enabled, preferences, userLimit, stripeSubscriptionId, paypalSubscriptionId, subscriptionStatus, subscriptionExpireDate } = {}) => {
    return new Promise((resolve, reject) => {
       const lastModified = req.now.format();
       let subscriberOrg;
@@ -148,6 +154,30 @@ export const updateSubscriberOrg = (req, subscriberOrgId, { name, icon, enabled,
                params.ExpressionAttributeValues[':userLimit'] = userLimit;
             }
 
+            if (stripeSubscriptionId){
+               params.UpdateExpression += ', #stripeSubscriptionId = :stripeSubscriptionId';
+               params.ExpressionAttributeNames['#stripeSubscriptionId'] = 'stripeSubscriptionId';
+               params.ExpressionAttributeValues[':stripeSubscriptionId'] = stripeSubscriptionId;
+            }
+
+            if (paypalSubscriptionId){
+               params.UpdateExpression += ', #paypalSubscriptionId = :paypalSubscriptionId';
+               params.ExpressionAttributeNames['#paypalSubscriptionId'] = 'paypalSubscriptionId';
+               params.ExpressionAttributeValues[':paypalSubscriptionId'] = paypalSubscriptionId;
+            }
+
+            if (subscriptionStatus){
+               params.UpdateExpression += ', #subscriptionStatus = :subscriptionStatus';
+               params.ExpressionAttributeNames['#subscriptionStatus'] = 'subscriptionStatus';
+               params.ExpressionAttributeValues[':subscriptionStatus'] = subscriptionStatus;
+            }
+
+            if (subscriptionExpireDate){
+               params.UpdateExpression += ', #subscriptionExpireDate = :subscriptionExpireDate';
+               params.ExpressionAttributeNames['#subscriptionExpireDate'] = 'subscriptionExpireDate';
+               params.ExpressionAttributeValues[':subscriptionExpireDate'] = subscriptionExpireDate;
+            }
+
             return req.app.locals.docClient.update(params).promise();
          })
          .then(() => {
@@ -158,7 +188,11 @@ export const updateSubscriberOrg = (req, subscriberOrgId, { name, icon, enabled,
                   enabled,
                   lastModified,
                   preferences,
-                  userLimit
+                  userLimit,
+                  stripeSubscriptionId,
+                  paypalSubscriptionId,
+                  subscriptionStatus,
+                  subscriptionExpireDate
                })
             );
          })
