@@ -23,7 +23,7 @@ export const processAgreement = async (req, res) => {
       const agreement = await paypalSvc.processAgreement(req, req.body);
       const { orgId } = req.query;
       if (orgId) {
-         return res.redirect(`${config.webappBaseUri}/app/organization/${orgId}`);
+         return res.redirect(`${config.webappBaseUri}/app/organization/${orgId}/${agreement.id}`);
       }
 
       return res.redirect(`${config.webappBaseUri}/createAccount`);
