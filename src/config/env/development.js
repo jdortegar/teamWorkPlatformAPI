@@ -108,17 +108,6 @@ export const paypalConfig = {
 
 export const knowledgeApiEndpoint = 'https://habla-be-api-dev.habla.ai';
 
-<<<<<<< HEAD
-=======
-// PayPal Live
-// mode: 'live'
-// ClientId: 'AauNES2FY9H6-1HOQxWm_d4IjuJ1Ramc6db2MttjJAq72eVMRyIcywGLLHn8S1pFWpyxCHTCYHZVu6Vj'
-// SecretId: 'EIXJrSshA3lZsRncfSvFvIxOULjmWrzUYlvanlV-iqQYhDKBEwVD8hupAvN7ZTzmoBs16FmUYvtwIjTF'
-
-// publishableKey: 'pk_test_LvwApQvFOvPMs0bUSNUnplbb',
-// secretKey: 'sk_test_kDDtLeXmTDqyHxkLiwbrBTQR'
-// publishableKey: 'pk_live_EYULQ2u9a4EBUMKjoEwFX8W3',
->>>>>>> develop
 // secretKey: 'sk_live_1zwgvM8siP8VRhR4dqCg2mIV'
 
 // Test Account
