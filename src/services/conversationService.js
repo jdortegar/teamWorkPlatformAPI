@@ -737,5 +737,3 @@ export const flagMessage = (req, conversationId, messageId, userId, flag = true)
             .catch(err => reject(err));
     });
 };
-
-

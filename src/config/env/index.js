@@ -97,9 +97,9 @@ const config = {
    },
 
    paypalConfig: {
-      mode: process.env.MODE || defaultConfig.paypalConfig.mode,
-      clientId: process.env.CLIENT_ID || defaultConfig.paypalConfig.clientId,
-      clientSecret: process.env.CLIENT_SECRET || defaultConfig.paypalConfig.clientSecret
+      mode: process.env.PAYPAL_MODE || defaultConfig.paypalConfig.mode,
+      clientId: process.env.PAYPAL_CLIENT_ID || defaultConfig.paypalConfig.clientId,
+      clientSecret: process.env.PAYPAL_CLIENT_SECRET || defaultConfig.paypalConfig.clientSecret
    },
 
    knowledgeApiEndpoint: process.env.KNOWLEDGE_API || defaultConfig.knowledgeApiEndpoint,
