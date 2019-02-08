@@ -7,6 +7,7 @@ import organization from './organization';
 import stripeRoutes from './stripe';
 import conversationsRoutes from './conversations';
 import paypalRoutes from './paypal';
+import metadataRoutes from './metadata'
 
 const router = express.Router();
 
@@ -18,5 +19,6 @@ router.use(teamRoutes);
 router.use(stripeRoutes);
 router.use(conversationsRoutes);
 router.use(paypalRoutes);
+router.use(metadataRoutes);
 
 export default router;
