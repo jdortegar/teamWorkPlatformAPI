@@ -4,10 +4,11 @@ import moment from 'moment';
 import client from '../../../services/redshiftClient';
 import config from '../../../config/env';
 
-export const addSurvey = async (name) => {
+export const addSurvey = async (name, orgId, startDate, endDate) => {
     try {
         const id = uuid.v4();
-        const query = `INSERT INTO ${config.redshift.tablePrefix}_surveys VALUES('${id}', '${name}')`;
+        const query = `INSERT INTO ${config.redshift.tablePrefix}_surveys (id, name, start_date, end_date, org_id) 
+            VALUES('${id}', '${name}', '${startDate}', '${endDate}', '${orgId}')`;
         await client.query(query);
         return {
             id,
@@ -39,7 +40,7 @@ export const addAnswer = async (questionId, userId, orgId, answer) => {
         const id = uuid.v4();
         const formatedAnswer = (answer instanceof Array) ? answer.join('|') : answer;
         const query = `INSERT INTO ${config.redshift.tablePrefix}_survey_answers VALUES('${id}', '${questionId}', '${userId}', '${orgId}', '${formatedAnswer}')`;
-        await client.query(query);
+        const status = await client.query(query);
         return {
             id,
             questionId,
@@ -101,6 +102,8 @@ export const getSurveyById = async (id) => {
         const formated = {
             id: rawData.rows[0].survey_id,
             name: rawData.rows[0].name,
+            startDate: rawData.rows[0].start_date,
+            endDate: rawData.rows[0].end_date,
             questions: []
         }
         _.forEach(rawData.rows, (val) => {
@@ -125,7 +128,7 @@ export const getSurveyAnswers = async (orgId) => {
             FROM ${config.redshift.tablePrefix}_surveys s
             INNER JOIN ${config.redshift.tablePrefix}_survey_questions q ON s.id = q.survey_id
             INNER JOIN ${config.redshift.tablePrefix}_survey_answers a ON q.id = a.question_id
-            WHERE a.org_id = '${orgId}'`
+            WHERE s.org_id = '${orgId}'`
         const rawData = await client.query(query);
         const formated = [];
         _.forEach(rawData.rows, (val) => {
@@ -163,3 +166,32 @@ export const getSurveyAnswers = async (orgId) => {
     }
 }
 
+export const updateSurvey = async (surveyId, update) => {
+    try {
+        const updateArray = [];
+        _.forEach(update, (val, ix) => {
+            updateArray.push(`${ix}='${val}'`)
+        });
+        const query = `UPDATE ${config.redshift.tablePrefix}_surveys SET ${updateArray.join(', ')} WHERE id = '${surveyId}`;
+        return await client.query(query);
+    } catch (err) {
+        return Promise.reject(err);
+    }
+}
+
+export const getLastSurveyDate = async (surveyId, orgId, userId) => {
+    try {
+        const query = `SELECT MAX(a.created_at) as last_time FROM ${config.redshift.tablePrefix}_survey_answers a
+            INNER JOIN ${config.redshift.tablePrefix}_survey_questions q ON q.id = a.question_id
+            INNER JOIN ${config.redshift.tablePrefix}_surveys s ON s.id = q.survey_id
+            WHERE s.id = '${surveyId}'`;
+        const rawData = await client.query(query);
+        if (rawData.rows.length == 0) {
+            return null
+        }
+        return rawData.rows[0];
+    } catch (err) {
+        return Promise.reject(err);
+    }
+    
+}
