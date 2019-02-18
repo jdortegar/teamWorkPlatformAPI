@@ -68,7 +68,7 @@ export const getSurveys = async () => {
                     id: val.survey_id,
                     name: val.name,
                     startDate: val.start_date,
-                    endDate: end_date,
+                    endDate: val.end_date,
                     questions: [
                         {
                             id: val.question_id,
@@ -148,7 +148,7 @@ export const getSurveyAnswers = async (orgId) => {
                             userId: val.user_id,
                             date: moment(val.created_at).format('YYYY-MM-DD')
                         }
-                    ]
+                
                 });
             } else {
                 formated[ix].questions.push({
