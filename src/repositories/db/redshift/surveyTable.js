@@ -67,6 +67,8 @@ export const getSurveys = async () => {
                 formated.push({
                     id: val.survey_id,
                     name: val.name,
+                    startDate: val.start_date,
+                    endDate: end_date,
                     questions: [
                         {
                             id: val.question_id,
