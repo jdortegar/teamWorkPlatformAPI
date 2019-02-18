@@ -55,7 +55,7 @@ export const addAnswer = async (questionId, userId, orgId, answer) => {
 
 export const getSurveys = async () => {
     try {
-        const query = `SELECT s.id as survey_id, s.name, s.created_at,q.id as question_id, q.question, q.question_options as options 
+        const query = `SELECT s.id as survey_id, s.name, s.created_at, s.start_date, s.end_date, q.id as question_id, q.question, q.question_options as options 
             FROM ${config.redshift.tablePrefix}_surveys s
             INNER JOIN ${config.redshift.tablePrefix}_survey_questions q ON s.id = q.survey_id;`;
 
@@ -93,7 +93,7 @@ export const getSurveys = async () => {
 
 export const getSurveyById = async (id) => {
     try {
-        const query = `SELECT s.id as survey_id, s.name, s.created_at,q.id as question_id, q.question, q.question_options as options 
+        const query = `SELECT s.id as survey_id, s.name, s.created_at, s.start_date, s.end_date, q.id as question_id, q.question, q.question_options as options 
         FROM ${config.redshift.tablePrefix}_surveys s
         INNER JOIN ${config.redshift.tablePrefix}_survey_questions q ON s.id = q.survey_id
         WHERE s.id = '${id}'`;
@@ -124,7 +124,7 @@ export const getSurveyById = async (id) => {
 
 export const getSurveyAnswers = async (orgId) => {
     try {
-        const query = `SELECT s.id as survey_id, s.name, 
+        const query = `SELECT s.id as survey_id, s.name, s.start_date, s.end_date, 
             q.id as question_id, q.question, 
             a.id as answer_id, a.answer, a.user_id, a.org_id, a.created_at
             FROM ${config.redshift.tablePrefix}_surveys s
