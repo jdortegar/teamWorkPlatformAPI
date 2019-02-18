@@ -7,7 +7,7 @@ import config from '../../../config/env';
 export const addSurvey = async (name, orgId, startDate, endDate) => {
     try {
         const id = uuid.v4();
-        const query = `INSERT INTO ${config.redshift.tablePrefix}_surveys (id, name, start_date, end_date, org_id) 
+        const query = `INSERT INTO ${config.redshift.tablePrefix}_surveys (id, name, start_date, end_date, org_id)
             VALUES('${id}', '${name}', '${startDate}', '${endDate}', '${orgId}')`;
         await client.query(query);
         return {
@@ -55,7 +55,7 @@ export const addAnswer = async (questionId, userId, orgId, answer) => {
 
 export const getSurveys = async () => {
     try {
-        const query = `SELECT s.id as survey_id, s.name, s.created_at, s.start_date, s.end_date, q.id as question_id, q.question, q.question_options as options 
+        const query = `SELECT s.id as survey_id, s.name, s.created_at, s.start_date, s.end_date, q.id as question_id, q.question, q.question_options as options
             FROM ${config.redshift.tablePrefix}_surveys s
             INNER JOIN ${config.redshift.tablePrefix}_survey_questions q ON s.id = q.survey_id;`;
 
@@ -88,12 +88,12 @@ export const getSurveys = async () => {
         return formated;
     } catch (err) {
         return Promise.reject(err);
-    } 
+    }
 }
 
 export const getSurveyById = async (id) => {
     try {
-        const query = `SELECT s.id as survey_id, s.name, s.created_at, s.start_date, s.end_date, q.id as question_id, q.question, q.question_options as options 
+        const query = `SELECT s.id as survey_id, s.name, s.created_at, s.start_date, s.end_date, q.id as question_id, q.question, q.question_options as options
         FROM ${config.redshift.tablePrefix}_surveys s
         INNER JOIN ${config.redshift.tablePrefix}_survey_questions q ON s.id = q.survey_id
         WHERE s.id = '${id}'`;
@@ -116,7 +116,7 @@ export const getSurveyById = async (id) => {
             });
         });
         return formated;
-        
+
     } catch (err) {
         return Promise.reject(err);
     }
@@ -124,8 +124,8 @@ export const getSurveyById = async (id) => {
 
 export const getSurveyAnswers = async (orgId) => {
     try {
-        const query = `SELECT s.id as survey_id, s.name, s.start_date, s.end_date, 
-            q.id as question_id, q.question, 
+        const query = `SELECT s.id as survey_id, s.name, s.start_date, s.end_date,
+            q.id as question_id, q.question,
             a.id as answer_id, a.answer, a.user_id, a.org_id, a.created_at
             FROM ${config.redshift.tablePrefix}_surveys s
             INNER JOIN ${config.redshift.tablePrefix}_survey_questions q ON s.id = q.survey_id
@@ -137,7 +137,7 @@ export const getSurveyAnswers = async (orgId) => {
             const ix = _.findIndex(formated, {id: val.survey_id });
             if (ix < 0) {
                 formated.push({
-                    id: val.survey_id, 
+                    id: val.survey_id,
                     name: val.name,
                     questions: [
                         {
@@ -162,7 +162,7 @@ export const getSurveyAnswers = async (orgId) => {
             }
         });
         return formated;
-        
+
     } catch (err) {
         return Promise.reject(err);
     }
@@ -174,7 +174,7 @@ export const updateSurvey = async (surveyId, update) => {
         _.forEach(update, (val, ix) => {
             updateArray.push(`${ix}='${val}'`)
         });
-        const query = `UPDATE ${config.redshift.tablePrefix}_surveys SET ${updateArray.join(', ')} WHERE id = '${surveyId}`;
+        const query = `UPDATE ${config.redshift.tablePrefix}_surveys SET ${updateArray.join(', ')} WHERE id = '${surveyId}'`;
         return await client.query(query);
     } catch (err) {
         return Promise.reject(err);
@@ -195,5 +195,5 @@ export const getLastSurveyDate = async (surveyId, orgId, userId) => {
     } catch (err) {
         return Promise.reject(err);
     }
-    
+
 }
