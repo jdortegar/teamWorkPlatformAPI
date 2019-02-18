@@ -148,7 +148,7 @@ export const getSurveyAnswers = async (orgId) => {
                             userId: val.user_id,
                             date: moment(val.created_at).format('YYYY-MM-DD')
                         }
-                
+                    ]
                 });
             } else {
                 formated[ix].questions.push({
