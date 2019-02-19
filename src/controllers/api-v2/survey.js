@@ -88,8 +88,10 @@ export const updateSurvey = async (req, res, next) => {
         const startDate = req.body.startDate || null;
         const endDate = req.body.endDate || null;
         const name = req.body.name || null;
-        return await surveySvc.updateSurvey(surveyId, startDate, endDate, name);
+        const updatedSurvey = await surveySvc.updateSurvey(surveyId, startDate, endDate, name);
+        return res.json(updatedSurvey);
     } catch (err) {
+        console.log(err);
         if (err instanceof SurveyNotExistsError) {
             return res.status(httpStatus.NOT_FOUND).json({
                 error: 'Not Found',

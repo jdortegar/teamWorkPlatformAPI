@@ -84,7 +84,7 @@ export const updateSurvey = async (surveyId, startDate =null, endDate =null, nam
             throw new SurveyNotExistsError(surveyId);
         }
         const update = {};
-        if (starDate) {
+        if (startDate) {
             update.start_date = startDate;
             survey.startDate = startDate
         }

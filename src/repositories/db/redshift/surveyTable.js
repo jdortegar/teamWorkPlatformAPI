@@ -174,7 +174,7 @@ export const updateSurvey = async (surveyId, update) => {
         _.forEach(update, (val, ix) => {
             updateArray.push(`${ix}='${val}'`)
         });
-        const query = `UPDATE ${config.redshift.tablePrefix}_surveys SET ${updateArray.join(', ')} WHERE id = '${surveyId}`;
+        const query = `UPDATE ${config.redshift.tablePrefix}_surveys SET ${updateArray.join(', ')} WHERE id = '${surveyId}'`;
         return await client.query(query);
     } catch (err) {
         return Promise.reject(err);
