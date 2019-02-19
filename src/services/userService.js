@@ -146,8 +146,9 @@ const resolveBookmarks = (req, bookmarks) => {
 export const updateUser = (req, userId, updateInfo) => {
     return new Promise((resolve, reject) => {
         usersTable.updateUser(req, userId, updateInfo)
-            .then((user) => {
-                userUpdated(req, user);
+            .then(async (user) => {
+                const orgId = await subscriberOrgSvc.getUserSubscriberOrgs(req, userId);
+                userUpdated(req, user, orgId[0].subscriberOrgId);
                 if ((updateInfo.preferences) && (updateInfo.preferences.private)) {
                     userPrivateInfoUpdated(req, user);
                 }
