@@ -45,7 +45,8 @@ export const getLastSurveyDate = async (req, res, next) => {
 
 export const getSurveys = async (req, res, next) => {
     try {
-        const surveys = await surveySvc.getSurveys();
+        const { orgId } = req.params;
+        const surveys = await surveySvc.getSurveys(orgId);
         return res.json(surveys);
     } catch (err) {
         console.log(err);

@@ -53,11 +53,13 @@ export const addAnswer = async (questionId, userId, orgId, answer) => {
     }
 }
 
-export const getSurveys = async () => {
+export const getSurveys = async (orgId) => {
     try {
+        console.log(orgId);
         const query = `SELECT s.id as survey_id, s.name, s.created_at, s.start_date, s.end_date, q.id as question_id, q.question, q.question_options as options
             FROM ${config.redshift.tablePrefix}_surveys s
-            INNER JOIN ${config.redshift.tablePrefix}_survey_questions q ON s.id = q.survey_id;`;
+            INNER JOIN ${config.redshift.tablePrefix}_survey_questions q ON s.id = q.survey_id
+            WHERE s.org_id = '${orgId}'`;
 
         const rawData = await client.query(query);
         const formated = [];

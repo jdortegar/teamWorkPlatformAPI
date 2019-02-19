@@ -27,9 +27,9 @@ export const createSurvey = async (params) => {
     }
 }
 
-export const getSurveys = async () => {
+export const getSurveys = async (orgId) => {
     try {
-        const surveys = await surveyTable.getSurveys();
+        const surveys = await surveyTable.getSurveys(orgId);
         return surveys;
 
     } catch (err) {
