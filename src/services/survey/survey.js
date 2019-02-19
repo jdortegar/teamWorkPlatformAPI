@@ -25,7 +25,7 @@ export const createSurvey = async (params) => {
     } catch (err) {
         return Promise.reject(err);
     }
-} 
+}
 
 export const getSurveys = async () => {
     try {
@@ -50,8 +50,8 @@ export const answerSurvey = async (surveyId, userId, orgId, answers) => {
         await Promise.all(promises);
         const result = {
             id: survey.id,
-            name: survey.name, 
-            questions: [] 
+            name: survey.name,
+            questions: []
         };
         _.forEach(answers, (val) => {
             const question = _.find(survey.questions, { id: val.questionId });

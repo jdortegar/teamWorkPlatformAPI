@@ -18,10 +18,9 @@ export const userCreated = (req, user, subscriberOrgId) => {
    ]);
 };
 
-export const userUpdated = (req, user) => {
-   // TODO: should only be broadcast to subscribersOrgs of the user.
+export const userUpdated = (req, user, subscriberOrgId) => {
    return _broadcastEvent(req, EventTypes.userUpdated, publishByApiVersion(req, apiVersionedVisibility.publicUser, user), [
-      ChannelFactory.publicChannel()
+      ChannelFactory.subscriberOrgChannel(subscriberOrgId),
    ]);
 };
 

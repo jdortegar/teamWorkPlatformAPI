@@ -114,12 +114,12 @@ export const getUsersByUserIds = (req, userIds) => {
 };
 
 export const getUserByUserId = async (req, userId) => {
-    const userParams = { 
+    const userParams = {
         TableName: tableName(),
         KeyConditionExpression: 'userId = :userId',
         ExpressionAttributeValues: {
         ':userId': userId
-        }        
+        }
     };
     const subscriberUserParams = {
         TableName: `${config.tablePrefix}subscriberUsers`,
@@ -214,7 +214,7 @@ export const updateUser = (req, userId,
         const lastModified = req.now.format();
         getUserByUserId(req, userId)
             .then((retrievedUser) => {
-                user = retrievedUser;
+                user = retrievedUser[0];
                 if (!user) {
                     throw new UserNotExistError(userId);
                 }
@@ -244,7 +244,6 @@ export const updateUser = (req, userId,
                 if (timeZone) {
                     params.ExpressionAttributeNames = { '#timeZone': 'timeZone' };
                 }
-
                 return req.app.locals.docClient.update(params).promise();
             })
             .then(() => resolve(_.merge({}, user, {
