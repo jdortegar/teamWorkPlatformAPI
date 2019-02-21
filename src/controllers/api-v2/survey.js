@@ -16,7 +16,6 @@ export const createSurvey = async (req, res, next) => {
         const survey = await surveySvc.createSurvey(params);
         return res.status(httpStatus.CREATED).json(survey);
     } catch (err) {
-        console.log(err);
         next(err);
     }
  }
@@ -49,7 +48,6 @@ export const getSurveys = async (req, res, next) => {
         const surveys = await surveySvc.getSurveys(orgId);
         return res.json(surveys);
     } catch (err) {
-        console.log(err);
         next(err);
     }
 }
@@ -62,7 +60,6 @@ export const answerSurvey = async (req, res, next) => {
         const answer = await surveySvc.answerSurvey(surveyId, userId, orgId, answers);
         return res.status(httpStatus.CREATED).json(answer);
     } catch (err) {
-        console.log(err);
         if (err instanceof SurveyNotExistsError) {
             return res.status(httpStatus.NOT_FOUND).json({
                 error: 'Not found',
@@ -92,7 +89,6 @@ export const updateSurvey = async (req, res, next) => {
         const updatedSurvey = await surveySvc.updateSurvey(surveyId, startDate, endDate, name);
         return res.json(updatedSurvey);
     } catch (err) {
-        console.log(err);
         if (err instanceof SurveyNotExistsError) {
             return res.status(httpStatus.NOT_FOUND).json({
                 error: 'Not Found',

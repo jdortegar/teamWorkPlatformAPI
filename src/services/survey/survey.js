@@ -39,6 +39,7 @@ export const getSurveys = async (orgId) => {
 
 export const answerSurvey = async (surveyId, userId, orgId, answers) => {
     try {
+        console.log(surveyId);
         const survey = await surveyTable.getSurveyById(surveyId);
         if (!survey) {
             throw new SurveyNotExistsError(surveyId);
@@ -107,7 +108,6 @@ export const getLastSurveyDate = async (orgId, userId, surveyId) => {
     try {
         return await surveyTable.getLastSurveyDate(surveyId, orgId, userId);
     } catch (err) {
-        console.log(err)
         return Promise.reject(err);
     }
 }

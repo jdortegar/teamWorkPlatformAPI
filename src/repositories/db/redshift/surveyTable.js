@@ -55,7 +55,6 @@ export const addAnswer = async (questionId, userId, orgId, answer) => {
 
 export const getSurveys = async (orgId) => {
     try {
-        console.log(orgId);
         const query = `SELECT s.id as survey_id, s.name, s.created_at, s.start_date, s.end_date, q.id as question_id, q.question, q.question_options as options
             FROM ${config.redshift.tablePrefix}_surveys s
             INNER JOIN ${config.redshift.tablePrefix}_survey_questions q ON s.id = q.survey_id
@@ -134,18 +133,20 @@ export const getSurveyAnswers = async (orgId) => {
             INNER JOIN ${config.redshift.tablePrefix}_survey_answers a ON q.id = a.question_id
             WHERE s.org_id = '${orgId}'`
         const rawData = await client.query(query);
-        const formated = [];
+        const formated = [];    
         _.forEach(rawData.rows, (val) => {
             const ix = _.findIndex(formated, {id: val.survey_id });
             if (ix < 0) {
                 formated.push({
                     id: val.survey_id,
                     name: val.name,
+                    startDate: val.start_date,
+                    endDate: val.end_date,
                     questions: [
                         {
                             id: val.question_id,
                             question: val.question,
-                            answer: val.answer,
+                            answer: val.answer.split('|'),
                             orgId: val.org_id,
                             userId: val.user_id,
                             date: moment(val.created_at).format('YYYY-MM-DD')
@@ -156,7 +157,7 @@ export const getSurveyAnswers = async (orgId) => {
                 formated[ix].questions.push({
                     id: val.question_id,
                     question: val.question,
-                    answer: val.answer,
+                    answer: val.answer.split('|'),
                     orgId: val.org_id,
                     userId: val.user_id,
                     date: moment(val.created_at).format('YYYY-MM-DD')
@@ -188,7 +189,7 @@ export const getLastSurveyDate = async (surveyId, orgId, userId) => {
         const query = `SELECT MAX(a.created_at) as last_time FROM ${config.redshift.tablePrefix}_survey_answers a
             INNER JOIN ${config.redshift.tablePrefix}_survey_questions q ON q.id = a.question_id
             INNER JOIN ${config.redshift.tablePrefix}_surveys s ON s.id = q.survey_id
-            WHERE s.id = '${surveyId}'`;
+            WHERE s.id = '${surveyId}' AND a.user_id = '${userId}'`;
         const rawData = await client.query(query);
         if (rawData.rows.length == 0) {
             return null
