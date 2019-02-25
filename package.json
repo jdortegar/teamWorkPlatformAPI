@@ -1,7 +1,7 @@
 {
   "name": "habla-fe-api",
   "description": "The Habla Front-end API",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "main": "dist/index.js",
   "repository": {
@@ -118,6 +118,7 @@
     "joi": "^10.6.0",
     "jsonwebtoken": "^7.4.3",
     "lodash": "^4.17.4",
+    "metafetch": "^1.9.2",
     "moment": "^2.20.1",
     "morgan": "^1.9.0",
     "neo4j-driver": "^1.6.1",
