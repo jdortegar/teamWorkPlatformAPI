@@ -149,7 +149,7 @@ export const getSurveyAnswers = async (orgId) => {
                             answer: val.answer.split('|'),
                             orgId: val.org_id,
                             userId: val.user_id,
-                            date: moment(val.created_at).format('YYYY-MM-DD')
+                            date: val.created_at
                         }
                     ]
                 });
@@ -160,7 +160,7 @@ export const getSurveyAnswers = async (orgId) => {
                     answer: val.answer.split('|'),
                     orgId: val.org_id,
                     userId: val.user_id,
-                    date: moment(val.created_at).format('YYYY-MM-DD')
+                    date: val.created_at
                 });
             }
         });
