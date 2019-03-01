@@ -13,8 +13,11 @@ export const validateMeetToken = (req, res) =>{
         );
     }
     const url = new urlParser.URL(originalUri);
-    const token = url.query.jwt;
-    if (typeof token === 'undefined') {
+    
+    const token = url.searchParams.get('jwt');
+    console.log(url.searchParams, originalUri);
+    console.log(token);
+    if (!token) {
         return res.status(httpStatus.UNAUTHORIZED).json({
             error: 'Token not provided'
         });
@@ -22,7 +25,7 @@ export const validateMeetToken = (req, res) =>{
 
     try {
         const decoded = jwt.verify(token, config.jwtSecret);
-        return res.jsoon(decoded);
+        return res.json(decoded);
     } catch (err) {
         return res.status(httpStatus.FORBIDDEN).json({
             error: err.message

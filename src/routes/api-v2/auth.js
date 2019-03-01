@@ -5,3 +5,5 @@ const router = express.Router();
 
 router.route('/auth/meet')
     .get(auth.validateMeetToken);
+
+export default router;

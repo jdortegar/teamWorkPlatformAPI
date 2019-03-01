@@ -101,6 +101,7 @@ app.use((req, res, next) => {
 // If error is not an instanceOf APIError or APIWarning, convert it.
 app.use((err, req, res, next) => {
    let e = err;
+   console.log(err); // We will keep this in order to show more accurate errors in logs
    if (err instanceof expressValidation.ValidationError) {
       const unifiedErrorMessage = err.errors
          .map(error => {
