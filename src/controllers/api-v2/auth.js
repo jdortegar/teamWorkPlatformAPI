@@ -15,8 +15,6 @@ export const validateMeetToken = (req, res) =>{
     const url = new urlParser.URL(originalUri);
     
     const token = url.searchParams.get('jwt');
-    console.log(url.searchParams, originalUri);
-    console.log(token);
     if (!token) {
         return res.status(httpStatus.UNAUTHORIZED).json({
             error: 'Token not provided'
