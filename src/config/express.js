@@ -80,7 +80,8 @@ app.use(
          /^\/(v\d+\/)?payments/,
          /^\/(v\d+\/)?trials/,
          /^\/(v\d+\/)?coupons/,
-         /^\/(v\d+\/)?subscriptions\/paypal/
+         /^\/(v\d+\/)?subscriptions\/paypal/,
+         /^\/(v\d+\/)?auth\/meet/ 
       ]
    })
 );
