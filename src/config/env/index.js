@@ -104,7 +104,8 @@ const config = {
 
    knowledgeApiEndpoint: process.env.KNOWLEDGE_API || defaultConfig.knowledgeApiEndpoint,
 
-   notificationEmail: process.env.NOTIFICATION_EMAIL ||defaultConfig.notificationEmail
+   notificationEmail: process.env.NOTIFICATION_EMAIL ||defaultConfig.notificationEmail,
+   meetingUrl: process.env.HABLA_MEET_URL || defaultConfig.meetingUrl
 };
 
 export const applyPropertiesFromDbToConfig = propertiesFromDb => {
