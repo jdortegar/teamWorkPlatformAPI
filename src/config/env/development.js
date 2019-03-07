@@ -115,3 +115,5 @@ export const knowledgeApiEndpoint = 'https://habla-be-api-dev.habla.ai';
 // secretKey: 'sk_test_rEf899cFVromgNDVHewmYhzj'
 
 export const notificationEmail = 'thomas@habla.ai, kelly@habla.ai';
+
+export const meetingUrl = 'https://dev-meet.habla.ai';
