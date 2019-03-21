@@ -34,6 +34,7 @@ export const createTeam = (req, res, next) => {
 
    teamSvc.createTeam(req, subscriberOrgId, req.body, userId)
       .then((createdTeam) => {
+         createdTeam.teamAdmin = userId;
          res.status(httpStatus.CREATED).json(publishByApiVersion(req, apiVersionedVisibility.privateTeam, createdTeam));
       })
       .catch((err) => {
@@ -129,4 +130,3 @@ export const replyToInvite = (req, res, next) => {
          }
       });
 };
-
