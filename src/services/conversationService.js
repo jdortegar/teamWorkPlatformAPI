@@ -114,7 +114,7 @@ export const getConversations = (req, userId, teamId = undefined) => {
             })
             .then((retrievedConversations) => {
                 conversations = retrievedConversations;
-
+                console.log(conversations);
                 const promises = [];
                 conversations.forEach((conversation) => {
                     promises.push(conversationParticipantsTable.getConversationParticipantsByConversationId(req, conversation.conversationId));

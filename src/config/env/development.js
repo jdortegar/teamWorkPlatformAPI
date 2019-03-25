@@ -7,6 +7,9 @@ export const aesKey = 'AI-Infused Knowledge Management for Enterprise Teams';
 export const jwtSecret = '69157cde-e3a7-4079-b79a-95a35d58c6d3';
 export const apiEndpoint = 'http://localhost:3000';
 // export const apiEndpoint = 'https://hablaapi.ngrok.io';
+// export const chatApiEndpoint = 'https://chat-dev.habla.io/api/v1';
+export const chatApiEndpoint = 'http://localhost:8081/api/v1';
+
 export const aws = {
    accessKeyId: 'AKIAJUWK5MDFUPOKWM4A',
    secretAccessKey: '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',

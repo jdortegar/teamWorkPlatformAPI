@@ -1,5 +1,6 @@
 import _ from 'lodash';
 import uuid from 'uuid';
+import axios from 'axios';
 import {
    CannotDeactivateError,
    CannotInviteError,
@@ -35,6 +36,8 @@ import {
 } from './messaging';
 import { getPresence } from './messaging/presence';
 import Roles from './roles';
+import config from '../config/env';
+import jwt from 'jsonwebtoken';
 
 export const defaultTeamName = 'Project Team One';
 
@@ -69,6 +72,8 @@ export const createTeamNoCheck = (
    teamId = undefined
 ) => {
    return new Promise((resolve, reject) => {
+      const token = jwt.sign(req.user, config.jwtSecret);
+      console.log('****Authorization ', token, req.user);
       const actualTeamId = teamId || uuid.v4();
       const icon = teamInfo.icon || null;
       const primary = teamInfo.primary === undefined ? false : teamInfo.primary;
@@ -98,16 +103,23 @@ export const createTeamNoCheck = (
          .then(() => {
             teamCreated(req, team, teamAdminUserIds);
             teamMemberAdded(req, team, user, role, teamMemberId);
-
-            return conversationSvc.createConversationNoCheck(
-               req,
-               subscriberOrgId,
-               actualTeamId,
-               user.userId,
-               teamAdminUserIds
-            );
+            return axios.post(`${config.chatApiEndpoint}/conversations`, {
+               members: [
+                  user.userId
+               ],
+               title: teamInfo.name,
+               description: `Conversation for ${teamInfo.name} Team`,
+               organization: subscriberOrgId,
+               appData: {
+                  teamId: actualTeamId
+               }
+            }, {
+               headers: {
+                  Authorization: `Bearer ${jwt.sign(req.user, config.jwtSecret)}`,
+               }
+            });
          })
-         .then(() => {
+         .then((data) => {
             resolve(team);
          })
          .catch(err => reject(err));
