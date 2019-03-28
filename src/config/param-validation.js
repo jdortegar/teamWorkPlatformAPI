@@ -177,7 +177,8 @@ const validationSchemas = {
         body: {
             messageType: Joi.string().min(1).required(),
             text: Joi.string().min(1).required(),
-            replyTo: Joi.string().min(1).allow(null)
+            replyTo: Joi.string().min(1).allow(null),
+            sharedProfileId: Joi.string().min(1).allow(null)
         }
     },
     createMessage_v1: {
@@ -193,7 +194,8 @@ const validationSchemas = {
                     })
                 })
             ).required(),
-            replyTo: Joi.string().min(1).allow(null)
+            replyTo: Joi.string().min(1).allow(null),
+            sharedProfileId: Joi.string().min(1).allow(null)
         }
     },
     getMessages: {

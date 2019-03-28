@@ -18,6 +18,7 @@ import * as util from './util';
  * created
  * lastModified
  * replyTo (optional)
+ * sharedProfileId
  * deleted
  * history: { created: content, ... } (optional)
  * likes
@@ -48,7 +49,7 @@ const upgradeSchema = (req, dbObjects) => {
    return Promise.resolve(dbObjects);
 };
 
-export const createMessage = (req, conversationId, messageId, level, path, content, messageNumber, byteCount, createdBy, replyTo = undefined) => {
+export const createMessage = (req, conversationId, messageId, level, path, content, messageNumber, byteCount, createdBy, replyTo = undefined, sharedProfileId) => {
    return new Promise((resolve, reject) => {
       const params = {
          TableName: tableName(),
@@ -70,7 +71,8 @@ export const createMessage = (req, conversationId, messageId, level, path, conte
             deleted: false,
             likes: 0,
             dislikes: 0,
-            flags: 0
+            flags: 0,
+            sharedProfileId
          }
       };
 

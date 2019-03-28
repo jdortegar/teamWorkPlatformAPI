@@ -227,7 +227,7 @@ const publicMessage = (message) => {
     }
 
     const messageId = message.messageId;
-    const { conversationId, createdBy, topic, content, replyTo, path, level, created, lastModified, deleted } = message.messageInfo || message;
+    const { conversationId, createdBy, topic, content, replyTo, path, level, created, lastModified, deleted, sharedProfileId } = message.messageInfo || message;
     return {
         messageId,
         conversationId,
@@ -239,7 +239,8 @@ const publicMessage = (message) => {
         level,
         created,
         lastModified,
-        deleted
+        deleted,
+        sharedProfileId
     };
 };
 
