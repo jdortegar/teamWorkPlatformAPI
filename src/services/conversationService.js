@@ -468,7 +468,7 @@ const byteCountOfContent = (content) => {
     return byteCount;
 };
 
-export const createMessage = (req, conversationId, userId, content, replyTo) => {
+export const createMessage = (req, conversationId, userId, content, replyTo, sharedProfileId) => {
     return new Promise((resolve, reject) => {
         const messageId = uuid.v4();
         let subscriberOrgId;
@@ -525,7 +525,8 @@ export const createMessage = (req, conversationId, userId, content, replyTo) => 
                     (replyToMessage) ? replyToMessage.messageCount : conversation.messageCount,
                     byteCount,
                     userId,
-                    replyTo);
+                    replyTo,
+                    sharedProfileId);
             })
             .then((createdMessage) => {
                 message = createdMessage;
