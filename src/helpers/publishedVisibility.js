@@ -164,7 +164,7 @@ const publicSubscriber = (subscriberOrgId, user) => {
 
 const privateTeam = (team) => {
     const teamId = team.teamId;
-    const { subscriberOrgId, name, icon, active, primary, preferences, created, lastModified, teamAdmin, conversationId } = team;
+    const { subscriberOrgId, name, icon, active, primary, preferences, created, lastModified, teamAdmin } = team;
     return {
         teamId,
         subscriberOrgId,
@@ -175,8 +175,7 @@ const privateTeam = (team) => {
         preferences: _.cloneDeep(preferences),
         created,
         lastModified,
-        teamAdmin,
-        conversationId
+        teamAdmin
     };
 };
 
