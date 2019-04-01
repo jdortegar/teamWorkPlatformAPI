@@ -95,17 +95,20 @@ export const createTeamNoCheck = (
                Roles.admin
             );
          })
-         .then(() => {
+         .then(async () => {
             teamCreated(req, team, teamAdminUserIds);
             teamMemberAdded(req, team, user, role, teamMemberId);
 
-            return conversationSvc.createConversationNoCheck(
+            const conversationObj =  await conversationSvc.createConversationNoCheck(
                req,
                subscriberOrgId,
                actualTeamId,
                user.userId,
                teamAdminUserIds
             );
+
+            team.conversationId = conversationObj.conversationId;
+            return conversationObj
          })
          .then(() => {
             resolve(team);
