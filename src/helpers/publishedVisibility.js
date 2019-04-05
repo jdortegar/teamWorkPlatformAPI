@@ -164,7 +164,7 @@ const publicSubscriber = (subscriberOrgId, user) => {
 
 const privateTeam = (team) => {
     const teamId = team.teamId;
-    const { subscriberOrgId, name, icon, active, primary, preferences, created, lastModified, teamAdmin, conversationId } = team;
+    const { subscriberOrgId, name, icon, active, primary, preferences, created, lastModified, teamAdmin } = team;
     return {
         teamId,
         subscriberOrgId,
@@ -175,8 +175,7 @@ const privateTeam = (team) => {
         preferences: _.cloneDeep(preferences),
         created,
         lastModified,
-        teamAdmin,
-        conversationId
+        teamAdmin
     };
 };
 
@@ -228,7 +227,7 @@ const publicMessage = (message) => {
     }
 
     const messageId = message.messageId;
-    const { conversationId, createdBy, topic, content, replyTo, path, level, created, lastModified, deleted, sharedProfileId } = message.messageInfo || message;
+    const { conversationId, createdBy, topic, content, replyTo, path, level, created, lastModified, deleted } = message.messageInfo || message;
     return {
         messageId,
         conversationId,
@@ -240,8 +239,7 @@ const publicMessage = (message) => {
         level,
         created,
         lastModified,
-        deleted,
-        sharedProfileId
+        deleted
     };
 };
 

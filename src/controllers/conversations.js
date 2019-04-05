@@ -68,7 +68,7 @@ export const getMessages = (req, res, next) => {
 export const createMessage = (req, res, next) => {
    const userId = req.user._id;
    const conversationId = req.params.conversationId;
-   const { text, replyTo, sharedProfileId } = req.body;
+   const { text, replyTo } = req.body;
    let { content } = req.body;
 
    // TODO: deprecated in v1.  messageType, text
@@ -77,7 +77,7 @@ export const createMessage = (req, res, next) => {
       content.push({ type: 'text/plain', text });
    }
 
-   conversationsSvc.createMessage(req, conversationId, userId, content, replyTo, sharedProfileId)
+   conversationsSvc.createMessage(req, conversationId, userId, content, replyTo)
       .then((dbMessage) => {
          res.status(httpStatus.CREATED).json({ message: publishByApiVersion(req, apiVersionedVisibility.publicMessage, dbMessage) });
       })
