@@ -516,16 +516,18 @@ export const createMessage = (req, conversationId, userId, content, replyTo) => 
                     path = `${path}${MESSAGE_PATH_SEPARATOR}${messageId}`;
                 }
 
-                return messagesTable.createMessage(req,
-                    conversationId,
-                    messageId,
-                    level,
-                    path,
-                    content,
-                    (replyToMessage) ? replyToMessage.messageCount : conversation.messageCount,
-                    byteCount,
-                    userId,
-                    replyTo);
+                return messagesTable.createMessage(
+                   req,
+                   conversationId,
+                   messageId,
+                   level,
+                   path,
+                   content,
+                   replyToMessage ? replyToMessage.messageCount : conversation.messageCount,
+                   byteCount,
+                   userId,
+                   replyTo
+                );
             })
             .then((createdMessage) => {
                 message = createdMessage;

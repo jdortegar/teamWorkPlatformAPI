@@ -67,6 +67,7 @@ export const createUser = async (req, userInfo) => {
             preferences.private = {};
         }
         preferences.iconColor = preferences.iconColor || getRandomColor();
+        preferences.customPresenceStatusMessage = preferences.customPresenceStatusMessage || 'Available';
         user = await usersTable.createUser(req, userId, firstName, lastName, displayName, emailAddress, password, country, timeZone, icon, preferences);
         await usersCache.createUser(req, emailAddress, userId);
         // Check if there are invitations if not create a new organization.
