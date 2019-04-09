@@ -6,7 +6,6 @@ import SocketIOWildcard from 'socketio-wildcard';
 import config from '../../config/env';
 import * as subscriberUsersTable from '../../repositories/db/subscriberUsersTable';
 import * as teamMembersTable from '../../repositories/db/teamMembersTable';
-import * as conversationSvc from '../conversationService';
 import logger, { createPseudoRequest } from '../../logger';
 import { setPresence } from './presence';
 import { disconnectFromRedis } from '../../redis-connection';
@@ -140,17 +139,6 @@ const joinCurrentChannels = (req, socket, userId) => {
                socket.join(teamPrivateChannel);
                logger.debug(`MessagingService: userId=${userId} joining ${teamPrivateChannel}`);
             }
-         });
-      })
-      .catch(err => logger.error(err));
-
-   conversationSvc.getConversations(req, userId)
-      .then((conversations) => {
-         const conversationIds = conversations.map(conversation => conversation.conversationId);
-         conversationIds.forEach((conversationId) => {
-            const conversationChannel = ChannelFactory.conversationChannel(conversationId);
-            socket.join(conversationChannel);
-            logger.debug(`MessagingService: userId=${userId} joining ${conversationChannel}`);
          });
       })
       .catch(err => logger.error(err));

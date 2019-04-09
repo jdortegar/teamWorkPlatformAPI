@@ -11,7 +11,6 @@
 
 import express from 'express';
 import authRoutes from './auth';
-import conversationsRoutes from './conversations';
 // import { containsAnyRole, containsRole, roles } from '../policies';
 import subscriberOrgRoutes from './subscriberOrgs';
 import teamsRoutes from './teams';
@@ -37,7 +36,6 @@ router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
 router.use('/subscriberOrgs', subscriberOrgRoutes);
 router.use('/teams', teamsRoutes);
-router.use('/conversations', conversationsRoutes);
 
 router.use('/integrations', integrationRoutes);
 router.use('/reports', dashboarRoutes);

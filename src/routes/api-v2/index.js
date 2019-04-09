@@ -5,7 +5,6 @@ import integrationsV2Routes from './integrations';
 import teamRoutes from './teams';
 import organization from './organization';
 import stripeRoutes from './stripe';
-import conversationsRoutes from './conversations';
 import paypalRoutes from './paypal';
 import metadataRoutes from './metadata'
 import authRoutes from './auth';
@@ -18,7 +17,6 @@ router.use(surveyRoutes);
 router.use(integrationsV2Routes);
 router.use(teamRoutes);
 router.use(stripeRoutes);
-router.use(conversationsRoutes);
 router.use(paypalRoutes);
 router.use(metadataRoutes);
 router.use(authRoutes);

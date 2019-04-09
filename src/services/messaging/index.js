@@ -3,7 +3,6 @@ import { apiVersionedVisibility, publishByApiVersion } from '../../helpers/publi
 import * as internalQueue from './internalQueue';
 import { _broadcastEvent, _joinChannels, ChannelFactory, EventTypes } from './messagingService';
 import Roles from '../roles';
-import * as conversationsTable from '../../repositories/db/conversationsTable';
 
 // EventType = user
 
@@ -191,24 +190,6 @@ export const conversationUpdated = (req, conversation) => {
       ChannelFactory.conversationChannel(conversation.conversationId)
    ]);
 };
-
-export const conversationMemberAdded = (req, user, teamId) => {
-   let conversationId;
-   conversationsTable.getConversationByTeamId(req, teamId)
-      .then((conversation) => {
-         if (conversation) {
-            conversationId = conversation.conversationId;
-
-            const conversationChannel = ChannelFactory.conversationChannel(conversationId);
-            const channels = [ChannelFactory.conversationChannel(conversationId)];
-            return _joinChannels(req, user.userId, channels)
-               .catch(err => req.logger.error({ err }));
-
-         }
-         return undefined;
-      });
-};
-
 
 // EventType = message
 

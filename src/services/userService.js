@@ -7,7 +7,6 @@ import { hashPassword, passwordMatch } from '../models/user';
 import { deactivateTeamMembersByUserId } from './teamService';
 import invitationsKeys from '../repositories/InvitationKeys';
 import * as usersTable from '../repositories/db/usersTable';
-import * as messagesTable from '../repositories/db/messagesTable';
 import * as usersCache from '../repositories/cache/usersCache';
 import * as invitationsRepo from '../repositories/invitationsRepo';
 import * as awsMarketplaceSvc from './awsMarketplaceService';
@@ -110,40 +109,6 @@ export const createUser = async (req, userInfo) => {
     }
 };
 
-const resolveBookmarks = (req, bookmarks) => {
-    return new Promise((resolve, reject) => {
-        const messagePromises = {};
-        Object.keys(bookmarks).forEach((subscriberOrgId) => {
-            const messageIds = bookmarks[subscriberOrgId].messageIds;
-            Object.keys(messageIds).forEach((messageId) => {
-                const bookmark = messageIds[messageId];
-                const { conversationId } = bookmark;
-                const prevSiblingId = bookmark.prevSiblingId;
-
-                if (!messagePromises[messageId]) {
-                    messagePromises[messageId] = messagesTable.getMessageByConversationIdAndMessageId(req, conversationId, messageId);
-                }
-                if ((!prevSiblingId) && (!messagePromises[prevSiblingId])) {
-                    messagePromises[prevSiblingId] = messagesTable.getMessageByConversationIdAndMessageId(req, conversationId, prevSiblingId);
-                }
-            });
-        });
-
-        if (Object.keys(messagePromises).length > 0) {
-            const resolvedBookmarks = { ...bookmarks, messages: {} };
-            Promise.all(Object.values(messagePromises))
-                .then((messages) => {
-                    messages.forEach((message) => { resolvedBookmarks.messages[message.messageId] = message; });
-                    resolve(resolvedBookmarks);
-                })
-                .catch(err => reject(err));
-        } else {
-            const resolvedBookmarks = { ...bookmarks, messages: {} };
-            resolve(resolvedBookmarks);
-        }
-    });
-};
-
 export const updateUser = (req, userId, updateInfo) => {
     return new Promise((resolve, reject) => {
         usersTable.updateUser(req, userId, updateInfo)
@@ -152,10 +117,6 @@ export const updateUser = (req, userId, updateInfo) => {
                 userUpdated(req, user, orgId[0].subscriberOrgId);
                 if ((updateInfo.preferences) && (updateInfo.preferences.private)) {
                     userPrivateInfoUpdated(req, user);
-                }
-                if (updateInfo.bookmarks) {
-                    resolveBookmarks(req, user.bookmarks)
-                        .then(resolvedBookmarks => userBookmarksUpdated(req, user, resolvedBookmarks));
                 }
                 if (updateInfo.active === false) {
                     deactivateTeamMembersByUserId(req, userId);
