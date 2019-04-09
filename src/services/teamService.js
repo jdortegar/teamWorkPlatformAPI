@@ -71,19 +71,19 @@ export const createTeamNoCheck = async (
     teamAdminUserIds,
     teamId = undefined
 ) => {
-    const token = jwt.sign(req.user, config.jwtSecret);
-    const actualTeamId = teamId || uuid.v4();
-    const icon = teamInfo.icon || null;
-    const primary = teamInfo.primary === undefined ? false : teamInfo.primary;
-    const preferences = teamInfo.preferences || { private: {} };
-    if (preferences.private === undefined) {
-        preferences.private = {};
-    }
-    preferences.iconColor = preferences.iconColor || '#FBBC12';
-    let team;
-    const teamMemberId = uuid.v4();
-    const role = Roles.admin;
     try {
+        const token = jwt.sign(req.user, config.jwtSecret);
+        const actualTeamId = teamId || uuid.v4();
+        const icon = teamInfo.icon || null;
+        const primary = teamInfo.primary === undefined ? false : teamInfo.primary;
+        const preferences = teamInfo.preferences || { private: {} };
+        if (preferences.private === undefined) {
+            preferences.private = {};
+        }
+        preferences.iconColor = preferences.iconColor || '#FBBC12';
+        let team;
+        const teamMemberId = uuid.v4();
+        const role = Roles.admin;
         const conversationInfo = await axios.post(`${config.chatApiEndpoint}/conversations`, {
             members: [
                 user.userId
@@ -96,14 +96,14 @@ export const createTeamNoCheck = async (
             }
         }, {
                 headers: {
-                    Authorization: `Bearer ${jwt.sign(req.user, config.jwtSecret)}`,
+                    Authorization: `Bearer ${token}`,
                 }
         });
-        console.log('***CONVERSATION INFO ', conversationInfo);
-        const team = await teamsTable.createTeam(req, actualTeamId, subscriberOrgId, teamInfo.name, icon, primary, preferences, conversationInfo.data.id);
-        await teamMembersTable.createTeamMember(req, teamMemberId, user.userId, actualTeamId, subscriberUserId, subscriberOrgId. Roles.admin);
+        team = await teamsTable.createTeam(req, actualTeamId, subscriberOrgId, teamInfo.name, icon, primary, preferences, conversationInfo.data.id);
+        await teamMembersTable.createTeamMember(req, teamMemberId, user.userId, actualTeamId, subscriberUserId, subscriberOrgId. role);
         teamCreated(req, team, teamAdminUserIds);
         teamMemberAdded(req, team, user, role, teamMemberId);
+        return team;
     } catch (err) {
         return Promise.reject(err);
     }
