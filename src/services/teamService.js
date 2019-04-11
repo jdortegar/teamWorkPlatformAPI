@@ -44,12 +44,16 @@ export const defaultTeamName = 'Project Team One';
 export async function getUserTeams(req, userId, subscriberOrgId = undefined) {
     let teamMembers;
     if (subscriberOrgId) {
+        console.log('with Sub');
         teamMembers = await teamMembersTable.getTeamMembersByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId);
     } else {
+        console.log('*****USER ID', userId);    
         teamMembers = await teamMembersTable.getTeamMembersByUserId(req, userId);
+        console.log('***TEAM MEMBERS', teamMembers);
     }
     const teamIds = teamMembers.map(teamMember => teamMember.teamId);
     const teams = await teamsTable.getTeamsByTeamIds(req, teamIds);
+    console.log('***TEAMS', teams);
     const retTeams = teams.map(team => {
         const teamClone = _.cloneDeep(team);
         teamClone.active = teamClone.subscriberOrgEnabled === false ? false : teamClone.active;
@@ -100,7 +104,8 @@ export const createTeamNoCheck = async (
                 }
         });
         team = await teamsTable.createTeam(req, actualTeamId, subscriberOrgId, teamInfo.name, icon, primary, preferences, conversationInfo.data.id);
-        await teamMembersTable.createTeamMember(req, teamMemberId, user.userId, actualTeamId, subscriberUserId, subscriberOrgId. role);
+        await teamMembersTable.createTeamMember(req, teamMemberId, user.userId, actualTeamId, subscriberUserId, subscriberOrgId, role);
+
         teamCreated(req, team, teamAdminUserIds);
         teamMemberAdded(req, team, user, role, teamMemberId);
         return team;
