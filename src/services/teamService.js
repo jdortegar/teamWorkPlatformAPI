@@ -47,13 +47,12 @@ export async function getUserTeams(req, userId, subscriberOrgId = undefined) {
         console.log('with Sub');
         teamMembers = await teamMembersTable.getTeamMembersByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId);
     } else {
-        console.log('*****USER ID', userId);    
+   
         teamMembers = await teamMembersTable.getTeamMembersByUserId(req, userId);
-        console.log('***TEAM MEMBERS', teamMembers);
     }
     const teamIds = teamMembers.map(teamMember => teamMember.teamId);
     const teams = await teamsTable.getTeamsByTeamIds(req, teamIds);
-    console.log('***TEAMS', teams);
+
     const retTeams = teams.map(team => {
         const teamClone = _.cloneDeep(team);
         teamClone.active = teamClone.subscriberOrgEnabled === false ? false : teamClone.active;

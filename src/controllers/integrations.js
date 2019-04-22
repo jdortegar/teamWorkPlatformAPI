@@ -29,7 +29,6 @@ export const configureIntegration = (req, res, next) => {
          res.status(httpStatus.NO_CONTENT).end();
       })
       .catch((err) => {
-         console.log('*****CONFIGURE ERROR', err); 
          if (err instanceof SubscriberUserNotExistError) {
             next(new APIWarning(httpStatus.NOT_FOUND, err));
          } else if (err instanceof BadIntegrationConfigurationError) {
