@@ -38,6 +38,7 @@ export const createTeam = (req, res, next) => {
          res.status(httpStatus.CREATED).json(publishByApiVersion(req, apiVersionedVisibility.privateTeam, createdTeam));
       })
       .catch((err) => {
+         console.log('**CREATE TEAM', err);
          if (err instanceof TeamExistsError) {
             next(new APIWarning(httpStatus.CONFLICT, err));
          } else if (err instanceof NoPermissionsError) {
