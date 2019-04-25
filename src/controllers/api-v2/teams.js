@@ -35,6 +35,15 @@ export const updateTeam = async (req, res) => {
     }
 }
 
+export const publicTeams = async (req, res) => {
+   try {
+      const teams = await teamSvc.getPublicTeams(req, req.params.orgId);
+      return res.json({teams});
+   } catch (err) {
+      return Promise.reject(err);
+   }
+};
+
 export const updateTeamMember = async (req, res)  => {
     try {
         const updatedTeamMember = await teamSvc.updateTeamMember(req, req.params.userId, req.params.teamId, req.body);

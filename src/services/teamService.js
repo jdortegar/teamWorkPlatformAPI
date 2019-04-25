@@ -47,7 +47,7 @@ export async function getUserTeams(req, userId, subscriberOrgId = undefined) {
         console.log('with Sub');
         teamMembers = await teamMembersTable.getTeamMembersByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId);
     } else {
-   
+
         teamMembers = await teamMembersTable.getTeamMembersByUserId(req, userId);
     }
     const teamIds = teamMembers.map(teamMember => teamMember.teamId);
@@ -63,6 +63,12 @@ export async function getUserTeams(req, userId, subscriberOrgId = undefined) {
         retTeams[i].teamAdmin = await teamMembersTable.getTeamAdmin(req, retTeams[i].teamId);
     }
     return retTeams;
+}
+
+export async function getPublicTeams(req, subscriberOrgId) {
+   let publicTeams = await teamsTable.getTeamsBySubscriberOrgId(req, subscriberOrgId);
+   publicTeams = publicTeams.filter(team => team.preferences.public);
+   return publicTeams;
 }
 
 export const createTeamNoCheck = async (
@@ -84,6 +90,7 @@ export const createTeamNoCheck = async (
             preferences.private = {};
         }
         preferences.iconColor = preferences.iconColor || '#FBBC12';
+        preferences.public = preferences.public || true;
         let team;
         const teamMemberId = uuid.v4();
         const role = Roles.admin;
