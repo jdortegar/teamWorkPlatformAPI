@@ -34,6 +34,7 @@ export const createSubscriberOrg = (req, res, next) => {
 			res.status(httpStatus.CREATED).json(publishByApiVersion(req, apiVersionedVisibility.privateSubscriberOrg, createdSubscriberOrg));
 		})
 		.catch((err) => {
+			console.log('***ORGANIZATION ERROR', err);
 			if (err instanceof SubscriberOrgExistsError) {
 				next(new APIWarning(httpStatus.CONFLICT, err));
 			} else if (err instanceof NoPermissionsError) {
