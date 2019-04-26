@@ -105,6 +105,7 @@ export const createUser = async (req, userInfo) => {
             await awsMarketplaceSvc.registerCustomer(req, awsCustomerId, user);
         }
     } catch (err) {
+        console.log('***CREATE USER ERROR', err);
         return Promise.reject(err);
     }
 };
