@@ -76,6 +76,7 @@ export const createTeamNoCheck = async (
 ) => {
     try {
         const token = jwt.sign(req.user, config.jwtSecret);
+        console.log('***USER JWT CREATE TEAM', req.user, config.jwtSecret);
         const actualTeamId = teamId || uuid.v4();
         const icon = teamInfo.icon || null;
         const primary = teamInfo.primary === undefined ? false : teamInfo.primary;
