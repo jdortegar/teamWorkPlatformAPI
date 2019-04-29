@@ -1,5 +1,6 @@
 import httpStatus from 'http-status';
 import * as teamSvc from '../../services/teamService';
+import { apiVersionedVisibility, publishByApiVersion } from '../../helpers/publishedVisibility';
 import {
     TeamExistsError,
     TeamNotExistError,
@@ -40,6 +41,22 @@ export const publicTeams = async (req, res) => {
       const teams = await teamSvc.getPublicTeams(req, req.params.orgId);
       return res.json({teams});
    } catch (err) {
+      return Promise.reject(err);
+   }
+};
+
+export const getPublicTeamMembers = async (req, res) => {
+   const { teamId } = req.params;
+   try {
+      const teamUsers = await teamSvc.getPublicTeamMembers(req, teamId);
+      return res.json({ teamMembers: publishByApiVersion(req, apiVersionedVisibility.publicUsers, teamUsers) });
+   } catch (err) {
+      if (err instanceof TeamNotExistError) {
+         return res.status(httpStatus.NOT_FOUND).json({
+            error: 'Not Found',
+            message: 'Team not found'
+         });
+      }
       return Promise.reject(err);
    }
 };

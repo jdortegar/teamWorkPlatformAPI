@@ -280,6 +280,51 @@ export function getTeamUsers(req, teamId, userId = undefined) {
     });
 }
 
+/**
+ * If the team doesn't exist, a TeamNotExistError is thrown.
+ *
+ * If userId is specified, an additional check is applied to confirm the user is actually a member of the team.
+ *
+ * @param req
+ * @param teamId
+ * @returns {Promise}
+ */
+export function getPublicTeamMembers(req, teamId, userId = undefined) {
+    const userIdsRoles = {};
+    const userIdsTeamMemberIds = {};
+    let usersWithRoles;
+
+    return new Promise((resolve, reject) => {
+        teamMembersTable
+            .getTeamMembersByTeamId(req, teamId)
+            .then(teamMembers => {
+                if (teamMembers.length === 0) {
+                    throw new TeamNotExistError(teamId);
+                }
+
+                const userIds = teamMembers.map(teamMember => {
+                    userIdsRoles[teamMember.userId] = teamMember.role;
+                    userIdsTeamMemberIds[teamMember.userId] = teamMember.teamMemberId;
+                    return teamMember.userId;
+                });
+
+                return usersTable.getUsersByUserIds(req, userIds);
+            })
+            .then(users => {
+                usersWithRoles = users.map(user => {
+                    const ret = _.cloneDeep(user);
+                    ret.role = userIdsRoles[user.userId];
+                    ret.teamMemberId = userIdsTeamMemberIds[user.userId];
+                    return ret;
+                });
+
+                resolve(usersWithRoles);
+
+            })
+            .catch(err => reject(err));
+    });
+}
+
 export function inviteMembers(req, teamId, userIds, userId) {
     return new Promise((resolve, reject) => {
         let team;
