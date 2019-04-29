@@ -31,8 +31,7 @@ import {
     teamUpdated,
     userInvitationAccepted,
     userInvitationDeclined,
-    sentInvitationStatus,
-    conversationMemberAdded
+    sentInvitationStatus
 } from './messaging';
 import { getPresence } from './messaging/presence';
 import Roles from './roles';
@@ -44,7 +43,6 @@ export const defaultTeamName = 'Project Team One';
 export async function getUserTeams(req, userId, subscriberOrgId = undefined) {
     let teamMembers;
     if (subscriberOrgId) {
-        console.log('with Sub');
         teamMembers = await teamMembersTable.getTeamMembersByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId);
     } else {
    
@@ -355,7 +353,6 @@ export function inviteMembers(req, teamId, userIds, userId) {
 }
 
 export function addUserToTeam(req, user, subscriberUserId, teamId, role) {
-    console.log('USER:          ', user);
     return new Promise((resolve, reject) => {
         let team;
         const teamMemberId = uuid.v4();
@@ -378,7 +375,6 @@ export function addUserToTeam(req, user, subscriberUserId, teamId, role) {
             })
             .then(member => {
                 teamMemberAdded(req, team, user[0], role, teamMemberId);
-                conversationMemberAdded(req, user[0], teamId);
                 // return conversationSvc.addUserToConversationByTeamId(req, user[0], teamId);
             })
             .then(() => {
@@ -408,6 +404,7 @@ export function replyToInvite(req, teamId, accept, userId) {
         let user;
         let team;
         let cachedInvitation;
+        let updatedInvitations;
         Promise.all([
             usersTable.getUserByUserId(req, userId),
             teamsTable.getTeamByTeamId(req, teamId),
@@ -461,8 +458,28 @@ export function replyToInvite(req, teamId, accept, userId) {
                 );
             })
             .then(changedInvitations => {
+                updatedInvitations = changedInvitations;
+                return axios.get(`${config.chatApiEndpoint}/conversations/${team.conversationId}`, {
+                    headers: {
+                        Authorization: req.get('Authorization')
+                    }
+                });
+            })
+            .then((response) => {
+                const members = response.data.members;
+                members.push(user.userId);
+                const data = {
+                    members,
+                };
+                return axios.patch(`${config.chatApiEndpoint}/conversations/${response.data.id}`, data, {
+                    headers: {
+                        Authorization: req.get('Authorization')
+                    }
+                });
+            })
+            .then(() => {
                 resolve();
-                sentInvitationStatus(req, changedInvitations[0]);
+                sentInvitationStatus(req, updatedInvitations[0]);
             })
             .catch(err => {
                 if (err instanceof TeamMemberExistsError) {
@@ -495,7 +512,7 @@ export const deactivateTeamMembersByUserId = async (req, userId) => {
             teamMembersTable.updateTeamMemberActive(req, val.teamMemberId, false);
         });
     } catch (err) {
-        console.log('ERROR: ', err);
+        console.error('ERROR: ', err);
     }
 };
 
