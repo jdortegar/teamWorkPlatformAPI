@@ -68,6 +68,10 @@ export async function getUserTeams(req, userId, subscriberOrgId = undefined) {
 export async function getPublicTeams(req, subscriberOrgId) {
    let publicTeams = await teamsTable.getTeamsBySubscriberOrgId(req, subscriberOrgId);
    publicTeams = publicTeams.filter(team => team.preferences.public);
+
+   for (let i = 0; i < publicTeams.length; i++) {
+      publicTeams[i].teamAdmin = await teamMembersTable.getTeamAdmin(req, publicTeams[i].teamId);
+   }
    return publicTeams;
 }
 
@@ -565,4 +569,26 @@ export const updateTeamMember = async (req, userId, teamId, body) => {
     } catch (err) {
         Promise.reject(err);
     }
+};
+
+export const joinRequest = async (req, orgId, teamId, userId) => {
+
+
+    // Check if Team Exists
+    console.log('service');
+
+    try {
+       const team = await teamsTable.getTeamByTeamId(req, teamId);
+
+       if (!team) {
+          throw new TeamNotExistError(teamId);
+       }
+
+       const teamAdmin = await teamMembersTable.getTeamAdmin(req, team.teamId);
+
+       console.log('teamAdmin________', teamAdmin);
+    } catch (err) {
+       Promise.reject(err);
+    }
+
 };

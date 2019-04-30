@@ -61,6 +61,24 @@ export const getPublicTeamMembers = async (req, res) => {
    }
 };
 
+export const joinRequest = async (req, res) => {
+    const { orgId, teamId } = req.params;
+    const { userId } = req.body;
+    console.log('CONTROLLERRRRR__________', orgId, teamId, userId);
+    try {
+       const teamUsers = await teamSvc.joinRequest(req, orgId, teamId, userId);
+       return res.status(200).end();
+    } catch (err) {
+       if (err instanceof TeamNotExistError) {
+          return res.status(httpStatus.NOT_FOUND).json({
+             error: 'Not Found',
+             message: 'Team not found'
+          });
+       }
+       return Promise.reject(err);
+    }
+ };
+
 export const updateTeamMember = async (req, res)  => {
     try {
         const updatedTeamMember = await teamSvc.updateTeamMember(req, req.params.userId, req.params.teamId, req.body);
