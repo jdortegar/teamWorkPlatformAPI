@@ -467,6 +467,7 @@ export function replyToInvite(req, teamId, accept, userId) {
             })
             .then((response) => {
                 const members = response.data.members;
+                console.log('****USER', user);
                 members.push(user.userId);
                 const data = {
                     members,
