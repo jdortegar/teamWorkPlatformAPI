@@ -472,6 +472,7 @@ export function replyToInvite(req, teamId, accept, userId) {
                 const data = {
                     members,
                 };
+                console.log('****DATA', data);
                 return axios.patch(`${config.chatApiEndpoint}/conversations/${response.data.id}`, data, {
                     headers: {
                         Authorization: req.get('Authorization')
