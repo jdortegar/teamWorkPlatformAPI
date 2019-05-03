@@ -68,6 +68,35 @@ export const sentInvitationStatus = (req, sentInvitation) => {
    ]);
 };
 
+// Broadcast for Join Request
+
+export const sendRequestToAdmin = (req, teamAdminId, request) => {
+   console.log('teamAdminId, request', teamAdminId, request);
+   return _broadcastEvent(req, EventTypes.requestToAdmin, request, [
+      ChannelFactory.personalChannel(teamAdminId)
+   ]);
+};
+
+// export const userInvitationAccepted = (req, invitation, toEmailOrUserId) => {
+//    const event = _.merge({}, invitation, { inviteeUserIdOrEmail: toEmailOrUserId });
+//    return _broadcastEvent(req, EventTypes.userInvitationAccepted, event, [
+//       ChannelFactory.personalChannel(invitation.byUserId)
+//    ]);
+// };
+
+// export const userInvitationDeclined = (req, invitation, toEmailOrUserId) => {
+//    const event = _.merge({}, invitation, { inviteeUserIdOrEmail: toEmailOrUserId });
+//    return _broadcastEvent(req, EventTypes.userInvitationDeclined, event, [
+//       ChannelFactory.personalChannel(invitation.byUserId)
+//    ]);
+// };
+
+// export const sentInvitationStatus = (req, sentInvitation) => {
+//    return _broadcastEvent(req, EventTypes.sentInvitationStatus, publishByApiVersion(req, apiVersionedVisibility.publicInvitation, sentInvitation), [
+//       ChannelFactory.personalChannel(sentInvitation.inviterUserId)
+//    ]);
+// };
+
 
 // EventType = subscriberOrg
 
@@ -132,6 +161,15 @@ export const teamCreated = (req, team, teamAdminUserIds) => { // Assume 1. a new
             ChannelFactory.teamChannel(team.teamId)
          ]);
       });
+};
+
+export const publicTeamCreated = (req, team, subscriberOrgId) => {
+   return _broadcastEvent(
+      req,
+      EventTypes.publicTeamCreated,
+      publishByApiVersion(req, apiVersionedVisibility.publicTeam, team),
+      [ChannelFactory.subscriberOrgChannel(subscriberOrgId)]
+   );
 };
 
 export const teamUpdated = (req, team) => {

@@ -5,7 +5,9 @@ import {
     TeamExistsError,
     TeamNotExistError,
     NoPermissionsError,
-    TeamMemberNotExistsError
+    TeamMemberNotExistsError,
+    RequestExists,
+    RequestNotExists
 } from '../../services/errors'
 import { updateTeamMembersIntegrations } from '../../repositories/db/teamMembersTable';
 
@@ -39,15 +41,15 @@ export const updateTeam = async (req, res) => {
 export const publicTeams = async (req, res) => {
    try {
       const teams = await teamSvc.getPublicTeams(req, req.params.orgId);
-      return res.json({teams});
+      return res.json({ teams });
    } catch (err) {
       return Promise.reject(err);
    }
 };
 
 export const getPublicTeamMembers = async (req, res) => {
-   const { teamId } = req.params;
    try {
+      const { teamId } = req.params;
       const teamUsers = await teamSvc.getPublicTeamMembers(req, teamId);
       return res.json({ teamMembers: publishByApiVersion(req, apiVersionedVisibility.publicUsers, teamUsers) });
    } catch (err) {
@@ -62,40 +64,70 @@ export const getPublicTeamMembers = async (req, res) => {
 };
 
 export const joinRequest = async (req, res) => {
-    const { orgId, teamId } = req.params;
-    const { userId } = req.body;
-    console.log('CONTROLLERRRRR__________', orgId, teamId, userId);
-    try {
-       const teamUsers = await teamSvc.joinRequest(req, orgId, teamId, userId);
-       return res.status(200).end();
-    } catch (err) {
-       if (err instanceof TeamNotExistError) {
-          return res.status(httpStatus.NOT_FOUND).json({
-             error: 'Not Found',
-             message: 'Team not found'
-          });
-       }
-       return Promise.reject(err);
-    }
- };
+   try {
+      const { orgId, teamId } = req.params;
+      const { userId } = req.body;
+      const request = await teamSvc.joinRequest(req, orgId, teamId, userId);
+      return res.status(201).json(request);
+   } catch (err) {
+      if (err instanceof TeamNotExistError) {
+         return res.status(httpStatus.NOT_FOUND).json({
+            error: 'Not Found',
+            message: 'Team not found'
+         });
+      }
+      if (err instanceof RequestExists) {
+         return res.status(httpStatus.CONFLICT).json({
+            error: 'Conflict',
+            message: 'Request already exist'
+         });
+      }
+      return Promise.reject(err);
+   }
+};
+
+export const requestResponse = async (req, res) => {
+   try {
+      const { orgId, teamId } = req.params;
+      const { requestId, userId, accepted } = req.body;
+
+      const request = await teamSvc.joinRequestUpdate(req, orgId, teamId, userId, requestId, accepted);
+      return res.status(200).json({request});
+   } catch (err) {
+      if (err instanceof TeamNotExistError) {
+         return res.status(httpStatus.NOT_FOUND).json({
+            error: 'Not Found',
+            message: 'Team not found'
+         });
+      }
+      if (err instanceof RequestNotExists) {
+         return res.status(httpStatus.NOT_FOUND).json({
+            error: 'Not Found',
+            message: 'Request not found'
+         });
+      }
+
+      return Promise.reject(err);
+   }
+};
 
 export const updateTeamMember = async (req, res)  => {
-    try {
-        const updatedTeamMember = await teamSvc.updateTeamMember(req, req.params.userId, req.params.teamId, req.body);
-        return res.json({
-            userId: updatedTeamMember.userId,
-            teamId: updatedTeamMember.teamId,
-            orgId: updatedTeamMember.subscriberOrgId,
-            role: updatedTeamMember.role,
-            active: updatedTeamMember.enabled
-        });
-    } catch (err) {
-        if (err instanceof TeamMemberNotExistsError) {
-            return res.status(httpStatus.NOT_FOUND).json({
-                error: 'Not Found',
-                message: 'Team Member not Found',
-            });
-        }
-        return Promise.reject(err);
-    }
+   try {
+       const updatedTeamMember = await teamSvc.updateTeamMember(req, req.params.userId, req.params.teamId, req.body);
+       return res.json({
+           userId: updatedTeamMember.userId,
+           teamId: updatedTeamMember.teamId,
+           orgId: updatedTeamMember.subscriberOrgId,
+           role: updatedTeamMember.role,
+           active: updatedTeamMember.enabled
+       });
+   } catch (err) {
+       if (err instanceof TeamMemberNotExistsError) {
+           return res.status(httpStatus.NOT_FOUND).json({
+               error: 'Not Found',
+               message: 'Team Member not Found',
+           });
+       }
+       return Promise.reject(err);
+   }
 }

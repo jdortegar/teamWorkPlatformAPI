@@ -10,6 +10,8 @@ import {
     SubscriberOrgNotExistError,
     TeamExistsError,
     TeamNotExistError,
+    RequestExists,
+    RequestNotExists,
     UserNotExistError,
     TeamMemberExistsError,
     TeamMemberNotExistsError
@@ -20,12 +22,14 @@ import * as usersTable from '../repositories/db/usersTable';
 import * as subscriberOrgsTable from '../repositories/db/subscriberOrgsTable';
 import * as subscriberUsersTable from '../repositories/db/subscriberUsersTable';
 import * as teamsTable from '../repositories/db/teamsTable';
+import * as requestsTable from '../repositories/db/requestsTable';
 import * as teamMembersTable from '../repositories/db/teamMembersTable';
 // import * as conversationSvc from './conversationService';
 import { deleteInvitation } from '../repositories/cache/invitationsCache';
 import { inviteExistingUsersToTeam } from './invitationsUtil';
 import {
     teamCreated,
+    publicTeamCreated,
     teamMemberAdded,
     teamPrivateInfoUpdated,
     teamUpdated,
@@ -38,6 +42,7 @@ import { getPresence } from './messaging/presence';
 import Roles from './roles';
 import config from '../config/env';
 import jwt from 'jsonwebtoken';
+import { sendRequestToAdmin, sentRequestStatus } from './messaging/index';
 
 export const defaultTeamName = 'Project Team One';
 
@@ -51,7 +56,7 @@ export async function getUserTeams(req, userId, subscriberOrgId = undefined) {
         teamMembers = await teamMembersTable.getTeamMembersByUserId(req, userId);
     }
     const teamIds = teamMembers.map(teamMember => teamMember.teamId);
-    const teams = await teamsTable.getTeamsByTeamIds(req, teamIds);
+    const teams = await teamsTable.getTeamsByTeamIds(req, _.uniq(teamIds));
 
     const retTeams = teams.map(team => {
         const teamClone = _.cloneDeep(team);
@@ -94,7 +99,7 @@ export const createTeamNoCheck = async (
             preferences.private = {};
         }
         preferences.iconColor = preferences.iconColor || '#FBBC12';
-        preferences.public = preferences.public || true;
+        preferences.public = 'public' in preferences ? preferences.public : true;
         let team;
         const teamMemberId = uuid.v4();
         const role = Roles.admin;
@@ -116,7 +121,12 @@ export const createTeamNoCheck = async (
         team = await teamsTable.createTeam(req, actualTeamId, subscriberOrgId, teamInfo.name, icon, primary, preferences, conversationInfo.data.id);
         await teamMembersTable.createTeamMember(req, teamMemberId, user.userId, actualTeamId, subscriberUserId, subscriberOrgId, role);
 
-        teamCreated(req, team, teamAdminUserIds);
+        if (preferences.public) {
+           publicTeamCreated(req, team, subscriberOrgId);
+        } else {
+           teamCreated(req, team, teamAdminUserIds);
+        }
+
         teamMemberAdded(req, team, user, role, teamMemberId);
         return team;
     } catch (err) {
@@ -312,7 +322,7 @@ export function getPublicTeamMembers(req, teamId, userId = undefined) {
                     return teamMember.userId;
                 });
 
-                return usersTable.getUsersByUserIds(req, userIds);
+                return usersTable.getUsersByUserIds(req, _.uniq(userIds));
             })
             .then(users => {
                 usersWithRoles = users.map(user => {
@@ -434,7 +444,7 @@ export function addUserToTeam(req, user, subscriberUserId, teamId, role) {
             })
             .then(member => {
                 teamMemberAdded(req, team, user[0], role, teamMemberId);
-                conversationMemberAdded(req, user[0], teamId);
+                // conversationMemberAdded(req, user[0], teamId);
                 // return conversationSvc.addUserToConversationByTeamId(req, user[0], teamId);
             })
             .then(() => {
@@ -573,22 +583,55 @@ export const updateTeamMember = async (req, userId, teamId, body) => {
 
 export const joinRequest = async (req, orgId, teamId, userId) => {
 
+   try {
+    const requestId = uuid.v4();
+      const team = await teamsTable.getTeamByTeamId(req, teamId);
+      if (!team) {
+         throw new TeamNotExistError(teamId);
+      }
 
-    // Check if Team Exists
-    console.log('service');
+      const teamAdminId = await teamMembersTable.getTeamAdmin(req, team.teamId);
+      const existsRequest = await requestsTable.getRequestByTeamIdAndUserId(req, teamId, userId);
 
-    try {
-       const team = await teamsTable.getTeamByTeamId(req, teamId);
+      if (existsRequest) {
+         throw new RequestExists(teamId);
+      }
 
-       if (!team) {
-          throw new TeamNotExistError(teamId);
-       }
+      const request = await requestsTable.createRequest(req, requestId, teamId, teamAdminId, userId).then(request =>
+         Promise.all([
+            // sendTeamInviteToExistingUser(email, subscriberOrg.name, team.name, invitingDbUser, dbUser, key),
+            sendRequestToAdmin(req, request.teamAdminId, request)
+            // sentInvitationStatus(req, dbinvitation)
+         ])
+      );
 
-       const teamAdmin = await teamMembersTable.getTeamAdmin(req, team.teamId);
+      return request;
+   } catch (err) {
+      return Promise.reject(err);
+   }
+};
 
-       console.log('teamAdmin________', teamAdmin);
-    } catch (err) {
-       Promise.reject(err);
-    }
+export const joinRequestUpdate = async (req, orgId, teamId, userId, requestId, accepted) => {
 
+   try {
+      const existsRequest = await requestsTable.getRequestByTeamIdAndUserId(req, teamId, userId);
+      const subscriberOrgId = orgId;
+
+      if (!existsRequest) {
+         throw new RequestNotExists();
+      }
+
+      if (accepted){
+        const user = await usersTable.getUserByUserId(req, userId);
+        const subscriberUser = await subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId);
+        const { subscriberUserId } = user;
+        await addUserToTeam(req, user, subscriberUserId, teamId, Roles.user);
+      }
+
+      const request = await requestsTable.updateRequest(req, requestId, accepted);
+      return _.merge({}, existsRequest, request );
+
+   } catch (err) {
+      return Promise.reject(err);
+   }
 };

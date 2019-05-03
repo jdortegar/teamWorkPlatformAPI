@@ -258,3 +258,17 @@ export class SubscriptionNotExists extends Error {
       Error.captureStackTrace(this, SubscriptionNotExists);
    }
 }
+
+export class RequestExists extends Error {
+   constructor(...args) {
+      super(...args);
+      Error.captureStackTrace(this, RequestExists);
+   }
+}
+
+export class RequestNotExists extends Error {
+   constructor(...args) {
+      super(...args);
+      Error.captureStackTrace(this, RequestNotExists);
+   }
+}

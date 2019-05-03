@@ -12,6 +12,8 @@ router.route('/organization/:orgId/teams/public/:teamId/users/').get(teams.getPu
 
 router.route('/organization/:orgId/teams/:teamId/joinRequests/').post(teams.joinRequest);
 
+router.route('/organization/:orgId/teams/:teamId/joinRequests/').patch(teams.requestResponse);
+
 router
    .route('/organization/:orgId/teams/:teamId/users/:userId')
    .patch(validateByApiVersion(apiVersionedValidators.updateTeamMember), teams.updateTeamMember);
