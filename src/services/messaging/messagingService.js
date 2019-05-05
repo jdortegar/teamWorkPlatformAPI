@@ -24,6 +24,7 @@ export const EventTypes = Object.freeze({
    sentInvitationStatus: 'sentInvitationStatus',
 
    requestToAdmin: 'requestToAdmin',
+   requestDeclined: 'requestDeclined',
 
    subscriberOrgCreated: 'subscriberOrgCreated',
    subscriberOrgUpdated: 'subscriberOrgUpdated',

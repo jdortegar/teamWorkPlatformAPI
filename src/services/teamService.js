@@ -36,13 +36,16 @@ import {
     userInvitationAccepted,
     userInvitationDeclined,
     sentInvitationStatus,
-    conversationMemberAdded
+    conversationMemberAdded,
+    requestDeclined
 } from './messaging';
 import { getPresence } from './messaging/presence';
 import Roles from './roles';
 import config from '../config/env';
 import jwt from 'jsonwebtoken';
 import { sendRequestToAdmin, sentRequestStatus } from './messaging/index';
+
+import { sendJoinRequestToTeamAdmin, sendRequestResponseToUser } from '../helpers/mailer';
 
 export const defaultTeamName = 'Project Team One';
 
@@ -120,6 +123,9 @@ export const createTeamNoCheck = async (
         });
         team = await teamsTable.createTeam(req, actualTeamId, subscriberOrgId, teamInfo.name, icon, primary, preferences, conversationInfo.data.id);
         await teamMembersTable.createTeamMember(req, teamMemberId, user.userId, actualTeamId, subscriberUserId, subscriberOrgId, role);
+        // Add teamAdmin to team
+        const teamAdmin = await teamMembersTable.getTeamAdmin(req, team.teamId);
+        team.teamAdmin = teamAdmin;
 
         if (preferences.public) {
            publicTeamCreated(req, team, subscriberOrgId);
@@ -582,28 +588,32 @@ export const updateTeamMember = async (req, userId, teamId, body) => {
 };
 
 export const joinRequest = async (req, orgId, teamId, userId) => {
-
    try {
-    const requestId = uuid.v4();
+      const requestId = uuid.v4();
       const team = await teamsTable.getTeamByTeamId(req, teamId);
       if (!team) {
          throw new TeamNotExistError(teamId);
       }
 
+      // Get Team Admin Id for sent event
       const teamAdminId = await teamMembersTable.getTeamAdmin(req, team.teamId);
-      const existsRequest = await requestsTable.getRequestByTeamIdAndUserId(req, teamId, userId);
 
-      if (existsRequest) {
-         throw new RequestExists(teamId);
-      }
+      // Get Data for sent email
+      const user = await usersTable.getUserByUserId(req, userId);
+      const teamAdmin = await usersTable.getUserByUserId(req, teamAdminId);
+      const subscriberOrg = await subscriberOrgsTable.getSubscriberOrgBySubscriberOrgId(req, orgId);
 
-      const request = await requestsTable.createRequest(req, requestId, teamId, teamAdminId, userId).then(request =>
-         Promise.all([
-            // sendTeamInviteToExistingUser(email, subscriberOrg.name, team.name, invitingDbUser, dbUser, key),
-            sendRequestToAdmin(req, request.teamAdminId, request)
-            // sentInvitationStatus(req, dbinvitation)
-         ])
-      );
+    // TO DO : Validation if request exists
+    //   const existsRequest = await requestsTable.getRequestByTeamIdAndUserId(req, teamId, userId);
+    //   if (existsRequest) {
+    //      throw new RequestExists(teamId);
+    //   }
+
+      console.log('emaaaaiiiiilllll:______', teamAdmin, teamAdmin.emailAddress );
+
+      const request = await requestsTable.createRequest(req, requestId, teamId, teamAdminId, userId);
+      sendJoinRequestToTeamAdmin(teamAdmin[0].emailAddress, subscriberOrg.name, team.name, user[0], teamAdmin[0]);
+      sendRequestToAdmin(req, request.teamAdminId, request);
 
       return request;
    } catch (err) {
@@ -611,7 +621,7 @@ export const joinRequest = async (req, orgId, teamId, userId) => {
    }
 };
 
-export const joinRequestUpdate = async (req, orgId, teamId, userId, requestId, accepted) => {
+export const joinRequestUpdate = async (req, orgId, teamId, userId, requestId, teamAdminId, accepted) => {
 
    try {
       const existsRequest = await requestsTable.getRequestByTeamIdAndUserId(req, teamId, userId);
@@ -622,12 +632,22 @@ export const joinRequestUpdate = async (req, orgId, teamId, userId, requestId, a
       }
 
       if (accepted){
+          // If Team Admin accept request
         const user = await usersTable.getUserByUserId(req, userId);
         const subscriberUser = await subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId);
         const { subscriberUserId } = user;
         await addUserToTeam(req, user, subscriberUserId, teamId, Roles.user);
+      }else if (!accepted){
+        requestDeclined(req, existsRequest);
       }
 
+      // Get Data for sent email
+      const user = await usersTable.getUserByUserId(req, userId);
+      const teamAdmin = await usersTable.getUserByUserId(req, teamAdminId);
+      const subscriberOrg = await subscriberOrgsTable.getSubscriberOrgBySubscriberOrgId(req, orgId);
+      const team = await teamsTable.getTeamByTeamId(req, teamId);
+
+      sendRequestResponseToUser(user[0].emailAddress, subscriberOrg.name, team.name, user[0], teamAdmin[0], accepted);
       const request = await requestsTable.updateRequest(req, requestId, accepted);
       return _.merge({}, existsRequest, request );
 

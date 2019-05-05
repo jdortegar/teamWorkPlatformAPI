@@ -156,3 +156,33 @@ export const sendNewUserDataToAdmin = (byUserInfo) => {
       html,
    });
 };
+
+export const sendJoinRequestToTeamAdmin = (email, subscriberOrgName, teamName, requesterInfo, teamAdminInfo) => {
+   const cid = uuid.v4();
+   const html = htmlContents(cid,
+      `<br>Hi ${teamAdminInfo.firstName},</br>
+       <br>${requesterInfo.firstName} ${requesterInfo.lastName} has requested to join your "${teamName}" Project Team in the "${subscriberOrgName}" organization. To accept this User’s request to join your project team, <a href="${config.webappBaseUri}/app/">click here</a>.<br>
+       <br>Thank you and keep collaborating! <br>`);
+   return sendMail(cid, {
+      from: 'habla-mailer-dev@habla.ai',
+      to: email,
+      subject: `Join Request for "${teamName}" Project Team of "${subscriberOrgName}" on Habla AI`,
+      html
+   });
+};
+
+export const sendRequestResponseToUser = (email, subscriberOrgName, teamName, requesterInfo, teamAdminInfo, accepted) => {
+   console.log('email, subscriberOrgName, teamName, requesterInfo, teamAdminInfo, accepted_____:', email, subscriberOrgName, teamName, requesterInfo, teamAdminInfo, accepted)
+   const cid = uuid.v4();
+   const status = accepted ? 'accepted' : 'declined';
+   const html = htmlContents(cid,
+      `<br>Hi ${requesterInfo.firstName},</br>
+       <br>Your request to join "${teamName}" has been ${status} by ${teamAdminInfo.firstName} ${teamAdminInfo.lastName}.<br>
+       <br>Thank you and keep collaborating! <br>`);
+   return sendMail(cid, {
+      from: 'habla-mailer-dev@habla.ai',
+      to: email,
+      subject: `Join Request for "${teamName}" Project Team of "${subscriberOrgName}" on Habla AI`,
+      html
+   });
+};

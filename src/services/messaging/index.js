@@ -71,7 +71,6 @@ export const sentInvitationStatus = (req, sentInvitation) => {
 // Broadcast for Join Request
 
 export const sendRequestToAdmin = (req, teamAdminId, request) => {
-   console.log('teamAdminId, request', teamAdminId, request);
    return _broadcastEvent(req, EventTypes.requestToAdmin, request, [
       ChannelFactory.personalChannel(teamAdminId)
    ]);
@@ -84,12 +83,11 @@ export const sendRequestToAdmin = (req, teamAdminId, request) => {
 //    ]);
 // };
 
-// export const userInvitationDeclined = (req, invitation, toEmailOrUserId) => {
-//    const event = _.merge({}, invitation, { inviteeUserIdOrEmail: toEmailOrUserId });
-//    return _broadcastEvent(req, EventTypes.userInvitationDeclined, event, [
-//       ChannelFactory.personalChannel(invitation.byUserId)
-//    ]);
-// };
+export const requestDeclined = (req, request) => {
+   return _broadcastEvent(req, EventTypes.requestDeclined, request, [
+      ChannelFactory.personalChannel(request.userId)
+   ]);
+};
 
 // export const sentInvitationStatus = (req, sentInvitation) => {
 //    return _broadcastEvent(req, EventTypes.sentInvitationStatus, publishByApiVersion(req, apiVersionedVisibility.publicInvitation, sentInvitation), [

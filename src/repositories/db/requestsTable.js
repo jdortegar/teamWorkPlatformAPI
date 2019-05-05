@@ -32,7 +32,7 @@ export const createRequest = (req, requestId, teamId, teamAdminId,  userId) => {
             teamAdminId,
             userId,
             expired,
-            accepted: null,
+            accepted: 'pending',
             lastModified: req.now.format()
          }
       };

@@ -89,10 +89,10 @@ export const joinRequest = async (req, res) => {
 export const requestResponse = async (req, res) => {
    try {
       const { orgId, teamId } = req.params;
-      const { requestId, userId, accepted } = req.body;
+      const { requestId, userId, teamAdminId, accepted } = req.body;
 
-      const request = await teamSvc.joinRequestUpdate(req, orgId, teamId, userId, requestId, accepted);
-      return res.status(200).json({request});
+      const request = await teamSvc.joinRequestUpdate(req, orgId, teamId, userId, requestId, teamAdminId, accepted);
+      return res.status(200).json({ request });
    } catch (err) {
       if (err instanceof TeamNotExistError) {
          return res.status(httpStatus.NOT_FOUND).json({
