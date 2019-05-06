@@ -172,7 +172,6 @@ export const sendJoinRequestToTeamAdmin = (email, subscriberOrgName, teamName, r
 };
 
 export const sendRequestResponseToUser = (email, subscriberOrgName, teamName, requesterInfo, teamAdminInfo, accepted) => {
-   console.log('email, subscriberOrgName, teamName, requesterInfo, teamAdminInfo, accepted_____:', email, subscriberOrgName, teamName, requesterInfo, teamAdminInfo, accepted)
    const cid = uuid.v4();
    const status = accepted ? 'accepted' : 'declined';
    const html = htmlContents(cid,
