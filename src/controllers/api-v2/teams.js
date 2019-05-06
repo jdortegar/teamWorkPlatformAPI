@@ -43,7 +43,10 @@ export const publicTeams = async (req, res) => {
       const teams = await teamSvc.getPublicTeams(req, req.params.orgId);
       return res.json({ teams });
    } catch (err) {
-      return Promise.reject(err);
+      return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+         error: 'Internal Server Error',
+         message: 'Something went wrong'
+      });
    }
 };
 
@@ -59,7 +62,10 @@ export const getPublicTeamMembers = async (req, res) => {
             message: 'Team not found'
          });
       }
-      return Promise.reject(err);
+      return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+         error: 'Internal Server Error',
+         message: 'Something went wrong'
+      });
    }
 };
 
@@ -70,7 +76,10 @@ export const getRequests = async (req, res) => {
       const requests = await teamSvc.getRequests(req, teamAdminId);
       return res.json({ requests });
    } catch (err) {
-      return Promise.reject(err);
+      return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+         error: 'Internal Server Error',
+         message: 'Something went wrong'
+      });
    }
 };
 
@@ -79,7 +88,7 @@ export const joinRequest = async (req, res) => {
       const { orgId, teamId } = req.params;
       const { userId } = req.body;
       const request = await teamSvc.joinRequest(req, orgId, teamId, userId);
-      return res.status(201).json({request});
+      return res.status(httpStatus.CREATED).json({request});
    } catch (err) {
       if (err instanceof TeamNotExistError) {
          return res.status(httpStatus.NOT_FOUND).json({
@@ -103,7 +112,7 @@ export const requestResponse = async (req, res) => {
       const { requestId, userId, teamAdminId, accepted } = req.body;
 
       const request = await teamSvc.joinRequestUpdate(req, orgId, teamId, userId, requestId, teamAdminId, accepted);
-      return res.status(200).json({ request });
+      return res.json({ request });
    } catch (err) {
       if (err instanceof TeamNotExistError) {
          return res.status(httpStatus.NOT_FOUND).json({
@@ -118,7 +127,10 @@ export const requestResponse = async (req, res) => {
          });
       }
 
-      return Promise.reject(err);
+      return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+         error: 'Internal Server Error',
+         message: 'Something went wrong'
+      });
    }
 };
 
@@ -139,6 +151,9 @@ export const updateTeamMember = async (req, res)  => {
                message: 'Team Member not Found',
            });
        }
-       return Promise.reject(err);
+       return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+         error: 'Internal Server Error',
+         message: 'Something went wrong'
+      });
    }
 }

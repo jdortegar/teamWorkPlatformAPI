@@ -76,25 +76,11 @@ export const sendRequestToAdmin = (req, teamAdminId, request) => {
    ]);
 };
 
-// export const userInvitationAccepted = (req, invitation, toEmailOrUserId) => {
-//    const event = _.merge({}, invitation, { inviteeUserIdOrEmail: toEmailOrUserId });
-//    return _broadcastEvent(req, EventTypes.userInvitationAccepted, event, [
-//       ChannelFactory.personalChannel(invitation.byUserId)
-//    ]);
-// };
-
 export const requestDeclined = (req, request) => {
    return _broadcastEvent(req, EventTypes.requestDeclined, request, [
       ChannelFactory.personalChannel(request.userId)
    ]);
 };
-
-// export const sentInvitationStatus = (req, sentInvitation) => {
-//    return _broadcastEvent(req, EventTypes.sentInvitationStatus, publishByApiVersion(req, apiVersionedVisibility.publicInvitation, sentInvitation), [
-//       ChannelFactory.personalChannel(sentInvitation.inviterUserId)
-//    ]);
-// };
-
 
 // EventType = subscriberOrg
 
