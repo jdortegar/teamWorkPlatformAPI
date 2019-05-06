@@ -63,12 +63,23 @@ export const getPublicTeamMembers = async (req, res) => {
    }
 };
 
+export const getRequests = async (req, res) => {
+   try {
+      const { orgId } = req.params;
+      const teamAdminId = req.user._id;
+      const requests = await teamSvc.getRequests(req, teamAdminId);
+      return res.json({ requests });
+   } catch (err) {
+      return Promise.reject(err);
+   }
+};
+
 export const joinRequest = async (req, res) => {
    try {
       const { orgId, teamId } = req.params;
       const { userId } = req.body;
       const request = await teamSvc.joinRequest(req, orgId, teamId, userId);
-      return res.status(201).json(request);
+      return res.status(201).json({request});
    } catch (err) {
       if (err instanceof TeamNotExistError) {
          return res.status(httpStatus.NOT_FOUND).json({

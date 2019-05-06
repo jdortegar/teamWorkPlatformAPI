@@ -67,6 +67,25 @@ export const getRequestByTeamIdAndUserId = (req, teamId, userId) =>{
   })
 }
 
+ export const getRequestsByUserIdAndPendingAccepted = (req, teamAdminId) => {
+   return new Promise((resolve, reject) => {
+      const params = {
+         TableName: tableName(),
+         FilterExpression: 'teamAdminId = :teamAdminId and accepted = :accepted',
+         ExpressionAttributeValues: {
+            ':teamAdminId': teamAdminId,
+            ':accepted': 'pending'
+         }
+      };
+
+      util.scan(req, params)
+         .then(originalResults => upgradeSchema(req, originalResults))
+         .then(latestResults => resolve(latestResults))
+         .catch(err => reject(err));
+   });
+};
+
+
 export const updateRequest = async (req, requestId, accepted) => {
    const lastModified = req.now.format();
    const params = {

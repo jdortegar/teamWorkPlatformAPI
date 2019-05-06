@@ -587,6 +587,15 @@ export const updateTeamMember = async (req, userId, teamId, body) => {
     }
 };
 
+export const getRequests = async (req, teamAdminId ) => {
+    try {
+       const requests = await requestsTable.getRequestsByUserIdAndPendingAccepted(req, teamAdminId);
+       return requests;
+    } catch (err) {
+       return Promise.reject(err);
+    }
+ };
+
 export const joinRequest = async (req, orgId, teamId, userId) => {
    try {
       const requestId = uuid.v4();
@@ -602,14 +611,6 @@ export const joinRequest = async (req, orgId, teamId, userId) => {
       const user = await usersTable.getUserByUserId(req, userId);
       const teamAdmin = await usersTable.getUserByUserId(req, teamAdminId);
       const subscriberOrg = await subscriberOrgsTable.getSubscriberOrgBySubscriberOrgId(req, orgId);
-
-    // TO DO : Validation if request exists
-    //   const existsRequest = await requestsTable.getRequestByTeamIdAndUserId(req, teamId, userId);
-    //   if (existsRequest) {
-    //      throw new RequestExists(teamId);
-    //   }
-
-      console.log('emaaaaiiiiilllll:______', teamAdmin, teamAdmin.emailAddress );
 
       const request = await requestsTable.createRequest(req, requestId, teamId, teamAdminId, userId);
       sendJoinRequestToTeamAdmin(teamAdmin[0].emailAddress, subscriberOrg.name, team.name, user[0], teamAdmin[0]);
