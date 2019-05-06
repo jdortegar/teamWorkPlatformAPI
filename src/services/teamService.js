@@ -10,6 +10,8 @@ import {
     SubscriberOrgNotExistError,
     TeamExistsError,
     TeamNotExistError,
+    RequestExists,
+    RequestNotExists,
     UserNotExistError,
     TeamMemberExistsError,
     TeamMemberNotExistsError
@@ -20,36 +22,44 @@ import * as usersTable from '../repositories/db/usersTable';
 import * as subscriberOrgsTable from '../repositories/db/subscriberOrgsTable';
 import * as subscriberUsersTable from '../repositories/db/subscriberUsersTable';
 import * as teamsTable from '../repositories/db/teamsTable';
+import * as requestsTable from '../repositories/db/requestsTable';
 import * as teamMembersTable from '../repositories/db/teamMembersTable';
 // import * as conversationSvc from './conversationService';
 import { deleteInvitation } from '../repositories/cache/invitationsCache';
 import { inviteExistingUsersToTeam } from './invitationsUtil';
 import {
     teamCreated,
+    publicTeamCreated,
     teamMemberAdded,
     teamPrivateInfoUpdated,
     teamUpdated,
     userInvitationAccepted,
     userInvitationDeclined,
-    sentInvitationStatus
+    sentInvitationStatus,
+    conversationMemberAdded,
+    requestDeclined
 } from './messaging';
 import { getPresence } from './messaging/presence';
 import Roles from './roles';
 import config from '../config/env';
 import jwt from 'jsonwebtoken';
+import { sendRequestToAdmin, sentRequestStatus } from './messaging/index';
+
+import { sendJoinRequestToTeamAdmin, sendRequestResponseToUser } from '../helpers/mailer';
 
 export const defaultTeamName = 'Project Team One';
 
 export async function getUserTeams(req, userId, subscriberOrgId = undefined) {
     let teamMembers;
     if (subscriberOrgId) {
+        console.log('with Sub');
         teamMembers = await teamMembersTable.getTeamMembersByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId);
     } else {
-   
+
         teamMembers = await teamMembersTable.getTeamMembersByUserId(req, userId);
     }
     const teamIds = teamMembers.map(teamMember => teamMember.teamId);
-    const teams = await teamsTable.getTeamsByTeamIds(req, teamIds);
+    const teams = await teamsTable.getTeamsByTeamIds(req, _.uniq(teamIds));
 
     const retTeams = teams.map(team => {
         const teamClone = _.cloneDeep(team);
@@ -63,6 +73,16 @@ export async function getUserTeams(req, userId, subscriberOrgId = undefined) {
     return retTeams;
 }
 
+export async function getPublicTeams(req, subscriberOrgId) {
+   let publicTeams = await teamsTable.getTeamsBySubscriberOrgId(req, subscriberOrgId);
+   publicTeams = publicTeams.filter(team => team.preferences.public);
+
+   for (let i = 0; i < publicTeams.length; i++) {
+      publicTeams[i].teamAdmin = await teamMembersTable.getTeamAdmin(req, publicTeams[i].teamId);
+   }
+   return publicTeams;
+}
+
 export const createTeamNoCheck = async (
     req,
     subscriberOrgId,
@@ -73,7 +93,7 @@ export const createTeamNoCheck = async (
     teamId = undefined
 ) => {
     try {
-        const token = jwt.sign(user, config.jwtSecret);
+        const token = jwt.sign(req.user, config.jwtSecret);
         const actualTeamId = teamId || uuid.v4();
         const icon = teamInfo.icon || null;
         const primary = teamInfo.primary === undefined ? false : teamInfo.primary;
@@ -82,6 +102,7 @@ export const createTeamNoCheck = async (
             preferences.private = {};
         }
         preferences.iconColor = preferences.iconColor || '#FBBC12';
+        preferences.public = 'public' in preferences ? preferences.public : true;
         let team;
         const teamMemberId = uuid.v4();
         const role = Roles.admin;
@@ -102,8 +123,16 @@ export const createTeamNoCheck = async (
         });
         team = await teamsTable.createTeam(req, actualTeamId, subscriberOrgId, teamInfo.name, icon, primary, preferences, conversationInfo.data.id);
         await teamMembersTable.createTeamMember(req, teamMemberId, user.userId, actualTeamId, subscriberUserId, subscriberOrgId, role);
+        // Add teamAdmin to team
+        const teamAdmin = await teamMembersTable.getTeamAdmin(req, team.teamId);
+        team.teamAdmin = teamAdmin;
 
-        teamCreated(req, team, teamAdminUserIds);
+        if (preferences.public) {
+           publicTeamCreated(req, team, subscriberOrgId);
+        } else {
+           teamCreated(req, team, teamAdminUserIds);
+        }
+
         teamMemberAdded(req, team, user, role, teamMemberId);
         return team;
     } catch (err) {
@@ -271,6 +300,51 @@ export function getTeamUsers(req, teamId, userId = undefined) {
     });
 }
 
+/**
+ * If the team doesn't exist, a TeamNotExistError is thrown.
+ *
+ * If userId is specified, an additional check is applied to confirm the user is actually a member of the team.
+ *
+ * @param req
+ * @param teamId
+ * @returns {Promise}
+ */
+export function getPublicTeamMembers(req, teamId, userId = undefined) {
+    const userIdsRoles = {};
+    const userIdsTeamMemberIds = {};
+    let usersWithRoles;
+
+    return new Promise((resolve, reject) => {
+        teamMembersTable
+            .getTeamMembersByTeamId(req, teamId)
+            .then(teamMembers => {
+                if (teamMembers.length === 0) {
+                    throw new TeamNotExistError(teamId);
+                }
+
+                const userIds = teamMembers.map(teamMember => {
+                    userIdsRoles[teamMember.userId] = teamMember.role;
+                    userIdsTeamMemberIds[teamMember.userId] = teamMember.teamMemberId;
+                    return teamMember.userId;
+                });
+
+                return usersTable.getUsersByUserIds(req, _.uniq(userIds));
+            })
+            .then(users => {
+                usersWithRoles = users.map(user => {
+                    const ret = _.cloneDeep(user);
+                    ret.role = userIdsRoles[user.userId];
+                    ret.teamMemberId = userIdsTeamMemberIds[user.userId];
+                    return ret;
+                });
+
+                resolve(usersWithRoles);
+
+            })
+            .catch(err => reject(err));
+    });
+}
+
 export function inviteMembers(req, teamId, userIds, userId) {
     return new Promise((resolve, reject) => {
         let team;
@@ -353,6 +427,7 @@ export function inviteMembers(req, teamId, userIds, userId) {
 }
 
 export function addUserToTeam(req, user, subscriberUserId, teamId, role) {
+    console.log('USER:          ', user);
     return new Promise((resolve, reject) => {
         let team;
         const teamMemberId = uuid.v4();
@@ -375,6 +450,7 @@ export function addUserToTeam(req, user, subscriberUserId, teamId, role) {
             })
             .then(member => {
                 teamMemberAdded(req, team, user[0], role, teamMemberId);
+                // conversationMemberAdded(req, user[0], teamId);
                 // return conversationSvc.addUserToConversationByTeamId(req, user[0], teamId);
             })
             .then(() => {
@@ -404,7 +480,6 @@ export function replyToInvite(req, teamId, accept, userId) {
         let user;
         let team;
         let cachedInvitation;
-        let updatedInvitations;
         Promise.all([
             usersTable.getUserByUserId(req, userId),
             teamsTable.getTeamByTeamId(req, teamId),
@@ -458,30 +533,8 @@ export function replyToInvite(req, teamId, accept, userId) {
                 );
             })
             .then(changedInvitations => {
-                updatedInvitations = changedInvitations;
-                return axios.get(`${config.chatApiEndpoint}/conversations/${team.conversationId}`, {
-                    headers: {
-                        Authorization: req.get('Authorization')
-                    }
-                });
-            })
-            .then((response) => {
-                const members = response.data.members;
-                console.log('****USER', user);
-                members.push(user[0].userId);
-                const data = {
-                    members,
-                };
-                console.log('****DATA', data);
-                return axios.patch(`${config.chatApiEndpoint}/conversations/${response.data.id}`, data, {
-                    headers: {
-                        Authorization: req.get('Authorization')
-                    }
-                });
-            })
-            .then(() => {
                 resolve();
-                sentInvitationStatus(req, updatedInvitations[0]);
+                sentInvitationStatus(req, changedInvitations[0]);
             })
             .catch(err => {
                 if (err instanceof TeamMemberExistsError) {
@@ -514,7 +567,7 @@ export const deactivateTeamMembersByUserId = async (req, userId) => {
             teamMembersTable.updateTeamMemberActive(req, val.teamMemberId, false);
         });
     } catch (err) {
-        console.error('ERROR: ', err);
+        console.log('ERROR: ', err);
     }
 };
 
@@ -532,4 +585,74 @@ export const updateTeamMember = async (req, userId, teamId, body) => {
     } catch (err) {
         Promise.reject(err);
     }
+};
+
+export const getRequests = async (req, teamAdminId ) => {
+    try {
+       const requests = await requestsTable.getRequestsByUserIdAndPendingAccepted(req, teamAdminId);
+       return requests;
+    } catch (err) {
+       return Promise.reject(err);
+    }
+ };
+
+export const joinRequest = async (req, orgId, teamId, userId) => {
+   try {
+      const requestId = uuid.v4();
+      const team = await teamsTable.getTeamByTeamId(req, teamId);
+      if (!team) {
+         throw new TeamNotExistError(teamId);
+      }
+
+      // Get Team Admin Id for sent event
+      const teamAdminId = await teamMembersTable.getTeamAdmin(req, team.teamId);
+
+      // Get Data for sent email
+      const user = await usersTable.getUserByUserId(req, userId);
+      const teamAdmin = await usersTable.getUserByUserId(req, teamAdminId);
+      const subscriberOrg = await subscriberOrgsTable.getSubscriberOrgBySubscriberOrgId(req, orgId);
+
+      const request = await requestsTable.createRequest(req, requestId, teamId, teamAdminId, userId);
+      sendJoinRequestToTeamAdmin(teamAdmin[0].emailAddress, subscriberOrg.name, team.name, user[0], teamAdmin[0]);
+      sendRequestToAdmin(req, request.teamAdminId, request);
+
+      return request;
+   } catch (err) {
+      return Promise.reject(err);
+   }
+};
+
+export const joinRequestUpdate = async (req, orgId, teamId, userId, requestId, teamAdminId, accepted) => {
+
+   try {
+      const existsRequest = await requestsTable.getRequestByTeamIdAndUserId(req, teamId, userId);
+      const subscriberOrgId = orgId;
+
+      if (!existsRequest) {
+         throw new RequestNotExists();
+      }
+
+      if (accepted){
+          // If Team Admin accept request
+        const user = await usersTable.getUserByUserId(req, userId);
+        const subscriberUser = await subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId);
+        const { subscriberUserId } = user;
+        await addUserToTeam(req, user, subscriberUserId, teamId, Roles.user);
+      }else if (!accepted){
+        requestDeclined(req, existsRequest);
+      }
+
+      // Get Data for sent email
+      const user = await usersTable.getUserByUserId(req, userId);
+      const teamAdmin = await usersTable.getUserByUserId(req, teamAdminId);
+      const subscriberOrg = await subscriberOrgsTable.getSubscriberOrgBySubscriberOrgId(req, orgId);
+      const team = await teamsTable.getTeamByTeamId(req, teamId);
+
+      sendRequestResponseToUser(user[0].emailAddress, subscriberOrg.name, team.name, user[0], teamAdmin[0], accepted);
+      const request = await requestsTable.updateRequest(req, requestId, accepted);
+      return _.merge({}, existsRequest, request );
+
+   } catch (err) {
+      return Promise.reject(err);
+   }
 };
