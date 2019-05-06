@@ -37,7 +37,7 @@ import {
     userInvitationDeclined,
     sentInvitationStatus,
     conversationMemberAdded,
-    requestDeclined
+    requestResponse
 } from './messaging';
 import { getPresence } from './messaging/presence';
 import Roles from './roles';
@@ -623,7 +623,6 @@ export const joinRequest = async (req, orgId, teamId, userId) => {
 };
 
 export const joinRequestUpdate = async (req, orgId, teamId, userId, requestId, teamAdminId, accepted) => {
-
    try {
       const existsRequest = await requestsTable.getRequestByTeamIdAndUserId(req, teamId, userId);
       const subscriberOrgId = orgId;
@@ -632,14 +631,16 @@ export const joinRequestUpdate = async (req, orgId, teamId, userId, requestId, t
          throw new RequestNotExists();
       }
 
-      if (accepted){
-          // If Team Admin accept request
-        const user = await usersTable.getUserByUserId(req, userId);
-        const subscriberUser = await subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberOrgId);
-        const { subscriberUserId } = user;
-        await addUserToTeam(req, user, subscriberUserId, teamId, Roles.user);
-      }else if (!accepted){
-        requestDeclined(req, existsRequest);
+      if (accepted) {
+         // If Team Admin accept request
+         const user = await usersTable.getUserByUserId(req, userId);
+         const subscriberUser = await subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(
+            req,
+            userId,
+            subscriberOrgId
+         );
+         const { subscriberUserId } = user;
+         await addUserToTeam(req, user, subscriberUserId, teamId, Roles.user);
       }
 
       // Get Data for sent email
@@ -649,9 +650,12 @@ export const joinRequestUpdate = async (req, orgId, teamId, userId, requestId, t
       const team = await teamsTable.getTeamByTeamId(req, teamId);
 
       sendRequestResponseToUser(user[0].emailAddress, subscriberOrg.name, team.name, user[0], teamAdmin[0], accepted);
-      const request = await requestsTable.updateRequest(req, requestId, accepted);
-      return _.merge({}, existsRequest, request );
+      let request = await requestsTable.updateRequest(req, requestId, accepted);
+      request = _.merge({}, existsRequest, request);
 
+      // Send Event with response
+      requestResponse(req, request);
+      return request;
    } catch (err) {
       return Promise.reject(err);
    }
