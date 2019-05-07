@@ -23,6 +23,9 @@ export const EventTypes = Object.freeze({
    userInvitationDeclined: 'userInvitationDeclined',
    sentInvitationStatus: 'sentInvitationStatus',
 
+   requestToAdmin: 'requestToAdmin',
+   requestResponse: 'requestResponse',
+
    subscriberOrgCreated: 'subscriberOrgCreated',
    subscriberOrgUpdated: 'subscriberOrgUpdated',
    subscriberOrgPrivateInfoUpdated: 'subscriberOrgPrivateInfoUpdated',
@@ -32,6 +35,7 @@ export const EventTypes = Object.freeze({
    teamUpdated: 'teamUpdated',
    teamPrivateInfoUpdated: 'teamPrivateInfoUpdated',
    teamMemberAdded: 'teamMemberAdded',
+   publicTeamCreated: 'publicTeamCreated',
 
    conversationCreated: 'conversationCreated',
    conversationUpdated: 'conversationUpdated',

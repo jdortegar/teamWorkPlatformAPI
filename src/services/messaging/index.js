@@ -68,6 +68,19 @@ export const sentInvitationStatus = (req, sentInvitation) => {
    ]);
 };
 
+// Broadcast for Join Request
+
+export const sendRequestToAdmin = (req, teamAdminId, request) => {
+   return _broadcastEvent(req, EventTypes.requestToAdmin, request, [
+      ChannelFactory.personalChannel(teamAdminId)
+   ]);
+};
+
+export const requestResponse = (req, request) => {
+   return _broadcastEvent(req, EventTypes.requestResponse, request, [
+      ChannelFactory.personalChannel(request.userId)
+   ]);
+};
 
 // EventType = subscriberOrg
 
@@ -132,6 +145,15 @@ export const teamCreated = (req, team, teamAdminUserIds) => { // Assume 1. a new
             ChannelFactory.teamChannel(team.teamId)
          ]);
       });
+};
+
+export const publicTeamCreated = (req, team, subscriberOrgId) => {
+   return _broadcastEvent(
+      req,
+      EventTypes.publicTeamCreated,
+      publishByApiVersion(req, apiVersionedVisibility.publicTeam, team),
+      [ChannelFactory.subscriberOrgChannel(subscriberOrgId)]
+   );
 };
 
 export const teamUpdated = (req, team) => {

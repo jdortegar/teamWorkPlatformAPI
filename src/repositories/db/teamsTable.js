@@ -48,7 +48,7 @@ export const createTeam = (req, teamId, subscriberOrgId, name, icon, primary, pr
                 subscriberOrgEnabled: true,
                 created: req.now.format(),
                 lastModified: req.now.format(),
-                preferences, 
+                preferences,
                 conversationId
             }
         };
