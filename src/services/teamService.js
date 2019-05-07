@@ -93,7 +93,7 @@ export const createTeamNoCheck = async (
     teamId = undefined
 ) => {
     try {
-        const token = jwt.sign(req.user, config.jwtSecret);
+        const token = jwt.sign(user, config.jwtSecret);
         const actualTeamId = teamId || uuid.v4();
         const icon = teamInfo.icon || null;
         const primary = teamInfo.primary === undefined ? false : teamInfo.primary;
