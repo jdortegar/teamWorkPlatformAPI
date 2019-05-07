@@ -76,8 +76,8 @@ export const sendRequestToAdmin = (req, teamAdminId, request) => {
    ]);
 };
 
-export const requestDeclined = (req, request) => {
-   return _broadcastEvent(req, EventTypes.requestDeclined, request, [
+export const requestResponse = (req, request) => {
+   return _broadcastEvent(req, EventTypes.requestResponse, request, [
       ChannelFactory.personalChannel(request.userId)
    ]);
 };
