@@ -93,7 +93,7 @@ export const createTeamNoCheck = async (
     teamId = undefined
 ) => {
     try {
-        const token = jwt.sign(req.user, config.jwtSecret);
+        const token = jwt.sign(user, config.jwtSecret);
         const actualTeamId = teamId || uuid.v4();
         const icon = teamInfo.icon || null;
         const primary = teamInfo.primary === undefined ? false : teamInfo.primary;
@@ -174,16 +174,16 @@ export async function createTeam(req, subscriberOrgId, teamInfo, userId, teamId 
     }
 }
 
-export async function updateTeam(req, teamId, updateInfo, userId) {
+export async function updateTeam(req, teamId, orgId, updateInfo, userId) {
     // TODO: Once the roles are in the JWT we need to check this there;
     try {
         const team = await teamsTable.getTeamByTeamId(req, teamId);
         if (!team) {
             throw new TeamNotExistError(teamId);
         }
-        const user = await usersTable.getUserByUserId(req, userId);
+        const user = await subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, orgId);
         const teamMember = await teamMembersTable.getTeamMemberByTeamIdAndUserId(req, teamId, userId);
-        if (user.role !== 'admin' || teamMember.role !== 'admin') {
+        if (!(user.role === 'admin' || teamMember.role === 'admin')) {
             throw new NoPermissionsError(teamId);
         }
         if (updateInfo.name) {

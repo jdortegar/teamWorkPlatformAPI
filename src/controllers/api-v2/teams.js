@@ -13,7 +13,7 @@ import { updateTeamMembersIntegrations } from '../../repositories/db/teamMembers
 
 export const updateTeam = async (req, res) => {
     try {
-        const updatedTeam = await teamSvc.updateTeam(req, req.params.teamId, req.body, req.user._id);
+        const updatedTeam = await teamSvc.updateTeam(req, req.params.teamId, req.params.orgId, req.body, req.user._id);
         return res.status(200).json(updatedTeam);
     } catch (err) {
         if (err instanceof TeamExistsError) {

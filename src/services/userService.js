@@ -221,8 +221,7 @@ export const getUserNameHash = async (req, userIds = []) => {
     return hash;
 };
 
-export const createReservation = (req, reservationData) => {
-
+export const createReservation = async (req, reservationData) => {
     const { email } = reservationData || '';
     const { stripeSubscriptionId } = reservationData || null;
     const { paypalSubscriptionId } = reservationData || null;
