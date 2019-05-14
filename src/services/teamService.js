@@ -261,7 +261,7 @@ export function getTeamUsers(req, teamId, userId = undefined) {
                     throw new NoPermissionsError(teamId);
                 }
 
-                return usersTable.getUsersByUserIds(req, userIds);
+                return usersTable.getUsersByUserIds(req, _.uniq(userIds));
             })
             .then(users => {
                 usersWithRoles = users.map(user => {
