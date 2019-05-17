@@ -449,7 +449,15 @@ export function addUserToTeam(req, user, subscriberUserId, teamId, role) {
                 );
             })
             .then(member => {
+                token = jwt.sign(user[0], config.jwtSecret);
                 teamMemberAdded(req, team, user[0], role, teamMemberId);
+                axios.post(`${config.chatApiEndpoint}/conversations/${team.conversationId}/members`, {
+                    userId: user[0].userId
+                }, {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    }
+                });
                 // conversationMemberAdded(req, user[0], teamId);
                 // return conversationSvc.addUserToConversationByTeamId(req, user[0], teamId);
             })
