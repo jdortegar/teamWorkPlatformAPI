@@ -8,6 +8,7 @@ import stripeRoutes from './stripe';
 import paypalRoutes from './paypal';
 import metadataRoutes from './metadata'
 import authRoutes from './auth';
+import datakRoutes from './datak';
 
 const router = express.Router();
 
@@ -20,5 +21,6 @@ router.use(stripeRoutes);
 router.use(paypalRoutes);
 router.use(metadataRoutes);
 router.use(authRoutes);
+router.use('/datak', datakRoutes);
 
 export default router;
