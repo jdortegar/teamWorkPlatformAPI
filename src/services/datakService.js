@@ -282,7 +282,9 @@ const getFiles = async (query, neo4jSession, fileRecords=[]) => {
         content: dataNode.properties.content,
         filePath: dataNode.properties.filePath,
         cid: dataNode.properties.cid,
+        resourceUri:dataNode.properties.resourceUri,
         dataCreatedAt: dataNode.properties.timestamp,
+        lastModified: dataNode.properties.lastModified,
     };
  });
 
