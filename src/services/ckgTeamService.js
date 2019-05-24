@@ -1,7 +1,11 @@
 
 const getFiles = async (query, neo4jSession, fileRecords = []) => {
-   const result = await neo4jSession.run(query);
-   return fileRecords.concat(result.records);
+   try {
+      const result = await neo4jSession.run(query);
+      return fileRecords.concat(result.records);
+   } catch (err) {
+      return Promise.reject(err);
+   }
 };
 
 
