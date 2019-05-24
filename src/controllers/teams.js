@@ -1,6 +1,7 @@
 import httpStatus from 'http-status';
 import { apiVersionedVisibility, publishByApiVersion } from '../helpers/publishedVisibility';
 import * as teamSvc from '../services/teamService';
+import * as orgSvc from '../services/subscriberOrgService';
 import {
    APIError,
    APIWarning,
@@ -15,18 +16,25 @@ import {
    UserNotExistError
 } from '../services/errors';
 
-export const getTeams = (req, res, next) => {
-   const userId = req.user._id;
-   const { subscriberOrgId } = req.query;
-
-   teamSvc.getUserTeams(req, userId, subscriberOrgId)
-      .then((teams) => {
-         res.status(httpStatus.OK).json({ teams });
-      })
-      .catch((err) => {
-         next(new APIError(httpStatus.INTERNAL_SERVER_ERROR, err));
-      });
-};
+export const getTeams = async (req, res, next)  => {
+   try {
+      const userId = req.user._id;
+      let orgId = req.query.subscriberOrgId;
+      if (!orgId) {
+         const organizaions = await orgSvc.getUserSubscriberOrgs(req, userId);
+         orgId = organizaions[0].subscriberOrgId;
+      }
+      let teams;
+      if (req.user.roles.indexOf('admin') >=0 ) {
+         teams = await teamSvc.getPrivateOrganizationTeams(req, orgId);
+      } else {
+         teams = await teamSvc.getUserTeams(req, userId, orgId);
+      }
+      return res.json({ teams });
+   } catch (err) {
+      return next(new APIError(httpStatus.INTERNAL_SERVER_ERROR, err));
+   }
+}
 
 export const createTeam = (req, res, next) => {
    const userId = req.user._id;

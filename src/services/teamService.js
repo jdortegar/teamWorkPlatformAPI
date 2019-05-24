@@ -49,6 +49,25 @@ import { sendJoinRequestToTeamAdmin, sendRequestResponseToUser } from '../helper
 
 export const defaultTeamName = 'Project Team One';
 
+export async function getPrivateOrganizationTeams(req, orgId) {
+    try {
+        const teams = await teamsTable.getTeamsBySubscriberOrgId(req, orgId);
+        const fileteredTeams = teams.filter(team => !team.preferences.public);
+        const promises = [];
+        fileteredTeams.forEach((val) => {
+            promises.push(teamMembersTable.getTeamAdmin(req, val.teamId));
+        });
+        const teamAdmins = await Promise.all(promises);
+        for (let i = 0; i < fileteredTeams.length; i++) {
+            fileteredTeams[i].teamAdmin = teamAdmins[i];
+        }
+
+        return fileteredTeams;
+    } catch (err) {
+        return Promise.reject(err);
+    }
+}
+
 export async function getUserTeams(req, userId, subscriberOrgId = undefined) {
     let teamMembers;
     if (subscriberOrgId) {

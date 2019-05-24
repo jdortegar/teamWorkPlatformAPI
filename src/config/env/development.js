@@ -26,7 +26,7 @@ export const neo4j = {
    // DEV
 
    // host: '34.214.167.0',
-   host: '34.214.167.0',
+   host: '54.212.163.138',
    port: '7687',
    user: 'neo4j',
    password: 'habla12345'

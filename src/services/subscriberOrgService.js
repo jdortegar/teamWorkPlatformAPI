@@ -471,3 +471,12 @@ export const getOrganizationInfo = async (req, orgId) => {
         teams: resultTeams,
     };
 }
+
+export const getOrganizationAdmin = async (req, orgId) => {
+    try {
+        const subscriberUser = await subscriberUsersTable.getSubscriberUsersBySubscriberOrgIdAndRole(req, orgId);
+        return await usersTable.getUserByUserId(subscriberUser[0].userId);
+    } catch (err) {
+        return Promise.reject(err);
+    }
+}
