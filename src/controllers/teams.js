@@ -129,7 +129,7 @@ export const replyToInvite = (req, res, next) => {
          res.status(httpStatus.OK).end();
       })
       .catch((err) => {
-         console.log('****ERROR', err);
+
          if ((err instanceof TeamNotExistError) || (err instanceof UserNotExistError) || (err instanceof InvitationNotExistError)) {
             next(new APIWarning(httpStatus.NOT_FOUND, err));
          } else if (err instanceof NoPermissionsError) {

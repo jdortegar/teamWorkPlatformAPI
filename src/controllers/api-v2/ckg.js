@@ -66,7 +66,7 @@ export const getFiles = async (req, res) => {
     } else {
         url = `${config.apiEndpoint}/v1/ckg/getFiles/${req.params.subscriberOrgId}/${teamId}`;
     }
-    console.log('****URL', url);
+
     let files;
     try {
         files = await getFileCollection(url, req.app.locals.redis, req.headers.authorization);
