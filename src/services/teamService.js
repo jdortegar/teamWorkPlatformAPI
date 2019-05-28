@@ -276,9 +276,10 @@ export function getTeamUsers(req, teamId, userId = undefined) {
                     userIdsTeamMemberIds[teamMember.userId] = teamMember.teamMemberId;
                     return teamMember.userId;
                 });
-                if (userId && userIds.indexOf(userId) < 0) {
-                    throw new NoPermissionsError(teamId);
-                }
+                // TODO: Comented regarding admin permissions.
+                // if (userId && userIds.indexOf(userId) < 0) {
+                //     throw new NoPermissionsError(teamId);
+                // }
 
                 return usersTable.getUsersByUserIds(req, _.uniq(userIds));
             })
