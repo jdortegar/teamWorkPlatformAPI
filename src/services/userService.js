@@ -19,7 +19,7 @@ import { AWS_CUSTOMER_ID_HEADER_NAME } from '../controllers/auth';
 import * as mailer from '../helpers/mailer';
 import moment from 'moment';
 
-const getUserByEmail = (req, email) => {
+export const getUserByEmail = (req, email) => {
     return new Promise((resolve, reject) => {
         let user;
         usersTable.getUserByEmailAddress(req, email)
