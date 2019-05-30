@@ -93,13 +93,13 @@ export async function getUserTeams(req, userId, subscriberOrgId = undefined) {
 }
 
 export async function getPublicTeams(req, subscriberOrgId) {
-   let publicTeams = await teamsTable.getTeamsBySubscriberOrgId(req, subscriberOrgId);
-   publicTeams = publicTeams.filter(team => team.preferences.public);
+    let publicTeams = await teamsTable.getTeamsBySubscriberOrgId(req, subscriberOrgId);
+    publicTeams = publicTeams.filter(team => team.preferences.public);
 
-   for (let i = 0; i < publicTeams.length; i++) {
-      publicTeams[i].teamAdmin = await teamMembersTable.getTeamAdmin(req, publicTeams[i].teamId);
-   }
-   return publicTeams;
+    for (let i = 0; i < publicTeams.length; i++) {
+        publicTeams[i].teamAdmin = await teamMembersTable.getTeamAdmin(req, publicTeams[i].teamId);
+    }
+    return publicTeams;
 }
 
 export const createTeamNoCheck = async (
@@ -139,7 +139,7 @@ export const createTeamNoCheck = async (
                 headers: {
                     Authorization: `Bearer ${token}`,
                 }
-        });
+            });
         team = await teamsTable.createTeam(req, actualTeamId, subscriberOrgId, teamInfo.name, icon, primary, preferences, conversationInfo.data.id);
         await teamMembersTable.createTeamMember(req, teamMemberId, user.userId, actualTeamId, subscriberUserId, subscriberOrgId, role);
         // Add teamAdmin to team
@@ -147,9 +147,9 @@ export const createTeamNoCheck = async (
         team.teamAdmin = teamAdmin;
 
         if (preferences.public) {
-           publicTeamCreated(req, team, subscriberOrgId);
+            publicTeamCreated(req, team, subscriberOrgId);
         } else {
-           teamCreated(req, team, teamAdminUserIds);
+            teamCreated(req, team, teamAdminUserIds);
         }
 
         teamMemberAdded(req, team, user, role, teamMemberId);
@@ -474,10 +474,10 @@ export function addUserToTeam(req, user, subscriberUserId, teamId, role) {
                 axios.post(`${config.chatApiEndpoint}/conversations/${team.conversationId}/members`, {
                     userId: user[0].userId
                 }, {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    }
-                });
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        }
+                    });
                 // conversationMemberAdded(req, user[0], teamId);
                 // return conversationSvc.addUserToConversationByTeamId(req, user[0], teamId);
             })
@@ -615,76 +615,79 @@ export const updateTeamMember = async (req, userId, teamId, body) => {
     }
 };
 
-export const getRequests = async (req, teamAdminId ) => {
+export const getRequests = async (req, teamAdminId) => {
     try {
-       const requests = await requestsTable.getRequestsByUserIdAndPendingAccepted(req, teamAdminId);
-       return requests;
+        const requests = await requestsTable.getRequestsByUserIdAndPendingAccepted(req, teamAdminId);
+        return requests;
     } catch (err) {
-       return Promise.reject(err);
+        return Promise.reject(err);
     }
- };
+};
 
 export const joinRequest = async (req, orgId, teamId, userId) => {
-   try {
-      const requestId = uuid.v4();
-      const team = await teamsTable.getTeamByTeamId(req, teamId);
-      if (!team) {
-         throw new TeamNotExistError(teamId);
-      }
+    try {
+        const requestId = uuid.v4();
+        const team = await teamsTable.getTeamByTeamId(req, teamId);
+        if (!team) {
+            throw new TeamNotExistError(teamId);
+        }
 
-      // Get Team Admin Id for sent event
-      const teamAdminId = await teamMembersTable.getTeamAdmin(req, team.teamId);
+        // Get Team Admin Id for sent event
+        const teamAdminId = await teamMembersTable.getTeamAdmin(req, team.teamId);
 
-      // Get Data for sent email
-      const user = await usersTable.getUserByUserId(req, userId);
-      const teamAdmin = await usersTable.getUserByUserId(req, teamAdminId);
-      const subscriberOrg = await subscriberOrgsTable.getSubscriberOrgBySubscriberOrgId(req, orgId);
+        // Get Data for sent email
+        const user = await usersTable.getUserByUserId(req, userId);
+        const teamAdmin = await usersTable.getUserByUserId(req, teamAdminId);
+        const subscriberOrg = await subscriberOrgsTable.getSubscriberOrgBySubscriberOrgId(req, orgId);
 
-      const request = await requestsTable.createRequest(req, requestId, teamId, teamAdminId, userId);
-      sendJoinRequestToTeamAdmin(teamAdmin[0].emailAddress, subscriberOrg.name, team.name, user[0], teamAdmin[0]);
-      sendRequestToAdmin(req, request.teamAdminId, request);
+        const request = await requestsTable.createRequest(req, requestId, teamId, teamAdminId, userId);
+        sendJoinRequestToTeamAdmin(teamAdmin[0].emailAddress, subscriberOrg.name, team.name, user[0], teamAdmin[0]);
+        sendRequestToAdmin(req, request.teamAdminId, request);
 
-      return request;
-   } catch (err) {
-      return Promise.reject(err);
-   }
+        return request;
+    } catch (err) {
+        return Promise.reject(err);
+    }
 };
 
 export const joinRequestUpdate = async (req, orgId, teamId, userId, requestId, teamAdminId, accepted) => {
-   try {
-      const existsRequest = await requestsTable.getRequestByTeamIdAndUserId(req, teamId, userId);
-      const subscriberOrgId = orgId;
+    try {
+        const existsRequest = await requestsTable.getRequestByTeamIdAndUserId(req, teamId, userId);
+        const subscriberOrgId = orgId;
 
-      if (!existsRequest) {
-         throw new RequestNotExists();
-      }
+        if (!existsRequest) {
+            throw new RequestNotExists();
+        }
+        let promises;
+        if (accepted) {
+            // If Team Admin accept request
+            const user = await usersTable.getUserByUserId(req, userId);
+            const subscriberUser = await subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(
+                req,
+                userId,
+                subscriberOrgId
+            );
+            const { subscriberUserId } = user;
+            promises = [
+                addUserToTeam(req, user, subscriberUserId, teamId, Roles.user),
+            ];
+        }
+        promises.push(promisesrequestsTable.updateRequest(req, existsRequest.requestId, accepted));
+        await Promise.all(promises);
+        // Get Data for sent email
+        const user = await usersTable.getUserByUserId(req, userId);
+        const teamAdmin = await usersTable.getUserByUserId(req, teamAdminId);
+        const subscriberOrg = await subscriberOrgsTable.getSubscriberOrgBySubscriberOrgId(req, orgId);
+        const team = await teamsTable.getTeamByTeamId(req, teamId);
 
-      if (accepted) {
-         // If Team Admin accept request
-         const user = await usersTable.getUserByUserId(req, userId);
-         const subscriberUser = await subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(
-            req,
-            userId,
-            subscriberOrgId
-         );
-         const { subscriberUserId } = user;
-         await addUserToTeam(req, user, subscriberUserId, teamId, Roles.user);
-      }
-
-      // Get Data for sent email
-      const user = await usersTable.getUserByUserId(req, userId);
-      const teamAdmin = await usersTable.getUserByUserId(req, teamAdminId);
-      const subscriberOrg = await subscriberOrgsTable.getSubscriberOrgBySubscriberOrgId(req, orgId);
-      const team = await teamsTable.getTeamByTeamId(req, teamId);
-
-      sendRequestResponseToUser(user[0].emailAddress, subscriberOrg.name, team.name, user[0], teamAdmin[0], accepted);
-      let request = await requestsTable.updateRequest(req, requestId, accepted);
-      request = _.merge({}, existsRequest, request);
-      request.teamAdminId = teamAdminId;
-      // Send Event with response
-      requestResponse(req, request);
-      return request;
-   } catch (err) {
-      return Promise.reject(err);
-   }
+        sendRequestResponseToUser(user[0].emailAddress, subscriberOrg.name, team.name, user[0], teamAdmin[0], accepted);
+        let request = await requestsTable.updateRequest(req, requestId, accepted);
+        request = _.merge({}, existsRequest, request);
+        request.teamAdminId = teamAdminId;
+        // Send Event with response
+        requestResponse(req, request);
+        return request;
+    } catch (err) {
+        return Promise.reject(err);
+    }
 };
