@@ -680,7 +680,7 @@ export const joinRequestUpdate = async (req, orgId, teamId, userId, requestId, t
       sendRequestResponseToUser(user[0].emailAddress, subscriberOrg.name, team.name, user[0], teamAdmin[0], accepted);
       let request = await requestsTable.updateRequest(req, requestId, accepted);
       request = _.merge({}, existsRequest, request);
-
+      request.teamAdminId = teamAdminId;
       // Send Event with response
       requestResponse(req, request);
       return request;
