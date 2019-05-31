@@ -178,6 +178,7 @@ export const teamMemberAdded = (req, team, user, role, teamMemberId, adminId = n
    if (adminId) {
       team.teamAdminId = adminId;
    }
+   console.log('*** ADMIN ID', adminId, team);
    return _joinChannels(req, user.userId, channels)
       .then(() => {
          return _broadcastEvent(req, EventTypes.teamCreated, publishByApiVersion(req, apiVersionedVisibility.publicTeam, team), [
