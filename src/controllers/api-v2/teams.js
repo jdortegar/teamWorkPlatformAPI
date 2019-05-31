@@ -156,4 +156,27 @@ export const updateTeamMember = async (req, res)  => {
          message: 'Something went wrong'
       });
    }
-}
+};
+
+export const getAllTeams = async (req, res) => {
+   try {
+      if (req.user.roles.indexOf('admin') < 0) {
+         throw new NoPermissionsError(req.user._id)
+      }
+      const { orgId } = req.params;
+      const teams = await teamSvc.getOrgainizationTeams(req, orgId);
+      return res.json(teams);
+   } catch (err) {
+      if (err instanceof NoPermissionsError) {
+         return res.status(httpStatus.FORBIDDEN).json({
+            error: 'Forbidden',
+            message: `User ${err.message} Is not allowed to access this data.`
+         });
+      }
+      console.error(err);
+      return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+         error: 'Internal Server Error',
+         message: 'Something went wrong.'
+      });
+   }
+};

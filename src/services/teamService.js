@@ -446,7 +446,7 @@ export function inviteMembers(req, teamId, userIds, userId) {
     });
 }
 
-export function addUserToTeam(req, user, subscriberUserId, teamId, role) {
+export function addUserToTeam(req, user, subscriberUserId, teamId, role, teamAdminId = null) {
     console.log('USER:          ', user);
     return new Promise((resolve, reject) => {
         let team;
@@ -470,7 +470,7 @@ export function addUserToTeam(req, user, subscriberUserId, teamId, role) {
             })
             .then(member => {
                 const token = jwt.sign(user[0], config.jwtSecret);
-                teamMemberAdded(req, team, user[0], role, teamMemberId);
+                teamMemberAdded(req, team, user[0], role, teamMemberId, teamAdminId);
                 axios.post(`${config.chatApiEndpoint}/conversations/${team.conversationId}/members`, {
                     userId: user[0].userId
                 }, {
@@ -669,7 +669,7 @@ export const joinRequestUpdate = async (req, orgId, teamId, userId, requestId, t
             );
             const { subscriberUserId } = user;
             promises = [
-                addUserToTeam(req, user, subscriberUserId, teamId, Roles.user),
+                addUserToTeam(req, user, subscriberUserId, teamId, Roles.user, teamAdminId),
             ];
         }
         promises.push(promisesrequestsTable.updateRequest(req, existsRequest.requestId, accepted));
@@ -691,3 +691,18 @@ export const joinRequestUpdate = async (req, orgId, teamId, userId, requestId, t
         return Promise.reject(err);
     }
 };
+
+export const getOrgainizationTeams = async (req, orgId) => {
+    try {
+        const teams = await teamsTable.getTeamsBySubscriberOrgId(req, orgId);
+        const promises = [];
+        teams.forEach(team => promises.push(teamMembersTable.getTeamAdmin(req, team.teamId)));
+        const teamAdmins = await Promise.all(promises);
+        for (let i = 0; i < teams.length; i++) {
+            teams[i].teamAdmin = teamAdmins[i];
+        }
+        return teams;
+    } catch (err) {
+        return Promise.reject(err);
+    }
+}

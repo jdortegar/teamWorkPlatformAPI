@@ -8,6 +8,8 @@ router.route('/organization/:orgId/teams/:teamId').patch(teams.updateTeam);
 
 router.route('/organization/:orgId/teams/public').get(teams.publicTeams);
 
+router.route('/organization/:orgId/teams').get(teams.getAllTeams);
+
 router.route('/organization/:orgId/teams/public/:teamId/users/').get(teams.getPublicTeamMembers);
 
 router.route('/organization/:orgId/teams/joinRequests/').get(teams.getRequests);

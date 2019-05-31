@@ -168,14 +168,16 @@ export const teamPrivateInfoUpdated = (req, team) => {
    ]);
 };
 
-export const teamMemberAdded = (req, team, user, role, teamMemberId) => {
+export const teamMemberAdded = (req, team, user, role, teamMemberId, adminId = null) => {
    const { teamId } = team;
    const teamChannel = ChannelFactory.teamChannel(teamId);
    const channels = [teamChannel];
    if (role === Roles.admin) {
       channels.push(ChannelFactory.teamAdminChannel(teamId));
    }
-
+   if (adminId) {
+      team.teamAdminId = adminId;
+   }
    return _joinChannels(req, user.userId, channels)
       .then(() => {
          return _broadcastEvent(req, EventTypes.teamCreated, publishByApiVersion(req, apiVersionedVisibility.publicTeam, team), [

@@ -25,11 +25,7 @@ export const getTeams = async (req, res, next)  => {
          orgId = organizaions[0].subscriberOrgId;
       }
       let teams;
-      if (req.user.roles.indexOf('admin') >=0 ) {
-         teams = await teamSvc.getPrivateOrganizationTeams(req, orgId);
-      } else {
-         teams = await teamSvc.getUserTeams(req, userId, orgId);
-      }
+      teams = await teamSvc.getUserTeams(req, userId, orgId);
       return res.json({ teams });
    } catch (err) {
       return next(new APIError(httpStatus.INTERNAL_SERVER_ERROR, err));
