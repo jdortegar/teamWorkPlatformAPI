@@ -676,7 +676,7 @@ export const joinRequestUpdate = async (req, orgId, teamId, userId, requestId, t
                 addUserToTeam(req, user, subscriberUserId, teamId, Roles.user, teamAdminId),
             ];
         }
-        promises.push(promisesrequestsTable.updateRequest(req, existsRequest.requestId, accepted));
+        promises.push(requestsTable.updateRequest(req, existsRequest.requestId, accepted));
         await Promise.all(promises);
         // Get Data for sent email
         const user = await usersTable.getUserByUserId(req, userId);
@@ -692,7 +692,6 @@ export const joinRequestUpdate = async (req, orgId, teamId, userId, requestId, t
         requestResponse(req, request);
         return request;
     } catch (err) {
-        console.log('****ERROR', err);
         return Promise.reject(err);
     }
 };
