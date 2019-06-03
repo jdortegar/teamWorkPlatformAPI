@@ -1,6 +1,7 @@
 import _ from 'lodash';
 import uuid from 'uuid';
 import axios from 'axios';
+import unirest from 'unirest';
 import {
     CannotDeactivateError,
     CannotInviteError,
@@ -112,7 +113,7 @@ export const createTeamNoCheck = async (
     teamId = undefined
 ) => {
     try {
-        const token = jwt.sign(user, config.jwtSecret);
+        const token = jwt.sign({userId: user.userId}, config.jwtSecret);
         const actualTeamId = teamId || uuid.v4();
         const icon = teamInfo.icon || null;
         const primary = teamInfo.primary === undefined ? false : teamInfo.primary;
@@ -125,7 +126,7 @@ export const createTeamNoCheck = async (
         let team;
         const teamMemberId = uuid.v4();
         const role = Roles.admin;
-        const conversationInfo = await axios.post(`${config.chatApiEndpoint}/conversations`, {
+        const data = {
             members: [
                 user.userId
             ],
@@ -135,7 +136,8 @@ export const createTeamNoCheck = async (
             appData: {
                 teamId: actualTeamId
             }
-        }, {
+        };
+        const conversationInfo = await axios.post(`${config.chatApiEndpoint}/conversations`, data, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 }
@@ -688,6 +690,7 @@ export const joinRequestUpdate = async (req, orgId, teamId, userId, requestId, t
         requestResponse(req, request);
         return request;
     } catch (err) {
+        console.log('****ERROR', error);
         return Promise.reject(err);
     }
 };

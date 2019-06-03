@@ -80,7 +80,7 @@
   },
   "dependencies": {
     "aws-sdk": "^2.463.0",
-    "axios": "^0.16.2",
+    "axios": "^0.18.0",
     "babel-cli": "^6.26.0",
     "babel-eslint": "^7.2.3",
     "babel-istanbul": "^0.12.2",
