@@ -114,6 +114,7 @@ export const requestResponse = async (req, res) => {
       const request = await teamSvc.joinRequestUpdate(req, orgId, teamId, userId, requestId, teamAdminId, accepted);
       return res.json({ request });
    } catch (err) {
+      console.log('**MERRORRRR', err);
       if (err instanceof TeamNotExistError) {
          return res.status(httpStatus.NOT_FOUND).json({
             error: 'Not Found',
