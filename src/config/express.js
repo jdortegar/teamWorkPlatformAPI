@@ -109,7 +109,7 @@ app.use((err, req, res, next) => {
          })
          .join(' and ');
       e = new APIError(err.status, unifiedErrorMessage);
-   } else if (err instanceof UnauthorizedError) {
+   } else if (err instanceof UnauthorizedError || err.name === 'UnauthorizedError') {
       req.logger.warn(err.message);
       res.status(httpStatus.UNAUTHORIZED).end();
       return;
