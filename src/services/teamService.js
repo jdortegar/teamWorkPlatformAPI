@@ -692,7 +692,7 @@ export const joinRequestUpdate = async (req, orgId, teamId, userId, requestId, t
         requestResponse(req, request);
         return request;
     } catch (err) {
-        console.log('****ERROR', error);
+        console.log('****ERROR', err);
         return Promise.reject(err);
     }
 };
