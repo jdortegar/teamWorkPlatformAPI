@@ -176,7 +176,7 @@ export const teamMemberAdded = (req, team, user, role, teamMemberId, adminId = n
       channels.push(ChannelFactory.teamAdminChannel(teamId));
    }
    if (adminId) {
-      team.teamAdminId = adminId;
+      team.teamAdmin = adminId;
    }
    return _joinChannels(req, user.userId, channels)
       .then(() => {

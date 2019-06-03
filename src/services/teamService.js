@@ -656,7 +656,9 @@ export const joinRequestUpdate = async (req, orgId, teamId, userId, requestId, t
     try {
         const existsRequest = await requestsTable.getRequestByTeamIdAndUserId(req, teamId, userId);
         const subscriberOrgId = orgId;
-
+        if (!teamAdminId) {
+            teamAdminId = await teamMembersTable.getTeamAdmin(req, teamId);
+        }
         if (!existsRequest) {
             throw new RequestNotExists();
         }
