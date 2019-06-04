@@ -6,7 +6,6 @@ import SocketIOWildcard from 'socketio-wildcard';
 import config from '../../config/env';
 import * as subscriberUsersTable from '../../repositories/db/subscriberUsersTable';
 import * as teamMembersTable from '../../repositories/db/teamMembersTable';
-import * as conversationSvc from '../conversationService';
 import logger, { createPseudoRequest } from '../../logger';
 import { setPresence } from './presence';
 import { disconnectFromRedis } from '../../redis-connection';
@@ -24,6 +23,9 @@ export const EventTypes = Object.freeze({
    userInvitationDeclined: 'userInvitationDeclined',
    sentInvitationStatus: 'sentInvitationStatus',
 
+   requestToAdmin: 'requestToAdmin',
+   requestResponse: 'requestResponse',
+
    subscriberOrgCreated: 'subscriberOrgCreated',
    subscriberOrgUpdated: 'subscriberOrgUpdated',
    subscriberOrgPrivateInfoUpdated: 'subscriberOrgPrivateInfoUpdated',
@@ -33,6 +35,7 @@ export const EventTypes = Object.freeze({
    teamUpdated: 'teamUpdated',
    teamPrivateInfoUpdated: 'teamPrivateInfoUpdated',
    teamMemberAdded: 'teamMemberAdded',
+   publicTeamCreated: 'publicTeamCreated',
 
    conversationCreated: 'conversationCreated',
    conversationUpdated: 'conversationUpdated',
@@ -140,17 +143,6 @@ const joinCurrentChannels = (req, socket, userId) => {
                socket.join(teamPrivateChannel);
                logger.debug(`MessagingService: userId=${userId} joining ${teamPrivateChannel}`);
             }
-         });
-      })
-      .catch(err => logger.error(err));
-
-   conversationSvc.getConversations(req, userId)
-      .then((conversations) => {
-         const conversationIds = conversations.map(conversation => conversation.conversationId);
-         conversationIds.forEach((conversationId) => {
-            const conversationChannel = ChannelFactory.conversationChannel(conversationId);
-            socket.join(conversationChannel);
-            logger.debug(`MessagingService: userId=${userId} joining ${conversationChannel}`);
          });
       })
       .catch(err => logger.error(err));

@@ -125,7 +125,8 @@ const validationSchemas = {
             icon: Joi.string().base64().allow(null),
             preferences: Joi.object().keys({
                 iconColor: Joi.string().min(1),
-                private: Joi.object()
+                private: Joi.object(),
+                public: Joi.boolean()
             })
         }
     },
@@ -177,7 +178,8 @@ const validationSchemas = {
         body: {
             messageType: Joi.string().min(1).required(),
             text: Joi.string().min(1).required(),
-            replyTo: Joi.string().min(1).allow(null)
+            replyTo: Joi.string().min(1).allow(null),
+            sharedData: Joi.object().allow(null)
         }
     },
     createMessage_v1: {
@@ -190,10 +192,11 @@ const validationSchemas = {
                     meta: Joi.object().keys({
                         fileName: Joi.string().min(1),
                         fileSize: Joi.number().min(1)
-                    })
+                    }),
+                    sharedData: Joi.object().allow(null)
                 })
             ).required(),
-            replyTo: Joi.string().min(1).allow(null)
+            replyTo: Joi.string().min(1).allow(null),
         }
     },
     getMessages: {

@@ -3,7 +3,6 @@ import { apiVersionedVisibility, publishByApiVersion } from '../../helpers/publi
 import * as internalQueue from './internalQueue';
 import { _broadcastEvent, _joinChannels, ChannelFactory, EventTypes } from './messagingService';
 import Roles from '../roles';
-import * as conversationsTable from '../../repositories/db/conversationsTable';
 
 // EventType = user
 
@@ -69,6 +68,19 @@ export const sentInvitationStatus = (req, sentInvitation) => {
    ]);
 };
 
+// Broadcast for Join Request
+
+export const sendRequestToAdmin = (req, teamAdminId, request) => {
+   return _broadcastEvent(req, EventTypes.requestToAdmin, request, [
+      ChannelFactory.personalChannel(teamAdminId)
+   ]);
+};
+
+export const requestResponse = (req, request) => {
+   return _broadcastEvent(req, EventTypes.requestResponse, request, [
+      ChannelFactory.personalChannel(request.userId)
+   ]);
+};
 
 // EventType = subscriberOrg
 
@@ -135,6 +147,15 @@ export const teamCreated = (req, team, teamAdminUserIds) => { // Assume 1. a new
       });
 };
 
+export const publicTeamCreated = (req, team, subscriberOrgId) => {
+   return _broadcastEvent(
+      req,
+      EventTypes.publicTeamCreated,
+      publishByApiVersion(req, apiVersionedVisibility.publicTeam, team),
+      [ChannelFactory.subscriberOrgChannel(subscriberOrgId)]
+   );
+};
+
 export const teamUpdated = (req, team) => {
    return _broadcastEvent(req, EventTypes.teamUpdated, publishByApiVersion(req, apiVersionedVisibility.publicTeam, team), [
       ChannelFactory.teamChannel(team.teamId)
@@ -147,14 +168,16 @@ export const teamPrivateInfoUpdated = (req, team) => {
    ]);
 };
 
-export const teamMemberAdded = (req, team, user, role, teamMemberId) => {
+export const teamMemberAdded = (req, team, user, role, teamMemberId, adminId = null) => {
    const { teamId } = team;
    const teamChannel = ChannelFactory.teamChannel(teamId);
    const channels = [teamChannel];
    if (role === Roles.admin) {
       channels.push(ChannelFactory.teamAdminChannel(teamId));
    }
-
+   if (adminId) {
+      team.teamAdmin = adminId;
+   }
    return _joinChannels(req, user.userId, channels)
       .then(() => {
          return _broadcastEvent(req, EventTypes.teamCreated, publishByApiVersion(req, apiVersionedVisibility.publicTeam, team), [
@@ -191,24 +214,6 @@ export const conversationUpdated = (req, conversation) => {
       ChannelFactory.conversationChannel(conversation.conversationId)
    ]);
 };
-
-export const conversationMemberAdded = (req, user, teamId) => {
-   let conversationId;
-   conversationsTable.getConversationByTeamId(req, teamId)
-      .then((conversation) => {
-         if (conversation) {
-            conversationId = conversation.conversationId;
-
-            const conversationChannel = ChannelFactory.conversationChannel(conversationId);
-            const channels = [ChannelFactory.conversationChannel(conversationId)];
-            return _joinChannels(req, user.userId, channels)
-               .catch(err => req.logger.error({ err }));
-
-         }
-         return undefined;
-      });
-};
-
 
 // EventType = message
 

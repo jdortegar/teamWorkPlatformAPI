@@ -23,28 +23,55 @@ export const createReservation = async (req, res, next) => {
     }
 };
 
-export const forgotPassword = (req, res) => {
-    const email = req.body.email || '';
-
-    // Add new reservation to cache
-
-    req.logger.debug(`createForgotPasswordReservation: user ${email}`);
-    const rid = uuid.v4(); // get a uid to represent the reservation
-    req.logger.debug(`createForgotPasswordReservation: new rid: ${rid}`);
-    req.app.locals.redis.set(`${config.redisPrefix}${rid}`, email, 'EX', 1800, (err) => {
-        if (err) {
-            req.logger.debug('createForgotPasswordReservation: hset status - redis error');
-        } else {
-            req.logger.debug(`createReservation: created reservation for email: ${email}`);
-            mailer.sendResetPassword(email, rid).then(() => {
-                const response = {
-                    status: 'SUCCESS',
-                    uuid: rid
-                };
-                res.status(httpStatus.CREATED).json(response);
+export const forgotPassword = async (req, res, next) => {
+    try { 
+        const email = req.body.email || '';
+        const user = await userSvc.getUserByEmail(req, email);
+        if (!user) {
+            throw new UserNotExistError(email);
+        }
+        req.logger.debug(`createForgotPasswordReservation: user ${email}`);
+        const rid = uuid.v4(); // get a uid to represent the reservation
+        req.logger.debug(`createForgotPasswordReservation: new rid: ${rid}`);
+        await req.app.locals.redis.setAsync(`${config.redisPrefix}${rid}`, email, 'EX', 1800);
+        req.logger.debug(`createReservation: created reservation for email: ${email}`);
+        await mailer.sendResetPassword(email, rid);
+        return res.status(httpStatus.CREATED).json({
+            status: 'SUCCESS',
+            uuid: rid
+        });
+    } catch (err) {
+        console.log(err);
+        if (err instanceof UserNotExistError) {
+            return res.status(httpStatus.NOT_FOUND).json({
+                error: 'Not Found',
+                message: `User with the email ${err.message} was not found.`
             });
         }
-    });
+        req.logger.debug('createForgotPasswordReservation: hset status - redis error');
+        return next(err);
+    }
+    // const email = req.body.email || '';
+
+    // // Add new reservation to cache
+
+    // req.logger.debug(`createForgotPasswordReservation: user ${email}`);
+    // const rid = uuid.v4(); // get a uid to represent the reservation
+    // req.logger.debug(`createForgotPasswordReservation: new rid: ${rid}`);
+    // req.app.locals.redis.set(`${config.redisPrefix}${rid}`, email, 'EX', 1800, (err) => {
+    //     if (err) {
+    //         req.logger.debug('createForgotPasswordReservation: hset status - redis error');
+    //     } else {
+    //         req.logger.debug(`createReservation: created reservation for email: ${email}`);
+    //         mailer.sendResetPassword(email, rid).then(() => {
+    //             const response = {
+    //                 status: 'SUCCESS',
+    //                 uuid: rid
+    //             };
+    //             res.status(httpStatus.CREATED).json(response);
+    //         });
+    //     }
+    // });
 };
 
 export const deleteRedisKey = (rid) => {

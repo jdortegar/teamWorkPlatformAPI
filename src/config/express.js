@@ -80,7 +80,8 @@ app.use(
          /^\/(v\d+\/)?payments/,
          /^\/(v\d+\/)?trials/,
          /^\/(v\d+\/)?coupons/,
-         /^\/(v\d+\/)?subscriptions\/paypal/
+         /^\/(v\d+\/)?subscriptions\/paypal/,
+         /^\/(v\d+\/)?auth\/meet/ 
       ]
    })
 );
@@ -100,6 +101,7 @@ app.use((req, res, next) => {
 // If error is not an instanceOf APIError or APIWarning, convert it.
 app.use((err, req, res, next) => {
    let e = err;
+   console.log(err); // We will keep this in order to show more accurate errors in logs
    if (err instanceof expressValidation.ValidationError) {
       const unifiedErrorMessage = err.errors
          .map(error => {
@@ -107,7 +109,7 @@ app.use((err, req, res, next) => {
          })
          .join(' and ');
       e = new APIError(err.status, unifiedErrorMessage);
-   } else if (err instanceof UnauthorizedError) {
+   } else if (err instanceof UnauthorizedError || err.name === 'UnauthorizedError') {
       req.logger.warn(err.message);
       res.status(httpStatus.UNAUTHORIZED).end();
       return;

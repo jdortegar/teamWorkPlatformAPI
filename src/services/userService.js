@@ -7,7 +7,6 @@ import { hashPassword, passwordMatch } from '../models/user';
 import { deactivateTeamMembersByUserId } from './teamService';
 import invitationsKeys from '../repositories/InvitationKeys';
 import * as usersTable from '../repositories/db/usersTable';
-import * as messagesTable from '../repositories/db/messagesTable';
 import * as usersCache from '../repositories/cache/usersCache';
 import * as invitationsRepo from '../repositories/invitationsRepo';
 import * as awsMarketplaceSvc from './awsMarketplaceService';
@@ -20,7 +19,7 @@ import { AWS_CUSTOMER_ID_HEADER_NAME } from '../controllers/auth';
 import * as mailer from '../helpers/mailer';
 import moment from 'moment';
 
-const getUserByEmail = (req, email) => {
+export const getUserByEmail = (req, email) => {
     return new Promise((resolve, reject) => {
         let user;
         usersTable.getUserByEmailAddress(req, email)
@@ -67,6 +66,7 @@ export const createUser = async (req, userInfo) => {
             preferences.private = {};
         }
         preferences.iconColor = preferences.iconColor || getRandomColor();
+        preferences.customPresenceStatusMessage = preferences.customPresenceStatusMessage || 'Available';
         user = await usersTable.createUser(req, userId, firstName, lastName, displayName, emailAddress, password, country, timeZone, icon, preferences);
         await usersCache.createUser(req, emailAddress, userId);
         // Check if there are invitations if not create a new organization.
@@ -109,40 +109,6 @@ export const createUser = async (req, userInfo) => {
     }
 };
 
-const resolveBookmarks = (req, bookmarks) => {
-    return new Promise((resolve, reject) => {
-        const messagePromises = {};
-        Object.keys(bookmarks).forEach((subscriberOrgId) => {
-            const messageIds = bookmarks[subscriberOrgId].messageIds;
-            Object.keys(messageIds).forEach((messageId) => {
-                const bookmark = messageIds[messageId];
-                const { conversationId } = bookmark;
-                const prevSiblingId = bookmark.prevSiblingId;
-
-                if (!messagePromises[messageId]) {
-                    messagePromises[messageId] = messagesTable.getMessageByConversationIdAndMessageId(req, conversationId, messageId);
-                }
-                if ((!prevSiblingId) && (!messagePromises[prevSiblingId])) {
-                    messagePromises[prevSiblingId] = messagesTable.getMessageByConversationIdAndMessageId(req, conversationId, prevSiblingId);
-                }
-            });
-        });
-
-        if (Object.keys(messagePromises).length > 0) {
-            const resolvedBookmarks = { ...bookmarks, messages: {} };
-            Promise.all(Object.values(messagePromises))
-                .then((messages) => {
-                    messages.forEach((message) => { resolvedBookmarks.messages[message.messageId] = message; });
-                    resolve(resolvedBookmarks);
-                })
-                .catch(err => reject(err));
-        } else {
-            const resolvedBookmarks = { ...bookmarks, messages: {} };
-            resolve(resolvedBookmarks);
-        }
-    });
-};
-
 export const updateUser = (req, userId, updateInfo) => {
     return new Promise((resolve, reject) => {
         usersTable.updateUser(req, userId, updateInfo)
@@ -151,10 +117,6 @@ export const updateUser = (req, userId, updateInfo) => {
                 userUpdated(req, user, orgId[0].subscriberOrgId);
                 if ((updateInfo.preferences) && (updateInfo.preferences.private)) {
                     userPrivateInfoUpdated(req, user);
-                }
-                if (updateInfo.bookmarks) {
-                    resolveBookmarks(req, user.bookmarks)
-                        .then(resolvedBookmarks => userBookmarksUpdated(req, user, resolvedBookmarks));
                 }
                 if (updateInfo.active === false) {
                     deactivateTeamMembersByUserId(req, userId);
@@ -258,8 +220,7 @@ export const getUserNameHash = async (req, userIds = []) => {
     return hash;
 };
 
-export const createReservation = (req, reservationData) => {
-
+export const createReservation = async (req, reservationData) => {
     const { email } = reservationData || '';
     const { stripeSubscriptionId } = reservationData || null;
     const { paypalSubscriptionId } = reservationData || null;

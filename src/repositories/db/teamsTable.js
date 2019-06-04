@@ -33,7 +33,7 @@ const upgradeSchema = (req, dbObjects) => {
     return Promise.resolve(dbObjects);
 };
 
-export const createTeam = (req, teamId, subscriberOrgId, name, icon, primary, preferences) => {
+export const createTeam = (req, teamId, subscriberOrgId, name, icon, primary, preferences, conversationId = '') => {
     return new Promise((resolve, reject) => {
         const params = {
             TableName: tableName(),
@@ -48,7 +48,8 @@ export const createTeam = (req, teamId, subscriberOrgId, name, icon, primary, pr
                 subscriberOrgEnabled: true,
                 created: req.now.format(),
                 lastModified: req.now.format(),
-                preferences
+                preferences,
+                conversationId
             }
         };
 

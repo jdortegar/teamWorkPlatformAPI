@@ -7,6 +7,9 @@ export const aesKey = 'AI-Infused Knowledge Management for Enterprise Teams';
 export const jwtSecret = '69157cde-e3a7-4079-b79a-95a35d58c6d3';
 export const apiEndpoint = 'http://localhost:3000';
 // export const apiEndpoint = 'https://hablaapi.ngrok.io';
+// export const chatApiEndpoint = 'https://chat-dev.habla.ai/api/v1';
+export const chatApiEndpoint = 'http://localhost:8081/api/v1';
+
 export const aws = {
    accessKeyId: 'AKIAJUWK5MDFUPOKWM4A',
    secretAccessKey: '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',
@@ -23,7 +26,7 @@ export const neo4j = {
    // DEV
 
    // host: '34.214.167.0',
-   host: '34.214.167.0',
+   host: '54.212.163.138',
    port: '7687',
    user: 'neo4j',
    password: 'habla12345'
@@ -95,8 +98,8 @@ export const stripeConfig = {
    stripe: {
       country: 'US',
       apiVersion: '2018-10-31',
-      publishableKey: 'pk_live_EYULQ2u9a4EBUMKjoEwFX8W3',
-      secretKey: 'sk_live_1zwgvM8siP8VRhR4dqCg2mIV'
+      publishableKey: 'pk_test_Ps3YX1kKZUOPHfZu9DjtAJRr',
+      secretKey: 'sk_test_rEf899cFVromgNDVHewmYhzj'
    }
 };
 
@@ -115,3 +118,5 @@ export const knowledgeApiEndpoint = 'https://habla-be-api-dev.habla.ai';
 // secretKey: 'sk_test_rEf899cFVromgNDVHewmYhzj'
 
 export const notificationEmail = 'thomas@habla.ai, kelly@habla.ai';
+
+export const meetingUrl = 'https://dev-meet.habla.ai';
