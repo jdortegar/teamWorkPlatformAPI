@@ -42,6 +42,5 @@ router.use('/reports', dashboarRoutes);
 
 router.use('/ckg', ckgRoutes);
 
-
 export default router;
 
