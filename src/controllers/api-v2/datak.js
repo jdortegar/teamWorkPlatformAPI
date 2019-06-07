@@ -3,6 +3,7 @@ import * as datakSvc from '../../services/datakService';
 import * as ckgSvc from '../../services/ckgService';
 import * as ckgTeamSvc from '../../services/ckgTeamService';
 import { getTeamMembersByUserId } from '../../repositories/db/teamMembersTable';
+import { isNull } from 'util';
 
 export const getDataBySearchTerm = async (req, res) => {
     const { neo4jSession } = req.app.locals;
@@ -44,23 +45,35 @@ export const getDataFilesBySearchTerm = async (req, res) => {
 
         console.log("andOperator=" + andOperator);
 
-        var files = null;
+        var files = [];
         var teams = null;
         if (hablaUserId !== null && searchTerm !== null) {
 
             teams = await getTeamMembersByUserId(req, hablaUserId);
-            var teamFiles = null;
-            var orgFiles = null;
-            teams.forEach(async function (item) {
-                teamFiles = await ckgTeamSvc.getFilesBySubscriberTeamIdSearchTerm(neo4jSession, item.teamId, searchTerm, caseInsensitive, andOperator)
-                if (teamFiles !== null && teamFiles.length !== 0) {
-                    files = teamFiles.concat(files)
-                }
+            
+            // get team files
+            const promises = [];
+            teams.forEach((item) => {
+                promises.push(ckgTeamSvc.getFilesBySubscriberTeamIdSearchTerm(neo4jSession, item.teamId, searchTerm, caseInsensitive, andOperator));
             });
+            const teamFiles = await Promise.all(promises);
+            teamFiles.forEach((val) => {
+                if(val.length !== 0 && val !== null){
+                    if(val.length>=files.length){
+                        files = val.concat(files);
+                    } else {
+                        files = files.concat(val);
+                    }                    
+                }                
+            });
+
+            // get org files
+            var orgFiles = null;
             orgFiles = await ckgSvc.getFilesBySubscriberOrgIdSearchTerm(neo4jSession, teams[0].subscriberOrgId, searchTerm, caseInsensitive, andOperator)
             if (orgFiles !== null & orgFiles.length !== 0) {
-                files = orgFiles.concat(files)
+                files = files.concat(orgFiles)
             }
+
         } else {
             if (hablaUserId == null) {
                 console.error("hablaUserId is null ");
