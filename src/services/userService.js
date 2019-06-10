@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import uuid from 'uuid';
 import config from '../config/env';
-import { NoPermissionsError, UserNotExistError, CustomerExistsError, UserLimitReached } from './errors';
+import { NoPermissionsError, UserNotExistError, CustomerExistsError, UserLimitReached, SubscriptionNotExists } from './errors';
 import { getRandomColor } from './util';
 import { hashPassword, passwordMatch } from '../models/user';
 import { deactivateTeamMembersByUserId } from './teamService';
