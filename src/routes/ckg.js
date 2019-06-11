@@ -8,5 +8,6 @@ router.route('/getFiles/:subscriberOrgId?/:subscriberTeamId?')
 
 router.route('/getFilesBySearchTerm/:subscriberOrgId?/:subscriberTeamId?/:searchTerm/:caseInsensitive?/:andOperator?')
   .get(ckg.getFilesBySearchTerm);
-  
+
+
 export default router;
