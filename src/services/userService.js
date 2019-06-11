@@ -231,7 +231,6 @@ export const createReservation = async (req, reservationData) => {
         const { userLimit } = reservationData || 9;
         const { subscriptionStatus } = reservationData || 'trialing';
         const { subscriptionExpireDate } = reservationData || 0;
-        console.log('***RESERVATION DATA', reservationData);
         // Add new reservation to cache
         req.logger.debug(`createReservation: user ${email}`);
         const rid = String(moment().valueOf()).slice(-6);
@@ -263,8 +262,6 @@ export const createReservation = async (req, reservationData) => {
         await req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#subscriptionStatus`, subscriptionStatus);
         await req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#subscriptionExpireDate`, subscriptionExpireDate);
         await req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#userLimit`, userLimit);
-        const redisdata = await req.app.locals.redis.getAsync(`${config.redisPrefix}${email}#stripeSubscriptionId`);
-        console.log('****REDIS sets', `${config.redisPrefix}${email}#paypalSubscriptionId`, redisdata);
     } catch (err) { 
         console.log('SUBSCRIPTION ERROR', err);
         return Promise.reject(err);
