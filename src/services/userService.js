@@ -229,7 +229,7 @@ export const createReservation = async (req, reservationData) => {
     const { userLimit } = reservationData || 9;
     const { subscriptionStatus } = reservationData || 'trialing';
     const { subscriptionExpireDate } = reservationData || 0;
-
+    console.log('***RESERVATION DATA', reservationData);
     // Add new reservation to cache
     req.logger.debug(`createReservation: user ${email}`);
     const rid = String(moment().valueOf()).slice(-6);
