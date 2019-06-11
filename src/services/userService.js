@@ -263,7 +263,8 @@ export const createReservation = async (req, reservationData) => {
         await req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#subscriptionStatus`, subscriptionStatus);
         await req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#subscriptionExpireDate`, subscriptionExpireDate);
         await req.app.locals.redis.setAsync(`${config.redisPrefix}${email}#userLimit`, userLimit);
-    } catch (err) {
+        console.log('****REDIS sets', `${config.redisPrefix}${email}#paypalSubscriptionId`, req.app.locals.redis.getAsync(`${config.redisPrefix}${email}#paypalSubscriptionId`));
+    } catch (err) { 
         console.log('SUBSCRIPTION ERROR', err);
         return Promise.reject(err);
     }
