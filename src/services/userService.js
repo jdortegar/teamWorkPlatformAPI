@@ -91,6 +91,7 @@ export const createUser = async (req, userInfo) => {
             const subscriberOrgName = req.body.displayName;
             const stripeSubscriptionId = await req.app.locals.redis.getAsync(`${config.redisPrefix}${emailAddress}#stripeSubscriptionId`) || null;
             const paypalSubscriptionId = await req.app.locals.redis.getAsync(`${config.redisPrefix}${emailAddress}#paypalSubscriptionId`) || null;
+            console.log('***CACHE DATA', `${config.redisPrefix}${emailAddress}#stripeSubscriptionId`, stripeSubscriptionId, paypalSubscriptionId);
             if(!stripeSubscriptionId && !paypalSubscriptionId){
                 throw new SubscriptionNotExists();
             }
