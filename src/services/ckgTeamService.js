@@ -52,6 +52,7 @@ export const getFilesBySubscriberTeamId = async (neo4jSession, subscriberTeamId)
             fileOwnerName: fileNode.properties.ownerName,
             fileOwnerId: userNode.properties.hablaUserId,
             fileCreatedAt: fileNode.properties.createdAt,
+            dataType: fileNode.properties.dataType,
          };
       });
       return files;
@@ -925,6 +926,7 @@ export const getFilesBySubscriberTeamIdSearchTerm = async (neo4jSession, subscri
                fileOwnerName: fileNode.properties.ownerName,
                fileOwnerId: userNode.properties.hablaUserId,
                fileCreatedAt: fileNode.properties.createdAt,
+               dataType: fileNode.properties.dataType,
             };
          });
          return files;
