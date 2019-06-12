@@ -81,7 +81,8 @@ app.use(
          /^\/(v\d+\/)?trials/,
          /^\/(v\d+\/)?coupons/,
          /^\/(v\d+\/)?subscriptions\/paypal/,
-         /^\/(v\d+\/)?auth\/meet/ 
+         /^\/(v\d+\/)?auth\/meet/,
+         '/'
       ]
    })
 );
@@ -92,11 +93,15 @@ app.use(postAuthMiddleware);
 app.use('/v2/', routesV2);
 app.use('/', routes);
 app.use('/v1/', routes);
+app.get('/', (req, res) => {
+   return res.send('Habla API');
+})
 // Catch 404 and forward to error handler.
 app.use((req, res, next) => {
    const err = new APIError(httpStatus.NOT_FOUND, 'API not found');
    return next(err);
 });
+
 
 // If error is not an instanceOf APIError or APIWarning, convert it.
 app.use((err, req, res, next) => {
