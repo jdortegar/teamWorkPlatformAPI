@@ -44,19 +44,13 @@ export const getDataFilesBySearchTerm = async (req, res) => {
         const andOperator = req.params.andOperator || 0;
 
         console.log("andOperator=" + andOperator);
-        
-        var data = null;        
+
         var files = [];
         var teams = null;
         if (hablaUserId !== null && searchTerm !== null) {
+
+            teams = await getTeamMembersByUserId(req, hablaUserId);
             
-            // getting messages and attached files
-            // and teams a user belongs to
-            [data,teams] = await Promise.all([
-                datakSvc.getDataBySearchTerm(neo4jSession, hablaUserId, searchTerm, caseInsensitive, andOperator),
-                getTeamMembersByUserId(req, hablaUserId)
-            ])
-            // getting integration files
             // get team files
             const promises = [];
             teams.forEach((item) => {
@@ -91,7 +85,6 @@ export const getDataFilesBySearchTerm = async (req, res) => {
         return res.status(httpStatus.OK).json({
             message: {
                 fileTypes: [],
-                data,
                 files,
                 edges: []
             }
