@@ -44,33 +44,34 @@ export const getDataFilesBySearchTerm = async (req, res) => {
         const andOperator = req.params.andOperator || 0;
 
         console.log("andOperator=" + andOperator);
-        
-        var data = null;        
+
+        var data = null;
         var files = [];
         var teams = null;
         if (hablaUserId !== null && searchTerm !== null) {
-            
-            // getting messages and attached files
-            // and teams a user belongs to
-            [data,teams] = await Promise.all([
-                datakSvc.getDataBySearchTerm(neo4jSession, hablaUserId, searchTerm, caseInsensitive, andOperator),
-                getTeamMembersByUserId(req, hablaUserId)
-            ])
-            // getting integration files
-            // get team files
-            const promises = [];
-            teams.forEach((item) => {
-                promises.push(ckgTeamSvc.getFilesBySubscriberTeamIdSearchTerm(neo4jSession, item.teamId, searchTerm, caseInsensitive, andOperator));
-            });
-            const teamFiles = await Promise.all(promises);
-            teamFiles.forEach((val) => {
-                if(val.length !== 0 && val !== null){
-                    if(val.length>=files.length){
-                        files = val.concat(files);
-                    } else {
-                        files = files.concat(val);
-                    }                    
-                }                
+
+            // getting messages and attached files 
+            // and teams one user belongs to 
+            [data, teams] = await Promise.all([ 
+                datakSvc.getDataBySearchTerm( neo4jSession, hablaUserId, searchTerm, caseInsensitive, andOperator ),
+                getTeamMembersByUserId( req, hablaUserId ) 
+            ]);
+
+            // getting integration files 
+            // get team files 
+            const promises = []; 
+            teams.forEach((item) => { 
+                promises.push(ckgTeamSvc.getFilesBySubscriberTeamIdSearchTerm(neo4jSession, item.teamId, searchTerm, caseInsensitive, andOperator)); 
+            }); 
+            const teamFiles = await Promise.all(promises); 
+            teamFiles.forEach((val) => { 
+                if (val.length !== 0 && val !== null) { 
+                    if (val.length >= files.length) { 
+                        files = val.concat(files); 
+                    } else { 
+                        files = files.concat(val); 
+                    } 
+                }
             });
 
             // get org files
