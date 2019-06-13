@@ -92,6 +92,7 @@ export const getDataFilesBySearchTerm = async (req, res) => {
         return res.status(httpStatus.OK).json({
             message: {
                 fileTypes: [],
+                data,
                 files,
                 edges: []
             }
