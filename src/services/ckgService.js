@@ -913,6 +913,7 @@ const getFiles = async (query, neo4jSession, fileRecords=[]) => {
         fileOwnerName: fileNode.properties.ownerName,
         fileOwnerId: userNode.properties.hablaUserId,
         fileCreatedAt: fileNode.properties.createdAt,
+        dataType: fileNode.properties.dataType,
     };
  });
  return files;

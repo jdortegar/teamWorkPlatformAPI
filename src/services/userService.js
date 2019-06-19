@@ -91,6 +91,7 @@ export const createUser = async (req, userInfo) => {
             const subscriberOrgName = req.body.displayName;
             const stripeSubscriptionId = await req.app.locals.redis.getAsync(`${config.redisPrefix}${emailAddress}#stripeSubscriptionId`) || null;
             const paypalSubscriptionId = await req.app.locals.redis.getAsync(`${config.redisPrefix}${emailAddress}#paypalSubscriptionId`) || null;
+            console.log('***CACHE DATA', `${config.redisPrefix}${emailAddress}#stripeSubscriptionId`, stripeSubscriptionId, paypalSubscriptionId);
             if(!stripeSubscriptionId && !paypalSubscriptionId){
                 throw new SubscriptionNotExists();
             }
@@ -228,7 +229,7 @@ export const createReservation = async (req, reservationData) => {
     const { userLimit } = reservationData || 9;
     const { subscriptionStatus } = reservationData || 'trialing';
     const { subscriptionExpireDate } = reservationData || 0;
-
+    console.log('***RESERVATION DATA', reservationData);
     // Add new reservation to cache
     req.logger.debug(`createReservation: user ${email}`);
     const rid = String(moment().valueOf()).slice(-6);
