@@ -131,7 +131,7 @@ export const createTeamNoCheck = async (
                 user.userId
             ],
             title: teamInfo.name,
-            description: `Conversation for ${teamInfo.name} Team`,
+            description: `Conversation in ${teamInfo.name} Team`,
             organization: subscriberOrgId,
             appData: {
                 teamId: actualTeamId
