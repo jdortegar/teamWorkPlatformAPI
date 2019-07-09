@@ -159,9 +159,7 @@ class MessagingService {
 
    init(httpServer, redisClient) {
       this.httpServer = httpServer;
-      this.io = new SocketIO(this.httpServer, {
-         transports: ['websocket']
-      }); // Test Websocket connection.
+      this.io = new SocketIO(this.httpServer);
       // const redisAdapter = new SocketIORedisAdapter({ host: config.cacheServer, port: config.cachePort });
       const redisAdapter = new SocketIORedisAdapter({ pubClient: redisClient.duplicate(), subClient: redisClient.duplicate() });
       this.io.adapter(redisAdapter);
