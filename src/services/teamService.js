@@ -474,7 +474,7 @@ export function addUserToTeam(req, user, subscriberUserId, teamId, role, teamAdm
                 console.log('***USER', user[0].userId, member);
                 const token = jwt.sign(user[0], config.jwtSecret);
                 teamMemberAdded(req, team, user[0], role, teamMemberId, teamAdminId);
-                axios.post(`${config.chatApiEndpoint}/conversations/${team.conversationId}/members`, {
+                await axios.post(`${config.chatApiEndpoint}/conversations/${team.conversationId}/members`, {
                     userId: user[0].userId
                 }, {
                         headers: {
@@ -487,7 +487,10 @@ export function addUserToTeam(req, user, subscriberUserId, teamId, role, teamAdm
             .then(() => {
                 resolve(teamMemberId);
             })
-            .catch(err => reject(err));
+            .catch((err) => {
+                console.log('**CHAT ERROR', err);
+                reject(err)
+            });
     });
 }
 
