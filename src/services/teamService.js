@@ -449,7 +449,6 @@ export function inviteMembers(req, teamId, userIds, userId) {
 }
 
 export function addUserToTeam(req, user, subscriberUserId, teamId, role, teamAdminId = null) {
-    console.log('USER:          ', user);
     return new Promise((resolve, reject) => {
         let team;
         const teamMemberId = uuid.v4();
@@ -471,7 +470,6 @@ export function addUserToTeam(req, user, subscriberUserId, teamId, role, teamAdm
                 );
             })
             .then(member => {
-                console.log('***USER', user[0].userId, member);
                 const token = jwt.sign({ userId: user[0].userId }, config.jwtSecret);
                 teamMemberAdded(req, team, user[0], role, teamMemberId, teamAdminId);
                 return axios.post(`${config.chatApiEndpoint}/conversations/${team.conversationId}/members`, {
