@@ -121,18 +121,18 @@ export const revokeGoogle = async (req, userId, subscriberId) => {
         integrations.google = { revoked: true };
         let subscriberInfo;
         const revokeData = {
-            subscriberOrgId: subscriber.subscriberOrgId,
-            hablaUserId: userId,
-            source: 'google',
-            subscriberUserId: null,
-            teamId: null
+            subscriber_org_id: subscriber.subscriberOrgId,
+            habla_user_id: userId,
+            service: 'google',
+            subscriber_user_id: null,
+            team_id: null
         };
     
         if (teamLevel) {
-            revokeData.teamId = subscriber.teamId;
+            revokeData.team_id = subscriber.teamId;
             subscriberInfo = teamMembersTable.updateTeamMembersIntegrations(req, userId, subscriberId, integrations);
         } else {
-            revokeData.subscriberUserId = subscriber.subscriberUserId;
+            revokeData.subscriber_user_id = subscriber.subscriberUserId;
             subscriberInfo = await subscriberUsersTable.updateSubscriberUserIntegrations(req, subscriber.subscriberUserId, integrations);
         }
         await axios.post(`${config.knowledgeApiEndpoint}/revoke/user`, revokeData);
