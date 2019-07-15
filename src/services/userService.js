@@ -1,5 +1,6 @@
 import _ from 'lodash';
 import uuid from 'uuid';
+import moment from 'moment';
 import config from '../config/env';
 import { NoPermissionsError, UserNotExistError, CustomerExistsError, UserLimitReached, SubscriptionNotExists } from './errors';
 import { getRandomColor } from './util';
@@ -14,10 +15,10 @@ import * as subscriberOrgSvc from './subscriberOrgService';
 import * as subscriberUserTable from '../repositories/db/subscriberUsersTable';
 import * as invitationsTable from '../repositories/db/invitationsTable';
 import * as subscriberOrgsTable from '../repositories/db/subscriberOrgsTable';
+import * as teamSvc from './teamService';
 import { userCreated, userUpdated, userPrivateInfoUpdated, userBookmarksUpdated, sentInvitationStatus } from './messaging';
 import { AWS_CUSTOMER_ID_HEADER_NAME } from '../controllers/auth';
 import * as mailer from '../helpers/mailer';
-import moment from 'moment';
 
 export const getUserByEmail = (req, email) => {
     return new Promise((resolve, reject) => {
@@ -83,6 +84,11 @@ export const createUser = async (req, userInfo) => {
             const subscriberUserId = uuid.v4();
             const subscriberUser = await subscriberUserTable.createSubscriberUser(req, subscriberUserId, userId, invitations[0].subscriberOrgId, 'user', user.displayName);
             const changedInvitations = await invitationsTable.updateInvitationsStateByInviteeEmail(req, user.emailAddress, invitationsKeys.subscriberOrgId, invitations[0].subscriberOrgId, 'ACCEPTED');
+            // Create default Team.
+            const teamInfo = {
+                name: `${firstName}'s Project Team`
+            }
+            const team = await teamSvc.createTeamNoCheck(req, invitations[0].subscriberOrgId, teamInfo, subscriberUserId, user);
             sentInvitationStatus(req, changedInvitations[0]);
             await req.app.locals.redis.delAsync(`${user.emailAddress}#pendingInvites`);
             userCreated(req, user, subscriberOrgId);
