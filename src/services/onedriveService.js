@@ -145,7 +145,7 @@ export const revokeOnedrive = async (req, userId, subscriberId) => {
         let subscriberInfo;
         const revokeData = {
             subscriber_org_id: subscriber.subscriberOrgId,
-            habla_habla_id: userId,
+            habla_user_id: userId,
             service: 'onedrive',
             subscriber_user_id: null,
             team_id: null
