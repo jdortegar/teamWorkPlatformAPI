@@ -26,10 +26,10 @@ export const integrateBox = (req, res, next) => {
 };
 
 export const boxAccess = async (req, res) => {
+    let redirectUri;
     try {
         const teamLevelVal = await req.app.locals.redis.getAsync(`${boxSvc.hashKey(req.query.state)}#teamLevel`) || 0;
         const teamLevel = teamLevelVal == 1;
-        let redirectUri;
         if (teamLevel) {
             redirectUri = `${config.webappBaseUri}/app/teamIntegrations`;
         } else  {
@@ -38,7 +38,7 @@ export const boxAccess = async (req, res) => {
         const subscriberId = await boxSvc.boxAccessResponse(req, req.query);
         res.redirect(`${redirectUri}/${subscriberId}/box/CREATED`);
     } catch (err) {
-        const subscriberId = err.subscriberOrgId;
+        const subscriberId = err.subscriberId;
         const realError = err._chainedError || err;
         if (realError instanceof IntegrationAccessError) {
             res.redirect(`${redirectUri}/${subscriberId}/box/FORBIDDEN`);

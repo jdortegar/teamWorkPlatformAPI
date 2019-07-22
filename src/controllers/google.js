@@ -28,10 +28,10 @@ export const googleAccess = async (req, res) => {
     // Use referrer to get subscriberOrgId.
     // TODO: remove  const refererToks = req.headers.referer.split('/');
     // TODO: remove  const subscriberOrgId = refererToks[refererToks.length - 1];
+    let redirectUri;
     try {
         const teamLevelVal = await req.app.locals.redis.getAsync(`${googleSvc.hashKey(req.query.state)}#teamLevel`) || 0;
         const teamLevel = teamLevelVal == 1;
-        let redirectUri;
         if (teamLevel) {
             redirectUri = `${config.webappBaseUri}/app/teamIntegrations`;
         } else  {
@@ -40,7 +40,7 @@ export const googleAccess = async (req, res) => {
         const subscriberId = await googleSvc.googleAccessResponse(req, req.query);
         res.redirect(`${redirectUri}/${subscriberId}/google/CREATED`);
     } catch (err) {
-        const subscriberId = err.subscriberOrgId;
+        const subscriberId = err.subscriberId;
         const realError = err._chainedError || err;
         if (realError instanceof IntegrationAccessError) {
             res.redirect(`${redirectUri}/${subscriberId}/google/FORBIDDEN`);

@@ -7,6 +7,7 @@ import { integrationsUpdated, googleWebhookEvent } from './messaging';
 import config from '../config/env';
 import * as subscriberUsersTable from '../repositories/db/subscriberUsersTable';
 import * as teamMembersTable from '../repositories/db/teamMembersTable';
+import { promises } from 'fs';
 
 const defaultExpiration = 30 * 60; // 30 minutes.
 
@@ -54,46 +55,52 @@ export const integrateGoogle = async (req, userId, subscriberId) => {
 };
 
 export const googleAccessResponse = async (req, { code, state, error }) => {
-    if (error) {
-        throw new IntegrationAccessError(error);
-    }
-    const teamLevelVal = await req.app.locals.redis.getAsync(`${hashKey(state)}#teamLevel`) || 0;
-    const teamLevel = teamLevelVal == 1;
-    const authorizationCode = code;
-    const integrationContext = await deleteRedisGoogleIntegrationState(req, state, teamLevelVal);
-    const userId = integrationContext.userId;
-    const subscriberId = (typeof integrationContext.subscriberOrgId !== 'undefined') ? integrationContext.subscriberOrgId : integrationContext.teamId;
-    const tokenInfo = await exchangeAuthorizationCodeForAccessToken(authorizationCode);
+    try {
+        const teamLevelVal = await req.app.locals.redis.getAsync(`${hashKey(state)}#teamLevel`) || 0;
+        const integrationContext = await deleteRedisGoogleIntegrationState(req, state, teamLevelVal);
+        const subscriberField = teamLevelVal == 0 ? 'subscriberOrgId' : 'teamId'
 
-    req.logger.debug(`Google access info for userId:${userId} = ${JSON.stringify(tokenInfo)}`);
-    let subscriber;
-    if (teamLevel) {
-        subscriber = await teamMembersTable.getTeamMemberByTeamIdAndUserId(req, subscriberId, userId);
+        if (error) {
+            throw new IntegrationAccessError(integrationContext[subscriberField]);
+        }
+        const teamLevel = teamLevelVal == 1;
+        const authorizationCode = code;
+        const userId = integrationContext.userId;
+        const subscriberId = (typeof integrationContext.subscriberOrgId !== 'undefined') ? integrationContext.subscriberOrgId : integrationContext.teamId;
+        const tokenInfo = await exchangeAuthorizationCodeForAccessToken(authorizationCode);
     
-    } else {
-        subscriber = await subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberId);
+        req.logger.debug(`Google access info for userId:${userId} = ${JSON.stringify(tokenInfo)}`);
+        let subscriber;
+        if (teamLevel) {
+            subscriber = await teamMembersTable.getTeamMemberByTeamIdAndUserId(req, subscriberId, userId);
+        
+        } else {
+            subscriber = await subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberId);
+        }
+        const userInfo = await getUserInfo(req, tokenInfo.access_token);
+    
+        if (!subscriber) {
+            throw new SubscriberOrgNotExistError(subscriberId);
+        }
+        tokenInfo.userId = userInfo.id;
+        tokenInfo.expired = false;
+        const googleInfo = {
+            google: tokenInfo
+        };
+        const updateInfo = _.merge(subscriber, { integrations: googleInfo });
+        delete updateInfo.integrations.google.revoked;
+        const integrations = updateInfo.integrations;
+        if (teamLevel) {
+            await teamMembersTable.updateTeamMembersIntegrations(req, userId, subscriberId, integrations);
+    
+        } else {
+            await subscriberUsersTable.updateSubscriberUserIntegrations(req, subscriber.subscriberUserId, integrations);
+        }
+        integrationsUpdated(req, updateInfo);
+        return subscriberId;
+    } catch (err) {
+        return Promise.reject(err);
     }
-    const userInfo = await getUserInfo(req, tokenInfo.access_token);
-
-    if (!subscriber) {
-        throw new SubscriberOrgNotExistError(subscriberId);
-    }
-    tokenInfo.userId = userInfo.id;
-    tokenInfo.expired = false;
-    const googleInfo = {
-        google: tokenInfo
-    };
-    const updateInfo = _.merge(subscriber, { integrations: googleInfo });
-    delete updateInfo.integrations.google.revoked;
-    const integrations = updateInfo.integrations;
-    if (teamLevel) {
-        await teamMembersTable.updateTeamMembersIntegrations(req, userId, subscriberId, integrations);
-
-    } else {
-        await subscriberUsersTable.updateSubscriberUserIntegrations(req, subscriber.subscriberUserId, integrations);
-    }
-    integrationsUpdated(req, updateInfo);
-    return subscriberId;
 };
 
 export const revokeGoogle = async (req, userId, subscriberId) => {

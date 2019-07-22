@@ -55,13 +55,14 @@ export const integrateBox = async (req, userId, subscriberOrgId) => {
 
 export const boxAccessResponse = async (req, { code, state, error, error_description }) => {
     try {
-        if (error) {
-            throw new IntegrationAccessError(error);
-        }
         const teamLevelVal = await req.app.locals.redis.getAsync(`${hashKey(state)}#teamLevel`) || 0;
+        const integrationContext = await deleteRedisBoxIntegrationState(req, state, teamLevelVal);
+        const subscriberField = teamLevelVal == 0 ? 'subscriberOrgId' : 'teamId'
+        if (error) {
+            throw new IntegrationAccessError(integrationContext[subscriberField]);
+        }
         const teamLevel = teamLevelVal == 1;
         const authorizationCode = code;
-        const integrationContext = await deleteRedisBoxIntegrationState(req, state, teamLevelVal);
         const userId = integrationContext.userId;
         const subscriberOrgId = (typeof integrationContext.subscriberOrgId !== 'undefined') ? integrationContext.subscriberOrgId : integrationContext.teamId;
         const tokenInfo = await exchangeAuthorizationCodeForAccessToken(authorizationCode);

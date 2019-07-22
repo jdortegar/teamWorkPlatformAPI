@@ -190,12 +190,11 @@ export class CannotInviteError extends Error {
 }
 
 export class IntegrationAccessError extends Error {
-   _subscriberOrgId;
    _chainedError;
 
-   constructor(subscriberOrgId, ...args) {
+   constructor(subscriberId, ...args) {
       super(...args);
-      this._subscriberOrgId = subscriberOrgId;
+      this.subscriberId = subscriberId;
       Error.captureStackTrace(this, IntegrationAccessError);
    }
 }
