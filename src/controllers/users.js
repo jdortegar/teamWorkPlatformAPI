@@ -116,6 +116,7 @@ export const validateCode = async (req, res, next) => {
         const response = { email: registration.email, orgName: registration.subscriberOrgName };
         return res.status(httpStatus.OK).json(response);
     } catch (error) {
+        console.log('***REDIS ERROR', error);
         req.logger.debug('validateCode: get status - redis error');
         return next(error);
     }
