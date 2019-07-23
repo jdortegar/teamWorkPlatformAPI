@@ -25,10 +25,10 @@ export const integrateSalesforce = (req, res, next) => {
 };
 
 export const salesforceAccess = async (req, res) => {
+    let redirectUri;
     try {
         const teamLevelVal = await req.app.locals.redis.getAsync(`${salesforceSvc.hashKey(req.query.state)}#teamLevel`) || 0;
         const teamLevel = teamLevelVal == 1;
-        let redirectUri;
         if (teamLevel) {
             redirectUri = `${config.webappBaseUri}/app/teamIntegrations`;
         } else  {
@@ -37,7 +37,7 @@ export const salesforceAccess = async (req, res) => {
         const subscriberId = await salesforceSvc.salesforceAccessResponse(req, req.query);
         res.redirect(`${redirectUri}/${subscriberId}/salesforce/CREATED`);
     } catch (err) {
-        const subscriberId = err.subscriberOrgId;
+        const subscriberId = err.subscriberId;
         const realError = err._chainedError || err;
         if (realError instanceof IntegrationAccessError) {
             res.redirect(`${redirectUri}/${subscriberId}/salesforce/FORBIDDEN`);
