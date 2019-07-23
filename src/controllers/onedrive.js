@@ -25,10 +25,10 @@ export const integrateOnedrive = (req, res, next) => {
 };
 
 export const onedriveAccess = async (req, res) => {
+    let redirectUri;
     try {
         const teamLevelVal = await req.app.locals.redis.getAsync(`${onedriveSvc.hashKey(onedriveSvc.deduceState(req))}#teamLevel`) || 0;
         const teamLevel = teamLevelVal == 1;
-        let redirectUri;
         if (teamLevel) {
             redirectUri = `${config.webappBaseUri}/app/teamIntegrations`;
         } else  {
@@ -37,7 +37,7 @@ export const onedriveAccess = async (req, res) => {
         const subscriberId = await onedriveSvc.onedriveAccessResponse(req, req.query);
         res.redirect(`${redirectUri}/${subscriberId}/onedrive/CREATED`);
     } catch (err) {
-        const subscriberId = err.subscriberOrgId;
+        const subscriberId = err.subscriberId;
         const realError = err._chainedError || err;
         if (realError instanceof IntegrationAccessError) {
             res.redirect(`${redirectUri}/${subscriberId}/onedrive/FORBIDDEN`);

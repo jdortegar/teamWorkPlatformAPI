@@ -77,12 +77,13 @@ export const integrateOnedrive = async (req, userId, subscriberId) => {
 
 export const onedriveAccessResponse = async (req, { code, error, error_description }) => {
     try {
-        if (error) {
-            throw new IntegrationAccessError(error);
-        }
         const teamLevelVal = await req.app.locals.redis.getAsync(`${hashKey(deduceState(req))}#teamLevel`) || 0;
-        const teamLevel = teamLevelVal == 1;
         const integrationContext = await deleteRedisOnedriveIntegrationState(req, teamLevelVal);
+        const subscriberField = teamLevelVal == 0 ? 'subscriberOrgId' : 'teamId'
+        if (error) {
+            throw new IntegrationAccessError(integrationContext[subscriberField]);
+        }
+        const teamLevel = teamLevelVal == 1;
         const userId = integrationContext.userId;
         const subscriberId = (typeof integrationContext.subscriberOrgId !== 'undefined') ? integrationContext.subscriberOrgId : integrationContext.teamId;
         const tokenInfo = await exchangeAuthorizationCodeForAccessToken(req, code);
