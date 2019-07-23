@@ -53,43 +53,48 @@ export const integrateDropbox = async (req, userId, subscriberId) => {
 };
 
 export const dropboxAccessResponse = async (req, { code, state, error, error_description }) => {
-    console.log(code, state, error, error_description);
-    if (error) {
-        throw new IntegrationAccessError(error);    
+    try {
+        console.log(code, state, error, error_description);
+        const teamLevelVal = await req.app.locals.redis.getAsync(`${hashKey(state)}#teamLevel`) || 0;
+        const integrationContext = await deleteRedisDropboxIntegrationState(req, state, teamLevelVal);
+        const subscriberField = teamLevelVal == 0 ? 'subscriberOrgId' : 'teamId';
+        if (error) {
+            throw new IntegrationAccessError(integrationContext[subscriberField]);    
+        }
+        const teamLevel = teamLevelVal == 1;
+        const authorizationCode = code;
+        const userId = integrationContext.userId;
+        const subscriberId = (typeof integrationContext.subscriberOrgId !== 'undefined') ? integrationContext.subscriberOrgId : integrationContext.teamId;
+        const tokenInfo = await exchangeAuthorizationCodeForAccessToken(authorizationCode);
+        req.logger.debug(`Dropbox access info for userId:${userId} = ${JSON.stringify(tokenInfo)}`);
+        let subscriber;
+        if (teamLevel) {
+            subscriber = await teamMembersTable.getTeamMemberByTeamIdAndUserId(req, subscriberId, userId);
+        
+        } else {
+            subscriber = await subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberId);
+        }
+        if (!subscriber || subscriber.length < 1) {
+            throw new SubscriberOrgNotExistError(subscriberId);
+        }
+        tokenInfo.userId = tokenInfo.id;
+        tokenInfo.expired = false;
+        const dropboxInfo = {
+            dropbox: tokenInfo
+        };
+        const updateInfo = _.merge(subscriber, { integrations: dropboxInfo });
+        delete updateInfo.integrations.dropbox.revoked;
+        const integrations = updateInfo.integrations;
+        if (teamLevel) {
+            await teamMembersTable.updateTeamMembersIntegrations(req, userId, subscriberId, integrations);
+        } else {
+            await subscriberUsersTable.updateSubscriberUserIntegrations(req, subscriber.subscriberUserId, integrations);
+        }
+        integrationsUpdated(req, updateInfo);
+        return subscriberId;
+    } catch (err) {
+        return Promise.reject(err);
     }
-    const teamLevelVal = await req.app.locals.redis.getAsync(`${hashKey(state)}#teamLevel`) || 0;
-    const teamLevel = teamLevelVal == 1;
-    const authorizationCode = code;
-    const integrationContext = await deleteRedisDropboxIntegrationState(req, state, teamLevelVal);
-    const userId = integrationContext.userId;
-    const subscriberId = (typeof integrationContext.subscriberOrgId !== 'undefined') ? integrationContext.subscriberOrgId : integrationContext.teamId;
-    const tokenInfo = await exchangeAuthorizationCodeForAccessToken(authorizationCode);
-    req.logger.debug(`Dropbox access info for userId:${userId} = ${JSON.stringify(tokenInfo)}`);
-    let subscriber;
-    if (teamLevel) {
-        subscriber = await teamMembersTable.getTeamMemberByTeamIdAndUserId(req, subscriberId, userId);
-    
-    } else {
-        subscriber = await subscriberUsersTable.getSubscriberUserByUserIdAndSubscriberOrgId(req, userId, subscriberId);
-    }
-    if (!subscriber || subscriber.length < 1) {
-        throw new SubscriberOrgNotExistError(subscriberId);
-    }
-    tokenInfo.userId = tokenInfo.id;
-    tokenInfo.expired = false;
-    const dropboxInfo = {
-        dropbox: tokenInfo
-    };
-    const updateInfo = _.merge(subscriber, { integrations: dropboxInfo });
-    delete updateInfo.integrations.dropbox.revoked;
-    const integrations = updateInfo.integrations;
-    if (teamLevel) {
-        await teamMembersTable.updateTeamMembersIntegrations(req, userId, subscriberId, integrations);
-    } else {
-        await subscriberUsersTable.updateSubscriberUserIntegrations(req, subscriber.subscriberUserId, integrations);
-    }
-    integrationsUpdated(req, updateInfo);
-    return subscriberId;
 };
 
 export const revokeDropbox = async (req, userId, subscriberId) => {

@@ -26,10 +26,10 @@ export const integrateDropbox = (req, res, next) => {
 };
 
 export const dropboxAccess = async (req, res) => {
+    let redirectUri;
     try {
         const teamLevelVal = await req.app.locals.redis.getAsync(`${dropboxSvc.hashKey(req.query.state)}#teamLevel`) || 0;
         const teamLevel = teamLevelVal == 1;
-        let redirectUri;
         if (teamLevel) {
             redirectUri = `${config.webappBaseUri}/app/teamIntegrations`;
         } else {
@@ -38,7 +38,7 @@ export const dropboxAccess = async (req, res) => {
         const subscriberId = await dropboxSvc.dropboxAccessResponse(req, req.query);
         res.redirect(`${redirectUri}/${subscriberId}/dropbox/CREATED`);
     } catch (err) {
-        const subscriberId = err.subscriberOrgId;
+        const subscriberId = err.subscriberId;
         const realError = err._chainedError || err;
         if (realError instanceof IntegrationAccessError) {
             res.redirect(`${redirectUri}/${subscriberId}/dropbox/FORBIDDEN`);
