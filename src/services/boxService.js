@@ -96,7 +96,7 @@ export const boxAccessResponse = async (req, { code, state, error, error_descrip
         integrationsUpdated(req, updateInfo);
         return subscriberOrgId;
     } catch (err) {
-        Promise.reject(err);
+       return Promise.reject(err);
     }
 };
 
