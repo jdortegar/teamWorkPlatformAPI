@@ -109,12 +109,11 @@ export const stripeConfig = {
 
 export const paypalConfig = {
    mode: "sandbox", //sandbox or live
+
    clientId:
-      "AcDL1uXldBodmfeHuBtg9sAZoK36pKV9lRet_a3PbuQYMCDQPFczRGL9UkoZ4jEVRadaixnyEkU831oI",
+      "AczTEVuMJOAV_15gnNTJB7-qRmpbiUsEdc9EYxAYjD6GRUZvnVdkRsbAyvzx_6b2iuc1P47VT8tY-M_F",
    clientSecret:
-      "EHGplAuuDwoPjGRSyuPUHyBBUecYo7Q1NY68ZTEeaWK273zRDMq2s3ZovDxkLg3wK8GUMA5FoniyAtEc"
-   // clientId: 'AczTEVuMJOAV_15gnNTJB7-qRmpbiUsEdc9EYxAYjD6GRUZvnVdkRsbAyvzx_6b2iuc1P47VT8tY-M_F',
-   // clientSecret: 'EEdcloOEfcC68aFTAUMbz5MbvjUtprwlTOKSQHMntgFSbei4Yv-nDEoJjvHB3YAfcduCjSkeKSgk6Ogp'
+      "EEdcloOEfcC68aFTAUMbz5MbvjUtprwlTOKSQHMntgFSbei4Yv-nDEoJjvHB3YAfcduCjSkeKSgk6Ogp"
 };
 
 export const knowledgeApiEndpoint = "https://habla-be-api-dev.habla.ai";
