@@ -19,7 +19,6 @@ import * as teamSvc from './teamService';
 import { userCreated, userUpdated, userPrivateInfoUpdated, userBookmarksUpdated, sentInvitationStatus } from './messaging';
 import { AWS_CUSTOMER_ID_HEADER_NAME } from '../controllers/auth';
 import * as mailer from '../helpers/mailer';
-import moment from 'moment';
 
 export const getUserByEmail = (req, email) => {
     return new Promise((resolve, reject) => {
