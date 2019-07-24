@@ -152,6 +152,9 @@ export const updateSubscription = async (req, res, next) => {
 
       return stripeResponse;
    } catch (err) {
+      if (typeof err.code !=='undefined' && err.code ==='coupon_expired'){
+         throw new CouponExpiredError(coupon);
+      }
       // This is where you handle declines and errors.
       // For the demo we simply set to failed.
       return Promise.reject(err);

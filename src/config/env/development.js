@@ -102,8 +102,8 @@ export const stripeConfig = {
    stripe: {
       country: "US",
       apiVersion: "2018-10-31",
-      publishableKey: "pk_test_Ps3YX1kKZUOPHfZu9DjtAJRr",
-      secretKey: "sk_test_rEf899cFVromgNDVHewmYhzj"
+      publishableKey: "pk_test_LvwApQvFOvPMs0bUSNUnplbb",
+      secretKey: "sk_test_kDDtLeXmTDqyHxkLiwbrBTQR"
    }
 };
 

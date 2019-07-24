@@ -7,6 +7,7 @@ export const doPayment = async (req, res) => {
       const payment = await stripeSvc.doPayment(req, req.body);
       return res.json(payment);
    } catch (err) {
+      console.log('eeeeeerrrrrrrrrr',err);
       // Return error when email exists
       if (err instanceof CouponExpiredError){
          return res.status(httpStatus.BAD_REQUEST).json({error: 'Bad Request', message: 'Promo Code Expired'})
@@ -39,6 +40,14 @@ export const updateSubscription = async (req, res) => {
       const subscription = await stripeSvc.updateSubscription(req, req.body);
       return res.json(subscription);
    } catch (err) {
+      // Return error when email exists
+      if (err instanceof CouponExpiredError){
+         return res.status(httpStatus.BAD_REQUEST).json({error: 'Bad Request', message: 'Promo Code Expired'})
+      }
+      if (err instanceof SubscriberUserExistsError) {
+         return res.status(httpStatus.CONFLICT).json({ error: 'Conflict', message: 'This email already exists' });
+      }
+
       return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
          error: 'Internal Server Error',
          message: 'Something went wrong'
