@@ -100,7 +100,7 @@ export const boxAccessResponse = async (req, { code, state, error, error_descrip
     }
 };
 
-export const revokeBox = async (req, userId, subscriberId) => {
+export const revokeBox = async (req, userId, subscriberId, clearData = true) => {
     try {
         const teamLevel = typeof req.query.teamLevel !== 'undefined' && req.query.teamLevel == 1;
         userId = req.query.userId || userId;
@@ -135,7 +135,9 @@ export const revokeBox = async (req, userId, subscriberId) => {
             revokeData.subscriber_user_id = subscriber.subscriberUserId;
             subscriberInfo = await subscriberUsersTable.updateSubscriberUserIntegrations(req, subscriber.subscriberUserId, integrations);
         }
-        await axios.post(`${config.knowledgeApiEndpoint}/revoke/user`, revokeData);
+        if (clearData) {
+            await axios.post(`${config.knowledgeApiEndpoint}/revoke/user`, revokeData);
+        }
         await revokeIntegration(req, userAccessToken);
         integrationsUpdated(req, subscriberInfo);
     } catch (err) {

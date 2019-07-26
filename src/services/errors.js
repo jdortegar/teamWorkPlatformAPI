@@ -199,6 +199,16 @@ export class IntegrationAccessError extends Error {
    }
 }
 
+export class IntegrationNotExistError extends Error {
+   _chainedError;
+   constructor(integration, ...args) {
+      super(...args);
+      this.message = `Integration ${integration} does not exist`;
+      this.integration = integration;
+      Error.captureStackTrace(this, IntegrationNotExistError);
+
+   }
+}
 export class BadIntegrationConfigurationError extends Error {
    _configuration;
 
