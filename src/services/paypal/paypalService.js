@@ -135,6 +135,7 @@ const processAgreementPromise = (req, token) => {
                const subscriptionStatus = billingAgreement.state;
                const subscriptionExpireDate = billingAgreement.agreement_details.next_billing_date;
                const stripeSubscriptionId = null;
+               const { orgId } = req.query;
 
                const userSubscriptionData = {
                   email,
@@ -146,10 +147,16 @@ const processAgreementPromise = (req, token) => {
 
                // validate if email exists
                const existingUser = await usersTable.getUserByEmailAddress(req, email);
+               const existingOrg =await subscriberOrgsTable.getSubscriberOrgBySubscriberOrgId(req, orgId);
 
-               if (existingUser) {
-                  const { orgId } = req.query;
-                  const updateOrg = await subscriberOrgsTable.updateSubscriberOrg(req, orgId, { userLimit, stripeSubscriptionId, paypalSubscriptionId, subscriptionStatus, subscriptionExpireDate });
+               if (existingUser || existingOrg) {
+                  const updateOrg = await subscriberOrgsTable.updateSubscriberOrg(req, orgId, {
+                     userLimit,
+                     stripeSubscriptionId,
+                     paypalSubscriptionId,
+                     subscriptionStatus,
+                     subscriptionExpireDate
+                  });
                   return resolve(billingAgreement);
                }
 
