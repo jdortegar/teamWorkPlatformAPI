@@ -120,7 +120,7 @@ export const onedriveAccessResponse = async (req, { code, error, error_descripti
     }
 };
 
-export const revokeOnedrive = async (req, userId, subscriberId) => {
+export const revokeOnedrive = async (req, userId, subscriberId, clearData = true) => {
     try {
         const teamLevel = typeof req.query.teamLevel !== 'undefined' && req.query.teamLevel == 1;
         userId = req.query.userId || userId;
@@ -159,7 +159,9 @@ export const revokeOnedrive = async (req, userId, subscriberId) => {
             revokeData.subscriber_user_id = subscriber.subscriberUserId;
             subscriberInfo = await subscriberUsersTable.updateSubscriberUserIntegrations(req, subscriber.subscriberUserId, integrations);
         }
-        await axios.post(`${config.knowledgeApiEndpoint}/revoke/user`, revokeData);
+        if (clearData) {
+            await axios.post(`${config.knowledgeApiEndpoint}/revoke/user`, revokeData);
+        }
         await revokeIntegration(req, userAccessToken);
         integrationsUpdated(req, subscriberInfo);
     } catch (err) {

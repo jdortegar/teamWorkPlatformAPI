@@ -8,4 +8,8 @@ const router = express.Router();
 router.route('/organization/:orgId/teams/:teamId/integrations')
     .get(integrations.getTeamIntegrations);
 
+router.route('/organization/:orgId/integrations/:integrationName/refresh')
+    .get(integrations.refreshIntegration);
+    
+
 export default router;
