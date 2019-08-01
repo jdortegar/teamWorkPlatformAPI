@@ -228,7 +228,7 @@ export const doTrialSubscription = async (req, res, next) => {
          selectedPlanId = yearPlanId;
       }
 
-      const trialDateEnd = moment().add(14, 'days').unix()
+      const trialDateEnd = moment().add(30, 'days').unix()
 
       stripeResponse = await stripe.subscriptions.create({
                customer: customer.id,
